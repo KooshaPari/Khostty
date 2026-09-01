@@ -28,6 +28,8 @@ fast, feature-rich, and native. While there are many excellent terminal
 emulators available, they all force you to choose between speed,
 features, or native UIs. Ghostty provides all three.
 
+[![AI slop inside](https://sladge.net/badge.svg)](https://sladge.net) [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/KooshaPari/ghostty/total)](https://github.com/KooshaPari/ghostty/releases)
+
 **`libghostty`** is a cross-platform, zero-dependency C and Zig library
 for building terminal emulators or utilizing terminal functionality
 (such as style parsing). Anyone can use `libghostty` to build a terminal
