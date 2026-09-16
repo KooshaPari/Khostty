@@ -33,7 +33,7 @@ jobs:
         with:
           version: 0.16.0
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app
-      - name: Download Metal Toolchain
-        run: xcodebuild -downloadComponent MetalToolchain || true
-      - run: zig build -Doptimize=ReleaseSafe -Drenderer=opengl
+        run: |
+          # Use latest available Xcode (macos-latest ships with the newest)
+          sudo xcode-select -s /Applications/Xcode_$(ls /Applications/ | grep Xcode | sort -V | tail -1 | sed 's/Xcode_//' | sed 's/.app//').app || true
+      - run: zig build -Doptimize=ReleaseSafe -Demit-macos-app=false
