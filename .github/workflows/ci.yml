@@ -25,11 +25,15 @@ jobs:
       - run: zig fmt --check src/ build.zig
 
   build:
-    name: Build Check
-    runs-on: ubuntu-latest
+    name: Build (macOS)
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: mlugg/setup-zig@v1
         with:
           version: 0.16.0
-      - run: zig build -Doptimize=safe
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app
+      - name: Download Metal Toolchain
+        run: xcodebuild -downloadComponent MetalToolchain || true
+      - run: zig build -Doptimize=ReleaseSafe -Drenderer=opengl
