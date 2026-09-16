@@ -17,7 +17,7 @@
 | Build target | aarch64-macos.13.0 (native) |
 | Full app build | BLOCKED: Xcode 26 beta missing MetalToolchain component |
 | libghostty-vt build | PASS: static + dynamic + xcframework |
-| WASM build | IN PROGRESS: `zig build -Demit-lib-vt -Dtarget=wasm32-freestanding` |
+| WASM build | PASS: 795KB MVP binary, 40+ function signatures |
 | zig fmt | PASS |
 
 ### Build Commands
@@ -109,10 +109,10 @@ Metrics to measure: VT conformance failures, render frame pacing, memory after l
 
 ## 8. Required Permission
 
-Proceed with WASM build and Rust FFI wrapper implementation (or defer to sponsor for direction on which delta to prioritize).
+Proceed with Rust FFI wrapper implementation and VT conformance tests (or defer to sponsor for direction on which delta to prioritize).
 
-## 9. Expected Proof
+## 9. Proof Delivered
 
-1. `zig build -Demit-lib-vt -Dtarget=wasm32-freestanding` produces a valid `.wasm` file
-2. The WASM module can be loaded and parse VT sequences
-3. At least one VT100 conformance test passes via the embedded parser
+1. `zig build -Demit-lib-vt -Dtarget=wasm32-freestanding` produces `ghostty-vt.wasm` — 795KB MVP binary with 40+ function signatures
+2. **Not yet proven:** WASM module can parse VT sequences at runtime
+3. **Not yet proven:** VT100 conformance test passes via embedded parser
