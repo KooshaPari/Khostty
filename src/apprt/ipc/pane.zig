@@ -143,6 +143,41 @@ pub const SearchMatch = struct {
     }
 };
 
+/// Default and maximum number of `pane.search` matches returned.
+pub const default_search_limit: usize = 32;
+pub const max_search_limit: usize = 256;
+
+/// Result of `pane.search`.
+pub const SearchResult = struct {
+    matches: []const SearchMatch,
+    /// Number of matches returned (== `matches.len`).
+    total: usize,
+    /// True when the scan stopped because the limit was reached and more
+    /// matches may exist. Never reported as false unless the host scanned to
+    /// the end.
+    truncated: bool,
+
+    pub fn writeJson(
+        self: SearchResult,
+        gpa: Allocator,
+        w: *std.Io.Writer,
+    ) protocol.EncodeError!void {
+        var o = try Obj.init(w);
+        var arr = try o.openArr("matches");
+        var scratch: std.Io.Writer.Allocating = .init(gpa);
+        defer scratch.deinit();
+        for (self.matches) |m| {
+            scratch.clearRetainingCapacity();
+            try m.writeJson(&scratch.writer);
+            try arr.raw(scratch.written());
+        }
+        try arr.close(']');
+        try o.uint("total", self.total);
+        try o.boolean("truncated", self.truncated);
+        try o.close('}');
+    }
+};
+
 /// Result of `pane.write`.
 pub const WriteResult = struct {
     written: usize,
@@ -378,6 +413,38 @@ pub const Manager = struct {
             else => return err,
         };
         return snap;
+    }
+
+    /// Search a pane's scrollback.
+    ///
+    /// The host is asked for one more match than the caller wants, which is how
+    /// `truncated` becomes a fact rather than a guess: if the extra match comes
+    /// back, the scan really did stop at the limit.
+    pub fn search(
+        self: *Manager,
+        arena: Allocator,
+        io: std.Io,
+        id: PaneId,
+        query: []const u8,
+        limit: usize,
+        out: *std.ArrayListUnmanaged(SearchMatch),
+    ) Error!SearchResult {
+        self.mutex.lockUncancelable(io);
+        defer self.mutex.unlock(io);
+
+        if (query.len == 0) return .{ .matches = out.items, .total = 0, .truncated = false };
+
+        const wanted = std.math.clamp(limit, 1, max_search_limit);
+        try self.host.search(arena, id, query, wanted + 1, out);
+
+        const truncated = out.items.len > wanted;
+        if (truncated) out.shrinkRetainingCapacity(wanted);
+
+        return .{
+            .matches = out.items,
+            .total = out.items.len,
+            .truncated = truncated,
+        };
     }
 
     /// List panes. Prefers the host's list; falls back to the registry with
@@ -868,4 +935,175 @@ test "json: write result payload" {
     var w: std.Io.Writer = .fixed(&buf);
     try result.writeJson(&w);
     try testing.expectEqualStrings("{\"written\":9}", w.buffered());
+}
+
+test "search: finds matches with row, column and text" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+    const io = testIo();
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    const handle = try manager.create(a, io, .{});
+    _ = try manager.write(io, handle.id, "error: one\r\nok\r\nerror: two");
+
+    var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
+    defer out.deinit(testing.allocator);
+    const result = try manager.search(a, io, handle.id, "error", default_search_limit, &out);
+
+    try testing.expectEqual(@as(usize, 2), result.total);
+    try testing.expect(!result.truncated);
+    try testing.expectEqual(@as(i64, 0), result.matches[0].row);
+    try testing.expectEqual(@as(u32, 0), result.matches[0].col);
+    try testing.expectEqual(@as(u32, 5), result.matches[0].len);
+    try testing.expectEqualStrings("error", result.matches[0].text);
+    try testing.expectEqual(@as(i64, 2), result.matches[1].row);
+    try testing.expectEqual(@as(u32, 0), result.matches[1].col);
+}
+
+test "search: column is relative to the match's row" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+    const io = testIo();
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    const handle = try manager.create(a, io, .{});
+    _ = try manager.write(io, handle.id, "> search here\r\n");
+
+    var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
+    defer out.deinit(testing.allocator);
+    const result = try manager.search(a, io, handle.id, "search", default_search_limit, &out);
+
+    try testing.expectEqual(@as(usize, 1), result.total);
+    try testing.expectEqual(@as(u32, 2), result.matches[0].col);
+}
+
+test "search: reports true truncation when the limit is reached" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+    const io = testIo();
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    const handle = try manager.create(a, io, .{});
+    _ = try manager.write(io, handle.id, "x\r\nx\r\nx\r\nx");
+
+    var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
+    defer out.deinit(testing.allocator);
+    const result = try manager.search(a, io, handle.id, "x", 2, &out);
+
+    try testing.expectEqual(@as(usize, 2), result.total);
+    try testing.expect(result.truncated);
+}
+
+test "search: reports no truncation when the scan finished early" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+    const io = testIo();
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    const handle = try manager.create(a, io, .{});
+    _ = try manager.write(io, handle.id, "one\r\ntwo");
+
+    var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
+    defer out.deinit(testing.allocator);
+    const result = try manager.search(a, io, handle.id, "one", 8, &out);
+    try testing.expectEqual(@as(usize, 1), result.total);
+    try testing.expect(!result.truncated);
+}
+
+test "search: empty query and no matches are empty results, not errors" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+    const io = testIo();
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    const handle = try manager.create(a, io, .{});
+
+    var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
+    defer out.deinit(testing.allocator);
+
+    const empty_query = try manager.search(a, io, handle.id, "", default_search_limit, &out);
+    try testing.expectEqual(@as(usize, 0), empty_query.total);
+    try testing.expect(!empty_query.truncated);
+
+    const no_match = try manager.search(a, io, handle.id, "nothing", default_search_limit, &out);
+    try testing.expectEqual(@as(usize, 0), no_match.total);
+    try testing.expect(!no_match.truncated);
+}
+
+test "search: limit is clamped to the maximum" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+    const io = testIo();
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    const handle = try manager.create(a, io, .{});
+    _ = try manager.write(io, handle.id, "x");
+
+    var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
+    defer out.deinit(testing.allocator);
+    // Asking for far more than the maximum must not error or overflow.
+    const result = try manager.search(a, io, handle.id, "x", 100_000, &out);
+    try testing.expectEqual(@as(usize, 1), result.total);
+}
+
+test "search: unknown pane is PaneNotFound" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+
+    var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
+    defer out.deinit(testing.allocator);
+    try testing.expectError(
+        error.PaneNotFound,
+        manager.search(arena.allocator(), testIo(), PaneId.init(55), "x", 4, &out),
+    );
+}
+
+test "json: search result payload" {
+    const matches = [_]SearchMatch{
+        .{ .row = -3, .col = 8, .len = 5, .text = "error" },
+    };
+    const result: SearchResult = .{ .matches = &matches, .total = 1, .truncated = false };
+    var buf: [512]u8 = undefined;
+    var w: std.Io.Writer = .fixed(&buf);
+    try result.writeJson(testing.allocator, &w);
+    try testing.expectEqualStrings(
+        "{\"matches\":[{\"row\":-3,\"col\":8,\"len\":5,\"text\":\"error\"}]," ++
+            "\"total\":1,\"truncated\":false}",
+        w.buffered(),
+    );
 }
