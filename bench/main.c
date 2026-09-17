@@ -179,7 +179,12 @@ int main(int argc, char **argv) {
     if (strcmp(only, "all") != 0 && strcmp(only, SECTIONS[i].section) != 0) {
       continue;
     }
+    printf("=== section start: %s ===\n", SECTIONS[i].section);
+    /* Flush per section: a long-running or pathological section must be
+     * visible in the captured raw log while it runs, not only at the end. */
+    fflush(stdout);
     SECTIONS[i].run(&report);
+    fflush(stdout);
     ran++;
   }
   if (ran == 0) {

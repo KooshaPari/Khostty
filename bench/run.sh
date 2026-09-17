@@ -66,6 +66,16 @@ fi
 
 LIB_PATH="$(otool -L "$BIN" | awk '/libghostty-vt/ {print $1; exit}')"
 
+# Digest of the harness sources that produced the binary. The JSON already
+# records the library version and optimize mode, which is what makes a
+# Debug-vs-ReleaseSafe mistake detectable; the digest makes the harness itself
+# traceable even when other agents are committing to the same branch.
+HARNESS_DIGEST="$(cat "$REPO_ROOT"/bench/bench.h "$REPO_ROOT"/bench/main.c \
+    "$REPO_ROOT"/bench/bench_util.c "$REPO_ROOT"/bench/bench_vt.c \
+    "$REPO_ROOT"/bench/bench_snapshot.c "$REPO_ROOT"/bench/bench_search.c \
+    "$REPO_ROOT"/bench/bench_search_stub.c "$REPO_ROOT"/bench/bench_memory.c \
+    "$REPO_ROOT"/bench/bench_resize.c | shasum -a 256 | awk '{print $1}')"
+
 echo "running $BIN (label=$LABEL, only=$ONLY)"
 echo "  results: $RAW"
 echo "  results: $JSON"
@@ -82,6 +92,7 @@ TZ=America/Los_Angeles "$BIN" \
     --note "invoked_at_local=$STAMP" \
     --note "command=bench/run.sh --label $LABEL --only $ONLY" \
     --note "build=cc -O2 -Wall -Wextra -std=c11 bench/*.c -lghostty-vt" \
+    --note "harness_source_sha256=$HARNESS_DIGEST" \
     --out "$JSON" | tee "$RAW"
 
 echo
