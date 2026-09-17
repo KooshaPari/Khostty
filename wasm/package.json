@@ -1,0 +1,31 @@
+{
+  "name": "@khostty/libghostty-vt-wasm",
+  "version": "0.0.0",
+  "private": true,
+  "description": "WebAssembly bindings for libghostty-vt (Khostty fork of Ghostty)",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./js/index.js",
+    "./api": "./js/api.js",
+    "./abi": "./js/abi.js",
+    "./errors": "./js/errors.js"
+  },
+  "files": [
+    "js/",
+    "khostty-vt.wasm",
+    "include/ghostty-vt.h",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "./build.sh",
+    "test": "node --test test/",
+    "test:header": "./tools/verify-header.sh",
+    "check": "npm run test:header && npm test && npm run exports",
+    "exports": "node tools/wasm-exports.mjs khostty-vt.wasm"
+  },
+  "sideEffects": false
+}
