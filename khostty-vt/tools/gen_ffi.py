@@ -19,18 +19,31 @@ declarations. Anything it cannot represent is reported in the generated file's
 `SKIPPED` section instead of being silently dropped, and the drift test
 (`tests/ffi_coverage.rs`) re-parses the headers to prove nothing was lost.
 
+This file owns header discovery and Rust emission. Scanning C text lives in
+`cscan.py` and the C-to-Rust type mapping plus the emitted-item model live in
+`cabitypes.py`; the three were one file until it outgrew the repository's
+file-size budget.
+
 Usage:
     python3 tools/gen_ffi.py            # rewrite src/ffi.rs
     python3 tools/gen_ffi.py --check    # exit 1 if src/ffi.rs is stale
 """
-
 from __future__ import annotations
 
 import argparse
 import os
 import re
 import sys
-from dataclasses import dataclass, field
+
+from cabitypes import Emitted, Skipped, fn_ptr_type, map_type, parse_field, safe_ident
+from cscan import (
+    INCLUDE_RE,
+    find_decl_end,
+    split_top_level,
+    strip_comments,
+    strip_redundant_outer_parens,
+    strip_target_guards,
+)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CRATE_ROOT = os.path.dirname(HERE)
@@ -39,314 +52,6 @@ INCLUDE_DIR = os.path.join(REPO_ROOT, "include")
 UMBRELLA = os.path.join(INCLUDE_DIR, "ghostty", "vt.h")
 OUT_PATH = os.path.join(CRATE_ROOT, "src", "ffi.rs")
 
-# ---------------------------------------------------------------------------
-# C type mapping
-# ---------------------------------------------------------------------------
-
-SCALAR_MAP = {
-    "void": "c_void",
-    "bool": "bool",
-    "char": "c_char",
-    "int": "c_int",
-    "unsigned int": "c_uint",
-    "long": "c_long",
-    "unsigned long": "c_ulong",
-    "intptr_t": "isize",
-    "uintptr_t": "usize",
-    "size_t": "usize",
-    "ptrdiff_t": "isize",
-    "int8_t": "i8",
-    "uint8_t": "u8",
-    "int16_t": "i16",
-    "uint16_t": "u16",
-    "int32_t": "i32",
-    "uint32_t": "u32",
-    "int64_t": "i64",
-    "uint64_t": "u64",
-    "float": "f32",
-    "double": "f64",
-}
-
-# Types whose Rust name is the same as the C name and which the generator emits
-# itself (opaque handles, typedef'd scalars, structs).
-GHOSTTY_TYPE_RE = re.compile(r"Ghostty[A-Za-z0-9_]*")
-
-# Rust keywords that appear as C parameter/field names in these headers; they
-# are emitted as raw identifiers so the C name is preserved verbatim.
-RUST_KEYWORDS = {
-    "as", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern",
-    "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod",
-    "move", "mut", "pub", "ref", "return", "self", "static", "struct", "super",
-    "trait", "true", "type", "unsafe", "use", "where", "while", "abstract",
-    "become", "box", "do", "final", "macro", "override", "priv", "typeof",
-    "unsized", "virtual", "yield", "try", "union", "async", "await",
-}
-
-# Raw identifiers cannot be used for these.
-NON_RAW_KEYWORDS = {"crate", "self", "super", "Self"}
-
-
-def safe_ident(name: str) -> str:
-    """Return `name` as a usable Rust identifier."""
-    if name in NON_RAW_KEYWORDS:
-        return f"{name}_"
-    if name in RUST_KEYWORDS:
-        return f"r#{name}"
-    return name
-
-# Headers to parse, in the order the umbrella header includes them. Parsing
-# order only affects comments; Rust items are order independent.
-INCLUDE_RE = re.compile(r'#include\s+<(ghostty/vt/[^>]+)>')
-
-
-@dataclass
-class Skipped:
-    reason: str
-    source: str
-
-
-@dataclass
-class Emitted:
-    functions: dict[str, str] = field(default_factory=dict)
-    types: dict[str, str] = field(default_factory=dict)
-    consts: dict[str, str] = field(default_factory=dict)
-    skipped: list[Skipped] = field(default_factory=list)
-    fn_ptrs: dict[str, str] = field(default_factory=dict)
-    forward_tags: set[str] = field(default_factory=set)
-
-
-def strip_comments(src: str) -> str:
-    """Remove /* */ and // comments without eating comment-like text in strings."""
-    out = []
-    i = 0
-    n = len(src)
-    while i < n:
-        ch = src[i]
-        if ch == '"' or ch == "'":
-            quote = ch
-            out.append(ch)
-            i += 1
-            while i < n:
-                out.append(src[i])
-                if src[i] == "\\":
-                    i += 1
-                    if i < n:
-                        out.append(src[i])
-                elif src[i] == quote:
-                    i += 1
-                    break
-                i += 1
-            continue
-        if src.startswith("/*", i):
-            end = src.find("*/", i + 2)
-            # Preserve newlines so line-oriented parsing stays sane.
-            block = src[i : end + 2] if end != -1 else src[i:]
-            out.append("\n" * block.count("\n"))
-            i = (end + 2) if end != -1 else n
-            continue
-        if src.startswith("//", i):
-            end = src.find("\n", i)
-            i = end if end != -1 else n
-            continue
-        out.append(ch)
-        i += 1
-    return "".join(out)
-
-
-# Target guards the generator honours. libghostty-vt exposes a handful of
-# declarations only on WebAssembly (`#ifdef __wasm__`); those symbols are not
-# present in native builds, so binding them would advertise functions that
-# cannot be linked. bindgen reaches the same conclusion via libclang.
-TARGET_GUARDS = ("__wasm__",)
-
-
-def strip_target_guards(src: str) -> tuple[str, list[str]]:
-    """Blank out declarations inside `#ifdef __wasm__` style regions.
-
-    Returns the modified source and the names found inside the guarded regions
-    so the caller can report them as intentionally excluded.
-    """
-    out_lines: list[str] = []
-    depth = 0
-    excluded: list[str] = []
-    for line in src.splitlines():
-        stripped = line.strip()
-        if depth == 0:
-            guard = re.match(r"#\s*if(?:n?def|\s+defined\s*\(?\s*)?\s*(" + "|".join(re.escape(g) for g in TARGET_GUARDS) + r")\s*\)?\s*$", stripped)
-            if guard:
-                depth = 1
-                continue
-            out_lines.append(line)
-            continue
-        # inside a guarded region
-        if re.match(r"#\s*if", stripped):
-            depth += 1
-        elif re.match(r"#\s*endif", stripped):
-            depth -= 1
-            if depth == 0:
-                continue
-        for fm in re.finditer(r"GHOSTTY_API\s+[^;{]*?\b(ghostty_[A-Za-z0-9_]+)\s*\(", line):
-            excluded.append(fm.group(1))
-        out_lines.append("")
-    return "\n".join(out_lines), excluded
-
-
-def strip_redundant_outer_parens(value: str) -> str:
-    """Drop an outer paren pair that wraps the whole macro body.
-
-    `#define FLAG (1 << 0)` becomes `1 << 0` so the emitted Rust does not trip
-    `unused_parens`. Only a pair that encloses the entire body is removed.
-    """
-    while len(value) >= 2 and value[0] == "(" and value[-1] == ")":
-        depth = 0
-        encloses_all = True
-        for index, ch in enumerate(value):
-            if ch == "(":
-                depth += 1
-            elif ch == ")":
-                depth -= 1
-                if depth == 0 and index != len(value) - 1:
-                    encloses_all = False
-                    break
-        if not encloses_all:
-            break
-        value = value[1:-1].strip()
-    return value
-
-
-def split_top_level(text: str, sep: str = ",") -> list[str]:
-    """Split on `sep` at nesting depth zero."""
-    parts, depth, current = [], 0, []
-    for ch in text:
-        if ch in "([{":
-            depth += 1
-        elif ch in ")]}":
-            depth -= 1
-        if ch == sep and depth == 0:
-            parts.append("".join(current))
-            current = []
-        else:
-            current.append(ch)
-    if current:
-        parts.append("".join(current))
-    return parts
-
-
-def find_matching(src: str, open_idx: int) -> int:
-    """Index of the brace matching `src[open_idx]`."""
-    depth = 0
-    for i in range(open_idx, len(src)):
-        if src[i] == "{":
-            depth += 1
-        elif src[i] == "}":
-            depth -= 1
-            if depth == 0:
-                return i
-    raise ValueError("unbalanced braces")
-
-
-def find_decl_end(src: str, start: int) -> int:
-    """Index of the `;` that terminates the declaration beginning at `start`.
-
-    Scans brace- and paren-aware so that a struct body containing `;` does not
-    truncate the declaration.
-    """
-    depth = 0
-    i = start
-    n = len(src)
-    while i < n:
-        ch = src[i]
-        if ch in "{([":
-            depth += 1
-        elif ch in "})]":
-            depth -= 1
-        elif ch == ";" and depth == 0:
-            return i
-        i += 1
-    raise ValueError("unterminated declaration")
-
-
-def map_type(c_type: str) -> str:
-    """Translate one C declaration specifier list into Rust."""
-    t = " ".join(c_type.split())
-    t = t.replace("GHOSTTY_ENUM_TYPED", "").strip()
-    t = t.replace("GHOSTTY_API", "").strip()
-    t = t.replace("static", "").strip()
-    t = re.sub(r"\brestrict\b", "", t).strip()
-    # Drop the windows export/import specifiers if ever seen.
-    t = re.sub(r"\b__declspec\([^)]*\)", "", t).strip()
-    t = re.sub(r"\b__attribute__\(\([^)]*\)\)", "", t).strip()
-
-    # Peel array suffixes: int x[4] -> type int, dims [4]
-    dims: list[str] = []
-    m = re.search(r"((?:\s*\[\s*[^\]]*\s*\])+)$", t)
-    if m:
-        dims = [d.strip("[] \t") for d in re.findall(r"\[([^\]]*)\]", m.group(1))]
-        t = t[: m.start()].strip()
-    for dim in reversed(dims):
-        t = f"{t}[{dim}]"
-
-    is_const = bool(re.search(r"\bconst\b", t))
-    stars = t.count("*")
-    base = re.sub(r"\bconst\b|\brestrict\b", " ", t).replace("*", " ").strip()
-    base = " ".join(base.split())
-
-    if base in SCALAR_MAP:
-        rust = SCALAR_MAP[base]
-    elif GHOSTTY_TYPE_RE.fullmatch(base):
-        rust = base
-    elif base in ("", "void"):
-        rust = "c_void"
-    else:
-        raise ValueError(f"unmapped C type: {base!r}")
-
-    # `const` attaches to whatever it precedes; treat any const as pointee const.
-    for _ in range(stars):
-        rust = f"*const {rust}" if is_const else f"*mut {rust}"
-    return rust
-
-
-def parse_field(decl: str) -> tuple[str, str] | None:
-    """Parse a struct/union member declaration into (rust_type, rust_name)."""
-    decl = decl.strip()
-    if not decl:
-        return None
-    # Function pointer member: ret (*name)(params)
-    m = re.search(r"\(\s*\*\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)\s*\((.*)\)\s*$", decl, re.S)
-    if m:
-        name, params = m.group(1), m.group(2)
-        rust = fn_ptr_type(decl[: m.start()], params)
-        return rust, name
-
-    m = re.match(r"^(.*?)([A-Za-z_][A-Za-z0-9_]*)\s*((?:\[\s*[^\]]*\s*\])*)\s*$", decl, re.S)
-    if not m:
-        raise ValueError(f"unparsed member: {decl!r}")
-    type_part, name, dims = m.group(1), m.group(2), m.group(3)
-    rust = map_type(type_part)
-    if dims:
-        sizes = [d.strip("[] \t") for d in re.findall(r"\[([^\]]*)\]", dims)]
-        inner = rust
-        for size in reversed(sizes):
-            inner = f"[{inner}; {size}]"
-        rust = inner
-    return rust, name
-
-
-def fn_ptr_type(ret: str, params: str) -> str:
-    rust_ret = map_type(ret) if ret.strip() else "c_void"
-    args = []
-    for part in split_top_level(params):
-        part = part.strip()
-        if not part or part == "void":
-            continue
-        parsed = parse_field(part)
-        if parsed is None:
-            continue
-        args.append(parsed[0])
-    joined = ", ".join(args)
-    if rust_ret == "c_void":
-        return f"Option<unsafe extern \"C\" fn({joined})>"
-    return f"Option<unsafe extern \"C\" fn({joined}) -> {rust_ret}>"
 
 
 # ---------------------------------------------------------------------------
