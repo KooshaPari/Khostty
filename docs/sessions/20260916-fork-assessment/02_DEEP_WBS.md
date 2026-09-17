@@ -371,7 +371,7 @@ khostty-vt/
 
 ---
 
-## G6: Polyglot FFI — Go + Python (NOT STARTED) — MEDIUM PRIORITY
+## G6: Polyglot FFI — Go + Python (DONE 10/10 — `khostty-go/`, `khostty-python/`, 207 tests)
 
 **Gate objective**: Wrap `libghostty-vt` for Go and Python consumers. Enables agent
 tooling in Go (DevOps, CLIs) and Python (data science, automation).
@@ -432,6 +432,70 @@ khostty-python/
 - `pip install -e .` works, `pytest` passes
 - Both wrappers parse VT sequences correctly
 - Both wrappers encode key/mouse events correctly
+
+### As built (2026-09-17)
+
+Tasks 6.1-6.8 were scoped to terminal, snapshot, render, and search; none of
+them covered key or mouse encoding, which the acceptance criteria above require.
+Two further tasks were therefore added to close the gate honestly:
+
+| ID | Task | Surface |
+|----|------|---------|
+| 6.9 | Go key + mouse event encoding | `ghostty_key*.go`, `ghostty_mouse*.go`, `keys_gen.go` |
+| 6.10 | Python key + mouse event encoding | `key.py`, `keyencoder.py`, `mouse.py`, `mouseevent.py`, `_enums_gen.py` |
+
+**Evidence**
+
+| Check | Result |
+|-------|--------|
+| `gofmt -l .`, `go build ./...`, `go vet ./...` | clean |
+| `go test ./...` | 45 pass |
+| `go run ./examples/{basic,agent}` | both run |
+| `ruff check .`, `ruff format --check .` | clean |
+| `pytest` | 162 pass |
+| `python examples/{basic,agent}.py` | both run |
+| `python -m build` | sdist + wheel built |
+| install: editable, wheel, sdist | all three verified in fresh venvs |
+| `validate_abi()` against the linked library | `struct_sizes {}`, `enum_values {}` |
+
+**Deviations from the planned file layout**
+
+The planned `ghostty_vt.go` / `ghostty_key.go` / `ghostty_search.go` and
+`khostty_vt/{_ffi,terminal,snapshot,search,key}.py` grew past the 350-line target,
+so each became a sub-concern: state accessors separate from lifecycle, encoder
+separate from event, constants and geometry separate from the wrappers that use
+them. Every file is now under 350 lines.
+
+**Verified API facts, not assumptions**
+
+Four behaviours were only established by running code against the library, and
+each is pinned by a test:
+
+1. `GHOSTTY_TERMINAL_DATA_CURSOR_STYLE` is the cursor's SGR *style*, not its
+   shape. The first Go accessor was wrong and was replaced.
+2. A printable key encodes to nothing unless its text is set; Kitty encoding
+   additionally needs the unshifted codepoint.
+3. A key event does not take ownership of its text pointer. Both wrappers
+   initially passed a call-scoped buffer, which made encoding return garbage;
+   both were fixed and now carry a regression test that churns the heap.
+4. A zero `screen_width`/`screen_height` in the mouse `EncoderSize` makes every
+   event unreportable, which is indistinguishable from a tracking-mode no-op.
+
+**Cross-language ABI verification**
+
+Both wrappers validate their hand-written declarations against the library's own
+`ghostty_type_json()` manifest: `khostty.LayoutInfo().Validate()` and
+`khostty_vt.validate_abi()`. The 176-entry key table is generated from that
+manifest in both languages rather than transcribed. This caught a real defect
+during development (an undersized `GhosttyBuffer` that was missing its `cap`
+field) and both checkers now pass.
+
+**Known limitation**
+
+`GHOSTTY_MODS` and `GHOSTTY_KITTY_KEY_FLAGS` are `#define` bitmasks rather than
+C enums, so the manifest does not enumerate their bits and they cannot be
+machine-compared. They are transcribed from the headers, and the encoding tests
+verify the bits behaviourally instead.
 
 ---
 
