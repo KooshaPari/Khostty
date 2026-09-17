@@ -20,6 +20,8 @@
 
 ---
 
+[![AI slop inside](https://sladge.net/badge.svg)](https://sladge.net) [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/KooshaPari/ghostty/total)](https://github.com/KooshaPari/ghostty/releases)
+
 ## What Khostty Is
 
 Khostty is the **Phenotype-flavored fork of [Ghostty](https://github.com/ghostty-org/ghostty)**, the fast, native, feature-rich terminal emulator written in Zig by Mitchell Hashimoto and contributors.
