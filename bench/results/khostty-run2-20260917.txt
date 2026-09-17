@@ -1,0 +1,169 @@
+=== Khostty libghostty-vt benchmark harness ===
+label:        khostty-run2
+library:      @rpath/libghostty-vt.dylib
+machine:      Apple M1 Pro (MacBookPro18,3)
+memory:       16.0 GiB (17179869184 bytes)
+cpus:         10 logical (8 performance + 2 efficiency)
+os:           macOS 27.0 (Darwin 27.0.0)
+kernel:       Darwin 27.0.0 arm64
+repo          /Users/kooshapari/CodeProjects/Phenotype/repos/khostty
+git_head      fc0aea2bc8a53572bf555bb13a805677c2ef73c6
+git_status    dirty
+invoked_at_local 2026-09-17T04:28:47-0700
+command       bench/run.sh --label khostty-run2 --only all
+build         cc -O2 -Wall -Wextra -std=c11 bench/*.c -lghostty-vt
+harness_source_sha256 783a7e013fcf27968fd5df0068be26588c2d431066a11ecc288594ddaa666f6c
+library_file  /Users/kooshapari/CodeProjects/Phenotype/repos/khostty/zig-out/lib/libghostty-vt.dylib
+library_sha256 06c3df0ffb8d975f5c4ea2d34443e7426b8c15ae7ea028b999427f0691b3b5e4
+library_version 0.1.0-dev
+library_optimize release-safe
+library_simd  true
+library_kitty_graphics true
+library_tmux_control_mode false
+date_local    2026-09-17 04:28:47
+date_local_tz PST
+date_utc      2026-09-17T11:28:47Z
+unix_time     1789644527
+harness_pid   66548
+load_average_at_start 598.97 540.87 498.34 (1m 5m 15m)
+harness       bench/main.c linked against libghostty-vt (C, -O2)
+timing_clock  mach_absolute_time, nanosecond
+sections_run  all
+
+=== section start: memory ===
+[8.5] memory footprint / 80x24 (cycle 1)
+      library bytes: create 6344 B, +1000 records 1608 B, at 10000 records 23192 B (peak 23192 B)
+      per retained row 0.8 B, per record 2 B (20001 rows retained)
+      library blocks: 45 allocs, 45 frees, 0 declined resizes, 4 declined remaps
+      process: anonymous-internal +13712.0 KiB (14.59 MiB total). rss +14144.0 KiB, phys_footprint +13728.0 KiB
+      after free: library bytes 0 B, anonymous-internal +112.0 KiB, malloc-zone residual +0.0 KiB
+
+[8.5] memory footprint / 80x24 (cycle 2)
+      library bytes: create 6344 B, +1000 records 1608 B, at 10000 records 23192 B (peak 23192 B)
+      per retained row 0.8 B, per record 2 B (20001 rows retained)
+      library blocks: 45 allocs, 45 frees, 0 declined resizes, 4 declined remaps
+      process: anonymous-internal +13648.0 KiB (14.64 MiB total). rss +13648.0 KiB, phys_footprint +13664.0 KiB
+      after free: library bytes 0 B, anonymous-internal +48.0 KiB, malloc-zone residual +0.0 KiB
+
+[8.5] memory footprint / 200x50 (cycle 1)
+      library bytes: create 6344 B, +1000 records 4200 B, at 10000 records 48744 B (peak 48744 B)
+      per retained row 2.1 B, per record 4 B (20001 rows retained)
+      library blocks: 98 allocs, 98 frees, 0 declined resizes, 6 declined remaps
+      process: anonymous-internal +34016.0 KiB (34.58 MiB total). rss +34016.0 KiB, phys_footprint +34048.0 KiB
+      after free: library bytes 0 B, anonymous-internal +16.0 KiB, malloc-zone residual +0.0 KiB
+
+[8.5] memory footprint / 200x50 (cycle 2)
+      library bytes: create 6344 B, +1000 records 4200 B, at 10000 records 48744 B (peak 48744 B)
+      per retained row 2.1 B, per record 4 B (20001 rows retained)
+      library blocks: 98 allocs, 98 frees, 0 declined resizes, 6 declined remaps
+      process: anonymous-internal +34000.0 KiB (34.58 MiB total). rss +34000.0 KiB, phys_footprint +34032.0 KiB
+      after free: library bytes 0 B, anonymous-internal +0.0 KiB, malloc-zone residual +0.0 KiB
+
+=== section start: vt ===
+[8.2] VT throughput / plain_text (8 MiB scrollback)
+      corpus: 65360 byte chunk, 817 records/chunk, 16 MiB per repetition, 5 repetitions (1 warmup discarded, fresh terminal per repetition)
+      throughput median 69.1 MiB/s  min 41.0  max 91.6
+      lines/s    median 905770  (min 536974, max 1200225)
+
+[8.2] VT throughput / plain_text (unbounded)
+      corpus: 65360 byte chunk, 817 records/chunk, 16 MiB per repetition, 5 repetitions (1 warmup discarded, fresh terminal per repetition)
+      throughput median 47.1 MiB/s  min 21.0  max 128.3
+      lines/s    median 617618  (min 274609, max 1681527)
+
+[8.2] VT throughput / escape_heavy (8 MiB scrollback)
+      corpus: 65436 byte chunk, 586 records/chunk, 16 MiB per repetition, 5 repetitions (1 warmup discarded, fresh terminal per repetition)
+      throughput median 8.2 MiB/s  min 7.1  max 11.7
+      records/s  median 76883  (min 66287, max 110291)
+
+[8.2] VT throughput / escape_heavy (unbounded)
+      corpus: 65436 byte chunk, 586 records/chunk, 16 MiB per repetition, 5 repetitions (1 warmup discarded, fresh terminal per repetition)
+      throughput median 8.8 MiB/s  min 8.2  max 11.7
+      records/s  median 82293  (min 77396, max 110097)
+
+[8.2] VT throughput / osc_title (8 MiB scrollback)
+      corpus: 65492 byte chunk, 2339 records/chunk, 16 MiB per repetition, 5 repetitions (1 warmup discarded, fresh terminal per repetition)
+      throughput median 9.5 MiB/s  min 8.3  max 16.8
+      records/s  median 356099  (min 312087, max 630634)
+
+=== section start: snapshot ===
+[8.3] snapshot 80x24_2k_lines (80x24, 2000 lines fed, 3977 scrollback rows)
+      snapshot size: 155728 bytes (152.08 KiB)
+      encode  median 0.222 ms  p95 0.281 ms  min 0.219  max 0.420
+      decode  median 1.402 ms  p95 7.590 ms  min 0.913  max 179.564
+      round   median 2.284 ms  p95 48.957 ms  (encode+decode+free)
+
+[8.3] snapshot 200x50_2k_lines (200x50, 2000 lines fed, 3951 scrollback rows)
+      snapshot size: 156083 bytes (152.42 KiB)
+      encode  median 0.340 ms  p95 26.001 ms  min 0.288  max 122.487
+      decode  median 2.171 ms  p95 30.507 ms  min 1.858  max 101.530
+      round   median 2.890 ms  p95 69.001 ms  (encode+decode+free)
+
+=== section start: search ===
+[8.4] corpus: 10000 records, 19977 scrollback rows retained, marker every 137 records
+[8.4] scrollback search / frequent_error
+      needle "error: E0425": 73 matches across 20001 rows (19977 scrollback + 24 viewport)
+      cold   median 351.866 ms  p95 482.215 ms  min 200.142  max 518.161 (full scan, fresh search)
+      rescan median 310.033 ms  p95 379.902 ms  (same search, changed needle forces a full rescan)
+      warm   median 0.5089 ms  p95 13.8958 ms  (same needle, caught up)
+      full-scan rate 56.8 rows/ms (4.3 MiB/s of cells, 17.59 us per retained row)
+
+[8.4] scrollback search / absent_needle
+      needle "zzz-no-such-token-zzz": 0 matches across 20001 rows (19977 scrollback + 24 viewport)
+      cold   median 248.768 ms  p95 391.663 ms  min 186.068  max 394.067 (full scan, fresh search)
+      rescan median 199.651 ms  p95 200.190 ms  (same search, changed needle forces a full rescan)
+      warm   median 0.4980 ms  p95 0.5290 ms  (same needle, caught up)
+      full-scan rate 80.4 rows/ms (6.1 MiB/s of cells, 12.44 us per retained row)
+
+[8.4] scrollback search / short_common
+      needle "cache miss": 1429 matches across 20001 rows (19977 scrollback + 24 viewport)
+      cold   median 285.209 ms  p95 421.178 ms  min 210.247  max 431.332 (full scan, fresh search)
+      rescan median 299.550 ms  p95 363.277 ms  (same search, changed needle forces a full rescan)
+      warm   median 0.5593 ms  p95 0.5806 ms  (same needle, caught up)
+      full-scan rate 70.1 rows/ms (5.4 MiB/s of cells, 14.26 us per retained row)
+
+[8.4] cold-search scaling (needle "error: E0425")
+      records   rows      cold_med_ms  us_per_row  
+      2000      4001      33.050       8.261       
+      10000     20001     152.261      7.613       
+
+=== section start: resize ===
+[8.6] resize / 200x50_empty_width
+      200x50 <-> 199x50, 0 scrollback lines, 120 timed resizes
+      per resize: median 0.0461 ms  p95 0.0523 ms  min 0.0422  max 0.4660
+      sustained: 21680 resizes/sec (median)
+
+[8.6] resize / 200x50_empty_size
+      200x50 <-> 199x49, 0 scrollback lines, 120 timed resizes
+      per resize: median 0.0462 ms  p95 0.1248 ms  min 0.0409  max 3.2124
+      sustained: 21631 resizes/sec (median)
+
+[8.6] resize / 200x50_2k_lines_width
+      200x50 <-> 199x50, 2000 scrollback lines, 120 timed resizes
+      per resize: median 0.9892 ms  p95 40.9054 ms  min 0.8317  max 124.8335
+      cost per retained row: 0.495 us
+      sustained: 1011 resizes/sec (median)
+
+[8.6] resize / 200x50_2k_lines_size
+      200x50 <-> 199x49, 2000 scrollback lines, 120 timed resizes
+      per resize: median 1.0236 ms  p95 31.6525 ms  min 0.8882  max 73.4506
+      cost per retained row: 0.512 us
+      sustained: 977 resizes/sec (median)
+
+[8.6] resize / 200x50_10k_lines_size
+      200x50 <-> 199x49, 10000 scrollback lines, 40 timed resizes
+      per resize: median 5.2315 ms  p95 117.8443 ms  min 4.4845  max 167.2089
+      cost per retained row: 0.523 us
+      sustained: 191 resizes/sec (median)
+
+[8.6] resize / 80x24_10k_lines_size
+      80x24 <-> 79x23, 10000 scrollback lines, 40 timed resizes
+      per resize: median 2.1416 ms  p95 108.6827 ms  min 2.0393  max 144.9916
+      cost per retained row: 0.214 us
+      sustained: 467 resizes/sec (median)
+
+=== suite summary ===
+sections run:      5
+metrics recorded:  156
+wall time:         62.865 s
+process rss after: 7.2 MiB
+json written to:   /Users/kooshapari/CodeProjects/Phenotype/repos/khostty/bench/results/khostty-run2-20260917.json
