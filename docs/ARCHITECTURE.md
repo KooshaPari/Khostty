@@ -245,15 +245,23 @@ pub const Action = union(enum) {
 exposes these as `+new-window`, `+new-tab`, `+toggle-quick-terminal`. There is no
 pane creation, no state query, and no event stream.
 
-**2. Khostty agent IPC — gate G4, NOT STARTED.**
-The WBS specifies `src/apprt/ipc/` (`protocol.zig`, `server.zig`, `handler.zig`,
-`pane.zig`, `state.zig`, `events.zig`, `auth.zig`) with a JSON command/response
-protocol. That directory does not exist yet. Only the Windows transport stub
-exists today, and it returns `error.Unimplemented`.
+**2. Khostty agent IPC — gate G4, IN PROGRESS.**
+`src/apprt/ipc/` now exists and is partially implemented (observed
+2026-09-17 03:51 PT): `protocol.zig` (wire types + JSON codec), `state.zig`
+(terminal state snapshot), `events.zig` (async event broker), `auth.zig`
+(fail-closed token auth), `pane.zig` (pane lifecycle + `Host` vtable), and
+`fake_host.zig` (test host). The normative v1 specification is
+[`src/apprt/ipc/protocol.md`](../src/apprt/ipc/protocol.md) — 13 commands over a
+line-delimited JSON socket.
 
-The drafted protocol (`pane.create`, `pane.write`, `pane.state`, `pane.list`,
-plus async events such as `title_change`) is reproduced and clearly marked as a
-draft in [AGENT.md](AGENT.md). Do not build against it yet.
+It is **not reachable**: `server.zig` (accept loop) and `app_host.zig` (app-backed
+host) do not exist, the new modules are not re-exported from
+`src/apprt/ipc/mod.zig`, and no runtime constructs a server. Nothing listens on the
+documented socket.
+
+Status detail and the command set are in
+[AGENT.md](AGENT.md#4-agent-ipc-protocol-v1--in-progress-not-yet-reachable). Do not
+build against it yet.
 
 ---
 
@@ -306,7 +314,7 @@ and should stay upstream-mergeable.
 | Kind | Location | Status |
 |---|---|---|
 | Windows runtime | `src/apprt/windows/` | SCAFFOLD (G3) |
-| Agent IPC protocol | `src/apprt/ipc/` *(planned)* | NOT STARTED (G4) |
+| Agent IPC protocol | `src/apprt/ipc/` | IN PROGRESS (G4) — modules exist, no server |
 | Rust crate | `khostty-vt/` | IN PROGRESS (G5) |
 | WASM package | `wasm/` | IN PROGRESS (G7) |
 | Conformance corpus | `conformance/` | DONE (G2) |

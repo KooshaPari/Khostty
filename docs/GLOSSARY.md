@@ -164,9 +164,9 @@ list, and acceptance criteria. Gates are ordered by dependency, not importance.
 | G1 | Native build validation | DONE |
 | G2 | Conformance evidence | DONE — 84/84 |
 | G3 | Windows application runtime | IN PROGRESS (SCAFFOLD) |
-| G4 | Agent/IPC surface expansion | NOT STARTED |
+| G4 | Agent/IPC surface expansion | IN PROGRESS |
 | G5 | Polyglot FFI — Rust | IN PROGRESS |
-| G6 | Polyglot FFI — Go + Python | NOT STARTED |
+| G6 | Polyglot FFI — Go + Python | IN PROGRESS (Go only) |
 | G7 | WASM cross-compilation | IN PROGRESS |
 | G8 | Khostty improvements + benchmarks | NOT STARTED |
 | G9 | Documentation + packaging | IN PROGRESS (this document set) |
