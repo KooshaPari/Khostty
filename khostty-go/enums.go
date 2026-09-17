@@ -32,7 +32,8 @@ const (
 	DataKittyKeyboardFlags TerminalData = C.GHOSTTY_TERMINAL_DATA_KITTY_KEYBOARD_FLAGS
 	// DataScrollbar is the scrollbar state. Output type: *C.GhosttyTerminalScrollbar.
 	DataScrollbar TerminalData = C.GHOSTTY_TERMINAL_DATA_SCROLLBAR
-	// DataCursorStyle is the cursor shape. Output type: *CursorStyle.
+	// DataCursorStyle is the cursor's SGR style, not its shape.
+	// Output type: *C.GhosttyStyle; use Terminal.CursorStyle for the Go value.
 	DataCursorStyle TerminalData = C.GHOSTTY_TERMINAL_DATA_CURSOR_STYLE
 	// DataMouseTracking reports mouse reporting state. Output type: *C.bool.
 	DataMouseTracking TerminalData = C.GHOSTTY_TERMINAL_DATA_MOUSE_TRACKING
@@ -118,7 +119,8 @@ const (
 	OptAPCMaxBytesKitty TerminalOption = C.GHOSTTY_TERMINAL_OPT_APC_MAX_BYTES_KITTY
 	// OptSelection installs the selection handle. Input type: *C.GhosttySelection.
 	OptSelection TerminalOption = C.GHOSTTY_TERMINAL_OPT_SELECTION
-	// OptDefaultCursorStyle sets the default cursor shape. Input type: *C.GhosttyTerminalCursorStyle.
+	// OptDefaultCursorStyle sets the default cursor shape. Input type: *C.GhosttyTerminalCursorStyle
+	// (a CursorShape value).
 	OptDefaultCursorStyle TerminalOption = C.GHOSTTY_TERMINAL_OPT_DEFAULT_CURSOR_STYLE
 	// OptDefaultCursorBlink sets default cursor blinking. Input type: *C.bool.
 	OptDefaultCursorBlink TerminalOption = C.GHOSTTY_TERMINAL_OPT_DEFAULT_CURSOR_BLINK
@@ -179,31 +181,35 @@ func (s Screen) String() string {
 	}
 }
 
-// CursorStyle identifies the cursor shape.
-type CursorStyle C.GhosttyTerminalCursorStyle
+// CursorShape identifies the cursor shape.
+//
+// It is the value type of the OptDefaultCursorStyle option. Note that it is
+// unrelated to Terminal.CursorStyle, which returns the SGR style applied to
+// newly printed characters.
+type CursorShape C.GhosttyTerminalCursorStyle
 
 // Cursor shapes.
 const (
-	// CursorBar is a vertical bar.
-	CursorBar CursorStyle = C.GHOSTTY_TERMINAL_CURSOR_STYLE_BAR
-	// CursorBlock is a filled block.
-	CursorBlock CursorStyle = C.GHOSTTY_TERMINAL_CURSOR_STYLE_BLOCK
-	// CursorUnderline is an underline.
-	CursorUnderline CursorStyle = C.GHOSTTY_TERMINAL_CURSOR_STYLE_UNDERLINE
-	// CursorBlockHollow is an outlined block.
-	CursorBlockHollow CursorStyle = C.GHOSTTY_TERMINAL_CURSOR_STYLE_BLOCK_HOLLOW
+	// CursorShapeBar is a vertical bar.
+	CursorShapeBar CursorShape = C.GHOSTTY_TERMINAL_CURSOR_STYLE_BAR
+	// CursorShapeBlock is a filled block.
+	CursorShapeBlock CursorShape = C.GHOSTTY_TERMINAL_CURSOR_STYLE_BLOCK
+	// CursorShapeUnderline is an underline.
+	CursorShapeUnderline CursorShape = C.GHOSTTY_TERMINAL_CURSOR_STYLE_UNDERLINE
+	// CursorShapeBlockHollow is an outlined block.
+	CursorShapeBlockHollow CursorShape = C.GHOSTTY_TERMINAL_CURSOR_STYLE_BLOCK_HOLLOW
 )
 
 // String returns the name of the cursor shape.
-func (c CursorStyle) String() string {
+func (c CursorShape) String() string {
 	switch c {
-	case CursorBar:
+	case CursorShapeBar:
 		return "bar"
-	case CursorBlock:
+	case CursorShapeBlock:
 		return "block"
-	case CursorUnderline:
+	case CursorShapeUnderline:
 		return "underline"
-	case CursorBlockHollow:
+	case CursorShapeBlockHollow:
 		return "block_hollow"
 	default:
 		return "unknown"

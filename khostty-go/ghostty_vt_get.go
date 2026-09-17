@@ -148,19 +148,6 @@ func (t *Terminal) ActiveScreen() (Screen, error) {
 	return Screen(v), nil
 }
 
-// CursorStyle returns the current cursor shape.
-func (t *Terminal) CursorStyle() (CursorStyle, error) {
-	p, err := t.valid()
-	if err != nil {
-		return 0, err
-	}
-	var v C.GhosttyTerminalCursorStyle
-	if err := errno(C.ghostty_terminal_get(p, C.GHOSTTY_TERMINAL_DATA_CURSOR_STYLE, unsafe.Pointer(&v))); err != nil {
-		return 0, err
-	}
-	return CursorStyle(v), nil
-}
-
 // Data reads `out`-typed data from the terminal directly, for fields without a
 // dedicated accessor. `out` must point at storage of the type documented by
 // the TerminalData entry.
