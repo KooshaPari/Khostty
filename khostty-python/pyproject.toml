@@ -54,7 +54,13 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"]
+# `assert` is the assertion mechanism here, the /tmp working-directory strings
+# are fixtures rather than temporary-file use, and the one subprocess call runs
+# a named example with the current interpreter rather than untrusted input.
+"tests/*" = ["S101", "S105", "S108", "S603"]
+# Examples print by design, use assert for self-checks, and bootstrap
+# sys.path before importing so they run from a checkout.
+"examples/*" = ["T201", "S101", "E402"]
 # The cdef block reproduces the C header's declarations, so its lines are as
 # long as the header's are.
 "khostty_vt/_cdef.py" = ["E501"]

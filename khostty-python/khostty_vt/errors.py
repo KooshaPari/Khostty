@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-__all__ = ["RESULT_NAMES", "GhosttyError", "LibraryNotFoundError", "check"]
+__all__ = ["RESULT_NAMES", "GhosttyError", "check"]
 
 
 # Result codes, mirroring GhosttyResult in include/ghostty/vt/types.h.
@@ -59,10 +59,6 @@ class GhosttyError(RuntimeError):
         if context:
             message = f"{context}: {message}"
         super().__init__(f"{message} [{self.name}]")
-
-
-class LibraryNotFoundError(OSError):
-    """Re-exported so callers can catch it from the package root."""
 
 
 def check(result: int, context: Optional[str] = None) -> None:

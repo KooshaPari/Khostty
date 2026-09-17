@@ -234,11 +234,15 @@ class Search:
         return int(out[0])
 
     def _select(self, option: SearchOption) -> Optional[int]:
-        """Apply a select option and return the resulting index."""
-        check(
-            self._lib.ghostty_search_set(self._require_open(), int(option), self._ffi.NULL),
-            f"search {option.name.lower()}",
-        )
+        """Apply a select option and return the resulting index.
+
+        ``GHOSTTY_NO_VALUE`` means there was nothing to select, which is a
+        reported outcome rather than an error, so it becomes ``None``.
+        """
+        result = self._lib.ghostty_search_set(self._require_open(), int(option), self._ffi.NULL)
+        if result == int(Result.NO_VALUE):
+            return None
+        check(result, f"search {option.name.lower()}")
         return self.selected_index()
 
     def select_next(self) -> Optional[int]:
