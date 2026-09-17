@@ -20,6 +20,7 @@
 pub mod color;
 pub mod error;
 pub mod ffi;
+pub mod render;
 pub mod snapshot;
 pub mod style;
 pub mod sys;
@@ -27,6 +28,7 @@ pub mod terminal;
 
 pub use color::Color;
 pub use error::{GhosttyError, Result};
+pub use render::{Dirty, RenderState};
 pub use snapshot::{encode as encode_snapshot, SnapshotDecoder};
 pub use style::{Style, StyleColor, Underline};
 pub use terminal::{Terminal, Viewport};
