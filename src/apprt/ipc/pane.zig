@@ -25,7 +25,9 @@
 //!
 //! Allocator contract: arena parameters belong to the caller and must outlive
 //! the returned value. Host implementations must allocate every string they
-//! hand back from that arena.
+//! hand back *and* any container backing storage they grow (the pane and match
+//! lists) from that arena, so callers never have to pair allocators: dropping
+//! the arena frees everything, and no `deinit` on a returned list is required.
 //!
 //!     zig test src/apprt/ipc/pane.zig
 
@@ -415,6 +417,33 @@ pub const Manager = struct {
         return snap;
     }
 
+    /// Resize a split by `amount` cells in `dir`.
+    pub fn resizeSplit(
+        self: *Manager,
+        io: std.Io,
+        id: PaneId,
+        dir: protocol.Direction,
+        amount: u16,
+    ) Error!void {
+        self.mutex.lockUncancelable(io);
+        defer self.mutex.unlock(io);
+        return self.host.resize(id, dir, amount);
+    }
+
+    /// Equalize all splits in the pane's window.
+    pub fn equalize(self: *Manager, io: std.Io) Error!void {
+        self.mutex.lockUncancelable(io);
+        defer self.mutex.unlock(io);
+        return self.host.equalize();
+    }
+
+    /// Toggle zoom for a pane.
+    pub fn zoom(self: *Manager, io: std.Io, id: PaneId) Error!void {
+        self.mutex.lockUncancelable(io);
+        defer self.mutex.unlock(io);
+        return self.host.zoom(id);
+    }
+
     /// Search a pane's scrollback.
     ///
     /// The host is asked for one more match than the caller wants, which is how
@@ -460,20 +489,21 @@ pub const Manager = struct {
 
         if (self.host.vtable.list != null) {
             self.host.list(arena, out) catch |err| switch (err) {
-                error.Unsupported => return self.listFromRegistry(out),
+                error.Unsupported => return self.listFromRegistry(arena, out),
                 else => return err,
             };
             return;
         }
-        return self.listFromRegistry(out);
+        return self.listFromRegistry(arena, out);
     }
 
     fn listFromRegistry(
         self: *Manager,
+        arena: Allocator,
         out: *std.ArrayListUnmanaged(PaneInfo),
     ) Error!void {
         for (self.known.items) |id| {
-            try out.append(self.gpa, .{ .id = id });
+            try out.append(arena, .{ .id = id });
         }
     }
 
@@ -706,7 +736,6 @@ test "list: uses the host when it can enumerate" {
     _ = try manager.create(a, io, .{ .title = "two" });
 
     var out: std.ArrayListUnmanaged(PaneInfo) = .empty;
-    defer out.deinit(testing.allocator);
     try manager.list(a, io, &out);
 
     try testing.expectEqual(@as(usize, 2), out.items.len);
@@ -743,7 +772,6 @@ test "list: falls back to the registry with nulls when the host cannot list" {
 
     const created = try manager.create(a, io, .{});
     var out: std.ArrayListUnmanaged(PaneInfo) = .empty;
-    defer out.deinit(testing.allocator);
     try manager.list(a, io, &out);
 
     try testing.expectEqual(@as(usize, 1), out.items.len);
@@ -952,7 +980,6 @@ test "search: finds matches with row, column and text" {
     _ = try manager.write(io, handle.id, "error: one\r\nok\r\nerror: two");
 
     var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
-    defer out.deinit(testing.allocator);
     const result = try manager.search(a, io, handle.id, "error", default_search_limit, &out);
 
     try testing.expectEqual(@as(usize, 2), result.total);
@@ -980,7 +1007,6 @@ test "search: column is relative to the match's row" {
     _ = try manager.write(io, handle.id, "> search here\r\n");
 
     var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
-    defer out.deinit(testing.allocator);
     const result = try manager.search(a, io, handle.id, "search", default_search_limit, &out);
 
     try testing.expectEqual(@as(usize, 1), result.total);
@@ -1002,7 +1028,6 @@ test "search: reports true truncation when the limit is reached" {
     _ = try manager.write(io, handle.id, "x\r\nx\r\nx\r\nx");
 
     var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
-    defer out.deinit(testing.allocator);
     const result = try manager.search(a, io, handle.id, "x", 2, &out);
 
     try testing.expectEqual(@as(usize, 2), result.total);
@@ -1024,7 +1049,6 @@ test "search: reports no truncation when the scan finished early" {
     _ = try manager.write(io, handle.id, "one\r\ntwo");
 
     var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
-    defer out.deinit(testing.allocator);
     const result = try manager.search(a, io, handle.id, "one", 8, &out);
     try testing.expectEqual(@as(usize, 1), result.total);
     try testing.expect(!result.truncated);
@@ -1044,7 +1068,6 @@ test "search: empty query and no matches are empty results, not errors" {
     const handle = try manager.create(a, io, .{});
 
     var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
-    defer out.deinit(testing.allocator);
 
     const empty_query = try manager.search(a, io, handle.id, "", default_search_limit, &out);
     try testing.expectEqual(@as(usize, 0), empty_query.total);
@@ -1070,7 +1093,6 @@ test "search: limit is clamped to the maximum" {
     _ = try manager.write(io, handle.id, "x");
 
     var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
-    defer out.deinit(testing.allocator);
     // Asking for far more than the maximum must not error or overflow.
     const result = try manager.search(a, io, handle.id, "x", 100_000, &out);
     try testing.expectEqual(@as(usize, 1), result.total);
@@ -1086,7 +1108,6 @@ test "search: unknown pane is PaneNotFound" {
     defer arena.deinit();
 
     var out: std.ArrayListUnmanaged(SearchMatch) = .empty;
-    defer out.deinit(testing.allocator);
     try testing.expectError(
         error.PaneNotFound,
         manager.search(arena.allocator(), testIo(), PaneId.init(55), "x", 4, &out),
@@ -1106,4 +1127,28 @@ test "json: search result payload" {
             "\"total\":1,\"truncated\":false}",
         w.buffered(),
     );
+}
+
+test "resizeSplit, equalize, zoom: delegated through the manager lock" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+    const io = testIo();
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const handle = try manager.create(arena.allocator(), io, .{});
+
+    try manager.resizeSplit(io, handle.id, .left, 5);
+    try testing.expectEqual(@as(u16, 75), fake.find(handle.id).?.cols);
+
+    try manager.zoom(io, handle.id);
+    try testing.expect(fake.find(handle.id).?.zoomed);
+
+    try manager.equalize(io);
+    try testing.expectEqual(@as(u16, 75), fake.find(handle.id).?.cols);
+
+    try testing.expectError(error.PaneNotFound, manager.resizeSplit(io, PaneId.init(8), .up, 1));
+    try testing.expectError(error.PaneNotFound, manager.zoom(io, PaneId.init(8)));
 }

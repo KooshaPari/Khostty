@@ -153,7 +153,9 @@ pub const FakeHost = struct {
     ) pane.HostError!void {
         const self: *FakeHost = @ptrCast(@alignCast(ctx));
         for (self.panes.items) |p| {
-            try out.append(self.gpa, .{
+            // Everything the caller sees is arena-owned, including container
+            // backing storage, so the caller never has to match allocators.
+            try out.append(arena, .{
                 .id = PaneId.init(p.id),
                 .title = try arena.dupe(u8, p.titleSlice()),
                 .pid = p.pid,
@@ -193,7 +195,9 @@ pub const FakeHost = struct {
             .focused = p.focused,
             .mouse_tracking = p.mouse_tracking,
             .bell_count = p.bell_count,
-            .scrollback_rows = 0,
+            // The mini emulator keeps a flat text buffer, not a scrollback
+            // ring, so it has no honest answer here: report unknown, not 0.
+            .scrollback_rows = null,
             .viewport_rows = p.rows,
             .exited = p.exited,
             .exit_code = p.exit_code,
@@ -218,7 +222,7 @@ pub const FakeHost = struct {
             const idx = std.mem.indexOfPos(u8, text, from, query) orelse return;
             const line_start = if (std.mem.lastIndexOfScalar(u8, text[0..idx], '\n')) |nl| nl + 1 else 0;
             const row = std.mem.count(u8, text[0..line_start], "\n");
-            try out.append(self.gpa, .{
+            try out.append(arena, .{
                 .row = @intCast(row),
                 .col = @intCast(idx - line_start),
                 .len = @intCast(query.len),

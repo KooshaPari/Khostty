@@ -351,6 +351,18 @@ pub const Broker = struct {
         return result;
     }
 
+    /// Consume and return the drop counter for `id` without touching its
+    /// queue. Callers that must report loss *before* the surviving events (the
+    /// connection loop) use this instead of reading `Drain.dropped`.
+    pub fn takeDropped(self: *Broker, io: std.Io, id: u64) ?u64 {
+        self.mutex.lockUncancelable(io);
+        defer self.mutex.unlock(io);
+        const s = self.find(id) orelse return null;
+        const dropped = s.dropped;
+        s.dropped = 0;
+        return dropped;
+    }
+
     /// Number of queued events for `id`, or null when not subscribed.
     pub fn depth(self: *Broker, io: std.Io, id: u64) ?usize {
         self.mutex.lockUncancelable(io);
