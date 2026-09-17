@@ -18,7 +18,7 @@ Buying nothing by duplicating:
 | `libghostty-vt` — standalone C library | 203 `GHOSTTY_API` functions across 34 headers |
 | Terminal engine | Parser, screen, scrollback with reflow, cursor, styles, selection, search, render state, snapshots, Kitty graphics, SGR, OSC, key/mouse/focus encoding, text formatting, colour utilities, Unicode widths, grid refs |
 | Application runtimes | macOS AppKit (`embedded`), Linux/BSD GTK4 (`gtk`), browser (`browser`), headless (`none`) |
-| C and Zig examples | 36 example projects under `example/` |
+| C and Zig examples | 35 example projects under `example/` |
 | Fuzz harnesses | AFL++ targets (`osc`, `parser`, `stream`) with 4,002 seed files |
 | Benchmarks | Upstream bench tooling (`-Demit-bench`) |
 | Test suite | ~289 Zig source files containing tests |
@@ -106,7 +106,7 @@ Upstream ships C and Zig APIs with examples in other languages. The fork's claim
 |---|---|---|---|
 | Rust | Example only | `khostty-vt` crate: RAII `Terminal`, snapshot, render, search, key, mouse, selection; ABI layout guard; bindgen drift check | IN PROGRESS — modules present, `cargo test` not re-run |
 | Go | Example only | `khostty-go`: cgo bindings for terminal, snapshot, render, search, style, queries, with tests | IN PROGRESS — author-verified `go build`/`go vet` |
-| Python | Example only | — | **NOT STARTED** |
+| Python | Example only | `khostty-python`: cffi bindings and library discovery, `pyproject.toml` | IN PROGRESS (G6.5) — scaffold |
 | WebAssembly | Hand-written HTML demos | `@khostty/libghostty-vt-wasm`: typed ESM package, 189 exports, manifest-driven struct layout, generated consolidated header, 52 tests | IN PROGRESS |
 
 The strongest technical idea here is the **type manifest**: `ghostty_type_json()`
@@ -134,20 +134,43 @@ That is a real, transferable improvement over "write the offsets down and hope".
 
 Stated plainly, because the alternative is a fork that overclaims.
 
-**No performance claim of any kind is justified.** Gate G8 (benchmarks) has:
-- no `bench/` directory,
-- no `bench/results/`,
-- no recorded throughput, latency, or memory measurement,
-- no cross-renderer consistency run.
+**No performance claim is justified yet.** The harness now exists (gate G8,
+observed 2026-09-17), so the situation is narrower than "no benchmarks" but still
+short of usable evidence:
 
-The WBS planned `vt_throughput.zig`, `snapshot_latency.zig`, `search_latency.zig`,
-`ipc_roundtrip.zig`, and `ffi_overhead.zig` against upstream. None exist. Any
-statement of the form "Khostty is faster than Ghostty" is currently unsupported.
+| Benchmark asset | State |
+|---|---|
+| `bench/` harness | **Exists** — C harness linked against the shipped library: VT ingest throughput, snapshot latency, scrollback search, memory footprint, resize cost |
+| `bench/results/khostty-20260917.{txt,json}` | **Captured** — 2026-09-17 03:57 PT, Apple M1 Pro, macOS 27.0 |
+| `bench/results/upstream-20260917.txt` | **0 bytes — the upstream comparison did not complete** |
+| `bench/results/README.md` | Absent, though `bench/README.md` points readers at it |
+| Cross-renderer consistency run | Not attempted |
+| IPC round-trip and FFI overhead benchmarks | Not attempted |
+
+Why the captured numbers are not yet a claim:
+
+1. **No upstream baseline.** The comparison file is empty, so there is nothing to
+   compare against. "Khostty is faster than Ghostty" remains unsupported.
+2. **Measured under extreme load.** The run recorded a 1-minute load average of
+   **425** on a 10-core machine. The harness's own README states that observed
+   medians moved by more than 3x between a loaded and an idle window, and that a
+   run on a quiet machine is required for the numbers to mean anything.
+3. **Tree was dirty.** The JSON records `git_status: dirty` at `1e6687dd2`, so the
+   numbers do not describe a specific committable revision.
+
+Reproduce on an idle machine before citing anything:
+
+```bash
+UPSTREAM_REPO=/path/to/ghostty bench/run.sh --upstream
+```
 
 Additional gaps:
 
 | Gap | Consequence |
 |---|---|
+| No completed upstream comparison | No relative performance claim is possible |
+| Benchmark run under load 425 | Captured medians are not stable enough to cite; only the paired back-to-back method would be |
+| Benchmarks ran against a dirty tree | No revision-pinned result |
 | Cross-renderer consistency untested | No evidence that macOS Metal and Linux GL produce the same output for the same input |
 | WASM browser run never executed | Tests are Node-only; the same code path, but not a browser |
 | Linux build and test never run | The GTK runtime is inherited and unexercised here |
@@ -176,7 +199,8 @@ for upstream's repository, not this fork.
 
 ## 6. Is the fork worth maintaining?
 
-The WBS asks this explicitly. An honest read of the current evidence:
+The WBS asks this explicitly. An honest read of the current evidence (observed
+2026-09-17):
 
 **Yes, on one axis; unproven on the others.**
 
@@ -187,7 +211,9 @@ The WBS asks this explicitly. An honest read of the current evidence:
   polyglot FFI is sound and already shipping in two ecosystems.
 - **Unproven:** Windows support, agent IPC reachability, and any performance claim.
   All three are the reasons the fork exists, and none has an observed result.
-- **Missing entirely:** benchmarks and a release.
+- **Present but not yet evidence:** a benchmark harness exists and has produced one
+  run, but with no upstream baseline and under load 425 it does not support a claim.
+- **Missing entirely:** a completed benchmark comparison and a release.
 
 The fork is currently a well-documented *plan* with one completed and verified gate.
 That is a legitimate state to be in, provided it is described as such.

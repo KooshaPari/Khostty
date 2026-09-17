@@ -23,10 +23,29 @@ document carries the date it was observed.
 | WASM header sync | `cd wasm && npm run test:header` | Consolidated header vs real headers | — | Not run in this session |
 | WASM types | `cd wasm && npm run typecheck` | `.d.ts` covers the real surface | — | Not run in this session |
 | Fuzz corpus | `test/fuzz-libghostty/` | Parser crash-freedom (AFL++) | 4,002 seed files | Not run in this session |
-| Benchmarks | *(none)* | Throughput / latency vs upstream | — | **G8 NOT STARTED** |
+| Benchmarks | `bench/run.sh` | VT throughput, snapshot, search, memory, resize | 5 sections | **Captured once 2026-09-17, no upstream baseline** |
 
-`bench/` does not exist. `-Demit-bench` builds **upstream's** bench tooling and is
-not the G8 deliverable; do not cite it as benchmark evidence.
+`bench/` exists as of 2026-09-17: a C harness linked against the shipped library,
+covering VT ingest throughput, snapshot latency, search latency, memory footprint,
+and resize cost, with both text and JSON output carrying machine spec, toolchain,
+library build info, git revision, and load average.
+
+It is not yet usable as evidence:
+
+| Problem | Detail |
+|---|---|
+| No upstream baseline | `bench/results/upstream-20260917.txt` is 0 bytes; the comparison did not complete |
+| Measured under extreme load | 1-minute load average 425 on a 10-core machine. `bench/README.md` states medians moved >3x between loaded and idle windows. |
+| Dirty tree | The JSON records `git_status: dirty`, so no revision-pinned result |
+
+Also note: `-Demit-bench` builds **upstream's** bench tooling, which is a different
+thing from this harness; do not cite it as G8 evidence.
+
+Reproduce on an idle machine:
+
+```bash
+UPSTREAM_REPO=/path/to/ghostty bench/run.sh --upstream
+```
 
 ---
 
@@ -281,9 +300,9 @@ acceptance criteria and its own evidence.
 | G3 | Windows app runtime | Cross-compile + run on Windows/Wine | IN PROGRESS (scaffold only) |
 | G4 | Agent/IPC surface | Pane commands + concurrency test + auth | IN PROGRESS |
 | G5 | Rust FFI | `cargo test` green, RAII wrappers, clippy clean | IN PROGRESS |
-| G6 | Go + Python FFI | `go test ./...`, `pytest` | IN PROGRESS (Go present, no Python) |
+| G6 | Go + Python FFI | `go test ./...`, `pytest` | IN PROGRESS (Go implemented, Python scaffold) |
 | G7 | WASM cross-compilation | WASM builds, JS API works, browser smoke test | IN PROGRESS |
-| G8 | Improvements + benchmarks | Benchmark JSON + `bench/results/` with date | NOT STARTED |
+| G8 | Improvements + benchmarks | Benchmark JSON + `bench/results/` with date | IN PROGRESS — no upstream baseline |
 | G9 | Docs + packaging | Docs committed, installers verified | IN PROGRESS |
 | G10 | Release artifacts | Tagged release, checksums, smoke tests | NOT STARTED |
 
@@ -332,6 +351,8 @@ Rules:
 | 2026-09-17 | `zig build -Demit-lib-vt` (fresh cache), working tree | **FAIL** | Unhandled `Runtime.windows` arm in `src/build/SharedDeps.zig` |
 | 2026-09-17 | `zig build -Demit-lib-vt`, detached worktree at `a4bf9e98f` | **FAIL** | `src/apprt/ipc/mod.zig` relative imports resolve to missing files; 50/64 steps succeeded, 2 compile errors |
 | 2026-09-17 | WASM artifact | Present | 813,670 bytes, sha256 `08ac8ed8…`, mtime 2026-09-16 04:35 |
+| 2026-09-17 | `bench/run.sh` (Khostty label) | **CAPTURED, NOT USABLE** | `bench/results/khostty-20260917.{txt,json}`; load average 425, tree dirty |
+| 2026-09-17 | `bench/run.sh --upstream` | **NO OUTPUT** | `bench/results/upstream-20260917.txt` is 0 bytes |
 | 2026-09-17 | `cargo test`, `npm run check`, `zig build test` | **NOT RUN** | Not executed in this session |
 
 ### Consequence for this document

@@ -166,9 +166,9 @@ list, and acceptance criteria. Gates are ordered by dependency, not importance.
 | G3 | Windows application runtime | IN PROGRESS (SCAFFOLD) |
 | G4 | Agent/IPC surface expansion | IN PROGRESS |
 | G5 | Polyglot FFI — Rust | IN PROGRESS |
-| G6 | Polyglot FFI — Go + Python | IN PROGRESS (Go only) |
+| G6 | Polyglot FFI — Go + Python | IN PROGRESS (Go implemented, Python scaffold) |
 | G7 | WASM cross-compilation | IN PROGRESS |
-| G8 | Khostty improvements + benchmarks | NOT STARTED |
+| G8 | Khostty improvements + benchmarks | IN PROGRESS |
 | G9 | Documentation + packaging | IN PROGRESS (this document set) |
 | G10 | Release artifacts + ecosystem | NOT STARTED |
 
@@ -193,7 +193,7 @@ explicitly so no consumer builds against it by accident.
 
 **Ledger** — This repository treats Git history as an append-only transaction
 ledger. Agent commits carry metadata trailers; history is never rewritten. See
-[CONTRIBUTING.md](CONTRIBUTING.md#commit-ledger).
+[CONTRIBUTING.md](CONTRIBUTING.md#7-commit-ledger).
 
 | Trailer | Value | Meaning |
 |---|---|---|

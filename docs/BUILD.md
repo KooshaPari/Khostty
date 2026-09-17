@@ -401,38 +401,14 @@ way to separate the two:
 git worktree add --detach /tmp/head-verify HEAD
 ```
 
-### `error: the following build command failed` with a Zig version message
+### Other common failures
 
-Version mismatch. `build.zig.zon` requires exactly 0.16.0; a newer or older Zig
-fails at the `requireZig` comptime check. Install 0.16.0 (for example via
-`mlugg/setup-zig@v1` in CI, or `nix develop`).
-
-### Metal toolchain errors on macOS
-
-`error: unable to find utility "metal"` or a missing MetalToolchain component.
-Options, in order of preference: install the Xcode Metal toolchain component;
-build the library only (`-Demit-lib-vt`); or build with `-Drenderer=opengl`.
-Note that `-Demit-macos-app=false` alone does **not** avoid this, because Metal is
-part of the core library's macOS renderer path.
-
-### GTK build failures on Linux
-
-Missing GTK4 development headers. Ensure `pkg-config` can resolve `gtk4`:
-
-```bash
-pkg-config --modversion gtk4
-```
-
-### Test executables cannot find the library at runtime
-
-Integration tests are separate executables. The Rust `build.rs` therefore emits
-an rpath (`-Wl,-rpath,<libdir>` on macOS and Linux, plus
-`--enable-new-dtags` on Linux). For C harnesses, set the loader path yourself:
-
-```bash
-DYLD_LIBRARY_PATH=zig-out/lib ./your_test        # macOS
-LD_LIBRARY_PATH=zig-out/lib ./your_test          # Linux
-```
+| Symptom | Cause and fix |
+|---|---|
+| Zig version message from `requireZig` | `build.zig.zon` requires exactly 0.16.0. Install 0.16.0 (`mlugg/setup-zig@v1` in CI, or `nix develop`). |
+| `unable to find utility "metal"` / missing MetalToolchain | Install the Xcode Metal toolchain component; or build the library only (`-Demit-lib-vt`); or use `-Drenderer=opengl`. `-Demit-macos-app=false` alone does **not** avoid this — Metal is in the core library's macOS renderer path. |
+| GTK not found on Linux | GTK4 dev headers missing. Check `pkg-config --modversion gtk4`. |
+| Test executable cannot find the library | Integration tests are separate executables. The Rust `build.rs` emits an rpath; for C harnesses set it yourself: `DYLD_LIBRARY_PATH=zig-out/lib` (macOS) or `LD_LIBRARY_PATH=zig-out/lib` (Linux). |
 
 ---
 

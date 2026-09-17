@@ -130,7 +130,7 @@ job on `github.repository == 'ghostty-org/ghostty'`, so it is inert here;
 exist for this repository. 12 of the 16 workflow files have no repository guard
 at all and would attempt to run. Neither a Linux build nor a Linux test is
 executed by any workflow that can actually succeed in this fork. See
-[CONTRIBUTING.md](CONTRIBUTING.md#continuous-integration).
+[CONTRIBUTING.md](CONTRIBUTING.md#9-continuous-integration).
 
 **Honest statement:** Khostty's macOS *library* path is verified. Khostty's macOS
 *application* is not verified in this fork; the blocker is external (a missing

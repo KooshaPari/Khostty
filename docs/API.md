@@ -1,7 +1,6 @@
 # API Reference
 
-**Observed:** 2026-09-17 · Khostty has three public surfaces and one planned one.
-Each has a different stability story; read the status line before building on it.
+**Observed:** 2026-09-17 · Read the status line before building on any surface.
 
 | Surface | Entry point | Stability | Status |
 |---|---|---|---|
@@ -12,14 +11,10 @@ Each has a different stability story; read the status line before building on it
 | IPC (agent protocol) | `src/apprt/ipc/` | **No server yet — not reachable** | IN PROGRESS (G4) |
 | CLI | `khostty +<command>` | Follows upstream | DONE |
 
-Two surfaces are **not** available and must not be coded against:
-
-- The JSON agent IPC protocol (v1) has an implemented wire layer and a full spec
-  at [`src/apprt/ipc/protocol.md`](../src/apprt/ipc/protocol.md), but **no
-  `server.zig` and no runtime wiring**, so nothing is listening. See §4.2.
-- Per-pane operations (create/close/focus/write/query/search) are therefore **not
-  reachable** through any shipped API, even though the modules exist. Upstream
-  splits remain reachable only through the in-app action system.
+**Not available, do not code against:** the JSON agent IPC protocol (v1) has an
+implemented wire layer and a spec at
+[`src/apprt/ipc/protocol.md`](../src/apprt/ipc/protocol.md), but **no `server.zig`
+and no runtime wiring**, so nothing is listening (§4.2).
 
 ---
 
@@ -31,17 +26,13 @@ Two surfaces are **not** available and must not be coded against:
 #include <ghostty/vt.h>
 ```
 
-The umbrella header includes 30 module headers. `GHOSTTY_API` expands to
-`__declspec(dllexport/dllimport)` on Windows and
-`__attribute__((visibility("default")))` elsewhere.
+The umbrella header includes 30 module headers and declares **203 `GHOSTTY_API`
+functions**. `GHOSTTY_API` expands to `__declspec(dllexport/dllimport)` on Windows
+and `__attribute__((visibility("default")))` elsewhere.
 
-**203 `GHOSTTY_API` functions** are declared. The header's own warning, quoted
-because it is the contract:
-
-> This is an incomplete, work-in-progress API. It is not yet stable and is
-> definitely going to change.
-
-Pin a revision. Do not assume ABI compatibility across versions.
+The header's own warning, quoted because it is the contract: *"This is an
+incomplete, work-in-progress API. It is not yet stable and is definitely going to
+change."* Pin a revision; do not assume ABI compatibility across versions.
 
 ### Linking
 
@@ -52,107 +43,83 @@ Pin a revision. Do not assume ABI compatibility across versions.
 | Apple multi-platform | `-Demit-xcframework` | `.xcframework` |
 | WebAssembly | `-Dtarget=wasm32-freestanding` | `ghostty-vt.wasm` |
 
-See [BUILD.md](BUILD.md).
+Full commands: [BUILD.md](BUILD.md).
 
 ### Result codes
 
-```c
-typedef enum {
-  GHOSTTY_SUCCESS       =  0,
-  GHOSTTY_OUT_OF_MEMORY = -1,
-  GHOSTTY_INVALID_VALUE = -2,
-  GHOSTTY_OUT_OF_SPACE  = -3,   /* buffer too small; required capacity returned */
-  GHOSTTY_NO_VALUE      = -4,   /* valid query, no value yet */
-} GhosttyResult;
-```
+| Code | Value | Meaning |
+|---|---:|---|
+| `GHOSTTY_SUCCESS` | 0 | Success |
+| `GHOSTTY_OUT_OF_MEMORY` | −1 | Allocation failure |
+| `GHOSTTY_INVALID_VALUE` | −2 | Invalid argument |
+| `GHOSTTY_OUT_OF_SPACE` | −3 | Buffer too small; required capacity returned |
+| `GHOSTTY_NO_VALUE` | −4 | Valid query, no value yet |
 
 `GHOSTTY_OUT_OF_SPACE` is a *two-pass* signal, not a failure: the call reports the
-required capacity so the caller can allocate and retry. The Rust `sys` module
-wraps that pattern.
+required capacity so the caller can allocate and retry. The Rust `sys` module wraps
+that pattern.
 
 ### Terminal lifecycle
 
 ```c
 GhosttyResult ghostty_terminal_new(const GhosttyAllocator* allocator,
                                    GhosttyTerminal* terminal,
-                                   uint16_t cols,
-                                   uint16_t rows);
-
-void ghostty_terminal_free(GhosttyTerminal terminal);
-void ghostty_terminal_reset(GhosttyTerminal terminal);
-
-GhosttyResult ghostty_terminal_resize(GhosttyTerminal terminal,
-                                      uint16_t cols, uint16_t rows,
-                                      uint32_t cell_width_px,
-                                      uint32_t cell_height_px);
-
-void ghostty_terminal_vt_write(GhosttyTerminal terminal,
-                               const uint8_t* data, size_t len);
-
-GhosttyResult ghostty_terminal_vt_write_until_ground(GhosttyTerminal terminal,
-                                                     const uint8_t* data,
-                                                     size_t len,
-                                                     size_t* out_consumed);
-
-GhosttyResult ghostty_terminal_set(GhosttyTerminal terminal,
-                                   GhosttyTerminalOption option,
-                                   const void* value);
-
-GhosttyResult ghostty_terminal_get(GhosttyTerminal terminal,
-                                   GhosttyTerminalData key,
-                                   void* out);
+                                   uint16_t cols, uint16_t rows);
+void          ghostty_terminal_free(GhosttyTerminal terminal);
+void          ghostty_terminal_reset(GhosttyTerminal terminal);
+GhosttyResult ghostty_terminal_resize(term, cols, rows, cell_w_px, cell_h_px);
+void          ghostty_terminal_vt_write(term, const uint8_t* data, size_t len);
+GhosttyResult ghostty_terminal_vt_write_until_ground(term, data, len, size_t* out_consumed);
+GhosttyResult ghostty_terminal_set(term, GhosttyTerminalOption option, const void* value);
+GhosttyResult ghostty_terminal_get(term, GhosttyTerminalData key, void* out);
 ```
 
 Behaviour that matters when embedding:
 
-- **`ghostty_terminal_vt_write` never fails.** Input is treated as untrusted;
-  malformed sequences are logged internally and state is kept consistent. You do
-  not need to validate bytes before feeding them.
+- **`vt_write` never fails.** Input is untrusted; malformed sequences are logged
+  and state is kept consistent. No pre-validation needed.
 - **`reset` == RIS.** Modes, scrollback, scrolling region, and screen contents are
-  cleared. Dimensions survive.
-- **`resize` reflows** the primary screen when wraparound mode is on; the
-  alternate screen does not reflow. It also updates pixel dimensions (image
-  protocols, size reports), clears synchronized-output mode, and emits an in-band
-  size report if mode 2048 is enabled.
+  cleared; dimensions survive.
+- **`resize` reflows** the primary screen when wraparound is on (the alternate
+  screen does not reflow). It also updates pixel dimensions, clears
+  synchronized-output mode, and emits an in-band size report if mode 2048 is on.
 - **`vt_write_until_ground`** consumes exactly the prefix needed to reach a
-  stateless point in the stream. That is the safe seam for injecting your own
-  out-of-band sequences into a PTY stream. Returns `GHOSTTY_NO_VALUE` when the
-  whole slice was consumed without reaching ground.
+  stateless point — the safe seam for injecting your own out-of-band sequences
+  into a PTY stream. Returns `GHOSTTY_NO_VALUE` if the whole slice was consumed
+  without reaching ground.
 
 ### Callbacks and options
 
 `ghostty_terminal_set` takes a `GhosttyTerminalOption` (40 defined, values 0–39),
 including:
 
-| Option | Purpose |
+| Option group | Purpose |
 |---|---|
-| `GHOSTTY_TERMINAL_OPT_USERDATA` | Opaque pointer handed back to callbacks |
-| `GHOSTTY_TERMINAL_OPT_WRITE_PTY` | Receives query responses (DSR, DA, …) that the terminal would normally write back to the PTY |
-| `GHOSTTY_TERMINAL_OPT_BELL` | Bell notification |
-| `GHOSTTY_TERMINAL_OPT_TITLE_CHANGED`, `…_PWD_CHANGED` | State-change notifications |
-| `GHOSTTY_TERMINAL_OPT_TITLE`, `…_PWD` | Programmatic title / working directory |
-| `GHOSTTY_TERMINAL_OPT_COLOR_FOREGROUND`, `…_BACKGROUND`, `…_CURSOR`, `…_COLOR_PALETTE` | Theme injection |
-| `GHOSTTY_TERMINAL_OPT_SELECTION` | Selection state |
-| `GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_BYTES`, `…_MAX_LINES` | Scrollback bounds |
-| `GHOSTTY_TERMINAL_OPT_KITTY_IMAGE_*` | Image storage limits and media policy |
-| `GHOSTTY_TERMINAL_OPT_MODE_DEFAULT`, `…_MODE` | DEC private mode defaults |
-| `GHOSTTY_TERMINAL_OPT_TERMINFO_NAME` | Reported terminfo name |
-| `GHOSTTY_TERMINAL_OPT_CLIPBOARD_READ`, `…_CLIPBOARD_WRITE` | Clipboard bridge |
-| `GHOSTTY_TERMINAL_OPT_DESKTOP_NOTIFICATION`, `…_PROGRESS_REPORT` | Host notifications |
+| `…_USERDATA` | Opaque pointer handed back to callbacks |
+| `…_WRITE_PTY` | Receives query responses (DSR, DA, …) the terminal would normally write back to the PTY |
+| `…_BELL` | Bell notification |
+| `…_TITLE`, `…_PWD`, `…_TITLE_CHANGED`, `…_PWD_CHANGED` | Programmatic title / working directory and their change notifications |
+| `…_COLOR_FOREGROUND`, `…_BACKGROUND`, `…_CURSOR`, `…_COLOR_PALETTE` | Theme injection |
+| `…_SELECTION` | Selection state |
+| `…_SCROLLBACK_MAX_BYTES`, `…_MAX_LINES` | Scrollback bounds |
+| `…_KITTY_IMAGE_*` | Image storage limits and media policy |
+| `…_MODE_DEFAULT`, `…_MODE` | DEC private mode defaults |
+| `…_TERMINFO_NAME` | Reported terminfo name |
+| `…_CLIPBOARD_READ`, `…_CLIPBOARD_WRITE` | Clipboard bridge |
+| `…_DESKTOP_NOTIFICATION`, `…_PROGRESS_REPORT` | Host notifications |
 
-Two documented constraints:
+All 40 option names are prefixed `GHOSTTY_TERMINAL_OPT_`.
 
-1. **Callbacks run synchronously during VT writes.** They must not call
-   `ghostty_terminal_vt_write` or `ghostty_terminal_vt_write_until_ground` on the
-   same terminal. No reentrancy.
-2. **Non-pointer option values are passed by pointer.** Pass `GhosttyString*`,
-   not `GhosttyString`. Pointer types (callbacks, userdata) are passed directly.
+Two constraints: **callbacks run synchronously during VT writes**, so they must not
+call `vt_write`/`vt_write_until_ground` on the same terminal (no reentrancy); and
+**non-pointer option values are passed by pointer** (`GhosttyString*`, not
+`GhosttyString`), while callbacks and userdata are passed directly.
 
 ### Queries
 
-`ghostty_terminal_get(terminal, key, out)` writes a caller-allocated out
-parameter whose type depends on the key. 41 keys are defined (values 0–40,
-including the `INVALID` sentinel). Examples:
+`ghostty_terminal_get(terminal, key, out)` writes a caller-allocated out parameter
+whose type depends on the key. 41 keys are defined (0–40, including the `INVALID`
+sentinel). Examples:
 
 ```c
 uint16_t cols = 0;
@@ -173,59 +140,41 @@ ghostty_terminal_get(term, GHOSTTY_TERMINAL_DATA_CURSOR_Y, &cursor_y);
 | Kitty images | `KITTY_IMAGE_STORAGE_LIMIT`, `…_MEDIUM_FILE`, `…_MEDIUM_TEMP_FILE`, `…_MEDIUM_SHARED_MEM` |
 
 `ghostty_terminal_get_multi` fetches several keys in one call. Because the
-out-parameter type depends on the key, a language binding cannot guess it: the C
-header documents each `Output type:` line, the WASM generator extracts that
-mapping into `wasm/js/terminal-data.js`, and the Rust crate encodes it in
-`src/terminal/types.rs`. Per-target widths come from the type manifest (§1.7).
+out-parameter type depends on the key, a binding cannot guess it: the header
+documents each `Output type:` line, the WASM generator extracts that mapping into
+`wasm/js/terminal-data.js`, and the Rust crate encodes it in
+`src/terminal/types.rs`. Per-target widths come from the type manifest.
 
 ### Grid references
 
-```c
-ghostty_terminal_grid_ref(terminal, ...);          /* point → stable ref */
-ghostty_terminal_grid_ref_track(terminal, ...);    /* ref tracks scrolling */
-ghostty_terminal_point_from_grid_ref(terminal, ...);
-```
-
-A grid ref survives scrolling and reports when it has lost its value. Use these
-rather than raw row/column indices in anything long-lived.
+`ghostty_terminal_grid_ref` (point → stable ref), `ghostty_terminal_grid_ref_track`
+(ref tracks scrolling), and `ghostty_terminal_point_from_grid_ref`. A grid ref
+survives scrolling and reports when it has lost its value, so use these rather than
+raw row/column indices in anything long-lived.
 
 ### Other API groups
 
-| Group | Header | What it gives you |
+| Group | Header(s) | What it gives you |
 |---|---|---|
-| Snapshot | `snapshot.h` | Encode terminal state; incremental decoder |
-| Render state | `render.h` | Dirty-tracked render state, row/cell iteration |
-| Formatter | `formatter.h` | Export as plain text, VT, or HTML |
-| Search | `search.h` | Find in screen + scrollback, match iteration for highlight drawing |
-| OSC parser | `osc.h` | Parse OSC independently of a terminal |
-| SGR parser | `sgr.h` | Parse SGR attributes independently |
-| Key encoding | `key/event.h`, `key/encoder.h` | Key event → escape sequence (Kitty keyboard protocol) |
-| Mouse encoding | `mouse/event.h`, `mouse/encoder.h` | Mouse event → escape sequence (SGR mouse format) |
-| Focus encoding | `focus.h` | Focus in/out sequences |
-| Paste | `paste.h` | Paste safety check, unsafe-paste flow, encoding |
-| Selection | `selection.h` | Synthetic gesture events → selection snapshots |
-| Unicode | `unicode.h` | Codepoint and grapheme width |
-| Color | `color.h` | RGB, X11 name parsing, palette generation, luminance, contrast |
-| Modes | `modes.h` | Mode report encoding |
-| Size report | `size_report.h` | In-band size report encoding |
-| Color scheme | `color_scheme.h` | Colour scheme report encoding |
+| Snapshot / render state | `snapshot.h`, `render.h` | Encode terminal state with an incremental decoder; dirty-tracked render state with row/cell iteration |
+| Output | `formatter.h` | Export as plain text, VT, or HTML |
+| Search | `search.h` | Find in screen + scrollback; match iteration for highlight drawing |
+| Standalone parsers | `osc.h`, `sgr.h` | Parse OSC and SGR independently of a terminal |
+| Input encoding | `key/event.h` + `key/encoder.h`, `mouse/event.h` + `mouse/encoder.h`, `focus.h` | Key (Kitty protocol), mouse (SGR format), and focus in/out → escape sequences |
+| Paste / selection | `paste.h`, `selection.h` | Safety check, unsafe-paste confirmation flow, bracketed encoding; synthetic gesture events → selection snapshots |
+| Grid refs | `grid_ref.h`, `grid_ref_tracked.h` | Stable cell and row handles that survive scrolling |
+| Text metrics / colour | `unicode.h`, `color.h` | Codepoint and grapheme width; RGB, X11 name parsing, palette generation, luminance, contrast |
+| Reports | `modes.h`, `size_report.h`, `color_scheme.h` | Mode, in-band size, and colour-scheme report encoding |
 | Build info | `build_info.h` | Compile-time feature queries (SIMD, Kitty graphics, tmux) |
-| Allocator | `allocator.h` | `alloc` / `free`, custom allocators |
-| IO | `io.h` | Reusable synchronous reader/writer callbacks |
-| Sys | `sys.h` | Host callbacks (`set`, `log_stderr`) |
-| WASM | `wasm.h` | `alloc` / `free` / `alloc_opaque` / `take_opaque` |
-| Types | `types.h` | `ghostty_type_json` ABI manifest |
-| Grid refs | `grid_ref.h`, `grid_ref_tracked.h` | Stable cell and row handles |
+| Host plumbing | `allocator.h`, `io.h`, `sys.h`, `wasm.h` | `alloc`/`free`, reader/writer callbacks, host `set`/`log_stderr`, WASM handle helpers |
+| ABI manifest | `types.h` | `ghostty_type_json` |
 
-### 1.7 ABI manifest
+### ABI manifest
 
-```c
-ghostty_type_json(...);   /* types.h */
-```
-
-Returns a JSON description of the library's own C ABI **for the current target**:
-pointer width, `size_t` width, byte order, maximum alignment, and every public
-type's kind, size, alignment, field offsets, and enum values.
+`ghostty_type_json(...)` (`types.h`) returns a JSON description of the library's own
+C ABI **for the current target**: pointer width, `size_t` width, byte order,
+maximum alignment, and every public type's kind, size, alignment, field offsets, and
+enum values.
 
 Binding authors must derive struct layout from this manifest. A hand-written
 offset table silently corrupts memory on the next struct change; a manifest
@@ -233,9 +182,9 @@ lookup fails loudly.
 
 ### Worked example
 
-`example/c-vt/` (OSC parsing), `example/c-vt-formatter/`, `example/c-vt-snapshot/`,
-`example/c-vt-search/`, and 30+ siblings under `example/` are the authoritative
-usage samples. `example/README.md` indexes them.
+The 35 projects under `example/` (indexed by `example/README.md`) are the
+authoritative usage samples: `c-vt` (OSC parsing), `c-vt-formatter`,
+`c-vt-snapshot`, `c-vt-search`, and siblings.
 
 ---
 
@@ -252,8 +201,8 @@ Crate metadata: version `0.1.0`, edition 2021, MSRV 1.75, MIT.
 
 | Feature | Default | Effect |
 |---|---|---|
-| `link` | yes | Emit linker directives for a prebuilt `libghostty-vt`. Disable with `--no-default-features` to typecheck without the native library. |
-| `bindgen` | no | Regenerate `$OUT_DIR/bindings.rs` from the C headers and compare against the hand-written `src/ffi.rs` (drift check). Requires libclang. |
+| `link` | yes | Emit linker directives for a prebuilt `libghostty-vt`. `--no-default-features` typechecks without the native library. |
+| `bindgen` | no | Regenerate `$OUT_DIR/bindings.rs` and diff it against `src/ffi.rs` (drift check). Requires libclang. |
 
 ### Build-time discovery
 
@@ -264,10 +213,10 @@ Crate metadata: version `0.1.0`, edition 2021, MSRV 1.75, MIT.
 | `GHOSTTY_VT_INCLUDE_DIR` | Directory containing `ghostty/vt.h` |
 | `GHOSTTY_VT_LINK_KIND` | Force `dylib` or `static` |
 
-Defaults probe `../zig-out/lib`, `../build/lib`, `../dist/lib` relative to the
-crate. If nothing is found, the build warns and links nothing: `cargo check`
-still succeeds without a Zig toolchain. Integration tests are gated on the
-`ghostty_vt_linked` cfg, so they compile to nothing rather than failing.
+Defaults probe `../zig-out/lib`, `../build/lib`, `../dist/lib`. If nothing is
+found the build warns and links nothing, so `cargo check` still succeeds without a
+Zig toolchain. Integration tests are gated on the `ghostty_vt_linked` cfg and
+compile to nothing rather than failing.
 
 ### Surface (observed 2026-09-17)
 
@@ -279,29 +228,17 @@ term.vt_write(b"hello\r\n");
 assert_eq!(term.cursor_position()?, (7, 1));
 ```
 
-Construction and mutation:
-
-| Method | Purpose |
+| Area | Methods |
 |---|---|
-| `Terminal::new(cols, rows)` | Library default allocator |
-| `Terminal::with_allocator(..)` | Explicit allocator |
-| `Terminal::as_raw()` | Escape hatch to the raw handle |
-| `vt_write(&mut self, bytes)` | Feed VT input |
-| `vt_write_until_ground(..)` | Stop at a stateless stream point |
-| `resize(cols, rows, cw_px, ch_px)` | Reflow-capable resize |
-| `reset()` | RIS |
-| `compress(..)` / `compression_activity(..)` | Scrollback compression |
-| `scroll_viewport(..)` | Viewport scrolling |
-| `set_write_pty<F>(..)` / `set_bell<F>(..)` | Callback installation |
-| `bell_count()` | Count observed bells |
-
-Queries: `cols`, `rows`, `size_px`, `total_rows`, `scrollback_rows`,
-`cursor_x`, `cursor_y`, `cursor_position`, `cursor_pending_wrap`,
-`cursor_visible`, `cursor_at_prompt`, `cursor_sgr_style`, `active_screen`,
-`mouse_tracking`, `kitty_keyboard_flags`, `vt_ground`, `has_vt_processing_error`,
-`viewport_active`, `title`, `pwd`, `foreground`, `background`, `cursor_color`,
-`palette`, `default_palette`, `scrollbar`, `scrollback_max_bytes`,
-`scrollback_max_lines`.
+| Construct | `new(cols, rows)`, `with_allocator(..)`, `as_raw()` |
+| Mutate | `vt_write(bytes)`, `vt_write_until_ground(..)`, `resize(cols, rows, cw_px, ch_px)`, `reset()`, `scroll_viewport(..)` |
+| Scrollback | `compress(..)`, `compression_activity(..)`, `scrollback_max_bytes()`, `scrollback_max_lines()` |
+| Callbacks | `set_write_pty<F>(..)`, `set_bell<F>(..)`, `bell_count()` |
+| Geometry | `cols`, `rows`, `size_px`, `total_rows`, `scrollback_rows`, `scrollbar` |
+| Cursor | `cursor_x`, `cursor_y`, `cursor_position`, `cursor_pending_wrap`, `cursor_visible`, `cursor_at_prompt`, `cursor_sgr_style` |
+| Screen / modes | `active_screen`, `viewport_active`, `mouse_tracking`, `kitty_keyboard_flags` |
+| Parser state / text | `vt_ground`, `has_vt_processing_error`, `title`, `pwd` |
+| Theme | `foreground`, `background`, `cursor_color`, `palette`, `default_palette` |
 
 Supporting modules: `error` (`GhosttyError`, mapping every `GhosttyResult`),
 `sys` (allocator, owned buffers, two-pass encode helper), `color`, `style`
@@ -328,13 +265,13 @@ Integration tests mirror these: `tests/terminal.rs`, `snapshot.rs`, `render.rs`,
 IN PROGRESS (gate G5). The crate is feature-complete against the WBS module list
 and has raw bindings for 198 functions, but:
 
-- The crate-level doc comment in `lib.rs` still describes wrappers as arriving
+- The crate doc comment in `lib.rs` still describes wrappers as arriving
   incrementally; the exports above are ahead of that comment.
-- There is **no safe formatter wrapper**, so no `text()` / `html()` equivalent in
-  Rust. Use the raw `ffi` bindings or the WASM package.
-- `cargo test` for the wrappers requires a built `libghostty-vt`; without one the
-  test files compile to nothing via the `ghostty_vt_linked` cfg.
-- No `cargo test` run is recorded in this session's evidence. Treat the surface as
+- There is **no safe formatter wrapper**, so no `text()` / `html()` in Rust. Use
+  the raw `ffi` bindings or the WASM package.
+- `cargo test` needs a built `libghostty-vt`; without one the test files compile to
+  nothing via `ghostty_vt_linked`.
+- No `cargo test` run is recorded in this session. Treat the surface as
   present-but-unverified.
 
 ---
@@ -343,17 +280,13 @@ and has raw bindings for 198 functions, but:
 
 IN PROGRESS (gate G6). Cgo bindings for the same C ABI.
 
-| File | Contents |
-|---|---|
-| `go.mod` | Module definition |
-| `doc.go` | Package doc: link contract and toolchain caveats |
-| `link_default.go` / `link_custom.go` | cgo link directives; a `khostty_custom_lib` build tag selects an out-of-tree library |
-| `ffi.go`, `abi.go`, `manifest.go`, `enums.go` | FFI helpers, type manifest access, enum mirrors |
-| `ghostty_vt.go`, `ghostty_vt_get.go` | Terminal lifecycle and typed queries |
-| `ghostty_snapshot.go`, `ghostty_render.go`, `ghostty_search.go` | Snapshot, render state, search |
-| `style.go` | Style and colour mirrors |
-| `*_test.go` | Integration tests per area |
-| `Makefile` | Build/test entry points |
+Files: `go.mod`; `doc.go` (link contract and toolchain caveats);
+`link_default.go` / `link_custom.go` (cgo directives, with a `khostty_custom_lib`
+build tag for an out-of-tree library); `ffi.go`, `abi.go`, `manifest.go`,
+`enums.go` (FFI helpers, type-manifest access, enum mirrors); `ghostty_vt.go`,
+`ghostty_vt_get.go` (lifecycle and typed queries); `ghostty_snapshot.go`,
+`ghostty_render.go`, `ghostty_search.go`; `style.go` (style and colour mirrors);
+per-area `*_test.go`; and a `Makefile`.
 
 Default link directives point at `../include` and `../zig-out/lib` with an rpath,
 so the shared object's `@rpath` install name resolves. Verified at commit time by
@@ -381,60 +314,42 @@ term.html();   // HTML with inline styles
 
 ### Package exports
 
-| Subpath | Module |
-|---|---|
-| `.` | `js/index.js` — loader plus minimal bindings |
-| `./api` | `js/api.js` — `Terminal`, `Snapshot`, `Search`, `openTerminal` |
-| `./abi` | `js/abi.js` — allocation, opaque handles, typed struct read/write |
-| `./errors` | `js/errors.js` — `GhosttyResult` → `GhosttyError` |
+`.` → `js/index.js` (loader + minimal bindings) · `./api` → `js/api.js`
+(`Terminal`, `Snapshot`, `Search`, `openTerminal`) · `./abi` → `js/abi.js`
+(allocation, opaque handles, typed struct read/write) · `./errors` → `js/errors.js`
+(`GhosttyResult` → `GhosttyError`).
 
 ### Loading
 
-```js
-Terminal.open({
-  cols: 80, rows: 24,        // geometry (defaults 80 × 24)
-  allocator: null,           // allocator address, or null for library default
-  wasmPath: "...",           // Node: filesystem path
-  wasmUrl: "...",            // fetch() URL (default ../khostty-vt.wasm)
-  wasmBytes, wasmModule,     // pre-supplied bytes or compiled module
-  imports,                   // overrides for the module's declared imports
-});
-```
+`Terminal.open(options)` accepts `cols` / `rows` (defaults 80 × 24), `allocator`
+(address, or `null` for the library default), and a source — one of `wasmPath`
+(Node filesystem path), `wasmUrl` (fetched; default `../khostty-vt.wasm`),
+`wasmBytes`, or `wasmModule` — plus `imports` to override the module's declared
+imports.
 
-The default artifact is the sibling `khostty-vt.wasm`. In a browser it must be
-served over HTTP; `file://` fetch is refused. Node-only imports are loaded
-lazily, so a bundler that does not shim Node builtins still works.
+In a browser the artifact must be served over HTTP; `file://` fetch is refused.
+Node-only imports are loaded lazily, so a bundler that does not shim Node builtins
+still works.
 
 ### `Terminal`
 
-| Member | Kind | Notes |
-|---|---|---|
-| `write(data)` | method | VT input bytes |
-| `resize(cols, rows)` | method | |
-| `reset()` | method | |
-| `text(opts?)` | method | Plain text |
-| `unwrappedText(opts?)` | method | Soft-wrapped lines joined |
-| `html(opts?)` | method | Inline-styled HTML |
-| `vtText(opts?)` | method | Re-emitted escape sequences |
-| `format(opts?)` | method | Lower-level formatter call |
-| `snapshot()` | method | Returns a `Snapshot` |
-| `search(needle)` | method | Returns a `Search` |
-| `close()` | method | Idempotent; also `Symbol.dispose` |
-| `cols`, `cursorX`, `cursorY`, `screen`, `cursorVisible`, `totalRows`, `scrollbackRows`, `title` | getters | |
-| `handle` | getter | Raw handle, for low-level use |
+| Kind | Members |
+|---|---|
+| Methods | `write(data)`, `resize(cols, rows)`, `reset()`, `text(opts?)`, `unwrappedText(opts?)`, `html(opts?)`, `vtText(opts?)`, `format(opts?)`, `snapshot()`, `search(needle)`, `close()` |
+| Getters | `cols`, `cursorX`, `cursorY`, `screen`, `cursorVisible`, `totalRows`, `scrollbackRows`, `title` |
+| Escape hatch | `handle` (raw wasm handle for low-level use) |
+
+`close()` is idempotent and each class implements `Symbol.dispose`, so `using`
+works and nothing leaks.
 
 `FormatOptions`: `emit` (`"PLAIN"` \| `"VT"` \| `"HTML"`), `unwrap` (default
 false), `trim` (default true).
 
-### `Snapshot`
+### `Snapshot` and `Search`
 
-`bytes`, `byteLength`, `metadata()` (byte count, source offset, history rows,
-…), `restore()`.
-
-### `Search`
-
-`needle`, `status` (`"COMPLETE"` observed), `totalMatches`, `selectedIndex`,
-`run()`, `next()`, `prev()`.
+`Snapshot`: `bytes`, `byteLength`, `metadata()` (byte count, source offset, history
+rows, …), `restore()`. `Search`: `needle`, `status` (`"COMPLETE"` observed),
+`totalMatches`, `selectedIndex`, `run()`, `next()`, `prev()`.
 
 ### Low-level escape hatch
 
@@ -449,34 +364,27 @@ vt.abi.fn("ghostty_terminal_reset")(handle);
 
 | Risk | Mitigation |
 |---|---|
-| Target-dependent struct layout | All layout read from `ghostty_type_json()` at runtime |
-| Terminal data-key → type mapping drift | `tools/gen-terminal-data.mjs` extracts it from the header's `Output type:` lines |
-| Linear memory growth invalidating views | `js/memory.js` reacquires views when buffer identity or length changes |
+| Target-dependent struct layout | Layout read from `ghostty_type_json()` at runtime |
+| Data-key → type mapping drift | `tools/gen-terminal-data.mjs` extracts it from the header's `Output type:` lines |
+| Linear-memory growth invalidating views | `js/memory.js` reacquires views when buffer identity or length changes |
 | Use-after-free on library-owned buffers | Copy before free in the shared helper |
-| Consolidated header drift | Generated by the C preprocessor; `tools/verify-header.sh` fails if regeneration changes it or the function set differs |
+| Consolidated-header drift | Generated by the C preprocessor; `tools/verify-header.sh` fails on any diff or function-set mismatch |
 
 ### Limits
 
-- **Kitty graphics is excluded** on freestanding targets (needs OS timestamps).
-  The 16 `ghostty_kitty_graphics_*` functions are the only exports withheld from
-  the consolidated header. Sequences are still parsed and safely ignored.
-- **No OS integration:** no PTY, filesystem, timestamps, or clock.
-- **No renderer.** `libghostty-vt` models state; draw the grid yourself or use
-  `html()`.
+- **Kitty graphics excluded** on freestanding targets (needs OS timestamps). The 16
+  `ghostty_kitty_graphics_*` functions are the only exports withheld from the
+  consolidated header; sequences are still parsed and safely ignored.
+- **No OS integration** (no PTY, filesystem, timestamps, clock) and **no renderer** —
+  `libghostty-vt` models state, so draw the grid yourself or use `html()`.
 
-Reference artifact: 813,670 bytes, sha256
-`08ac8ed881ffdae68b9f96f9afa6c834e57ba7ea49280d220e882938508e5bf6`,
-0 imports, 189 exports (187 `ghostty_*` + memory).
+Reference artifact: 813,670 bytes, sha256 `08ac8ed8…`, 0 imports, 189 exports
+(187 `ghostty_*` + memory).
 
 ### Verification
 
 ```bash
-cd wasm
-npm run test:header   # consolidated header in sync and compiles
-npm test              # 52 runtime + ABI tests against the built artifact
-npm run typecheck     # tsc --strict over declarations and a type-level test
-npm run exports       # dump the module's import/export sections
-npm run check         # all of the above
+cd wasm && npm run check   # header sync + typecheck + 52 runtime/ABI tests + exports
 ```
 
 ---
@@ -485,7 +393,8 @@ npm run check         # all of the above
 
 ### 4.1 Upstream action channel (shipped)
 
-`src/apprt/ipc.zig` (252 lines). Typed C ABI, not text.
+`src/apprt/ipc/mod.zig` (moved from `src/apprt/ipc.zig`; 252 lines). A typed C ABI,
+not text.
 
 ```zig
 pub const Target = union(Key) {
@@ -494,19 +403,19 @@ pub const Target = union(Key) {
 };
 
 pub const Action = union(enum) {
-    new_window: NewWindow,              // optional config overrides
-    new_tab: NewTab,                    // target surface_id + overrides
+    new_window: NewWindow,   // optional config overrides
+    new_tab: NewTab,         // target surface_id + overrides
     toggle_quick_terminal: void,
 };
 ```
 
 Reached from the CLI as `+new-window`, `+new-tab`, `+toggle-quick-terminal`, and
 from C through `include/ghostty.h` (`ghostty_ipc_target_*`,
-`ghostty_ipc_action_*`). The enum order maps directly to the C enum; new actions
-append to the end for ABI compatibility.
+`ghostty_ipc_action_*`). Enum order maps directly to the C enum; new actions append
+to the end for ABI compatibility.
 
-**Not available:** pane create/close/focus, state query, scrollback search, event
-stream. There is no JSON wire format on this path.
+**Not available on this path:** pane create/close/focus, state query, scrollback
+search, event stream, or any JSON wire format.
 
 ### 4.2 Khostty agent protocol v1 — IN PROGRESS, no server
 
@@ -516,24 +425,15 @@ known limits. This subsection records status only.
 
 Implemented modules (observed 2026-09-17 03:51 PT):
 
-| Path | Contents |
-|---|---|
-| `src/apprt/ipc/protocol.md` | v1 spec |
-| `src/apprt/ipc/protocol.zig` | Wire types, JSON codec |
-| `src/apprt/ipc/state.zig` | Terminal state snapshot |
-| `src/apprt/ipc/events.zig` | Async event broker |
-| `src/apprt/ipc/auth.zig` | Token auth, fail-closed |
-| `src/apprt/ipc/pane.zig` | Pane lifecycle + `Host` vtable |
-| `src/apprt/ipc/fake_host.zig` | Test host |
+`protocol.md` (v1 spec), `protocol.zig` (wire types, JSON codec), `state.zig`
+(terminal state snapshot), `events.zig` (async event broker), `auth.zig` (token
+auth, fail-closed), `pane.zig` (pane lifecycle + `Host` vtable), `fake_host.zig`
+(test host).
 
-Not implemented, which is why it is unreachable:
-
-| Missing | Consequence |
-|---|---|
-| `server.zig` | No accept loop; nothing listens on the documented socket |
-| `app_host.zig` | No app-backed `Host`; only the fake test host exists |
-| Re-export from `src/apprt/ipc/mod.zig` | Not reachable via the `apprt` interface |
-| Runtime wiring | No runtime constructs a server |
+Unreachable because four things are missing: `server.zig` (no accept loop, nothing
+listens), `app_host.zig` (no app-backed host, only the fake test host), no
+re-export from `src/apprt/ipc/mod.zig` (not reachable via the `apprt` interface),
+and no runtime wiring.
 
 Command set (13 commands), per the spec: `ping`, `pane.create`, `pane.close`,
 `pane.focus`, `pane.list`, `pane.write`, `pane.state`, `pane.search`,
@@ -545,10 +445,10 @@ Default path `~/Library/Caches/khostty/ipc.sock` (macOS) or
 `$XDG_RUNTIME_DIR/khostty/ipc.sock` (Linux/BSD), overridable via
 `KHOSTTY_IPC_SOCKET`. Windows named pipe is a stated follow-up.
 
-Auth: token required for every command except `ping`. Sources in order:
-`KHOSTTY_IPC_TOKEN`, then a token file. **Fail-closed** — with no token
-configured, authenticated commands are rejected and the server never runs
-unauthenticated. Constant-time comparison.
+Auth: required for every command except `ping`. Sources in order:
+`KHOSTTY_IPC_TOKEN`, then a token file. **Fail-closed** — with no token configured,
+authenticated commands are rejected and the server never runs unauthenticated;
+comparison is constant-time.
 
 **Do not build against this yet.** See [AGENT.md](AGENT.md#4-agent-ipc-protocol-v1--in-progress-not-yet-reachable).
 
@@ -556,42 +456,32 @@ unauthenticated. Constant-time comparison.
 
 `src/apprt/windows/ipc.zig`:
 
-| Item | Value |
-|---|---|
-| Pipe name | `\\.\pipe\khostty-{server_pid}` |
-| Mode | `PIPE_READMODE_MESSAGE \| PIPE_WAIT` |
-| Frame | `extern struct { action: u16, length: u32 }` followed by packed payload |
-| Server API | `init`, `deinit`, `acceptConnection` |
-| Client API | `connect`, `deinit`, `send`, `receive` |
-| Behaviour | All return `error.Unimplemented` |
+Pipe `\\.\pipe\khostty-{server_pid}`, mode
+`PIPE_READMODE_MESSAGE | PIPE_WAIT`, frame
+`extern struct { action: u16, length: u32 }` followed by a packed payload.
+Server API: `init`, `deinit`, `acceptConnection`. Client API: `connect`, `deinit`,
+`send`, `receive`. **All operations return `error.Unimplemented`.**
+
+The declared security attributes are worth noting: a null security descriptor
+(inheriting the process default DACL) and `bInheritHandle = TRUE`. See
+[SECURITY.md](SECURITY.md#4-windows-transport-weakness-scaffold).
 
 ---
 
 ## 5. CLI
 
-Invoked as `khostty +<command>`. Defined by `Action` in `src/cli/ghostty.zig`.
+Invoked as `khostty +<command>`. Defined by `Action` in `src/cli/ghostty.zig`;
+one module per command under `src/cli/`.
 
-| Command | Purpose | Backing module |
+| Group | Commands | Backing modules |
 |---|---|---|
-| `+version` / `--version` | Version and exit | `cli/version.zig` |
-| `+help` | CLI or configuration help | `cli/help.zig` |
-| `+list-fonts` | Enumerate available fonts | `cli/list_fonts.zig` |
-| `+list-keybinds` | Enumerate keybindings | `cli/list_keybinds.zig` |
-| `+list-themes` | Enumerate themes | `cli/list_themes.zig` |
-| `+list-colors` | Enumerate named RGB colours | `cli/list_colors.zig` |
-| `+list-actions` | Enumerate keybind actions | `cli/list_actions.zig` |
-| `+ssh` | Wrap `ssh` to configure terminal integration on remote hosts | `cli/ssh.zig` |
-| `+ssh-cache` | Manage the SSH terminfo cache | `cli/ssh_cache.zig` |
-| `+edit-config` | Open the config in the configured editor | `cli/edit_config.zig` |
-| `+show-config` | Dump effective config to stdout | `cli/show_config.zig` |
-| `+explain-config` | Explain one config option | `cli/explain_config.zig` |
-| `+validate-config` | Validate a config file | `cli/validate_config.zig` |
-| `+show-face` | Which font face serves a codepoint | `cli/show_face.zig` |
-| `+crash-report` | List (and eventually view/send) crash reports | `cli/crash_report.zig` |
-| `+new-window` | IPC: open a window in a running instance | `cli/new_window.zig` |
-| `+new-tab` | IPC: open a tab in a running instance | `cli/new_tab.zig` |
-| `+toggle-quick-terminal` | IPC: toggle the quick terminal | `cli/toggle_quick_terminal.zig` |
-| `+boo` | Easter egg | `cli/boo.zig` |
+| Version / help | `+version` (also `--version`), `+help` | `version.zig`, `help.zig` |
+| Introspection | `+list-fonts`, `+list-keybinds`, `+list-themes`, `+list-colors`, `+list-actions` | `list_fonts.zig`, `list_keybinds.zig`, `list_themes.zig`, `list_colors.zig`, `list_actions.zig` |
+| Configuration | `+edit-config`, `+show-config`, `+explain-config`, `+validate-config` | `edit_config.zig`, `show_config.zig`, `explain_config.zig`, `validate_config.zig` |
+| Diagnostics | `+show-face` (which font face serves a codepoint), `+crash-report` | `show_face.zig`, `crash_report.zig` |
+| Remote integration | `+ssh`, `+ssh-cache` | `ssh.zig`, `ssh_cache.zig` |
+| Drive a running instance (IPC) | `+new-window`, `+new-tab`, `+toggle-quick-terminal` | `new_window.zig`, `new_tab.zig`, `toggle_quick_terminal.zig` |
+| Easter egg | `+boo` | `boo.zig` |
 
 Parsing notes (`src/cli/args.zig`): `+command` flags may be interleaved with
 config overrides; `-e` terminates command scanning so `khostty -e khostty
@@ -601,9 +491,8 @@ config overrides; `-e` terminates command scanning so `khostty -e khostty
 
 ## See also
 
-- [AGENT.md](AGENT.md) — agent integration workflows, including drafted IPC
+- [AGENT.md](AGENT.md) — agent workflows and the IPC status
 - [ARCHITECTURE.md](ARCHITECTURE.md) — where each surface sits in the stack
-- [BUILD.md](BUILD.md) — producing each artifact
-- [PLATFORMS.md](PLATFORMS.md) — which surfaces exist on which platform
-- [TESTING.md](TESTING.md) — verifying an integration
+- [BUILD.md](BUILD.md) — producing each artifact · [PLATFORMS.md](PLATFORMS.md) — availability per platform
+- [TESTING.md](TESTING.md) — verifying an integration · [SECURITY.md](SECURITY.md) — trust boundaries
 - `example/` — authoritative C, Zig, C++, Swift, Python, and WASM samples

@@ -33,8 +33,9 @@ Related reference material elsewhere in the repository:
 | [`src/apprt/ipc/protocol.md`](../src/apprt/ipc/protocol.md) | Normative v1 agent IPC protocol spec |
 | [`wasm/README.md`](../wasm/README.md) | WASM package usage, build internals, correctness guarantees |
 | [`conformance/README.md`](../conformance/README.md) | Conformance corpus, methodology, and coverage gaps |
+| [`bench/README.md`](../bench/README.md) | Benchmark harness, measurement discipline, and load caveats |
 | [`test/fuzz-libghostty/README.md`](../test/fuzz-libghostty/README.md) | AFL++ fuzz targets |
-| [`example/README.md`](../example/README.md) | 36 upstream examples in C, Zig, C++, Swift, Python, and JS |
+| [`example/README.md`](../example/README.md) | 35 upstream examples in C, Zig, C++, Swift, Python, and JS |
 | `HACKING.md`, `PACKAGING.md` (root) | Upstream deep-dive and packaging guides |
 | `AI_POLICY.md`, `AGENTS.md` (root) | Upstream AI usage and agent policy |
 
@@ -57,9 +58,9 @@ operation returns `error.Unimplemented`) · **NOT STARTED** · **UNKNOWN**.
 | G3 | Windows application runtime | IN PROGRESS — scaffold only |
 | G4 | Agent/IPC surface | IN PROGRESS — modules exist, no server |
 | G5 | Polyglot FFI — Rust | IN PROGRESS |
-| G6 | Polyglot FFI — Go + Python | IN PROGRESS — Go only |
+| G6 | Polyglot FFI — Go + Python | IN PROGRESS — Go implemented, Python scaffold |
 | G7 | WASM cross-compilation | IN PROGRESS — artifact verified |
-| G8 | Improvements + benchmarks | NOT STARTED — no `bench/` |
+| G8 | Improvements + benchmarks | IN PROGRESS — harness exists, no upstream baseline |
 | G9 | Documentation + packaging | IN PROGRESS — this set |
 | G10 | Release artifacts | NOT STARTED |
 
@@ -69,8 +70,11 @@ operation returns `error.Unimplemented`) · **NOT STARTED** · **UNKNOWN**.
    broken relative imports in `src/apprt/ipc/mod.zig`, introduced by commit
    `e1277bea2`. The newest working artifacts are from 2026-09-16. Diagnosis and the
    two-line fix: [BUILD.md](BUILD.md#unable-to-load-mainzig-filenotfound--unable-to-load-quirkszig).
-2. **There are no benchmarks.** Gate G8 has not started. No performance claim about
-   this fork is supported by evidence. See [FORK.md](FORK.md#4-what-the-evidence-does-not-support).
+2. **There is no usable benchmark comparison yet.** A harness exists at `bench/`
+   and has produced one run (2026-09-17), but the upstream baseline file is empty
+   and the run happened at load average 425, which the harness's own methodology
+   says makes the numbers unreliable. No performance claim is supported. See
+   [FORK.md](FORK.md#4-what-the-evidence-does-not-support).
 
 ---
 
