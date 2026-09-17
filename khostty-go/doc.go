@@ -30,15 +30,15 @@
 //     after the directives in link_default.go, so they act as a fallback
 //     rather than an override:
 //
-//	CGO_LDFLAGS="-L/opt/ghostty/lib" go test ./...
+//     CGO_LDFLAGS="-L/opt/ghostty/lib" go test ./...
 //
 //  3. Build with the `khostty_custom_lib` tag. This disables the default
 //     `-L`/`-l`/`-rpath` flags entirely (see link_custom.go) and makes
 //     the build depend purely on `CGO_LDFLAGS`, so an out-of-tree library
 //     can be the only one on the search path:
 //
-//	CGO_LDFLAGS="-L/opt/ghostty/lib -lghostty-vt -Wl,-rpath,/opt/ghostty/lib" \
-//	    go test -tags khostty_custom_lib ./...
+//     CGO_LDFLAGS="-L/opt/ghostty/lib -lghostty-vt -Wl,-rpath,/opt/ghostty/lib" \
+//     go test -tags khostty_custom_lib ./...
 //
 //  4. `GHOSTTY_VT_LIB_DIR` is also honoured, but only at *test* time:
 //     the same content as `CGO_LDFLAGS` can be exported once and inherited
