@@ -33,7 +33,6 @@
     clippy::too_many_arguments
 )]
 
-
 use core::ffi::{c_char, c_int, c_void};
 
 // ---------------------------------------------------------------------
@@ -373,18 +372,22 @@ pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_COLUMNS: GhosttyKittyGraphicsPla
 pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_IMAGE_ID: GhosttyKittyGraphicsPlacementData = 1;
 pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_INVALID: GhosttyKittyGraphicsPlacementData = 0;
 pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_IS_VIRTUAL: GhosttyKittyGraphicsPlacementData = 3;
-pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_MAX_VALUE: GhosttyKittyGraphicsPlacementData = c_int::MAX;
+pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_MAX_VALUE: GhosttyKittyGraphicsPlacementData =
+    c_int::MAX;
 pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_PLACEMENT_ID: GhosttyKittyGraphicsPlacementData = 2;
 pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_ROWS: GhosttyKittyGraphicsPlacementData = 11;
-pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_SOURCE_HEIGHT: GhosttyKittyGraphicsPlacementData = 9;
+pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_SOURCE_HEIGHT: GhosttyKittyGraphicsPlacementData =
+    9;
 pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_SOURCE_WIDTH: GhosttyKittyGraphicsPlacementData = 8;
 pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_SOURCE_X: GhosttyKittyGraphicsPlacementData = 6;
 pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_SOURCE_Y: GhosttyKittyGraphicsPlacementData = 7;
 pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_X_OFFSET: GhosttyKittyGraphicsPlacementData = 4;
 pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_Y_OFFSET: GhosttyKittyGraphicsPlacementData = 5;
 pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_DATA_Z: GhosttyKittyGraphicsPlacementData = 12;
-pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_ITERATOR_OPTION_LAYER: GhosttyKittyGraphicsPlacementIteratorOption = 0;
-pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_ITERATOR_OPTION_MAX_VALUE: GhosttyKittyGraphicsPlacementIteratorOption = c_int::MAX;
+pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_ITERATOR_OPTION_LAYER:
+    GhosttyKittyGraphicsPlacementIteratorOption = 0;
+pub const GHOSTTY_KITTY_GRAPHICS_PLACEMENT_ITERATOR_OPTION_MAX_VALUE:
+    GhosttyKittyGraphicsPlacementIteratorOption = c_int::MAX;
 pub const GHOSTTY_KITTY_IMAGE_COMPRESSION_MAX_VALUE: GhosttyKittyImageCompression = c_int::MAX;
 pub const GHOSTTY_KITTY_IMAGE_COMPRESSION_NONE: GhosttyKittyImageCompression = 0;
 pub const GHOSTTY_KITTY_IMAGE_COMPRESSION_ZLIB_DEFLATE: GhosttyKittyImageCompression = 1;
@@ -508,9 +511,12 @@ pub const GHOSTTY_POINT_TAG_VIEWPORT: GhosttyPointTag = 1;
 pub const GHOSTTY_REJECTED: GhosttyResult = -7;
 pub const GHOSTTY_RENDER_STATE_CURSOR_VISUAL_STYLE_BAR: GhosttyRenderStateCursorVisualStyle = 0;
 pub const GHOSTTY_RENDER_STATE_CURSOR_VISUAL_STYLE_BLOCK: GhosttyRenderStateCursorVisualStyle = 1;
-pub const GHOSTTY_RENDER_STATE_CURSOR_VISUAL_STYLE_BLOCK_HOLLOW: GhosttyRenderStateCursorVisualStyle = 3;
-pub const GHOSTTY_RENDER_STATE_CURSOR_VISUAL_STYLE_MAX_VALUE: GhosttyRenderStateCursorVisualStyle = c_int::MAX;
-pub const GHOSTTY_RENDER_STATE_CURSOR_VISUAL_STYLE_UNDERLINE: GhosttyRenderStateCursorVisualStyle = 2;
+pub const GHOSTTY_RENDER_STATE_CURSOR_VISUAL_STYLE_BLOCK_HOLLOW:
+    GhosttyRenderStateCursorVisualStyle = 3;
+pub const GHOSTTY_RENDER_STATE_CURSOR_VISUAL_STYLE_MAX_VALUE: GhosttyRenderStateCursorVisualStyle =
+    c_int::MAX;
+pub const GHOSTTY_RENDER_STATE_CURSOR_VISUAL_STYLE_UNDERLINE: GhosttyRenderStateCursorVisualStyle =
+    2;
 pub const GHOSTTY_RENDER_STATE_DATA_COLORS: GhosttyRenderStateData = 19;
 pub const GHOSTTY_RENDER_STATE_DATA_COLOR_BACKGROUND: GhosttyRenderStateData = 5;
 pub const GHOSTTY_RENDER_STATE_DATA_COLOR_CURSOR: GhosttyRenderStateData = 7;
@@ -545,7 +551,8 @@ pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_GRAPHEMES_LEN: GhosttyRenderStateR
 pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_GRAPHEMES_UTF8: GhosttyRenderStateRowCellsData = 9;
 pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_HAS_STYLING: GhosttyRenderStateRowCellsData = 8;
 pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_INVALID: GhosttyRenderStateRowCellsData = 0;
-pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_MAX_VALUE: GhosttyRenderStateRowCellsData = c_int::MAX;
+pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_MAX_VALUE: GhosttyRenderStateRowCellsData =
+    c_int::MAX;
 pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_RAW: GhosttyRenderStateRowCellsData = 1;
 pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_SELECTED: GhosttyRenderStateRowCellsData = 7;
 pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_STYLE: GhosttyRenderStateRowCellsData = 2;
@@ -611,12 +618,14 @@ pub const GHOSTTY_SELECTION_ADJUST_PAGE_UP: GhosttySelectionAdjust = 6;
 pub const GHOSTTY_SELECTION_ADJUST_RIGHT: GhosttySelectionAdjust = 1;
 pub const GHOSTTY_SELECTION_ADJUST_UP: GhosttySelectionAdjust = 2;
 pub const GHOSTTY_SELECTION_GESTURE_AUTOSCROLL_DOWN: GhosttySelectionGestureAutoscroll = 2;
-pub const GHOSTTY_SELECTION_GESTURE_AUTOSCROLL_MAX_VALUE: GhosttySelectionGestureAutoscroll = c_int::MAX;
+pub const GHOSTTY_SELECTION_GESTURE_AUTOSCROLL_MAX_VALUE: GhosttySelectionGestureAutoscroll =
+    c_int::MAX;
 pub const GHOSTTY_SELECTION_GESTURE_AUTOSCROLL_NONE: GhosttySelectionGestureAutoscroll = 0;
 pub const GHOSTTY_SELECTION_GESTURE_AUTOSCROLL_UP: GhosttySelectionGestureAutoscroll = 1;
 pub const GHOSTTY_SELECTION_GESTURE_BEHAVIOR_CELL: GhosttySelectionGestureBehavior = 0;
 pub const GHOSTTY_SELECTION_GESTURE_BEHAVIOR_LINE: GhosttySelectionGestureBehavior = 2;
-pub const GHOSTTY_SELECTION_GESTURE_BEHAVIOR_MAX_VALUE: GhosttySelectionGestureBehavior = c_int::MAX;
+pub const GHOSTTY_SELECTION_GESTURE_BEHAVIOR_MAX_VALUE: GhosttySelectionGestureBehavior =
+    c_int::MAX;
 pub const GHOSTTY_SELECTION_GESTURE_BEHAVIOR_OUTPUT: GhosttySelectionGestureBehavior = 3;
 pub const GHOSTTY_SELECTION_GESTURE_BEHAVIOR_WORD: GhosttySelectionGestureBehavior = 1;
 pub const GHOSTTY_SELECTION_GESTURE_DATA_ANCHOR: GhosttySelectionGestureData = 4;
@@ -627,19 +636,25 @@ pub const GHOSTTY_SELECTION_GESTURE_DATA_DRAGGED: GhosttySelectionGestureData = 
 pub const GHOSTTY_SELECTION_GESTURE_DATA_MAX_VALUE: GhosttySelectionGestureData = c_int::MAX;
 pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_BEHAVIORS: GhosttySelectionGestureEventOption = 6;
 pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_GEOMETRY: GhosttySelectionGestureEventOption = 8;
-pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_MAX_VALUE: GhosttySelectionGestureEventOption = c_int::MAX;
+pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_MAX_VALUE: GhosttySelectionGestureEventOption =
+    c_int::MAX;
 pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_POSITION: GhosttySelectionGestureEventOption = 1;
 pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_RECTANGLE: GhosttySelectionGestureEventOption = 7;
 pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_REF: GhosttySelectionGestureEventOption = 0;
-pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_REPEAT_DISTANCE: GhosttySelectionGestureEventOption = 2;
-pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_REPEAT_INTERVAL_NS: GhosttySelectionGestureEventOption = 4;
+pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_REPEAT_DISTANCE: GhosttySelectionGestureEventOption =
+    2;
+pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_REPEAT_INTERVAL_NS:
+    GhosttySelectionGestureEventOption = 4;
 pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_TIME_NS: GhosttySelectionGestureEventOption = 3;
 pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_VIEWPORT: GhosttySelectionGestureEventOption = 9;
-pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_WORD_BOUNDARY_CODEPOINTS: GhosttySelectionGestureEventOption = 5;
-pub const GHOSTTY_SELECTION_GESTURE_EVENT_TYPE_AUTOSCROLL_TICK: GhosttySelectionGestureEventType = 3;
+pub const GHOSTTY_SELECTION_GESTURE_EVENT_OPT_WORD_BOUNDARY_CODEPOINTS:
+    GhosttySelectionGestureEventOption = 5;
+pub const GHOSTTY_SELECTION_GESTURE_EVENT_TYPE_AUTOSCROLL_TICK: GhosttySelectionGestureEventType =
+    3;
 pub const GHOSTTY_SELECTION_GESTURE_EVENT_TYPE_DEEP_PRESS: GhosttySelectionGestureEventType = 4;
 pub const GHOSTTY_SELECTION_GESTURE_EVENT_TYPE_DRAG: GhosttySelectionGestureEventType = 2;
-pub const GHOSTTY_SELECTION_GESTURE_EVENT_TYPE_MAX_VALUE: GhosttySelectionGestureEventType = c_int::MAX;
+pub const GHOSTTY_SELECTION_GESTURE_EVENT_TYPE_MAX_VALUE: GhosttySelectionGestureEventType =
+    c_int::MAX;
 pub const GHOSTTY_SELECTION_GESTURE_EVENT_TYPE_PRESS: GhosttySelectionGestureEventType = 0;
 pub const GHOSTTY_SELECTION_GESTURE_EVENT_TYPE_RELEASE: GhosttySelectionGestureEventType = 1;
 pub const GHOSTTY_SELECTION_ORDER_FORWARD: GhosttySelectionOrder = 0;
@@ -723,7 +738,8 @@ pub const GHOSTTY_TERMINAL_COMPRESSION_MODE_FULL: GhosttyTerminalCompressionMode
 pub const GHOSTTY_TERMINAL_COMPRESSION_MODE_INCREMENTAL: GhosttyTerminalCompressionMode = 0;
 pub const GHOSTTY_TERMINAL_COMPRESSION_MODE_MAX_VALUE: GhosttyTerminalCompressionMode = c_int::MAX;
 pub const GHOSTTY_TERMINAL_COMPRESSION_RESULT_COMPLETE: GhosttyTerminalCompressionResult = 2;
-pub const GHOSTTY_TERMINAL_COMPRESSION_RESULT_MAX_VALUE: GhosttyTerminalCompressionResult = c_int::MAX;
+pub const GHOSTTY_TERMINAL_COMPRESSION_RESULT_MAX_VALUE: GhosttyTerminalCompressionResult =
+    c_int::MAX;
 pub const GHOSTTY_TERMINAL_COMPRESSION_RESULT_PENDING: GhosttyTerminalCompressionResult = 1;
 pub const GHOSTTY_TERMINAL_COMPRESSION_RESULT_UNSUPPORTED: GhosttyTerminalCompressionResult = 0;
 pub const GHOSTTY_TERMINAL_CURSOR_STYLE_BAR: GhosttyTerminalCursorStyle = 0;
@@ -824,7 +840,8 @@ pub const GHOSTTY_TERMINAL_SCREEN_ALTERNATE: GhosttyTerminalScreen = 1;
 pub const GHOSTTY_TERMINAL_SCREEN_MAX_VALUE: GhosttyTerminalScreen = c_int::MAX;
 pub const GHOSTTY_TERMINAL_SCREEN_PRIMARY: GhosttyTerminalScreen = 0;
 pub const GHOSTTY_TERMINAL_UNKNOWN_SEQUENCE_APC: GhosttyTerminalUnknownSequenceTag = 0;
-pub const GHOSTTY_TERMINAL_UNKNOWN_SEQUENCE_MAX_VALUE: GhosttyTerminalUnknownSequenceTag = c_int::MAX;
+pub const GHOSTTY_TERMINAL_UNKNOWN_SEQUENCE_MAX_VALUE: GhosttyTerminalUnknownSequenceTag =
+    c_int::MAX;
 
 // ---- Types -------------------------------------------------------------
 
@@ -840,8 +857,11 @@ pub struct GhosttyAllocator {
 #[repr(C)]
 pub struct GhosttyAllocatorVtable {
     pub alloc: Option<unsafe extern "C" fn(*mut c_void, usize, u8, usize) -> *mut c_void>,
-    pub resize: Option<unsafe extern "C" fn(*mut c_void, *mut c_void, usize, u8, usize, usize) -> bool>,
-    pub remap: Option<unsafe extern "C" fn(*mut c_void, *mut c_void, usize, u8, usize, usize) -> *mut c_void>,
+    pub resize:
+        Option<unsafe extern "C" fn(*mut c_void, *mut c_void, usize, u8, usize, usize) -> bool>,
+    pub remap: Option<
+        unsafe extern "C" fn(*mut c_void, *mut c_void, usize, u8, usize, usize) -> *mut c_void,
+    >,
     pub free: Option<unsafe extern "C" fn(*mut c_void, *mut c_void, usize, u8, usize)>,
 }
 /// C struct `GhosttyBuffer` from `include/ghostty/vt/types.h`.
@@ -1674,27 +1694,57 @@ pub struct GhosttyWriter {
 
 // ---- Callback types ----------------------------------------------------
 
-pub type GhosttyClipboardReadReplyFn = Option<unsafe extern "C" fn(*const GhosttyClipboardRead, *const GhosttyClipboardReadReply)>;
-pub type GhosttyClipboardWriteReplyFn = Option<unsafe extern "C" fn(*const GhosttyClipboardWrite, *const GhosttyClipboardWriteReply)>;
-pub type GhosttyMimeReaderFn = Option<unsafe extern "C" fn(*mut c_void, GhosttyString, GhosttyWriter) -> bool>;
-pub type GhosttyReaderFn = Option<unsafe extern "C" fn(*mut c_void, *mut u8, usize, *mut usize) -> bool>;
-pub type GhosttySysDecodePngFn = Option<unsafe extern "C" fn(*mut c_void, *const GhosttyAllocator, *const u8, usize, *mut GhosttySysImage) -> bool>;
-pub type GhosttySysLogFn = Option<unsafe extern "C" fn(*mut c_void, GhosttySysLogLevel, *const u8, usize, *const u8, usize)>;
-pub type GhosttySysRandomSecureFn = Option<unsafe extern "C" fn(*mut c_void, *mut u8, usize) -> bool>;
+pub type GhosttyClipboardReadReplyFn =
+    Option<unsafe extern "C" fn(*const GhosttyClipboardRead, *const GhosttyClipboardReadReply)>;
+pub type GhosttyClipboardWriteReplyFn =
+    Option<unsafe extern "C" fn(*const GhosttyClipboardWrite, *const GhosttyClipboardWriteReply)>;
+pub type GhosttyMimeReaderFn =
+    Option<unsafe extern "C" fn(*mut c_void, GhosttyString, GhosttyWriter) -> bool>;
+pub type GhosttyReaderFn =
+    Option<unsafe extern "C" fn(*mut c_void, *mut u8, usize, *mut usize) -> bool>;
+pub type GhosttySysDecodePngFn = Option<
+    unsafe extern "C" fn(
+        *mut c_void,
+        *const GhosttyAllocator,
+        *const u8,
+        usize,
+        *mut GhosttySysImage,
+    ) -> bool,
+>;
+pub type GhosttySysLogFn = Option<
+    unsafe extern "C" fn(*mut c_void, GhosttySysLogLevel, *const u8, usize, *const u8, usize),
+>;
+pub type GhosttySysRandomSecureFn =
+    Option<unsafe extern "C" fn(*mut c_void, *mut u8, usize) -> bool>;
 pub type GhosttyTerminalBellFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void)>;
-pub type GhosttyTerminalClipboardReadFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyClipboardRead)>;
-pub type GhosttyTerminalClipboardWriteFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyClipboardWrite)>;
-pub type GhosttyTerminalColorSchemeFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *mut GhosttyColorScheme) -> bool>;
-pub type GhosttyTerminalDesktopNotificationFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyTerminalDesktopNotification)>;
-pub type GhosttyTerminalDeviceAttributesFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *mut GhosttyDeviceAttributes) -> bool>;
-pub type GhosttyTerminalEnquiryFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void) -> GhosttyString>;
-pub type GhosttyTerminalProgressReportFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyTerminalProgressReport)>;
+pub type GhosttyTerminalClipboardReadFn =
+    Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyClipboardRead)>;
+pub type GhosttyTerminalClipboardWriteFn =
+    Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyClipboardWrite)>;
+pub type GhosttyTerminalColorSchemeFn =
+    Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *mut GhosttyColorScheme) -> bool>;
+pub type GhosttyTerminalDesktopNotificationFn = Option<
+    unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyTerminalDesktopNotification),
+>;
+pub type GhosttyTerminalDeviceAttributesFn = Option<
+    unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *mut GhosttyDeviceAttributes) -> bool,
+>;
+pub type GhosttyTerminalEnquiryFn =
+    Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void) -> GhosttyString>;
+pub type GhosttyTerminalProgressReportFn = Option<
+    unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyTerminalProgressReport),
+>;
 pub type GhosttyTerminalPwdChangedFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void)>;
-pub type GhosttyTerminalSizeFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *mut GhosttySizeReportSize) -> bool>;
+pub type GhosttyTerminalSizeFn =
+    Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *mut GhosttySizeReportSize) -> bool>;
 pub type GhosttyTerminalTitleChangedFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void)>;
-pub type GhosttyTerminalUnknownSequenceFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyTerminalUnknownSequence)>;
-pub type GhosttyTerminalWritePtyFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const u8, usize)>;
-pub type GhosttyTerminalXtversionFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void) -> GhosttyString>;
+pub type GhosttyTerminalUnknownSequenceFn = Option<
+    unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyTerminalUnknownSequence),
+>;
+pub type GhosttyTerminalWritePtyFn =
+    Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const u8, usize)>;
+pub type GhosttyTerminalXtversionFn =
+    Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void) -> GhosttyString>;
 pub type GhosttyWriterFn = Option<unsafe extern "C" fn(*mut c_void, *const u8, usize) -> bool>;
 
 // ---- Exported functions ------------------------------------------------
@@ -1702,37 +1752,130 @@ pub type GhosttyWriterFn = Option<unsafe extern "C" fn(*mut c_void, *const u8, u
 extern "C" {
     pub fn ghostty_alloc(allocator: *const GhosttyAllocator, len: usize) -> *mut u8;
     pub fn ghostty_build_info(data: GhosttyBuildInfo, out: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_cell_get(cell: GhosttyCell, data: GhosttyCellData, out: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_cell_get_multi(cell: GhosttyCell, count: usize, keys: *const GhosttyCellData, values: *mut *mut c_void, out_written: *mut usize) -> GhosttyResult;
+    pub fn ghostty_cell_get(
+        cell: GhosttyCell,
+        data: GhosttyCellData,
+        out: *mut c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_cell_get_multi(
+        cell: GhosttyCell,
+        count: usize,
+        keys: *const GhosttyCellData,
+        values: *mut *mut c_void,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
     pub fn ghostty_color_contrast(a: *const GhosttyColorRgb, b: *const GhosttyColorRgb) -> f64;
     pub fn ghostty_color_luminance(color: *const GhosttyColorRgb) -> f64;
     pub fn ghostty_color_palette_default(out: *mut GhosttyColorRgb);
-    pub fn ghostty_color_palette_generate(base: *const GhosttyColorRgb, skip: *const GhosttyColorPaletteMask, bg: *const GhosttyColorRgb, fg: *const GhosttyColorRgb, harmonious: bool, out: *mut GhosttyColorRgb);
-    pub fn ghostty_color_parse(value: *const c_char, len: usize, out: *mut GhosttyColorRgb) -> GhosttyResult;
-    pub fn ghostty_color_parse_palette_entry(value: *const c_char, len: usize, out_index: *mut u8, out_rgb: *mut GhosttyColorRgb) -> GhosttyResult;
-    pub fn ghostty_color_parse_x11(name: *const c_char, len: usize, out: *mut GhosttyColorRgb) -> GhosttyResult;
+    pub fn ghostty_color_palette_generate(
+        base: *const GhosttyColorRgb,
+        skip: *const GhosttyColorPaletteMask,
+        bg: *const GhosttyColorRgb,
+        fg: *const GhosttyColorRgb,
+        harmonious: bool,
+        out: *mut GhosttyColorRgb,
+    );
+    pub fn ghostty_color_parse(
+        value: *const c_char,
+        len: usize,
+        out: *mut GhosttyColorRgb,
+    ) -> GhosttyResult;
+    pub fn ghostty_color_parse_palette_entry(
+        value: *const c_char,
+        len: usize,
+        out_index: *mut u8,
+        out_rgb: *mut GhosttyColorRgb,
+    ) -> GhosttyResult;
+    pub fn ghostty_color_parse_x11(
+        name: *const c_char,
+        len: usize,
+        out: *mut GhosttyColorRgb,
+    ) -> GhosttyResult;
     pub fn ghostty_color_perceived_luminance(color: *const GhosttyColorRgb) -> f64;
     pub fn ghostty_color_rgb_get(color: *const GhosttyColorRgb, r: *mut u8, g: *mut u8, b: *mut u8);
-    pub fn ghostty_color_scheme_report_encode(scheme: GhosttyColorScheme, buf: *mut c_char, buf_len: usize, out_written: *mut usize) -> GhosttyResult;
+    pub fn ghostty_color_scheme_report_encode(
+        scheme: GhosttyColorScheme,
+        buf: *mut c_char,
+        buf_len: usize,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
     pub fn ghostty_color_x11_name_count() -> usize;
     pub fn ghostty_color_x11_names() -> *const GhosttyColorX11Entry;
-    pub fn ghostty_focus_encode(event: GhosttyFocusEvent, buf: *mut c_char, buf_len: usize, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_formatter_format(formatter: GhosttyFormatter, writer: GhosttyWriter) -> GhosttyResult;
-    pub fn ghostty_formatter_format_alloc(formatter: GhosttyFormatter, allocator: *const GhosttyAllocator, out_ptr: *mut *mut u8, out_len: *mut usize) -> GhosttyResult;
-    pub fn ghostty_formatter_format_buf(formatter: GhosttyFormatter, buf: *mut u8, buf_len: usize, out_written: *mut usize) -> GhosttyResult;
+    pub fn ghostty_focus_encode(
+        event: GhosttyFocusEvent,
+        buf: *mut c_char,
+        buf_len: usize,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_formatter_format(
+        formatter: GhosttyFormatter,
+        writer: GhosttyWriter,
+    ) -> GhosttyResult;
+    pub fn ghostty_formatter_format_alloc(
+        formatter: GhosttyFormatter,
+        allocator: *const GhosttyAllocator,
+        out_ptr: *mut *mut u8,
+        out_len: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_formatter_format_buf(
+        formatter: GhosttyFormatter,
+        buf: *mut u8,
+        buf_len: usize,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
     pub fn ghostty_formatter_free(formatter: GhosttyFormatter);
-    pub fn ghostty_formatter_terminal_new(allocator: *const GhosttyAllocator, formatter: *mut GhosttyFormatter, terminal: GhosttyTerminal, options: GhosttyFormatterTerminalOptions) -> GhosttyResult;
+    pub fn ghostty_formatter_terminal_new(
+        allocator: *const GhosttyAllocator,
+        formatter: *mut GhosttyFormatter,
+        terminal: GhosttyTerminal,
+        options: GhosttyFormatterTerminalOptions,
+    ) -> GhosttyResult;
     pub fn ghostty_free(allocator: *const GhosttyAllocator, ptr: *mut u8, len: usize);
-    pub fn ghostty_grid_ref_cell(r#ref: *const GhosttyGridRef, out_cell: *mut GhosttyCell) -> GhosttyResult;
-    pub fn ghostty_grid_ref_graphemes(r#ref: *const GhosttyGridRef, buf: *mut u32, buf_len: usize, out_len: *mut usize) -> GhosttyResult;
-    pub fn ghostty_grid_ref_hyperlink_uri(r#ref: *const GhosttyGridRef, buf: *mut u8, buf_len: usize, out_len: *mut usize) -> GhosttyResult;
-    pub fn ghostty_grid_ref_row(r#ref: *const GhosttyGridRef, out_row: *mut GhosttyRow) -> GhosttyResult;
-    pub fn ghostty_grid_ref_style(r#ref: *const GhosttyGridRef, out_style: *mut GhosttyStyle) -> GhosttyResult;
-    pub fn ghostty_key_encoder_encode(encoder: GhosttyKeyEncoder, event: GhosttyKeyEvent, out_buf: *mut c_char, out_buf_size: usize, out_len: *mut usize) -> GhosttyResult;
+    pub fn ghostty_grid_ref_cell(
+        r#ref: *const GhosttyGridRef,
+        out_cell: *mut GhosttyCell,
+    ) -> GhosttyResult;
+    pub fn ghostty_grid_ref_graphemes(
+        r#ref: *const GhosttyGridRef,
+        buf: *mut u32,
+        buf_len: usize,
+        out_len: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_grid_ref_hyperlink_uri(
+        r#ref: *const GhosttyGridRef,
+        buf: *mut u8,
+        buf_len: usize,
+        out_len: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_grid_ref_row(
+        r#ref: *const GhosttyGridRef,
+        out_row: *mut GhosttyRow,
+    ) -> GhosttyResult;
+    pub fn ghostty_grid_ref_style(
+        r#ref: *const GhosttyGridRef,
+        out_style: *mut GhosttyStyle,
+    ) -> GhosttyResult;
+    pub fn ghostty_key_encoder_encode(
+        encoder: GhosttyKeyEncoder,
+        event: GhosttyKeyEvent,
+        out_buf: *mut c_char,
+        out_buf_size: usize,
+        out_len: *mut usize,
+    ) -> GhosttyResult;
     pub fn ghostty_key_encoder_free(encoder: GhosttyKeyEncoder);
-    pub fn ghostty_key_encoder_new(allocator: *const GhosttyAllocator, encoder: *mut GhosttyKeyEncoder) -> GhosttyResult;
-    pub fn ghostty_key_encoder_setopt(encoder: GhosttyKeyEncoder, option: GhosttyKeyEncoderOption, value: *const c_void);
-    pub fn ghostty_key_encoder_setopt_from_terminal(encoder: GhosttyKeyEncoder, terminal: GhosttyTerminal);
+    pub fn ghostty_key_encoder_new(
+        allocator: *const GhosttyAllocator,
+        encoder: *mut GhosttyKeyEncoder,
+    ) -> GhosttyResult;
+    pub fn ghostty_key_encoder_setopt(
+        encoder: GhosttyKeyEncoder,
+        option: GhosttyKeyEncoderOption,
+        value: *const c_void,
+    );
+    pub fn ghostty_key_encoder_setopt_from_terminal(
+        encoder: GhosttyKeyEncoder,
+        terminal: GhosttyTerminal,
+    );
     pub fn ghostty_key_event_free(event: GhosttyKeyEvent);
     pub fn ghostty_key_event_get_action(event: GhosttyKeyEvent) -> GhosttyKeyAction;
     pub fn ghostty_key_event_get_composing(event: GhosttyKeyEvent) -> bool;
@@ -1741,7 +1884,10 @@ extern "C" {
     pub fn ghostty_key_event_get_mods(event: GhosttyKeyEvent) -> GhosttyMods;
     pub fn ghostty_key_event_get_unshifted_codepoint(event: GhosttyKeyEvent) -> u32;
     pub fn ghostty_key_event_get_utf8(event: GhosttyKeyEvent, len: *mut usize) -> *const c_char;
-    pub fn ghostty_key_event_new(allocator: *const GhosttyAllocator, event: *mut GhosttyKeyEvent) -> GhosttyResult;
+    pub fn ghostty_key_event_new(
+        allocator: *const GhosttyAllocator,
+        event: *mut GhosttyKeyEvent,
+    ) -> GhosttyResult;
     pub fn ghostty_key_event_set_action(event: GhosttyKeyEvent, action: GhosttyKeyAction);
     pub fn ghostty_key_event_set_composing(event: GhosttyKeyEvent, composing: bool);
     pub fn ghostty_key_event_set_consumed_mods(event: GhosttyKeyEvent, consumed_mods: GhosttyMods);
@@ -1749,152 +1895,595 @@ extern "C" {
     pub fn ghostty_key_event_set_mods(event: GhosttyKeyEvent, mods: GhosttyMods);
     pub fn ghostty_key_event_set_unshifted_codepoint(event: GhosttyKeyEvent, codepoint: u32);
     pub fn ghostty_key_event_set_utf8(event: GhosttyKeyEvent, utf8: *const c_char, len: usize);
-    pub fn ghostty_kitty_graphics_get(graphics: GhosttyKittyGraphics, data: GhosttyKittyGraphicsData, out: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_kitty_graphics_image(graphics: GhosttyKittyGraphics, image_id: u32) -> GhosttyKittyGraphicsImage;
-    pub fn ghostty_kitty_graphics_image_get(image: GhosttyKittyGraphicsImage, data: GhosttyKittyGraphicsImageData, out: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_kitty_graphics_image_get_multi(image: GhosttyKittyGraphicsImage, count: usize, keys: *const GhosttyKittyGraphicsImageData, values: *mut *mut c_void, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_kitty_graphics_placement_get(iterator: GhosttyKittyGraphicsPlacementIterator, data: GhosttyKittyGraphicsPlacementData, out: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_kitty_graphics_placement_get_multi(iterator: GhosttyKittyGraphicsPlacementIterator, count: usize, keys: *const GhosttyKittyGraphicsPlacementData, values: *mut *mut c_void, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_kitty_graphics_placement_grid_size(iterator: GhosttyKittyGraphicsPlacementIterator, image: GhosttyKittyGraphicsImage, terminal: GhosttyTerminal, out_cols: *mut u32, out_rows: *mut u32) -> GhosttyResult;
-    pub fn ghostty_kitty_graphics_placement_iterator_free(iterator: GhosttyKittyGraphicsPlacementIterator);
-    pub fn ghostty_kitty_graphics_placement_iterator_new(allocator: *const GhosttyAllocator, out_iterator: *mut GhosttyKittyGraphicsPlacementIterator) -> GhosttyResult;
-    pub fn ghostty_kitty_graphics_placement_iterator_set(iterator: GhosttyKittyGraphicsPlacementIterator, option: GhosttyKittyGraphicsPlacementIteratorOption, value: *const c_void) -> GhosttyResult;
-    pub fn ghostty_kitty_graphics_placement_next(iterator: GhosttyKittyGraphicsPlacementIterator) -> bool;
-    pub fn ghostty_kitty_graphics_placement_pixel_size(iterator: GhosttyKittyGraphicsPlacementIterator, image: GhosttyKittyGraphicsImage, terminal: GhosttyTerminal, out_width: *mut u32, out_height: *mut u32) -> GhosttyResult;
-    pub fn ghostty_kitty_graphics_placement_rect(iterator: GhosttyKittyGraphicsPlacementIterator, image: GhosttyKittyGraphicsImage, terminal: GhosttyTerminal, out_selection: *mut GhosttySelection) -> GhosttyResult;
-    pub fn ghostty_kitty_graphics_placement_render_info(iterator: GhosttyKittyGraphicsPlacementIterator, image: GhosttyKittyGraphicsImage, terminal: GhosttyTerminal, out_info: *mut GhosttyKittyGraphicsPlacementRenderInfo) -> GhosttyResult;
-    pub fn ghostty_kitty_graphics_placement_source_rect(iterator: GhosttyKittyGraphicsPlacementIterator, image: GhosttyKittyGraphicsImage, out_x: *mut u32, out_y: *mut u32, out_width: *mut u32, out_height: *mut u32) -> GhosttyResult;
-    pub fn ghostty_kitty_graphics_placement_viewport_pos(iterator: GhosttyKittyGraphicsPlacementIterator, image: GhosttyKittyGraphicsImage, terminal: GhosttyTerminal, out_col: *mut i32, out_row: *mut i32) -> GhosttyResult;
-    pub fn ghostty_mode_report_encode(mode: GhosttyMode, state: GhosttyModeReportState, buf: *mut c_char, buf_len: usize, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_mouse_encoder_encode(encoder: GhosttyMouseEncoder, event: GhosttyMouseEvent, out_buf: *mut c_char, out_buf_size: usize, out_len: *mut usize) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_get(
+        graphics: GhosttyKittyGraphics,
+        data: GhosttyKittyGraphicsData,
+        out: *mut c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_image(
+        graphics: GhosttyKittyGraphics,
+        image_id: u32,
+    ) -> GhosttyKittyGraphicsImage;
+    pub fn ghostty_kitty_graphics_image_get(
+        image: GhosttyKittyGraphicsImage,
+        data: GhosttyKittyGraphicsImageData,
+        out: *mut c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_image_get_multi(
+        image: GhosttyKittyGraphicsImage,
+        count: usize,
+        keys: *const GhosttyKittyGraphicsImageData,
+        values: *mut *mut c_void,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_placement_get(
+        iterator: GhosttyKittyGraphicsPlacementIterator,
+        data: GhosttyKittyGraphicsPlacementData,
+        out: *mut c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_placement_get_multi(
+        iterator: GhosttyKittyGraphicsPlacementIterator,
+        count: usize,
+        keys: *const GhosttyKittyGraphicsPlacementData,
+        values: *mut *mut c_void,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_placement_grid_size(
+        iterator: GhosttyKittyGraphicsPlacementIterator,
+        image: GhosttyKittyGraphicsImage,
+        terminal: GhosttyTerminal,
+        out_cols: *mut u32,
+        out_rows: *mut u32,
+    ) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_placement_iterator_free(
+        iterator: GhosttyKittyGraphicsPlacementIterator,
+    );
+    pub fn ghostty_kitty_graphics_placement_iterator_new(
+        allocator: *const GhosttyAllocator,
+        out_iterator: *mut GhosttyKittyGraphicsPlacementIterator,
+    ) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_placement_iterator_set(
+        iterator: GhosttyKittyGraphicsPlacementIterator,
+        option: GhosttyKittyGraphicsPlacementIteratorOption,
+        value: *const c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_placement_next(
+        iterator: GhosttyKittyGraphicsPlacementIterator,
+    ) -> bool;
+    pub fn ghostty_kitty_graphics_placement_pixel_size(
+        iterator: GhosttyKittyGraphicsPlacementIterator,
+        image: GhosttyKittyGraphicsImage,
+        terminal: GhosttyTerminal,
+        out_width: *mut u32,
+        out_height: *mut u32,
+    ) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_placement_rect(
+        iterator: GhosttyKittyGraphicsPlacementIterator,
+        image: GhosttyKittyGraphicsImage,
+        terminal: GhosttyTerminal,
+        out_selection: *mut GhosttySelection,
+    ) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_placement_render_info(
+        iterator: GhosttyKittyGraphicsPlacementIterator,
+        image: GhosttyKittyGraphicsImage,
+        terminal: GhosttyTerminal,
+        out_info: *mut GhosttyKittyGraphicsPlacementRenderInfo,
+    ) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_placement_source_rect(
+        iterator: GhosttyKittyGraphicsPlacementIterator,
+        image: GhosttyKittyGraphicsImage,
+        out_x: *mut u32,
+        out_y: *mut u32,
+        out_width: *mut u32,
+        out_height: *mut u32,
+    ) -> GhosttyResult;
+    pub fn ghostty_kitty_graphics_placement_viewport_pos(
+        iterator: GhosttyKittyGraphicsPlacementIterator,
+        image: GhosttyKittyGraphicsImage,
+        terminal: GhosttyTerminal,
+        out_col: *mut i32,
+        out_row: *mut i32,
+    ) -> GhosttyResult;
+    pub fn ghostty_mode_report_encode(
+        mode: GhosttyMode,
+        state: GhosttyModeReportState,
+        buf: *mut c_char,
+        buf_len: usize,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_mouse_encoder_encode(
+        encoder: GhosttyMouseEncoder,
+        event: GhosttyMouseEvent,
+        out_buf: *mut c_char,
+        out_buf_size: usize,
+        out_len: *mut usize,
+    ) -> GhosttyResult;
     pub fn ghostty_mouse_encoder_free(encoder: GhosttyMouseEncoder);
-    pub fn ghostty_mouse_encoder_new(allocator: *const GhosttyAllocator, encoder: *mut GhosttyMouseEncoder) -> GhosttyResult;
+    pub fn ghostty_mouse_encoder_new(
+        allocator: *const GhosttyAllocator,
+        encoder: *mut GhosttyMouseEncoder,
+    ) -> GhosttyResult;
     pub fn ghostty_mouse_encoder_reset(encoder: GhosttyMouseEncoder);
-    pub fn ghostty_mouse_encoder_setopt(encoder: GhosttyMouseEncoder, option: GhosttyMouseEncoderOption, value: *const c_void);
-    pub fn ghostty_mouse_encoder_setopt_from_terminal(encoder: GhosttyMouseEncoder, terminal: GhosttyTerminal);
+    pub fn ghostty_mouse_encoder_setopt(
+        encoder: GhosttyMouseEncoder,
+        option: GhosttyMouseEncoderOption,
+        value: *const c_void,
+    );
+    pub fn ghostty_mouse_encoder_setopt_from_terminal(
+        encoder: GhosttyMouseEncoder,
+        terminal: GhosttyTerminal,
+    );
     pub fn ghostty_mouse_event_clear_button(event: GhosttyMouseEvent);
     pub fn ghostty_mouse_event_free(event: GhosttyMouseEvent);
     pub fn ghostty_mouse_event_get_action(event: GhosttyMouseEvent) -> GhosttyMouseAction;
-    pub fn ghostty_mouse_event_get_button(event: GhosttyMouseEvent, out_button: *mut GhosttyMouseButton) -> bool;
+    pub fn ghostty_mouse_event_get_button(
+        event: GhosttyMouseEvent,
+        out_button: *mut GhosttyMouseButton,
+    ) -> bool;
     pub fn ghostty_mouse_event_get_mods(event: GhosttyMouseEvent) -> GhosttyMods;
     pub fn ghostty_mouse_event_get_position(event: GhosttyMouseEvent) -> GhosttyMousePosition;
-    pub fn ghostty_mouse_event_new(allocator: *const GhosttyAllocator, event: *mut GhosttyMouseEvent) -> GhosttyResult;
+    pub fn ghostty_mouse_event_new(
+        allocator: *const GhosttyAllocator,
+        event: *mut GhosttyMouseEvent,
+    ) -> GhosttyResult;
     pub fn ghostty_mouse_event_set_action(event: GhosttyMouseEvent, action: GhosttyMouseAction);
     pub fn ghostty_mouse_event_set_button(event: GhosttyMouseEvent, button: GhosttyMouseButton);
     pub fn ghostty_mouse_event_set_mods(event: GhosttyMouseEvent, mods: GhosttyMods);
-    pub fn ghostty_mouse_event_set_position(event: GhosttyMouseEvent, position: GhosttyMousePosition);
-    pub fn ghostty_osc_command_data(command: GhosttyOscCommand, data: GhosttyOscCommandData, out: *mut c_void) -> bool;
+    pub fn ghostty_mouse_event_set_position(
+        event: GhosttyMouseEvent,
+        position: GhosttyMousePosition,
+    );
+    pub fn ghostty_osc_command_data(
+        command: GhosttyOscCommand,
+        data: GhosttyOscCommandData,
+        out: *mut c_void,
+    ) -> bool;
     pub fn ghostty_osc_command_type(command: GhosttyOscCommand) -> GhosttyOscCommandType;
     pub fn ghostty_osc_end(parser: GhosttyOscParser, terminator: u8) -> GhosttyOscCommand;
     pub fn ghostty_osc_free(parser: GhosttyOscParser);
-    pub fn ghostty_osc_new(allocator: *const GhosttyAllocator, parser: *mut GhosttyOscParser) -> GhosttyResult;
+    pub fn ghostty_osc_new(
+        allocator: *const GhosttyAllocator,
+        parser: *mut GhosttyOscParser,
+    ) -> GhosttyResult;
     pub fn ghostty_osc_next(parser: GhosttyOscParser, byte: u8);
     pub fn ghostty_osc_reset(parser: GhosttyOscParser);
-    pub fn ghostty_paste_encode(data: *mut c_char, data_len: usize, bracketed: bool, buf: *mut c_char, buf_len: usize, out_written: *mut usize) -> GhosttyResult;
+    pub fn ghostty_paste_encode(
+        data: *mut c_char,
+        data_len: usize,
+        bracketed: bool,
+        buf: *mut c_char,
+        buf_len: usize,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
     pub fn ghostty_paste_is_safe(data: *const c_char, len: usize) -> bool;
-    pub fn ghostty_render_state_begin_update(state: GhosttyRenderState, terminal: GhosttyTerminal) -> GhosttyResult;
+    pub fn ghostty_render_state_begin_update(
+        state: GhosttyRenderState,
+        terminal: GhosttyTerminal,
+    ) -> GhosttyResult;
     pub fn ghostty_render_state_clean(state: GhosttyRenderState) -> GhosttyResult;
     pub fn ghostty_render_state_end_update(state: GhosttyRenderState) -> GhosttyResult;
     pub fn ghostty_render_state_free(state: GhosttyRenderState);
-    pub fn ghostty_render_state_get(state: GhosttyRenderState, data: GhosttyRenderStateData, out: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_render_state_get_multi(state: GhosttyRenderState, count: usize, keys: *const GhosttyRenderStateData, values: *mut *mut c_void, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_render_state_new(allocator: *const GhosttyAllocator, state: *mut GhosttyRenderState) -> GhosttyResult;
+    pub fn ghostty_render_state_get(
+        state: GhosttyRenderState,
+        data: GhosttyRenderStateData,
+        out: *mut c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_render_state_get_multi(
+        state: GhosttyRenderState,
+        count: usize,
+        keys: *const GhosttyRenderStateData,
+        values: *mut *mut c_void,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_render_state_new(
+        allocator: *const GhosttyAllocator,
+        state: *mut GhosttyRenderState,
+    ) -> GhosttyResult;
     pub fn ghostty_render_state_row_cells_free(cells: GhosttyRenderStateRowCells);
-    pub fn ghostty_render_state_row_cells_get(cells: GhosttyRenderStateRowCells, data: GhosttyRenderStateRowCellsData, out: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_render_state_row_cells_get_multi(cells: GhosttyRenderStateRowCells, count: usize, keys: *const GhosttyRenderStateRowCellsData, values: *mut *mut c_void, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_render_state_row_cells_new(allocator: *const GhosttyAllocator, out_cells: *mut GhosttyRenderStateRowCells) -> GhosttyResult;
+    pub fn ghostty_render_state_row_cells_get(
+        cells: GhosttyRenderStateRowCells,
+        data: GhosttyRenderStateRowCellsData,
+        out: *mut c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_render_state_row_cells_get_multi(
+        cells: GhosttyRenderStateRowCells,
+        count: usize,
+        keys: *const GhosttyRenderStateRowCellsData,
+        values: *mut *mut c_void,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_render_state_row_cells_new(
+        allocator: *const GhosttyAllocator,
+        out_cells: *mut GhosttyRenderStateRowCells,
+    ) -> GhosttyResult;
     pub fn ghostty_render_state_row_cells_next(cells: GhosttyRenderStateRowCells) -> bool;
-    pub fn ghostty_render_state_row_cells_select(cells: GhosttyRenderStateRowCells, x: u16) -> GhosttyResult;
-    pub fn ghostty_render_state_row_get(iterator: GhosttyRenderStateRowIterator, data: GhosttyRenderStateRowData, out: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_render_state_row_get_multi(iterator: GhosttyRenderStateRowIterator, count: usize, keys: *const GhosttyRenderStateRowData, values: *mut *mut c_void, out_written: *mut usize) -> GhosttyResult;
+    pub fn ghostty_render_state_row_cells_select(
+        cells: GhosttyRenderStateRowCells,
+        x: u16,
+    ) -> GhosttyResult;
+    pub fn ghostty_render_state_row_get(
+        iterator: GhosttyRenderStateRowIterator,
+        data: GhosttyRenderStateRowData,
+        out: *mut c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_render_state_row_get_multi(
+        iterator: GhosttyRenderStateRowIterator,
+        count: usize,
+        keys: *const GhosttyRenderStateRowData,
+        values: *mut *mut c_void,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
     pub fn ghostty_render_state_row_iterator_free(iterator: GhosttyRenderStateRowIterator);
-    pub fn ghostty_render_state_row_iterator_new(allocator: *const GhosttyAllocator, out_iterator: *mut GhosttyRenderStateRowIterator) -> GhosttyResult;
+    pub fn ghostty_render_state_row_iterator_new(
+        allocator: *const GhosttyAllocator,
+        out_iterator: *mut GhosttyRenderStateRowIterator,
+    ) -> GhosttyResult;
     pub fn ghostty_render_state_row_iterator_next(iterator: GhosttyRenderStateRowIterator) -> bool;
-    pub fn ghostty_render_state_row_iterator_next_dirty(iterator: GhosttyRenderStateRowIterator, out_y: *mut u16) -> bool;
-    pub fn ghostty_render_state_row_set(iterator: GhosttyRenderStateRowIterator, option: GhosttyRenderStateRowOption, value: *const c_void) -> GhosttyResult;
-    pub fn ghostty_render_state_set(state: GhosttyRenderState, option: GhosttyRenderStateOption, value: *const c_void) -> GhosttyResult;
-    pub fn ghostty_render_state_update(state: GhosttyRenderState, terminal: GhosttyTerminal) -> GhosttyResult;
-    pub fn ghostty_row_get(row: GhosttyRow, data: GhosttyRowData, out: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_row_get_multi(row: GhosttyRow, count: usize, keys: *const GhosttyRowData, values: *mut *mut c_void, out_written: *mut usize) -> GhosttyResult;
+    pub fn ghostty_render_state_row_iterator_next_dirty(
+        iterator: GhosttyRenderStateRowIterator,
+        out_y: *mut u16,
+    ) -> bool;
+    pub fn ghostty_render_state_row_set(
+        iterator: GhosttyRenderStateRowIterator,
+        option: GhosttyRenderStateRowOption,
+        value: *const c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_render_state_set(
+        state: GhosttyRenderState,
+        option: GhosttyRenderStateOption,
+        value: *const c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_render_state_update(
+        state: GhosttyRenderState,
+        terminal: GhosttyTerminal,
+    ) -> GhosttyResult;
+    pub fn ghostty_row_get(
+        row: GhosttyRow,
+        data: GhosttyRowData,
+        out: *mut c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_row_get_multi(
+        row: GhosttyRow,
+        count: usize,
+        keys: *const GhosttyRowData,
+        values: *mut *mut c_void,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
     pub fn ghostty_search_feed(search: GhosttySearch) -> GhosttyResult;
     pub fn ghostty_search_free(search: GhosttySearch);
-    pub fn ghostty_search_get(search: GhosttySearch, data: GhosttySearchData, value: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_search_get_multi(search: GhosttySearch, count: usize, keys: *const GhosttySearchData, values: *mut *mut c_void, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_search_new(allocator: *const GhosttyAllocator, out_search: *mut GhosttySearch, terminal: GhosttyTerminal) -> GhosttyResult;
+    pub fn ghostty_search_get(
+        search: GhosttySearch,
+        data: GhosttySearchData,
+        value: *mut c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_search_get_multi(
+        search: GhosttySearch,
+        count: usize,
+        keys: *const GhosttySearchData,
+        values: *mut *mut c_void,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_search_new(
+        allocator: *const GhosttyAllocator,
+        out_search: *mut GhosttySearch,
+        terminal: GhosttyTerminal,
+    ) -> GhosttyResult;
     pub fn ghostty_search_run(search: GhosttySearch) -> GhosttyResult;
-    pub fn ghostty_search_set(search: GhosttySearch, option: GhosttySearchOption, value: *const c_void) -> GhosttyResult;
-    pub fn ghostty_search_tick(search: GhosttySearch, out_status: *mut GhosttySearchStatus) -> GhosttyResult;
-    pub fn ghostty_selection_gesture_event(gesture: GhosttySelectionGesture, terminal: GhosttyTerminal, event: GhosttySelectionGestureEvent, out_selection: *mut GhosttySelection) -> GhosttyResult;
+    pub fn ghostty_search_set(
+        search: GhosttySearch,
+        option: GhosttySearchOption,
+        value: *const c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_search_tick(
+        search: GhosttySearch,
+        out_status: *mut GhosttySearchStatus,
+    ) -> GhosttyResult;
+    pub fn ghostty_selection_gesture_event(
+        gesture: GhosttySelectionGesture,
+        terminal: GhosttyTerminal,
+        event: GhosttySelectionGestureEvent,
+        out_selection: *mut GhosttySelection,
+    ) -> GhosttyResult;
     pub fn ghostty_selection_gesture_event_free(event: GhosttySelectionGestureEvent);
-    pub fn ghostty_selection_gesture_event_new(allocator: *const GhosttyAllocator, out_event: *mut GhosttySelectionGestureEvent, r#type: GhosttySelectionGestureEventType) -> GhosttyResult;
-    pub fn ghostty_selection_gesture_event_set(event: GhosttySelectionGestureEvent, option: GhosttySelectionGestureEventOption, value: *const c_void) -> GhosttyResult;
-    pub fn ghostty_selection_gesture_free(gesture: GhosttySelectionGesture, terminal: GhosttyTerminal);
-    pub fn ghostty_selection_gesture_get(gesture: GhosttySelectionGesture, terminal: GhosttyTerminal, data: GhosttySelectionGestureData, value: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_selection_gesture_get_multi(gesture: GhosttySelectionGesture, terminal: GhosttyTerminal, count: usize, keys: *const GhosttySelectionGestureData, values: *mut *mut c_void, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_selection_gesture_new(allocator: *const GhosttyAllocator, out_gesture: *mut GhosttySelectionGesture) -> GhosttyResult;
-    pub fn ghostty_selection_gesture_reset(gesture: GhosttySelectionGesture, terminal: GhosttyTerminal);
+    pub fn ghostty_selection_gesture_event_new(
+        allocator: *const GhosttyAllocator,
+        out_event: *mut GhosttySelectionGestureEvent,
+        r#type: GhosttySelectionGestureEventType,
+    ) -> GhosttyResult;
+    pub fn ghostty_selection_gesture_event_set(
+        event: GhosttySelectionGestureEvent,
+        option: GhosttySelectionGestureEventOption,
+        value: *const c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_selection_gesture_free(
+        gesture: GhosttySelectionGesture,
+        terminal: GhosttyTerminal,
+    );
+    pub fn ghostty_selection_gesture_get(
+        gesture: GhosttySelectionGesture,
+        terminal: GhosttyTerminal,
+        data: GhosttySelectionGestureData,
+        value: *mut c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_selection_gesture_get_multi(
+        gesture: GhosttySelectionGesture,
+        terminal: GhosttyTerminal,
+        count: usize,
+        keys: *const GhosttySelectionGestureData,
+        values: *mut *mut c_void,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_selection_gesture_new(
+        allocator: *const GhosttyAllocator,
+        out_gesture: *mut GhosttySelectionGesture,
+    ) -> GhosttyResult;
+    pub fn ghostty_selection_gesture_reset(
+        gesture: GhosttySelectionGesture,
+        terminal: GhosttyTerminal,
+    );
     pub fn ghostty_sgr_attribute_tag(attr: GhosttySgrAttribute) -> GhosttySgrAttributeTag;
-    pub fn ghostty_sgr_attribute_value(attr: *mut GhosttySgrAttribute) -> *mut GhosttySgrAttributeValue;
+    pub fn ghostty_sgr_attribute_value(
+        attr: *mut GhosttySgrAttribute,
+    ) -> *mut GhosttySgrAttributeValue;
     pub fn ghostty_sgr_free(parser: GhosttySgrParser);
-    pub fn ghostty_sgr_new(allocator: *const GhosttyAllocator, parser: *mut GhosttySgrParser) -> GhosttyResult;
+    pub fn ghostty_sgr_new(
+        allocator: *const GhosttyAllocator,
+        parser: *mut GhosttySgrParser,
+    ) -> GhosttyResult;
     pub fn ghostty_sgr_next(parser: GhosttySgrParser, attr: *mut GhosttySgrAttribute) -> bool;
     pub fn ghostty_sgr_reset(parser: GhosttySgrParser);
-    pub fn ghostty_sgr_set_params(parser: GhosttySgrParser, params: *const u16, separators: *const c_char, len: usize) -> GhosttyResult;
+    pub fn ghostty_sgr_set_params(
+        parser: GhosttySgrParser,
+        params: *const u16,
+        separators: *const c_char,
+        len: usize,
+    ) -> GhosttyResult;
     pub fn ghostty_sgr_unknown_full(unknown: GhosttySgrUnknown, ptr: *const *const u16) -> usize;
-    pub fn ghostty_sgr_unknown_partial(unknown: GhosttySgrUnknown, ptr: *const *const u16) -> usize;
-    pub fn ghostty_size_report_encode(style: GhosttySizeReportStyle, size: GhosttySizeReportSize, buf: *mut c_char, buf_len: usize, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_snapshot_decoder_decode(decoder: GhosttySnapshotDecoder, terminal: *mut GhosttyTerminal) -> GhosttyResult;
+    pub fn ghostty_sgr_unknown_partial(unknown: GhosttySgrUnknown, ptr: *const *const u16)
+        -> usize;
+    pub fn ghostty_size_report_encode(
+        style: GhosttySizeReportStyle,
+        size: GhosttySizeReportSize,
+        buf: *mut c_char,
+        buf_len: usize,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_snapshot_decoder_decode(
+        decoder: GhosttySnapshotDecoder,
+        terminal: *mut GhosttyTerminal,
+    ) -> GhosttyResult;
     pub fn ghostty_snapshot_decoder_free(decoder: GhosttySnapshotDecoder);
-    pub fn ghostty_snapshot_decoder_get(decoder: GhosttySnapshotDecoder, data: GhosttySnapshotDecoderData, out: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_snapshot_decoder_get_multi(decoder: GhosttySnapshotDecoder, count: usize, keys: *const GhosttySnapshotDecoderData, values: *mut *mut c_void, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_snapshot_decoder_new(allocator: *const GhosttyAllocator, decoder: *mut GhosttySnapshotDecoder, reader: GhosttyReader) -> GhosttyResult;
-    pub fn ghostty_snapshot_decoder_new_buf(allocator: *const GhosttyAllocator, decoder: *mut GhosttySnapshotDecoder, ptr: *const u8, len: usize) -> GhosttyResult;
+    pub fn ghostty_snapshot_decoder_get(
+        decoder: GhosttySnapshotDecoder,
+        data: GhosttySnapshotDecoderData,
+        out: *mut c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_snapshot_decoder_get_multi(
+        decoder: GhosttySnapshotDecoder,
+        count: usize,
+        keys: *const GhosttySnapshotDecoderData,
+        values: *mut *mut c_void,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_snapshot_decoder_new(
+        allocator: *const GhosttyAllocator,
+        decoder: *mut GhosttySnapshotDecoder,
+        reader: GhosttyReader,
+    ) -> GhosttyResult;
+    pub fn ghostty_snapshot_decoder_new_buf(
+        allocator: *const GhosttyAllocator,
+        decoder: *mut GhosttySnapshotDecoder,
+        ptr: *const u8,
+        len: usize,
+    ) -> GhosttyResult;
     pub fn ghostty_snapshot_decoder_next(decoder: GhosttySnapshotDecoder) -> GhosttyResult;
-    pub fn ghostty_snapshot_decoder_ready(decoder: GhosttySnapshotDecoder, terminal: *mut GhosttyTerminal) -> GhosttyResult;
-    pub fn ghostty_snapshot_decoder_set(decoder: GhosttySnapshotDecoder, option: GhosttySnapshotDecoderOption, value: *const c_void) -> GhosttyResult;
-    pub fn ghostty_snapshot_encode(terminal: GhosttyTerminal, writer: GhosttyWriter) -> GhosttyResult;
-    pub fn ghostty_snapshot_encode_alloc(terminal: GhosttyTerminal, allocator: *const GhosttyAllocator, out_ptr: *mut *mut u8, out_len: *mut usize) -> GhosttyResult;
-    pub fn ghostty_snapshot_encode_buf(terminal: GhosttyTerminal, buf: *mut u8, buf_len: usize, out_written: *mut usize) -> GhosttyResult;
+    pub fn ghostty_snapshot_decoder_ready(
+        decoder: GhosttySnapshotDecoder,
+        terminal: *mut GhosttyTerminal,
+    ) -> GhosttyResult;
+    pub fn ghostty_snapshot_decoder_set(
+        decoder: GhosttySnapshotDecoder,
+        option: GhosttySnapshotDecoderOption,
+        value: *const c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_snapshot_encode(
+        terminal: GhosttyTerminal,
+        writer: GhosttyWriter,
+    ) -> GhosttyResult;
+    pub fn ghostty_snapshot_encode_alloc(
+        terminal: GhosttyTerminal,
+        allocator: *const GhosttyAllocator,
+        out_ptr: *mut *mut u8,
+        out_len: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_snapshot_encode_buf(
+        terminal: GhosttyTerminal,
+        buf: *mut u8,
+        buf_len: usize,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
     pub fn ghostty_style_default(style: *mut GhosttyStyle);
     pub fn ghostty_style_is_default(style: *const GhosttyStyle) -> bool;
-    pub fn ghostty_sys_log_stderr(userdata: *mut c_void, level: GhosttySysLogLevel, scope: *const u8, scope_len: usize, message: *const u8, message_len: usize);
+    pub fn ghostty_sys_log_stderr(
+        userdata: *mut c_void,
+        level: GhosttySysLogLevel,
+        scope: *const u8,
+        scope_len: usize,
+        message: *const u8,
+        message_len: usize,
+    );
     pub fn ghostty_sys_set(option: GhosttySysOption, value: *const c_void) -> GhosttyResult;
-    pub fn ghostty_terminal_compress(terminal: GhosttyTerminal, mode: GhosttyTerminalCompressionMode, out_result: *mut GhosttyTerminalCompressionResult) -> GhosttyResult;
-    pub fn ghostty_terminal_compression_activity(terminal: GhosttyTerminal, out_activity: *mut u64) -> GhosttyResult;
-    pub fn ghostty_terminal_continuation_alloc(terminal: GhosttyTerminal, allocator: *const GhosttyAllocator, out_ptr: *mut *mut u8, out_len: *mut usize) -> GhosttyResult;
-    pub fn ghostty_terminal_continuation_buf(terminal: GhosttyTerminal, buf: *mut u8, buf_len: usize, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_terminal_continuation_write(terminal: GhosttyTerminal, writer: GhosttyWriter) -> GhosttyResult;
+    pub fn ghostty_terminal_compress(
+        terminal: GhosttyTerminal,
+        mode: GhosttyTerminalCompressionMode,
+        out_result: *mut GhosttyTerminalCompressionResult,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_compression_activity(
+        terminal: GhosttyTerminal,
+        out_activity: *mut u64,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_continuation_alloc(
+        terminal: GhosttyTerminal,
+        allocator: *const GhosttyAllocator,
+        out_ptr: *mut *mut u8,
+        out_len: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_continuation_buf(
+        terminal: GhosttyTerminal,
+        buf: *mut u8,
+        buf_len: usize,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_continuation_write(
+        terminal: GhosttyTerminal,
+        writer: GhosttyWriter,
+    ) -> GhosttyResult;
     pub fn ghostty_terminal_free(terminal: GhosttyTerminal);
-    pub fn ghostty_terminal_get(terminal: GhosttyTerminal, data: GhosttyTerminalData, out: *mut c_void) -> GhosttyResult;
-    pub fn ghostty_terminal_get_multi(terminal: GhosttyTerminal, count: usize, keys: *const GhosttyTerminalData, values: *mut *mut c_void, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_terminal_grid_ref(terminal: GhosttyTerminal, point: GhosttyPoint, out_ref: *mut GhosttyGridRef) -> GhosttyResult;
-    pub fn ghostty_terminal_grid_ref_track(terminal: GhosttyTerminal, point: GhosttyPoint, out_ref: *mut GhosttyTrackedGridRef) -> GhosttyResult;
-    pub fn ghostty_terminal_new(allocator: *const GhosttyAllocator, terminal: *mut GhosttyTerminal, cols: u16, rows: u16) -> GhosttyResult;
-    pub fn ghostty_terminal_paste(terminal: GhosttyTerminal, paste: *const GhosttyPaste, out_written: *mut bool) -> GhosttyResult;
-    pub fn ghostty_terminal_point_from_grid_ref(terminal: GhosttyTerminal, r#ref: *const GhosttyGridRef, tag: GhosttyPointTag, out: *mut GhosttyPointCoordinate) -> GhosttyResult;
+    pub fn ghostty_terminal_get(
+        terminal: GhosttyTerminal,
+        data: GhosttyTerminalData,
+        out: *mut c_void,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_get_multi(
+        terminal: GhosttyTerminal,
+        count: usize,
+        keys: *const GhosttyTerminalData,
+        values: *mut *mut c_void,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_grid_ref(
+        terminal: GhosttyTerminal,
+        point: GhosttyPoint,
+        out_ref: *mut GhosttyGridRef,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_grid_ref_track(
+        terminal: GhosttyTerminal,
+        point: GhosttyPoint,
+        out_ref: *mut GhosttyTrackedGridRef,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_new(
+        allocator: *const GhosttyAllocator,
+        terminal: *mut GhosttyTerminal,
+        cols: u16,
+        rows: u16,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_paste(
+        terminal: GhosttyTerminal,
+        paste: *const GhosttyPaste,
+        out_written: *mut bool,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_point_from_grid_ref(
+        terminal: GhosttyTerminal,
+        r#ref: *const GhosttyGridRef,
+        tag: GhosttyPointTag,
+        out: *mut GhosttyPointCoordinate,
+    ) -> GhosttyResult;
     pub fn ghostty_terminal_reset(terminal: GhosttyTerminal);
-    pub fn ghostty_terminal_resize(terminal: GhosttyTerminal, cols: u16, rows: u16, cell_width_px: u32, cell_height_px: u32) -> GhosttyResult;
-    pub fn ghostty_terminal_scroll_viewport(terminal: GhosttyTerminal, behavior: GhosttyTerminalScrollViewport);
-    pub fn ghostty_terminal_select_all(terminal: GhosttyTerminal, out_selection: *mut GhosttySelection) -> GhosttyResult;
-    pub fn ghostty_terminal_select_line(terminal: GhosttyTerminal, options: *const GhosttyTerminalSelectLineOptions, out_selection: *mut GhosttySelection) -> GhosttyResult;
-    pub fn ghostty_terminal_select_output(terminal: GhosttyTerminal, r#ref: GhosttyGridRef, out_selection: *mut GhosttySelection) -> GhosttyResult;
-    pub fn ghostty_terminal_select_word(terminal: GhosttyTerminal, options: *const GhosttyTerminalSelectWordOptions, out_selection: *mut GhosttySelection) -> GhosttyResult;
-    pub fn ghostty_terminal_select_word_between(terminal: GhosttyTerminal, options: *const GhosttyTerminalSelectWordBetweenOptions, out_selection: *mut GhosttySelection) -> GhosttyResult;
-    pub fn ghostty_terminal_selection_adjust(terminal: GhosttyTerminal, selection: *mut GhosttySelection, adjustment: GhosttySelectionAdjust) -> GhosttyResult;
-    pub fn ghostty_terminal_selection_contains(terminal: GhosttyTerminal, selection: *const GhosttySelection, point: GhosttyPoint, out_contains: *mut bool) -> GhosttyResult;
-    pub fn ghostty_terminal_selection_equal(terminal: GhosttyTerminal, a: *const GhosttySelection, b: *const GhosttySelection, out_equal: *mut bool) -> GhosttyResult;
-    pub fn ghostty_terminal_selection_format_alloc(terminal: GhosttyTerminal, allocator: *const GhosttyAllocator, options: GhosttyTerminalSelectionFormatOptions, out_ptr: *mut *mut u8, out_len: *mut usize) -> GhosttyResult;
-    pub fn ghostty_terminal_selection_format_buf(terminal: GhosttyTerminal, options: GhosttyTerminalSelectionFormatOptions, buf: *mut u8, buf_len: usize, out_written: *mut usize) -> GhosttyResult;
-    pub fn ghostty_terminal_selection_order(terminal: GhosttyTerminal, selection: *const GhosttySelection, out_order: *mut GhosttySelectionOrder) -> GhosttyResult;
-    pub fn ghostty_terminal_selection_ordered(terminal: GhosttyTerminal, selection: *const GhosttySelection, desired: GhosttySelectionOrder, out_selection: *mut GhosttySelection) -> GhosttyResult;
-    pub fn ghostty_terminal_set(terminal: GhosttyTerminal, option: GhosttyTerminalOption, value: *const c_void) -> GhosttyResult;
+    pub fn ghostty_terminal_resize(
+        terminal: GhosttyTerminal,
+        cols: u16,
+        rows: u16,
+        cell_width_px: u32,
+        cell_height_px: u32,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_scroll_viewport(
+        terminal: GhosttyTerminal,
+        behavior: GhosttyTerminalScrollViewport,
+    );
+    pub fn ghostty_terminal_select_all(
+        terminal: GhosttyTerminal,
+        out_selection: *mut GhosttySelection,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_select_line(
+        terminal: GhosttyTerminal,
+        options: *const GhosttyTerminalSelectLineOptions,
+        out_selection: *mut GhosttySelection,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_select_output(
+        terminal: GhosttyTerminal,
+        r#ref: GhosttyGridRef,
+        out_selection: *mut GhosttySelection,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_select_word(
+        terminal: GhosttyTerminal,
+        options: *const GhosttyTerminalSelectWordOptions,
+        out_selection: *mut GhosttySelection,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_select_word_between(
+        terminal: GhosttyTerminal,
+        options: *const GhosttyTerminalSelectWordBetweenOptions,
+        out_selection: *mut GhosttySelection,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_selection_adjust(
+        terminal: GhosttyTerminal,
+        selection: *mut GhosttySelection,
+        adjustment: GhosttySelectionAdjust,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_selection_contains(
+        terminal: GhosttyTerminal,
+        selection: *const GhosttySelection,
+        point: GhosttyPoint,
+        out_contains: *mut bool,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_selection_equal(
+        terminal: GhosttyTerminal,
+        a: *const GhosttySelection,
+        b: *const GhosttySelection,
+        out_equal: *mut bool,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_selection_format_alloc(
+        terminal: GhosttyTerminal,
+        allocator: *const GhosttyAllocator,
+        options: GhosttyTerminalSelectionFormatOptions,
+        out_ptr: *mut *mut u8,
+        out_len: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_selection_format_buf(
+        terminal: GhosttyTerminal,
+        options: GhosttyTerminalSelectionFormatOptions,
+        buf: *mut u8,
+        buf_len: usize,
+        out_written: *mut usize,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_selection_order(
+        terminal: GhosttyTerminal,
+        selection: *const GhosttySelection,
+        out_order: *mut GhosttySelectionOrder,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_selection_ordered(
+        terminal: GhosttyTerminal,
+        selection: *const GhosttySelection,
+        desired: GhosttySelectionOrder,
+        out_selection: *mut GhosttySelection,
+    ) -> GhosttyResult;
+    pub fn ghostty_terminal_set(
+        terminal: GhosttyTerminal,
+        option: GhosttyTerminalOption,
+        value: *const c_void,
+    ) -> GhosttyResult;
     pub fn ghostty_terminal_vt_write(terminal: GhosttyTerminal, data: *const u8, len: usize);
-    pub fn ghostty_terminal_vt_write_until_ground(terminal: GhosttyTerminal, data: *const u8, len: usize, out_consumed: *mut usize) -> GhosttyResult;
+    pub fn ghostty_terminal_vt_write_until_ground(
+        terminal: GhosttyTerminal,
+        data: *const u8,
+        len: usize,
+        out_consumed: *mut usize,
+    ) -> GhosttyResult;
     pub fn ghostty_tracked_grid_ref_free(r#ref: GhosttyTrackedGridRef);
     pub fn ghostty_tracked_grid_ref_has_value(r#ref: GhosttyTrackedGridRef) -> bool;
-    pub fn ghostty_tracked_grid_ref_point(r#ref: GhosttyTrackedGridRef, tag: GhosttyPointTag, out_point: *mut GhosttyPointCoordinate) -> GhosttyResult;
-    pub fn ghostty_tracked_grid_ref_set(r#ref: GhosttyTrackedGridRef, terminal: GhosttyTerminal, point: GhosttyPoint) -> GhosttyResult;
-    pub fn ghostty_tracked_grid_ref_snapshot(r#ref: GhosttyTrackedGridRef, out_ref: *mut GhosttyGridRef) -> GhosttyResult;
+    pub fn ghostty_tracked_grid_ref_point(
+        r#ref: GhosttyTrackedGridRef,
+        tag: GhosttyPointTag,
+        out_point: *mut GhosttyPointCoordinate,
+    ) -> GhosttyResult;
+    pub fn ghostty_tracked_grid_ref_set(
+        r#ref: GhosttyTrackedGridRef,
+        terminal: GhosttyTerminal,
+        point: GhosttyPoint,
+    ) -> GhosttyResult;
+    pub fn ghostty_tracked_grid_ref_snapshot(
+        r#ref: GhosttyTrackedGridRef,
+        out_ref: *mut GhosttyGridRef,
+    ) -> GhosttyResult;
     pub fn ghostty_type_json() -> *const c_char;
     pub fn ghostty_unicode_codepoint_width(cp: u32) -> u8;
     pub fn ghostty_unicode_grapheme_width(cps: *const u32, len: usize, width: *mut u8) -> usize;
@@ -1909,4 +2498,3 @@ extern "C" {
 //   - declared only under `#ifdef __wasm__`: include/ghostty/vt/wasm.h: ghostty_wasm_free
 //   - declared only under `#ifdef __wasm__`: include/ghostty/vt/wasm.h: ghostty_wasm_free_opaque
 //   - declared only under `#ifdef __wasm__`: include/ghostty/vt/wasm.h: ghostty_wasm_take_opaque
-
