@@ -145,3 +145,36 @@ const (
 	// KeyEncBackarrowKeyMode switches Backspace between 0x7f and 0x08 (bool).
 	KeyEncBackarrowKeyMode KeyEncoderOption = C.GHOSTTY_KEY_ENCODER_OPT_BACKARROW_KEY_MODE
 )
+
+// EncodeKey is the one-shot convenience for a single keystroke.
+//
+// It allocates an encoder and an event per call, which is right for tests and
+// occasional use. Hot paths should keep a KeyEncoder and one reused KeyEvent.
+//
+// No text is set, so it is suitable for keys that encode without it: control
+// characters, Escape, Enter, Tab, Backspace, arrows, and function keys. Use a
+// KeyEncoder directly when the key produces text.
+func EncodeKey(key Key, mods Mods, action KeyAction) ([]byte, error) {
+	enc, err := NewKeyEncoder()
+	if err != nil {
+		return nil, err
+	}
+	defer enc.Close()
+
+	ev, err := NewKeyEvent()
+	if err != nil {
+		return nil, err
+	}
+	defer ev.Close()
+
+	if err := ev.SetKey(key); err != nil {
+		return nil, err
+	}
+	if err := ev.SetMods(mods); err != nil {
+		return nil, err
+	}
+	if err := ev.SetAction(action); err != nil {
+		return nil, err
+	}
+	return enc.Encode(ev)
+}

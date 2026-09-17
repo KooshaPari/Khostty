@@ -192,3 +192,63 @@ func TestKeyEncoderReusesOneEvent(t *testing.T) {
 		t.Errorf("reused-event encoding = %q, want %q", got, "hi")
 	}
 }
+
+// TestUTF8TextOutlivesSetUTF8 is a regression guard.
+//
+// The C API documents that the key event does not take ownership of the text
+// pointer, so the event has to retain the buffer itself. When it did not, the
+// bytes were collected before Encode read them and encoding produced garbage
+// rather than the typed character.
+func TestUTF8TextOutlivesSetUTF8(t *testing.T) {
+	enc, err := NewKeyEncoder()
+	if err != nil {
+		t.Fatalf("NewKeyEncoder: %v", err)
+	}
+	defer enc.Close()
+
+	ev, err := NewKeyEvent()
+	if err != nil {
+		t.Fatalf("NewKeyEvent: %v", err)
+	}
+	defer ev.Close()
+
+	if err := ev.SetKey(KeyA); err != nil {
+		t.Fatal(err)
+	}
+	if err := ev.SetAction(KeyPress); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, text := range []string{"a", "Z", "0", "é", "日本"} {
+		// Churn the heap so a collected buffer would be overwritten.
+		for i := 0; i < 32; i++ {
+			_ = make([]byte, 1024)
+		}
+
+		if err := ev.SetUTF8(text); err != nil {
+			t.Fatal(err)
+		}
+		if got, err := ev.UTF8(); err != nil || got != text {
+			t.Fatalf("UTF8() = %q (err %v), want %q", got, err, text)
+		}
+
+		out, err := enc.Encode(ev)
+		if err != nil {
+			t.Fatalf("Encode: %v", err)
+		}
+		if string(out) != text {
+			t.Fatalf("encoded %q, want %q", out, text)
+		}
+	}
+
+	// Clearing the text falls back to the logical key, which encodes nothing.
+	if err := ev.SetUTF8(""); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := ev.UTF8(); err != nil || got != "" {
+		t.Errorf("UTF8() after clearing = %q (err %v), want empty", got, err)
+	}
+	if out, err := enc.Encode(ev); err != nil || len(out) != 0 {
+		t.Errorf("after clearing, encoded %q (err %v), want empty", out, err)
+	}
+}

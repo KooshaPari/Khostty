@@ -21,6 +21,14 @@ import (
 // allocating per event, which is what the C API recommends.
 type KeyEvent struct {
 	ptr C.GhosttyKeyEvent
+
+	// utf8 holds the bytes last passed to SetUTF8. The C API documents that
+	// the key event does not take ownership of the text pointer and that the
+	// caller must keep it valid for as long as the event needs it, so the
+	// buffer lives here rather than in a call-scoped local. Without this the
+	// bytes are collected before Encode reads them and encoding silently
+	// produces garbage.
+	utf8 []byte
 }
 
 // NewKeyEvent creates an empty key event.
@@ -41,6 +49,7 @@ func (e *KeyEvent) Close() error {
 	}
 	C.ghostty_key_event_free(e.ptr)
 	e.ptr = nil
+	e.utf8 = nil
 	runtime.SetFinalizer(e, nil)
 	return nil
 }
@@ -115,17 +124,23 @@ func (e *KeyEvent) ConsumedMods() (Mods, error) {
 }
 
 // SetUTF8 sets the text this key produces, which dead keys and IMEs need.
+//
+// The bytes are retained by the event, because the C API borrows the pointer
+// rather than copying it. Setting new text releases the previous buffer.
 func (e *KeyEvent) SetUTF8(text string) error {
 	if e == nil || e.ptr == nil {
 		return ErrInvalidValue
 	}
 	if text == "" {
+		e.utf8 = nil
 		C.ghostty_key_event_set_utf8(e.ptr, nil, 0)
 		return nil
 	}
-	b := []byte(text)
-	C.ghostty_key_event_set_utf8(e.ptr, (*C.char)(unsafe.Pointer(&b[0])), C.size_t(len(b)))
-	runtime.KeepAlive(b)
+
+	e.utf8 = []byte(text)
+	C.ghostty_key_event_set_utf8(
+		e.ptr, (*C.char)(unsafe.Pointer(&e.utf8[0])), C.size_t(len(e.utf8)),
+	)
 	return nil
 }
 
@@ -314,37 +329,4 @@ func (e *KeyEncoder) Encode(ev *KeyEvent) ([]byte, error) {
 	}
 	runtime.KeepAlive(buf)
 	return buf[:int(written)], nil
-}
-
-// EncodeKey is the one-shot convenience for a single keystroke.
-//
-// It allocates an encoder and an event per call, which is right for tests and
-// occasional use. Hot paths should keep a KeyEncoder and one reused KeyEvent.
-//
-// No text is set, so it is suitable for keys that encode without it: control
-// characters, Escape, Enter, Tab, Backspace, arrows, and function keys. Use a
-// KeyEncoder directly when the key produces text.
-func EncodeKey(key Key, mods Mods, action KeyAction) ([]byte, error) {
-	enc, err := NewKeyEncoder()
-	if err != nil {
-		return nil, err
-	}
-	defer enc.Close()
-
-	ev, err := NewKeyEvent()
-	if err != nil {
-		return nil, err
-	}
-	defer ev.Close()
-
-	if err := ev.SetKey(key); err != nil {
-		return nil, err
-	}
-	if err := ev.SetMods(mods); err != nil {
-		return nil, err
-	}
-	if err := ev.SetAction(action); err != nil {
-		return nil, err
-	}
-	return enc.Encode(ev)
 }
