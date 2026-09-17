@@ -456,15 +456,14 @@ comparison is constant-time.
 
 `src/apprt/windows/ipc.zig`:
 
-Pipe `\\.\pipe\khostty-{server_pid}`, mode
-`PIPE_READMODE_MESSAGE | PIPE_WAIT`, frame
-`extern struct { action: u16, length: u32 }` followed by a packed payload.
+Frame `extern struct { action: u16, length: u32 }` followed by a packed payload.
 Server API: `init`, `deinit`, `acceptConnection`. Client API: `connect`, `deinit`,
 `send`, `receive`. **All operations return `error.Unimplemented`.**
 
-The declared security attributes are worth noting: a null security descriptor
-(inheriting the process default DACL) and `bInheritHandle = TRUE`. See
-[SECURITY.md](SECURITY.md#4-windows-transport-weakness-scaffold).
+Two things to know before relying on it: the intended pipe path is
+`\\.\pipe\khostty-{server_pid}`, but the current constant resolves to a single
+leading backslash, which is not the Win32 pipe namespace; and no ACL design exists.
+See [SECURITY.md](SECURITY.md#4-windows-transport-weakness-scaffold).
 
 ---
 

@@ -106,22 +106,32 @@ else             => .none,   // lib-only; the macOS app is built by Xcode
 `src/apprt.zig`'s runtime switch today, so no build currently compiles it as a
 runtime.
 
-| File | Contents | Status |
-|---|---|---|
-| `mod.zig` | Module root: `App`, `Window`, `Surface`, `resourcesDir` | SCAFFOLD |
-| `App.zig` | `init` / `registerWindowClass` / `run` / `terminate` | SCAFFOLD — all return `error.Unimplemented` |
-| `Window.zig` | HWND handle type | SCAFFOLD |
-| `surface.zig` | HWND surface; `WM_SIZE`, `WM_PAINT`, `WM_ERASEBKGND`, `WM_CLOSE`, `WM_DESTROY` routing | SCAFFOLD — messages routed, renderer delegated to a stub |
-| `renderer.zig` | Renderer adapter (`init`/`resize`/`renderFrame`/`invalidate`) | SCAFFOLD — `error.Unimplemented` |
-| `win32api.zig` | Win32 type aliases and `user32`/`kernel32`/`dwmapi` declarations | SCAFFOLD |
-| `ipc.zig` | Named-pipe server/client over `\\.\pipe\khostty-{pid}` | SCAFFOLD — `error.Unimplemented` |
+| File | Lines | Contents | Status |
+|---|---:|---|---|
+| `mod.zig` | 9 | Module root: `App`, `Window`, `Surface`, `resourcesDir` | SCAFFOLD |
+| `interface.zig` | 49 | The App/Surface method contract the runtime must satisfy | SCAFFOLD — documented signatures only |
+| `App.zig` | 19 | `init` / `registerWindowClass` / `run` / `terminate` | SCAFFOLD — all return `error.Unimplemented` |
+| `Window.zig` | 24 | HWND handle type | SCAFFOLD |
+| `surface.zig` | 112 | HWND surface; `WM_SIZE`, `WM_PAINT`, `WM_ERASEBKGND`, `WM_CLOSE`, `WM_DESTROY` routing | SCAFFOLD — messages routed, renderer delegated to a stub |
+| `renderer.zig` | 64 | Renderer adapter (`init`/`resize`/`renderFrame`/`invalidate`) | SCAFFOLD — `error.Unimplemented` |
+| `keyboard.zig` | 734 | Win32 keyboard/mouse message → Ghostty key event mapping | IN PROGRESS — **no `Unimplemented` stubs remain**, but unverified |
+| `win32api.zig` | 85 | Win32 type aliases and `user32`/`kernel32`/`dwmapi` declarations | SCAFFOLD |
+| `ipc.zig` | 100 | Named-pipe server/client | SCAFFOLD — `error.Unimplemented`; path constant and frame layout, no ACL design |
 
-> **Known defect (observed 2026-09-17):** `src/apprt/windows/mod.zig` imports
-> `"Surface.zig"`, but the tracked file is `surface.zig` (lowercase). The import
-> only resolves on a case-insensitive filesystem. Any build on Linux or CI with a
-> case-sensitive checkout will fail if and when `mod.zig` is pulled into the
-> module graph. Recorded here rather than fixed, because G9 is a documentation
-> gate.
+> **Known defects (observed 2026-09-17):**
+>
+> 1. `src/apprt/windows/mod.zig` imports `"Surface.zig"`, but the tracked file is
+>    `surface.zig` (lowercase). The import resolves only on a case-insensitive
+>    filesystem, so a case-sensitive checkout fails if `mod.zig` enters the module
+>    graph.
+> 2. `src/apprt/windows/ipc.zig`'s `PIPE_PREFIX` resolves to a single leading
+>    backslash, which is not the Win32 pipe namespace. Its unit test asserts the
+>    same wrong value. See
+>    [SECURITY.md](SECURITY.md#4-windows-transport-weakness-scaffold).
+> 3. `keyboard.zig` is 734 lines, exceeding the repository's 500-line hard limit.
+>
+> Recorded rather than fixed, because G9 is a documentation gate and these files are
+> under active concurrent edit.
 
 ---
 

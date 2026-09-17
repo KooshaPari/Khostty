@@ -205,10 +205,12 @@ case-sensitive build that pulls `mod.zig` into the graph will fail.
 
 | Item | Value |
 |---|---|
-| Pipe name | `\\.\pipe\khostty-{server_pid}` |
-| Mode | `PIPE_READMODE_MESSAGE \| PIPE_WAIT` |
+| Pipe name | `\\.\pipe\khostty-{server_pid}` intended; **the constant currently has one leading backslash, which is not the pipe namespace** (observed 2026-09-17) |
 | Frame | `extern struct { action: u16, length: u32 }` + packed payload |
+| Security attributes | **None declared.** The earlier null-DACL / inheritable-handle declaration was removed without a replacement, so no ACL design exists. |
 | Status | SCAFFOLD, `error.Unimplemented` |
+
+Details and the security implication: [SECURITY.md](SECURITY.md#4-windows-transport-weakness-scaffold).
 
 ### G3 exit criteria (from the WBS)
 

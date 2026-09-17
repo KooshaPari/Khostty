@@ -140,31 +140,45 @@ implementation bugs.
 
 ## 4. Windows transport weakness (scaffold)
 
-`src/apprt/windows/ipc.zig` sketches a named pipe at
-`\\.\pipe\khostty-{server_pid}`. Its security attributes are:
+`src/apprt/windows/ipc.zig` sketches a named pipe for the Windows equivalent of a
+Unix domain socket. Observed 2026-09-17 03:58 PT (rewritten by commit `1e6687dd2`).
+
+**The pipe path is currently malformed.** The constant is:
 
 ```zig
-const PIPE_SECURITY_ATTRIBUTES = stdwin.SECURITY_ATTRIBUTES{
-    .nLength = @sizeOf(stdwin.SECURITY_ATTRIBUTES),
-    .lpSecurityDescriptor = null,   // default DACL
-    .bInheritHandle = TRUE,         // handle is inheritable
-};
+pub const PIPE_PREFIX: []const u8 = "\\.\\pipe\\khostty-";
 ```
 
-Two problems if this is implemented as written:
+Read that as Zig source. Each `\\` is one runtime backslash, so the runtime value
+is `\.\pipe\khostty-` — **one leading backslash**, not two. Win32 named pipes live
+in the device namespace and require `\\.\pipe\` at runtime (two leading
+backslashes). A path with a single leading backslash is an absolute path on the
+current drive, which is not the named-pipe namespace at all.
 
-1. **`lpSecurityDescriptor = null`** means the pipe gets the process's default DACL,
-   which in a typical user session permits other processes in that session to
-   connect. A named pipe with no ACL is the Windows equivalent of a world-writable
-   socket.
-2. **`bInheritHandle = TRUE`** lets the handle leak into child processes, widening
-   who can use it.
+Two consequences:
 
-Neither is exploitable today, because every operation returns
-`error.Unimplemented`. But the Windows transport is not mentioned in the v1 auth
-design, which is Unix-socket-shaped. **The Windows IPC transport needs its own
-authorization design** before G3 and G4 converge. Recorded here so it is not
-discovered later.
+1. A server would not be reachable at the documented path, so the transport would
+   silently fail rather than error clearly.
+2. If a later implementation resolves it to a filesystem-relative location instead,
+   the isolation property that `\\.\pipe\` was chosen for is lost.
+
+The in-file comment and the unit test both encode the same mistake — the test asserts
+`"\.\pipe\khostty-"`, which passes while the value stays wrong. A test that agrees
+with a bug is not a control.
+
+**ACL undecided.** The earlier revision of this file declared
+`SECURITY_ATTRIBUTES { .lpSecurityDescriptor = null, .bInheritHandle = TRUE }` —
+default DACL, inheritable handle, i.e. the Windows equivalent of a world-writable
+socket. Commit `1e6687dd2` removed that declaration, so the file no longer asserts
+insecure attributes, but it also no longer decides anything. **No ACL design exists
+for the Windows transport**, and the v1 IPC auth design in
+[`src/apprt/ipc/protocol.md`](../src/apprt/ipc/protocol.md) is Unix-socket-shaped.
+
+`MessageFrame` (`extern struct { action: u16, length: u32 }`, payload packed after
+the header) is unchanged, and every operation still returns
+`error.Unimplemented`, so none of this is reachable today. **The Windows IPC
+transport needs its own authorization design, including an explicit DACL, before G3
+and G4 converge.** Recorded here so it is not discovered later.
 
 ---
 
@@ -294,7 +308,7 @@ continuously checks the C/Zig surface or the vendored code.
 | Untrusted output exfiltrates clipboard | Clipboard read is a host-gated callback | Implemented upstream |
 | Memory corruption at the FFI boundary | Opaque handles, RAII wrappers, ABI manifest assertions, copy-before-free | Implemented in Rust and WASM wrappers |
 | ABI drift corrupts memory silently | `ghostty_type_json()` manifest + layout tests | Implemented |
-| Other process in the session connects to the Windows pipe | Named pipe ACL | **Not defended** — default DACL, inheritable handle |
+| Other process in the session connects to the Windows pipe | Named pipe DACL | **Not defended** — no ACL design exists; the intended pipe path is also currently malformed |
 | Compromised build dependency | Content-hash pinning | Implemented |
 | Known-vulnerable dependency introduced | Automated scanning | **Not implemented** |
 | Privilege escalation from the terminal process | OS sandboxing | **Not attempted.** The terminal runs with the user's full privileges, as upstream does. |
@@ -331,7 +345,7 @@ Listing these prevents them from being mistaken for solved:
 - No fuzzing run recorded, and no sanitizer or Valgrind run recorded
 - No IPC server, so no end-to-end authorization verification
 - No per-command or per-pane token scoping; no rate limiting
-- Windows named pipe has default-DACL, inheritable-handle attributes
+- Windows named pipe has no ACL design, and its path constant is malformed (§4)
 - No security review of the Rust, Go, or WASM wrappers by anyone other than their authors
 - No independent threat-model review
 - No release, therefore no security-fix channel
