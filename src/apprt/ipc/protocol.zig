@@ -25,8 +25,15 @@ pub const version: u32 = 1;
 /// are rejected with `bad_request` and the connection is closed.
 pub const max_frame_bytes: usize = 1024 * 1024;
 
-/// Error set of every JSON writer used by this protocol.
+/// Error set of every JSON writer used by this protocol. `std.Io.Writer`
+/// collapses allocation failure into `error.WriteFailed` for buffered writers
+/// (`std.Io.Writer.Allocating.drain`), so writers only ever see this set.
 pub const WriteError = std.Io.Writer.Error;
+
+/// Error set of helper functions that both render and allocate (for example
+/// `state.Snapshot.toJsonAlloc`, which must also surface allocation failure
+/// from `toOwnedSlice`).
+pub const EncodeError = Allocator.Error || WriteError;
 
 // ─────────────────────────────────────────────────────────────────────────
 // Error codes
