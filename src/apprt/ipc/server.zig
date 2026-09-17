@@ -569,6 +569,121 @@ const Harness = struct {
         try client.sendRaw(frame);
         return client.readResponse(self.gpa);
     }
+
+    /// Build a token-carrying frame (caller frees).
+    fn authedFrame(self: *Harness, extra: []const u8) ![]u8 {
+        return self.authed(extra);
+    }
+
+    /// Send a token-carrying frame on an existing connection and read the
+    /// response.
+    fn request(
+        self: *Harness,
+        client: *Client,
+        extra: []const u8,
+    ) !std.json.Parsed(std.json.Value) {
+        const request_text = try self.authed(extra);
+        defer testing.allocator.free(request_text);
+        try client.sendRaw(request_text);
+        return client.readResponse(testing.allocator);
+    }
+
+    /// Fail the test (with the server's message) unless the response is ok.
+    /// Takes ownership of `response` in every case.
+    fn expectOk(
+        self: *Harness,
+        response: std.json.Parsed(std.json.Value),
+    ) !std.json.Parsed(std.json.Value) {
+        _ = self;
+        if (response.value.object.get("ok").?.bool) return response;
+        std.debug.print(
+            "unexpected error response: {s}: {s}\n",
+            .{
+                response.value.object.get("error").?.object.get("code").?.string,
+                response.value.object.get("error").?.object.get("message").?.string,
+            },
+        );
+        response.deinit();
+        return error.TestUnexpectedResult;
+    }
+
+    /// The `data` payload of a response.
+    fn dataOf(payload: std.json.Parsed(std.json.Value)) std.json.Value {
+        return payload.value.object.get("data").?;
+    }
+
+    /// `pane.create`; caller frees the returned pane id.
+    fn createPane(self: *Harness, client: *Client, title: []const u8) ![]u8 {
+        const extra = try std.fmt.allocPrint(
+            testing.allocator,
+            ",\"cmd\":\"pane.create\",\"opts\":{{\"title\":\"{s}\"}}",
+            .{title},
+        );
+        defer testing.allocator.free(extra);
+
+        var payload = try self.expectOk(try self.request(client, extra));
+        defer payload.deinit();
+        return testing.allocator.dupe(
+            u8,
+            payload.value.object.get("data").?.object.get("pane_id").?.string,
+        );
+    }
+
+    /// `pane.write` with a raw VT payload (already JSON-escaped).
+    fn write(self: *Harness, client: *Client, pane_id: []const u8, data: []const u8) !void {
+        const extra = try std.fmt.allocPrint(
+            testing.allocator,
+            ",\"cmd\":\"pane.write\",\"pane_id\":\"{s}\",\"data\":\"{s}\"",
+            .{ pane_id, data },
+        );
+        defer testing.allocator.free(extra);
+        var payload = try self.expectOk(try self.request(client, extra));
+        payload.deinit();
+    }
+
+    fn state(
+        self: *Harness,
+        client: *Client,
+        pane_id: []const u8,
+    ) !std.json.Parsed(std.json.Value) {
+        const extra = try std.fmt.allocPrint(
+            testing.allocator,
+            ",\"cmd\":\"pane.state\",\"pane_id\":\"{s}\"",
+            .{pane_id},
+        );
+        defer testing.allocator.free(extra);
+        return self.expectOk(try self.request(client, extra));
+    }
+
+    fn search(
+        self: *Harness,
+        client: *Client,
+        pane_id: []const u8,
+        query: []const u8,
+    ) !std.json.Parsed(std.json.Value) {
+        const extra = try std.fmt.allocPrint(
+            testing.allocator,
+            ",\"cmd\":\"pane.search\",\"pane_id\":\"{s}\",\"query\":\"{s}\"",
+            .{ pane_id, query },
+        );
+        defer testing.allocator.free(extra);
+        return self.expectOk(try self.request(client, extra));
+    }
+
+    fn listPanes(self: *Harness, client: *Client) !std.json.Parsed(std.json.Value) {
+        return self.expectOk(try self.request(client, ",\"cmd\":\"pane.list\""));
+    }
+
+    fn closePane(self: *Harness, client: *Client, pane_id: []const u8) !void {
+        const extra = try std.fmt.allocPrint(
+            testing.allocator,
+            ",\"cmd\":\"pane.close\",\"pane_id\":\"{s}\"",
+            .{pane_id},
+        );
+        defer testing.allocator.free(extra);
+        var payload = try self.expectOk(try self.request(client, extra));
+        payload.deinit();
+    }
 };
 
 fn testIo() std.Io {
@@ -862,6 +977,82 @@ test "socket: two connections are served independently" {
     try testing.expectEqual(@as(usize, 2), h.server.connections_accepted.load(.monotonic));
 }
 
+test "socket: a full agent workflow over one connection" {
+    var h = try Harness.init(testing.allocator, .{});
+    defer h.deinit();
+
+    var client = try h.connect();
+    defer client.deinit();
+
+    // 1. Two panes.
+    const first = try h.createPane(&client, "build");
+    defer testing.allocator.free(first);
+    const second = try h.createPane(&client, "logs");
+    defer testing.allocator.free(second);
+    try testing.expectEqualStrings("p-1", first);
+    try testing.expectEqualStrings("p-2", second);
+
+    // 2. Drive both with VT, including a title change and a cursor move.
+    try h.write(&client, first, "\\u001b[1;1Hbuilding\\r\\n\\u001b]0;make\\u0007");
+    try h.write(&client, second, "log line one\\r\\nERROR: nope\\r\\n");
+
+    // 3. Read machine state back.
+    {
+        const payload = try h.state(&client, first);
+        defer payload.deinit();
+        const snapshot = Harness.dataOf(payload).object;
+        try testing.expectEqualStrings("make", snapshot.get("title").?.string);
+        try testing.expectEqual(@as(i64, 1), snapshot.get("cursor").?.object.get("row").?.integer);
+    }
+    {
+        const payload = try h.state(&client, second);
+        defer payload.deinit();
+        try testing.expectEqualStrings(
+            "logs",
+            Harness.dataOf(payload).object.get("title").?.string,
+        );
+    }
+
+    // 4. Find text in the second pane's scrollback.
+    {
+        const payload = try h.search(&client, second, "ERROR");
+        defer payload.deinit();
+        const matches = Harness.dataOf(payload).object.get("matches").?.array.items;
+        try testing.expectEqual(@as(usize, 1), matches.len);
+        try testing.expectEqual(@as(i64, 1), matches[0].object.get("row").?.integer);
+        try testing.expectEqualStrings("ERROR", matches[0].object.get("text").?.string);
+    }
+
+    // 5. List sees both, close one, and it is gone.
+    {
+        const payload = try h.listPanes(&client);
+        defer payload.deinit();
+        try testing.expectEqual(@as(usize, 2), Harness.dataOf(payload).array.items.len);
+    }
+    try h.closePane(&client, second);
+    {
+        const payload = try h.listPanes(&client);
+        defer payload.deinit();
+        const panes = Harness.dataOf(payload).array.items;
+        try testing.expectEqual(@as(usize, 1), panes.len);
+        try testing.expectEqualStrings("p-1", panes[0].object.get("pane_id").?.string);
+    }
+
+    // 6. Operating on the closed pane is an error, not a crash.
+    {
+        const state_request = try h.authedFrame(",\"cmd\":\"pane.state\",\"pane_id\":\"p-2\"");
+        defer testing.allocator.free(state_request);
+        try client.sendRaw(state_request);
+        const payload = try client.readResponse(testing.allocator);
+        defer payload.deinit();
+        try testing.expectEqual(false, payload.value.object.get("ok").?.bool);
+        try testing.expectEqualStrings(
+            "pane_not_found",
+            payload.value.object.get("error").?.object.get("code").?.string,
+        );
+    }
+}
+
 test "lifecycle: stop is idempotent and deinit drains connections" {
     var h = try Harness.init(testing.allocator, .{});
     defer h.deinit();
@@ -883,4 +1074,114 @@ test "lifecycle: stop is idempotent and deinit drains connections" {
     h.server.stop();
     h.server.stop();
     try testing.expectEqual(false, h.server.running.load(.acquire));
+}
+
+/// One agent's request sequence, used by the concurrency test. Returns the
+/// number of completed steps so a silent early exit cannot look like success.
+fn agentSequence(h: *Harness, index: usize) !usize {
+    var client = try h.connect();
+    defer client.deinit();
+
+    var steps: usize = 0;
+
+    const title = try std.fmt.allocPrint(testing.allocator, "agent-{d}", .{index});
+    defer testing.allocator.free(title);
+    const pane_id = try h.createPane(&client, title);
+    defer testing.allocator.free(pane_id);
+    steps += 1;
+
+    // Each agent writes a needle that only it uses, so a search hit proves the
+    // write landed in this agent's own pane.
+    const needle = try std.fmt.allocPrint(testing.allocator, "needle-{d}", .{index});
+    defer testing.allocator.free(needle);
+    const data = try std.fmt.allocPrint(testing.allocator, "{s}\\r\\n", .{needle});
+    defer testing.allocator.free(data);
+    try h.write(&client, pane_id, data);
+    steps += 1;
+
+    {
+        const payload = try h.state(&client, pane_id);
+        defer payload.deinit();
+        try testing.expectEqualStrings(
+            title,
+            Harness.dataOf(payload).object.get("title").?.string,
+        );
+    }
+    steps += 1;
+
+    {
+        const payload = try h.search(&client, pane_id, needle);
+        defer payload.deinit();
+        try testing.expect(
+            Harness.dataOf(payload).object.get("matches").?.array.items.len >= 1,
+        );
+    }
+    steps += 1;
+
+    {
+        const payload = try h.listPanes(&client);
+        defer payload.deinit();
+        try testing.expect(Harness.dataOf(payload).array.items.len >= 1);
+    }
+    steps += 1;
+
+    try h.closePane(&client, pane_id);
+    steps += 1;
+
+    return steps;
+}
+
+fn agentMain(h: *Harness, index: usize, out: *std.atomic.Value(usize)) void {
+    const steps = agentSequence(h, index) catch |err| {
+        std.debug.print("agent {d} failed: {}\n", .{ index, err });
+        return;
+    };
+    out.store(steps, .release);
+}
+
+/// Steps every agent is expected to complete (create, write, state, search,
+/// list, close).
+const agent_steps = 6;
+
+test "socket: concurrent agents do not deadlock and do not cross panes" {
+    var h = try Harness.init(testing.allocator, .{});
+    defer h.deinit();
+
+    const agent_count = 6;
+    var results: [agent_count]std.atomic.Value(usize) = undefined;
+    for (&results) |*result| result.* = .init(0);
+
+    var threads: [agent_count]std.Thread = undefined;
+    for (0..agent_count) |i| {
+        threads[i] = try std.Thread.spawn(.{}, agentMain, .{ h, i, &results[i] });
+    }
+    // Joining is the deadlock check: a lock cycle would hang here rather than
+    // produce a wrong answer.
+    for (threads) |thread| thread.join();
+
+    for (results, 0..) |result, i| {
+        const steps = result.load(.acquire);
+        if (steps != agent_steps) {
+            std.debug.print("agent {d} completed {d}/{d} steps\n", .{ i, steps, agent_steps });
+            return error.TestUnexpectedResult;
+        }
+    }
+
+    // Every agent opened its own connection and had every frame answered.
+    try testing.expectEqual(
+        @as(usize, agent_count),
+        h.server.connections_accepted.load(.monotonic),
+    );
+    try testing.expect(
+        h.server.frames_handled.load(.monotonic) >= agent_count * agent_steps,
+    );
+
+    // Each agent closed its own pane, so the registry is empty and no pane was
+    // closed twice.
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    var remaining: std.ArrayListUnmanaged(pane.PaneInfo) = .empty;
+    try h.manager.list(arena.allocator(), h.io, &remaining);
+    try testing.expectEqual(@as(usize, 0), remaining.items.len);
+    try testing.expectEqual(@as(usize, agent_count), h.fake.close_calls);
 }
