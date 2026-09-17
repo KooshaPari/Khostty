@@ -6,8 +6,13 @@
 //! the search order and the `GHOSTTY_VT_LIB_DIR` / `GHOSTTY_VT_INCLUDE_DIR`
 //! overrides.
 //!
+//! ## Layout
+//!
+//! | Module  | Contents                                                       |
+//! |---------|----------------------------------------------------------------|
+//! | [`ffi`] | Raw `extern "C"` declarations, generated from the C headers    |
+//!
 //! The safe RAII wrappers (`terminal`, `snapshot`, `render`, `search`, `key`,
-//! `mouse`, `error`) are added incrementally on top of the raw bindings.
+//! `mouse`, `error`) are added incrementally on top of these raw bindings.
 
-/// Number of `GHOSTTY_API` functions this crate is scaffolded to wrap.
-pub const WRAPPED_FUNCTION_TARGET: usize = 198;
+pub mod ffi;
