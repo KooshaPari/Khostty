@@ -1,10 +1,31 @@
 # Khostty Agent IPC Protocol (v1)
 
-Status: **draft, implemented in this directory** (G4 of the Khostty Deep WBS v2).
+Status: **v1 implemented in this directory** (G4 of the Khostty Deep WBS v2).
 Owner: `src/apprt/ipc/`.
 Supersedes: nothing. Upstream `ghostty` IPC (`ipc/mod.zig`) is unchanged and still
 used for `new_window` / `new_tab` / `toggle_quick_terminal`; this protocol is an
 additive, agent-facing surface.
+
+Implementation map:
+
+| File | Responsibility | Verified by |
+| --- | --- | --- |
+| `protocol.md` | this document: the normative schema | sections 4 and 7 match the code |
+| `protocol.zig` | wire types, request parsing, response/JSON writers | 30 tests |
+| `auth.zig` | token resolution, constant-time verification | 12 tests |
+| `state.zig` | `pane.state` snapshot + JSON | 5 tests |
+| `events.zig` | event types, subscription broker, drop accounting | 13 tests |
+| `pane.zig` | pane registry, `Host` vtable, payload writers | 34 tests |
+| `handler.zig` | command dispatch, error mapping, event polling | 22 tests |
+| `server.zig` | Unix socket server, framing, client, event pusher | 14 tests |
+| `app_host.zig` | `Host` implementation over the real app runtime | not yet in the build graph, see section 7 |
+| `fake_host.zig` | in-memory VT used as the `Host` for tests | exercised by all of the above |
+
+Run everything with:
+
+```sh
+for f in protocol state events auth pane handler server; do zig test src/apprt/ipc/$f.zig || exit 1; done
+```
 
 ---
 
@@ -252,12 +273,18 @@ instead of silently missing state changes.
   the socket: `ipc.token`).
 - If no token is configured the server **fails closed**: every authenticated
   command is rejected with `unauthorized`. It never runs unauthenticated.
-- Comparison is constant-time (`std.crypto.utils.timingSafeEql`) and length is
-  checked first in a way that does not leak length via early exit differences in
-  the compare itself.
-- Tokens are generated with `std.crypto.random` as 32 bytes hex-encoded (64 chars).
-  The token file is expected to be `0600`; the server warns (log) but does not
-  refuse if permissions are loose.
+- Verification never compares variable-length secrets: both the configured token
+  and the presented one are hashed with SHA-256 and the 32-byte digests are
+  compared with `std.crypto.timing_safe.eql`, so neither content nor length leaks
+  through timing.
+- Tokens are 32 bytes from the CSPRNG (`std.Io.randomSecure`), hex-encoded (64
+  characters). The server creates the token file `0600` on first run and never
+  clobbers an existing one (`Auth.Setup.source` records whether the token came
+  from the environment, the file, or was just generated).
+- Additional environment variables: `KHOSTTY_IPC_TOKEN_FILE` (token path) and
+  `KHOSTTY_IPC_DIR` (runtime directory; used by tests and sandboxes).
+- A token that cannot be obtained leaves the server **unconfigured**, which
+  rejects every authenticated command. There is no unauthenticated mode.
 
 ## 6. Versioning
 
@@ -272,14 +299,48 @@ instead of silently missing state changes.
 
 ## 7. Threading model and known limits
 
-- `server.zig` runs a dedicated accept thread and one thread per connection. All
-  state shared with the terminal (`pane.zig`, `events.zig`) is guarded by
-  `std.Io.Mutex`.
-- The terminal itself is owned by the app's IO thread. `app_host.zig` therefore
-  documents that host callbacks must be marshalled onto the app thread; the socket
-  threads call through the `pane.Host` vtable, whose app implementation is
-  responsible for that hop (v1 ships the vtable and a direct implementation; the
-  mailbox hop is listed as a follow-up).
+Threading, as implemented:
+
+- `server.zig` runs one accept thread, one thread per connection, and (only for
+  connections that subscribed) one event-pusher thread per connection.
+- `pane.Manager` serializes registry access *and* host calls behind one
+  `std.Io.Mutex`. Host implementations therefore need not be thread safe, two
+  concurrent `pane.create` calls cannot race the registry, and the only lock
+  ordering used is Manager -> Broker. A host call must not call back into the
+  same manager.
+- Frames are written under a per-connection write mutex, so a response and an
+  event can never interleave inside a frame.
+- Event delivery has two paths: events published while a frame is being handled
+  are written immediately after that frame's response, and the pusher thread
+  covers a connection that is otherwise idle. The pusher polls
+  (`Config.event_poll_ms`, default 25 ms) because `std.Io.net` reads take no
+  timeout. An agent that would rather not run a pusher can disable it and send a
+  cheap `ping` to flush pending events after each action.
+
+Known limits, stated rather than implied:
+
+1. **The app-thread hop is not wired yet.** The terminal is owned by the app's IO
+   thread; `app_host.zig` holds a mutex but that only serializes IPC callers. The
+   server is therefore not yet started from the app, and `pane.write` must become
+   a surface-mailbox message (`CoreSurface.queueIo`) before the surface is
+   touched from a connection thread. Event publication belongs next to the
+   runtime's existing title/exit/resize/bell callbacks.
+2. **`pane.focus` and `pane.search` return `host_unsupported` on the real
+   runtime.** No core or apprt API focuses a surface by id, and upstream search
+   is an asynchronous UI flow (`start_search` plus `search_total` /
+   `search_selected` actions) with no synchronous "scan and return" entry point.
+   Both are honest gaps with named hooks, not silent no-ops. The full lifecycle
+   works end to end against a host that implements them (see the tests).
+3. **Shutdown does not force-close live connections.** `stop()` wakes `accept`
+   and `deinit()` waits (bounded, 5 s) for connections to drain, logging any that
+   remain. A client that never disconnects keeps its thread until the process
+   exits.
+4. **`pane.create` needs the runtime to report the new surface.** `new_split` is
+   fire-and-forget, so `pane.create` diffs the surface list within a bounded wait
+   (500 ms default) and returns `internal` rather than inventing an id.
+5. **Exit status and bell counts are unknown (`null`).** The runtime reports a
+   child exit as a message and drops the surface without retaining the status, and
+   it keeps no bell counter.
 
 ## 8. Worked examples
 
@@ -329,12 +390,41 @@ with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
 ### 9.3 Zig: end-to-end against an in-process host (test shape)
 
 ```zig
-var server: ipc.Server = try .init(alloc, io, .{ .socket_path = path, .auth = auth });
-try server.start(io, .{ .manager = &manager });
-const client = try ipc.server.Client.connect(io, path);
-defer client.deinit(io);
-try client.writeRequest(io, .{ .id = 1, .cmd = .pane_create, .opts = .{ .split = .vertical } });
-const resp = try client.readMessage(io, alloc);
+const ipc = @import("apprt/ipc/server.zig");
+
+// One setup: paths, token, authenticator.
+var setup = try ipc.auth.setup(alloc, io, .process());
+defer setup.deinit();
+
+// One manager over a host (AppHost in a windowed build, fake_host in tests).
+var manager = pane.Manager.init(alloc, host);
+defer manager.deinit(io);
+
+var broker = events.Broker.init(alloc);
+defer broker.deinit(io);
+manager.setEventBroker(&broker);
+
+var server = try ipc.Server.bind(alloc, io, .{
+    .socket_path = setup.paths.socket,
+}, .{
+    .manager = &manager,
+    .broker = &broker,
+    .authenticator = &setup.auth,
+});
+defer server.deinit();
+try server.start();
+
+// Client side.
+var client = try ipc.Client.connect(alloc, io, setup.paths.socket);
+defer client.deinit();
+try client.send(.{
+    .id = 1,
+    .auth = setup.auth.token(),
+    .cmd = .pane_create,
+    .opts = .{ .split = .vertical, .cwd = "/tmp" },
+});
+const response = try client.readResponse(alloc);
+defer response.deinit();
 ```
 
 ### 9.4 Event subscription
@@ -345,3 +435,25 @@ const resp = try client.readMessage(io, alloc);
 {"v":1,"event":"title_change","pane_id":"p-4","seq":1,"data":{"title":"vim README.md"}}
 {"v":1,"event":"child_exit","pane_id":"p-4","seq":2,"data":{"exit_code":0,"signal":null}}
 ```
+
+An agent that must not run a background reader can turn the pusher off and drive
+delivery explicitly: send a cheap `{"cmd":"ping"}` after each action, then read
+frames until the `ping` response arrives. Event frames that come back on the way
+are the events published since the previous tick.
+
+### 9.5 What an agent should expect
+
+- Every response carries `v` (the server's protocol version) and, when the
+  request had an `id`, that `id` back. A response with `"ok":false` always has an
+  `error.code` an agent can branch on.
+- Fields the runtime does not know are `null`, never `0`/`false`. In particular
+  `exit_code`, `bell_count`, `scrollback_rows` and `last_activity_ms` are `null`
+  until the runtime is taught to track them (section 7, limit 5).
+- Commands the runtime cannot service answer `host_unsupported` (today:
+  `pane.focus`, `pane.search`). Agents should treat that as "ask the user", not
+  as a transient failure to retry.
+- `pane.list` may be served from the manager's registry (pane ids it has seen)
+  when the runtime cannot enumerate its surfaces; fields are then `null`, so an
+  agent that needs real state should follow up with `pane.state`.
+- One subscription per connection: a second `events.subscribe` replaces the
+  first, and `events.unsubscribe` without one is `not_subscribed`.
