@@ -1,0 +1,39 @@
+[package]
+name = "khostty-vt"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+description = "Safe Rust FFI wrappers for libghostty-vt, the Ghostty virtual terminal emulator library"
+license = "MIT"
+repository = "https://github.com/KooshaPari/khostty"
+homepage = "https://ghostty.org"
+readme = "README.md"
+keywords = ["terminal", "vt", "ghostty", "ffi", "emulator"]
+categories = ["api-bindings", "command-line-interface"]
+exclude = ["/tools/gen_ffi.py", "/tests/abi_layout.txt"]
+
+[lib]
+name = "khostty_vt"
+path = "src/lib.rs"
+
+[features]
+default = ["link"]
+# Emit linker directives for a prebuilt libghostty-vt. Disable with
+# `--no-default-features` to typecheck the crate without the native library.
+link = []
+# Regenerate `$OUT_DIR/bindings.rs` from the C headers with bindgen and verify
+# that it agrees with the checked-in hand-written bindings in `src/ffi.rs`.
+# Requires libclang at build time. Off by default so that a plain `cargo check`
+# never needs a Clang toolchain.
+bindgen = ["dep:bindgen"]
+
+[build-dependencies]
+bindgen = { version = "0.73", optional = true }
+
+[dependencies]
+
+[dev-dependencies]
+
+[package.metadata.docs.rs]
+all-features = false
+features = ["link"]
