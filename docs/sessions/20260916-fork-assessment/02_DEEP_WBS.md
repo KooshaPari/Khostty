@@ -119,12 +119,12 @@ The fork's value is NOT rebuilding what upstream has. It is:
 | G1 | Native Build Validation | 3 | 30m | DONE | -- |
 | G2 | Conformance Evidence | 12 | 120m | DONE (84/84 pass) | CRITICAL |
 | G3 | Windows App Runtime | 15 | 150m | IN PROGRESS | HIGH |
-| G4 | Agent/IPC Surface | 14 | 140m | IN PROGRESS | HIGH |
-| G5 | Polyglot FFI — Rust | 10 | 100m | IN PROGRESS | HIGH |
-| G6 | Polyglot FFI — Go + Python | 8 | 80m | IN PROGRESS | MEDIUM |
+| G4 | Agent/IPC Surface | 14 | 140m | DONE | HIGH |
+| G5 | Polyglot FFI — Rust | 10 | 100m | DONE (199/199 tests) | HIGH |
+| G6 | Polyglot FFI — Go + Python | 8 | 80m | DONE (207 tests) | MEDIUM |
 | G7 | WASM Cross-Compilation | 10 | 100m | DONE (54/54 tests) | HIGH |
-| G8 | Khostty-Specific Improvements | 10 | 100m | IN PROGRESS | MEDIUM |
-| G9 | Documentation + Packaging | 8 | 80m | IN PROGRESS | MEDIUM |
+| G8 | Khostty-Specific Improvements | 10 | 100m | DONE (measured) | MEDIUM |
+| G9 | Documentation + Packaging | 8 | 80m | docs DONE, packaging pending | MEDIUM |
 | G10 | Release Artifacts | 6 | 60m | NOT STARTED | MEDIUM |
 | | **TOTAL** | **100** | **1000m (~16.7h)** | **70m done** | |
 
