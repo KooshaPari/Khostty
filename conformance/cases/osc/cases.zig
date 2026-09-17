@@ -1,0 +1,93 @@
+//! OSC Tests: Operating System Command escape sequences.
+
+pub const Test = struct {
+    name: []const u8,
+    input: []const u8,
+    expected_title: ?[]const u8,
+    expected_clipboard: ?[]const u8,
+    expected_pwd: ?[]const u8,
+    expected_hyperlink: ?[]const u8,
+};
+
+pub const cases = [_]Test{
+    .{
+        .name = "osc_0_set_title",
+        .input = "\x1b]0;Test Window Title\x07",
+        .expected_title = "Test Window Title",
+        .expected_clipboard = null,
+        .expected_pwd = null,
+        .expected_hyperlink = null,
+    },
+    .{
+        .name = "osc_2_set_title",
+        .input = "\x1b]2;Another Title\x07",
+        .expected_title = "Another Title",
+        .expected_clipboard = null,
+        .expected_pwd = null,
+        .expected_hyperlink = null,
+    },
+    .{
+        .name = "osc_10_set_fg",
+        .input = "\x1b]10;#ff0000\x07",
+        .expected_title = null,
+        .expected_clipboard = null,
+        .expected_pwd = null,
+        .expected_hyperlink = null,
+    },
+    .{
+        .name = "osc_11_set_bg",
+        .input = "\x1b]11;#00ff00\x07",
+        .expected_title = null,
+        .expected_clipboard = null,
+        .expected_pwd = null,
+        .expected_hyperlink = null,
+    },
+    .{
+        .name = "osc_12_set_cursor",
+        .input = "\x1b]12;#0000ff\x07",
+        .expected_title = null,
+        .expected_clipboard = null,
+        .expected_pwd = null,
+        .expected_hyperlink = null,
+    },
+    .{
+        .name = "osc_7_set_pwd",
+        .input = "\x1b]7;file:///home/user/documents\x07",
+        .expected_title = null,
+        .expected_clipboard = null,
+        .expected_pwd = "file:///home/user/documents",
+        .expected_hyperlink = null,
+    },
+    .{
+        .name = "osc_9_set_pwd",
+        .input = "\x1b]9;48;file:///home/user/project\x07",
+        .expected_title = null,
+        .expected_clipboard = null,
+        .expected_pwd = "file:///home/user/project",
+        .expected_hyperlink = null,
+    },
+    .{
+        .name = "osc_8_hyperlink_open",
+        .input = "\x1b]8;url=https://example.com;Click Here\x1b\\",
+        .expected_title = null,
+        .expected_clipboard = null,
+        .expected_pwd = null,
+        .expected_hyperlink = "https://example.com",
+    },
+    .{
+        .name = "osc_8_hyperlink_close",
+        .input = "\x1b]8;;\x1b\\",
+        .expected_title = null,
+        .expected_clipboard = null,
+        .expected_pwd = null,
+        .expected_hyperlink = "",
+    },
+    .{
+        .name = "osc_52_clipboard_copy",
+        .input = "\x1b]52;c;SGVsbG8gV29ybGQ=\x07",
+        .expected_title = null,
+        .expected_clipboard = "Hello World",
+        .expected_pwd = null,
+        .expected_hyperlink = null,
+    },
+};
