@@ -169,7 +169,7 @@ fn link_feature(manifest_dir: &Path) {
     };
 
     println!("cargo:rustc-link-search=native={}", dir.display());
-    println!("cargo:rustc-link-lib={}={}", kind, "ghostty-vt");
+    println!("cargo:rustc-link-lib={kind}=ghostty-vt");
 
     // Integration tests and examples are separate executables, so they need an
     // rpath to resolve the shared library at run time.

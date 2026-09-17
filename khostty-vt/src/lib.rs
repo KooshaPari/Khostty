@@ -8,11 +8,15 @@
 //!
 //! ## Layout
 //!
-//! | Module  | Contents                                                       |
-//! |---------|----------------------------------------------------------------|
-//! | [`ffi`] | Raw `extern "C"` declarations, generated from the C headers    |
+//! | Module        | Contents                                                     |
+//! |---------------|--------------------------------------------------------------|
+//! | [`ffi`]       | Raw `extern "C"` declarations, generated from the C headers  |
+//! | [`error`]     | [`error::GhosttyError`], mapping `GhosttyResult` codes        |
+//! | [`sys`]       | Allocator integration, owned buffers, two-pass encode helper  |
 //!
 //! The safe RAII wrappers (`terminal`, `snapshot`, `render`, `search`, `key`,
-//! `mouse`, `error`) are added incrementally on top of these raw bindings.
+//! `mouse`) are added incrementally on top of these raw bindings.
 
+pub mod error;
 pub mod ffi;
+pub mod sys;
