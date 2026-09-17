@@ -94,4 +94,8 @@ cc -I"$REPO_ROOT/include" -O2 -Wall -Wextra -std=c11 \
    -L"$LIB_DIR" -lghostty-vt -Wl,-rpath,"$LIB_DIR" \
    -o "$OUT"
 
+# Stamp the exact library that was linked, so run.sh can record the resolved
+# path and its digest without duplicating the variant-to-directory logic here.
+printf '%s\n' "$LIB_DIR/libghostty-vt.dylib" > "$BUILD_DIR/$LABEL.libpath"
+
 echo "built: $OUT  (label=$LABEL, library=$LIB_DIR/libghostty-vt.dylib)"

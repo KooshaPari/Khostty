@@ -64,7 +64,16 @@ if [[ -n "$(git -C "$REPO_ROOT" status --porcelain 2>/dev/null)" ]]; then
     GIT_DIRTY="dirty"
 fi
 
+# Install name recorded in the binary ("@rpath/libghostty-vt.dylib") plus the
+# resolved file and its digest. A digest is what makes it impossible for two
+# results files to describe the same label but different binaries.
 LIB_PATH="$(otool -L "$BIN" | awk '/libghostty-vt/ {print $1; exit}')"
+LIB_FILE="$(cat "$BUILD_DIR/$VARIANT.libpath" 2>/dev/null || echo unknown)"
+if [[ "$LIB_FILE" != "unknown" && -f "$LIB_FILE" ]]; then
+    LIB_SHA="$(shasum -a 256 "$LIB_FILE" | awk '{print $1}')"
+else
+    LIB_SHA="unknown"
+fi
 
 # Digest of the harness sources that produced the binary. The JSON already
 # records the library version and optimize mode, which is what makes a
@@ -93,6 +102,8 @@ TZ=America/Los_Angeles "$BIN" \
     --note "command=bench/run.sh --label $LABEL --only $ONLY" \
     --note "build=cc -O2 -Wall -Wextra -std=c11 bench/*.c -lghostty-vt" \
     --note "harness_source_sha256=$HARNESS_DIGEST" \
+    --note "library_file=$LIB_FILE" \
+    --note "library_sha256=$LIB_SHA" \
     --out "$JSON" | tee "$RAW"
 
 echo
