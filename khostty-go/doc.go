@@ -6,6 +6,20 @@
 // strings to the borrowed `GhosttyString` / `GhosttyBuffer` views the C
 // API expects. No terminal state is duplicated on the Go side.
 //
+// # What it covers
+//
+//   - Terminal lifecycle and VT input: ghostty_vt.go, ghostty_vt_get.go
+//   - Snapshot encode and restore: ghostty_snapshot.go
+//   - Plain-text, VT, and HTML rendering: ghostty_render.go
+//   - Screen and scrollback search: ghostty_search.go
+//   - Terminal cell styles: style.go
+//   - Key event encoding: ghostty_key.go, ghostty_keyevent.go, keys_gen.go
+//   - Mouse event encoding: ghostty_mouse.go, ghostty_mouseevent.go
+//
+// The key name table is generated from the library's own type manifest by
+// tools/genkeys, and Terminal.cursor_style reports the SGR style applied to
+// newly printed text, which is not the cursor shape.
+//
 // # Linking
 //
 // The cgo link flags live in link_default.go and point at the Khostty

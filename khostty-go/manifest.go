@@ -45,8 +45,18 @@ type TypeLayout struct {
 	Size  int    `json:"size"`
 	Align int    `json:"align"`
 
-	// Fields is populated for structs; keyed by C field name.
+	// Fields is populated for structs and unions; keyed by C field name.
 	Fields map[string]FieldLayout `json:"fields"`
+
+	// Values is populated for enums; keyed by member name with the C prefix
+	// already stripped.
+	Values map[string]int `json:"values"`
+
+	// Prefix is the enum's C member prefix, e.g. "GHOSTTY_KEY_".
+	Prefix string `json:"prefix"`
+
+	// Underlying is the enum's C integer type, e.g. "i32".
+	Underlying string `json:"underlying"`
 }
 
 // FieldLayout is the position and type of one struct field.
@@ -72,6 +82,20 @@ func (m *Manifest) SizeOf(name string) (int, bool) {
 		return 0, false
 	}
 	return t.Size, true
+}
+
+// EnumValues returns the members of a C enum, or false when the manifest has
+// no such enum.
+//
+// Member names have the C prefix stripped, so GhosttyKey arrives as "ESCAPE",
+// "ARROW_UP", and so on. The MAX_VALUE sentinel is included; callers that want
+// only real members should skip it.
+func (m *Manifest) EnumValues(name string) (map[string]int, bool) {
+	t, ok := m.Types[name]
+	if !ok || t.Kind != "enum" {
+		return nil, false
+	}
+	return t.Values, true
 }
 
 // manifestSizes extracts just the type sizes from a raw manifest.
