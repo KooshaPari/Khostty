@@ -11,6 +11,7 @@ include LICENSE
 recursive-include khostty_vt py.typed *.py
 recursive-include tests *.py
 recursive-include examples *.py
+recursive-include tools *.py
 
 # Build artefacts and caches never belong in a distribution.
 global-exclude *.py[cod]

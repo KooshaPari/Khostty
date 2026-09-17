@@ -15,6 +15,7 @@ from __future__ import annotations
 from typing import Any, Dict, Tuple
 
 from . import _ffi
+from ._enums_gen import Keys
 from .constants import (
     CursorShape,
     FormatterFormat,
@@ -29,10 +30,21 @@ from .constants import (
     TerminalOption,
     Underline,
 )
+from .key import KeyAction, KeyEncoderOption, OptionAsAlt
+from .mouse import MouseAction, MouseButton, MouseEncoderOption, MouseFormat, MouseTrackingMode
 
 __all__ = ["ENUM_TYPES", "validate_abi", "validate_enum_values"]
 
 #: Python enum class to the C enum name in the type manifest.
+#:
+#: Only real C enums belong here. ``GhosttyMods`` and
+#: ``GhosttyKittyKeyFlags`` are ``#define`` bitmasks rather than enums, so the
+#: manifest does not enumerate their bits and there is nothing to compare
+#: against; they are transcribed from include/ghostty/vt/key/event.h and
+#: key/encoder.h instead. That transcription is checked indirectly and more
+#: convincingly by the encoding tests, which fail if a bit is wrong: the tests
+#: assert that Mods.CTRL produces 0x03 and that KittyFlags.ALL produces
+#: \x1b[99;5u.
 ENUM_TYPES: Dict[type, str] = {
     Result: "GhosttyResult",
     TerminalData: "GhosttyTerminalData",
@@ -46,6 +58,15 @@ ENUM_TYPES: Dict[type, str] = {
     SearchScroll: "GhosttySearchScroll",
     StyleColorKind: "GhosttyStyleColorTag",
     Underline: "GhosttySgrUnderline",
+    Keys: "GhosttyKey",
+    KeyAction: "GhosttyKeyAction",
+    KeyEncoderOption: "GhosttyKeyEncoderOption",
+    OptionAsAlt: "GhosttyOptionAsAlt",
+    MouseAction: "GhosttyMouseAction",
+    MouseButton: "GhosttyMouseButton",
+    MouseFormat: "GhosttyMouseFormat",
+    MouseTrackingMode: "GhosttyMouseTrackingMode",
+    MouseEncoderOption: "GhosttyMouseEncoderOption",
 }
 
 

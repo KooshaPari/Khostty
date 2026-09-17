@@ -64,6 +64,8 @@ ignore = [
 # The cdef block reproduces the C header's declarations, so its lines are as
 # long as the header's are.
 "khostty_vt/_cdef.py" = ["E501"]
+# Generated from the library's enum, which genuinely names keys `I` and `O`.
+"khostty_vt/_enums_gen.py" = ["E741"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

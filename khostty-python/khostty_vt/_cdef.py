@@ -33,6 +33,8 @@ STRUCT_SIZES = {
     "GhosttyColorRgb": 3,
     "GhosttyGridRef": 24,
     "GhosttyTerminalScrollbar": 24,
+    "GhosttyMousePosition": 8,
+    "GhosttyMouseEncoderSize": 40,
     "GhosttySelection": 64,
     "GhosttySelectionBuffer": 24,
     "GhosttyStyleColor": 16,
@@ -56,6 +58,10 @@ typedef struct GhosttyTerminalImpl *GhosttyTerminal;
 typedef struct GhosttySnapshotDecoderImpl *GhosttySnapshotDecoder;
 typedef struct GhosttySearchImpl *GhosttySearch;
 typedef struct GhosttyFormatterImpl *GhosttyFormatter;
+typedef struct GhosttyKeyEventImpl *GhosttyKeyEvent;
+typedef struct GhosttyKeyEncoderImpl *GhosttyKeyEncoder;
+typedef struct GhosttyMouseEventImpl *GhosttyMouseEvent;
+typedef struct GhosttyMouseEncoderImpl *GhosttyMouseEncoder;
 
 typedef struct {
     const uint8_t *ptr;
@@ -195,6 +201,65 @@ int ghostty_search_get(GhosttySearch search, int data, void *value);
 int ghostty_search_run(GhosttySearch search);
 int ghostty_search_feed(GhosttySearch search);
 int ghostty_search_tick(GhosttySearch search, int *out_status);
+
+typedef struct {
+    float x;
+    float y;
+} GhosttyMousePosition;
+
+typedef struct {
+    size_t size;
+    uint32_t screen_width;
+    uint32_t screen_height;
+    uint32_t cell_width;
+    uint32_t cell_height;
+    uint32_t padding_top;
+    uint32_t padding_bottom;
+    uint32_t padding_right;
+    uint32_t padding_left;
+} GhosttyMouseEncoderSize;
+
+int ghostty_key_event_new(const void *allocator, GhosttyKeyEvent *event);
+void ghostty_key_event_free(GhosttyKeyEvent event);
+void ghostty_key_event_set_action(GhosttyKeyEvent event, int action);
+int ghostty_key_event_get_action(GhosttyKeyEvent event);
+void ghostty_key_event_set_key(GhosttyKeyEvent event, int key);
+int ghostty_key_event_get_key(GhosttyKeyEvent event);
+void ghostty_key_event_set_mods(GhosttyKeyEvent event, uint16_t mods);
+uint16_t ghostty_key_event_get_mods(GhosttyKeyEvent event);
+void ghostty_key_event_set_consumed_mods(GhosttyKeyEvent event, uint16_t mods);
+uint16_t ghostty_key_event_get_consumed_mods(GhosttyKeyEvent event);
+void ghostty_key_event_set_composing(GhosttyKeyEvent event, _Bool composing);
+_Bool ghostty_key_event_get_composing(GhosttyKeyEvent event);
+void ghostty_key_event_set_utf8(GhosttyKeyEvent event, const char *utf8, size_t len);
+const char *ghostty_key_event_get_utf8(GhosttyKeyEvent event, size_t *len);
+void ghostty_key_event_set_unshifted_codepoint(GhosttyKeyEvent event, uint32_t codepoint);
+uint32_t ghostty_key_event_get_unshifted_codepoint(GhosttyKeyEvent event);
+
+int ghostty_key_encoder_new(const void *allocator, GhosttyKeyEncoder *encoder);
+void ghostty_key_encoder_free(GhosttyKeyEncoder encoder);
+void ghostty_key_encoder_setopt(GhosttyKeyEncoder encoder, int option, const void *value);
+void ghostty_key_encoder_setopt_from_terminal(GhosttyKeyEncoder encoder, GhosttyTerminal terminal);
+int ghostty_key_encoder_encode(GhosttyKeyEncoder encoder, GhosttyKeyEvent event, char *out_buf, size_t out_buf_size, size_t *out_len);
+
+int ghostty_mouse_event_new(const void *allocator, GhosttyMouseEvent *event);
+void ghostty_mouse_event_free(GhosttyMouseEvent event);
+void ghostty_mouse_event_set_action(GhosttyMouseEvent event, int action);
+int ghostty_mouse_event_get_action(GhosttyMouseEvent event);
+void ghostty_mouse_event_set_button(GhosttyMouseEvent event, int button);
+void ghostty_mouse_event_clear_button(GhosttyMouseEvent event);
+_Bool ghostty_mouse_event_get_button(GhosttyMouseEvent event, int *out);
+void ghostty_mouse_event_set_mods(GhosttyMouseEvent event, uint16_t mods);
+uint16_t ghostty_mouse_event_get_mods(GhosttyMouseEvent event);
+void ghostty_mouse_event_set_position(GhosttyMouseEvent event, GhosttyMousePosition position);
+GhosttyMousePosition ghostty_mouse_event_get_position(GhosttyMouseEvent event);
+
+int ghostty_mouse_encoder_new(const void *allocator, GhosttyMouseEncoder *encoder);
+void ghostty_mouse_encoder_free(GhosttyMouseEncoder encoder);
+void ghostty_mouse_encoder_setopt(GhosttyMouseEncoder encoder, int option, const void *value);
+void ghostty_mouse_encoder_setopt_from_terminal(GhosttyMouseEncoder encoder, GhosttyTerminal terminal);
+void ghostty_mouse_encoder_reset(GhosttyMouseEncoder encoder);
+int ghostty_mouse_encoder_encode(GhosttyMouseEncoder encoder, GhosttyMouseEvent event, char *out_buf, size_t out_buf_size, size_t *out_len);
 
 void ghostty_style_default(GhosttyStyle *style);
 _Bool ghostty_style_is_default(const GhosttyStyle *style);

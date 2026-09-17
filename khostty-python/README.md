@@ -74,6 +74,76 @@ python examples/basic.py
 python examples/agent.py
 ```
 
+## Key and mouse input
+
+The bindings also produce the byte sequences an application expects, which is
+the other half of driving a pane:
+
+```python
+from khostty_vt import (
+    KeyAction,
+    KeyEncoder,
+    KeyEvent,
+    Keys,
+    KittyFlags,
+    Mods,
+    MouseAction,
+    MouseButton,
+    MouseEncoder,
+    MouseEvent,
+    MouseFormat,
+    MousePosition,
+    MouseTrackingMode,
+    EncoderSize,
+)
+
+with Terminal(cols=80, rows=24) as term, KeyEncoder() as keys, KeyEvent() as event:
+    keys.sync_from_terminal(term)  # follow the app's modes
+
+    event.set_key(Keys.A).set_utf8("a").set_action(KeyAction.PRESS)
+    print(keys.encode(event))  # b'a'
+
+    event.set_key(Keys.C).set_mods(Mods.CTRL).set_utf8("")
+    print(keys.encode(event))  # b'\x03'
+
+    # Kitty protocol needs the unshifted codepoint as well as the key.
+    keys.set_kitty_flags(KittyFlags.ALL)
+    event.set_key(Keys.C).set_mods(Mods.CTRL)
+    event.set_unshifted_codepoint(ord("c"))
+    print(keys.encode(event))  # b'\x1b[99;5u'
+
+with MouseEncoder() as mouse, MouseEvent() as click:
+    mouse.set_tracking_mode(MouseTrackingMode.NORMAL)
+    mouse.set_format(MouseFormat.SGR)
+    mouse.set_size(
+        EncoderSize(
+            screen_width=800,
+            screen_height=600,
+            cell_width=10,
+            cell_height=20,
+        )
+    )
+
+    click.set_action(MouseAction.PRESS).set_button(MouseButton.LEFT)
+    click.set_position(MousePosition(x=50, y=40))
+    print(mouse.encode(click))  # b'\x1b[<0;6;3M'
+```
+
+Three behaviours are worth knowing, because each makes an encode produce
+nothing rather than raising:
+
+* A printable key needs its text. A physical key code does not say which
+  character was produced, so ``set_utf8`` is required for anything that types.
+* Kitty encoding additionally needs the unshifted codepoint.
+* An Alt prefix needs both the DEC 1036 mode and option-as-alt.
+
+And an empty result from the mouse encoder is a valid outcome, not a failure:
+motion with no button held is not reportable under
+``MouseTrackingMode.NORMAL``. The same empty result appears for a less obvious
+reason, so it is worth stating: the encoder needs the *surface* dimensions as
+well as the cell size, and a zero ``screen_width`` or ``screen_height`` makes
+every event unreportable.
+
 ## Design notes
 
 **RAII handles.** `Terminal`, `Formatter`, and `Search` are context managers

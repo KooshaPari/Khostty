@@ -37,6 +37,7 @@ symptoms.
 
 from __future__ import annotations
 
+from ._enums_gen import Keys
 from ._ffi import (
     LIBRARY_DIR_ENV,
     LIBRARY_ENV,
@@ -64,6 +65,19 @@ from .constants import (
 )
 from .errors import GhosttyError
 from .formatter import Format, Formatter, FormatterExtras, FormatterOptions
+from .key import KeyAction, KeyEncoderOption, KeyEvent, KittyFlags, Mods, OptionAsAlt
+from .keyencoder import KeyEncoder, encode_key
+from .mouse import (
+    EncoderSize,
+    MouseAction,
+    MouseButton,
+    MouseEncoderOption,
+    MouseFormat,
+    MousePosition,
+    MouseTrackingMode,
+    cell_for,
+)
+from .mouseevent import MouseEncoder, MouseEvent, encode_mouse
 from .search import Search
 from .snapshot import restore, snapshot_size
 from .style import Style, StyleColor
@@ -73,13 +87,30 @@ __all__ = [
     "LIBRARY_DIR_ENV",
     "LIBRARY_ENV",
     "CursorShape",
+    "EncoderSize",
     "Format",
     "Formatter",
     "FormatterExtras",
     "FormatterFormat",
     "FormatterOptions",
     "GhosttyError",
+    "KeyAction",
+    "KeyEncoder",
+    "KeyEncoderOption",
+    "KeyEvent",
+    "Keys",
+    "KittyFlags",
     "LibraryNotFoundError",
+    "Mods",
+    "MouseAction",
+    "MouseButton",
+    "MouseEncoder",
+    "MouseEncoderOption",
+    "MouseEvent",
+    "MouseFormat",
+    "MousePosition",
+    "MouseTrackingMode",
+    "OptionAsAlt",
     "Result",
     "Screen",
     "Search",
@@ -95,6 +126,9 @@ __all__ = [
     "TerminalOption",
     "Underline",
     "__version__",
+    "cell_for",
+    "encode_key",
+    "encode_mouse",
     "library_path",
     "load",
     "reset",

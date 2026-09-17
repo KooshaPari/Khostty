@@ -52,3 +52,8 @@ def test_agent_example_runs(library: str) -> None:
     assert "matches for 'FAIL'" in out
     assert "resumed session renders identically: True" in out
     assert "transcript still readable after reflow: True" in out
+
+    # The input half: encoding keystrokes and pointer events back to the pane.
+    assert "key: encoder emitted b'a' for 'a'" in out
+    assert "Ctrl+C encodes to b'\\x03'" in out
+    assert "encoded b'\\x1b[<0;6;3M'" in out

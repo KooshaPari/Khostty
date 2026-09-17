@@ -24,7 +24,27 @@ _ROOT = Path(__file__).resolve().parent.parent
 if (_ROOT / "khostty_vt").is_dir() and str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from khostty_vt import Format, Screen, SearchScroll, Terminal, TerminalOption, restore
+from khostty_vt import (
+    EncoderSize,
+    Format,
+    KeyAction,
+    KeyEncoder,
+    KeyEvent,
+    Keys,
+    Mods,
+    MouseAction,
+    MouseButton,
+    MouseEncoder,
+    MouseEvent,
+    MouseFormat,
+    MousePosition,
+    MouseTrackingMode,
+    Screen,
+    SearchScroll,
+    Terminal,
+    TerminalOption,
+    restore,
+)
 
 TEST_OUTPUT = [
     "$ make test\r\n",
@@ -93,6 +113,39 @@ def report_render(term: Terminal) -> None:
     print(f"  transcript still readable after reflow: {'TestWidgetRender' in plain}")
 
 
+def report_input(term: Terminal) -> None:
+    """Encode input to send back to the pane.
+
+    This is the other half of driving a pane: not just reading it, but
+    producing the byte sequences an application expects, under whatever modes
+    it enabled.
+    """
+    # A keystroke needs its text, not just the physical key: a key code alone
+    # does not say which character was produced.
+    with KeyEncoder() as keys, KeyEvent() as event:
+        keys.sync_from_terminal(term)
+        event.set_key(Keys.A).set_utf8("a").set_action(KeyAction.PRESS)
+        typed = keys.encode(event)
+        print(f"key: encoder emitted {typed!r} for 'a'")
+
+        # Ctrl+C needs no text; it is a control character.
+        event.set_key(Keys.C).set_mods(Mods.CTRL).set_utf8("")
+        interrupt = keys.encode(event)
+        print(f"key: Ctrl+C encodes to {interrupt!r}")
+
+    # A pointer event needs the cell geometry to turn pixels into cells.
+    with MouseEncoder() as mouse, MouseEvent() as click:
+        mouse.set_tracking_mode(MouseTrackingMode.NORMAL)
+        mouse.set_format(MouseFormat.SGR)
+        mouse.set_size(
+            EncoderSize(screen_width=800, screen_height=600, cell_width=10, cell_height=20)
+        )
+        click.set_action(MouseAction.PRESS).set_button(MouseButton.LEFT)
+        click.set_position(MousePosition(x=50, y=40))
+        sequence = mouse.encode(click)
+        print(f"mouse: click at pixel (50,40) is cell (6,3), encoded {sequence!r}")
+
+
 def report_resume(term: Terminal) -> bytes:
     """Snapshot the session so another process could resume it."""
     snapshot = term.snapshot()
@@ -120,6 +173,7 @@ def main() -> None:
         report_context(pane)
         report_failures(pane)
         report_render(pane)
+        report_input(pane)
         snapshot = report_resume(pane)
         resize_pane(pane, 120, 40)
         assert pane.active_screen == Screen.PRIMARY
