@@ -1,7 +1,7 @@
 # Khostty First Handoff
 
 **Date:** 2026-09-16
-**Repo:** KooshaPari/Khostty (fork of ghostty-org/ghostty)
+**Repo:** <REDACTED>/Khostty (fork of ghostty-org/ghostty)
 **Branch:** main
 **Divergence:** 14 ahead of upstream (11 CI/docs + 3 CI fixes + 1 docs)
 

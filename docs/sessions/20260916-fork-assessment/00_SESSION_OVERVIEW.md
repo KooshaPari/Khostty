@@ -5,7 +5,7 @@
 | Item | Value |
 |------|-------|
 | upstream | ghostty-org/ghostty |
-| fork | KooshaPari/Khostty |
+| fork | <REDACTED>/Khostty |
 | divergence | 13 ahead, 0 behind |
 | build | Zig 0.16.0 (aarch64-macos) |
 | Metal | BLOCKED (Xcode 26 beta missing MetalToolchain component) |
