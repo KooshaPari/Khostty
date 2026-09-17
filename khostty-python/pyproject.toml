@@ -8,12 +8,12 @@ version = "0.1.0"
 description = "Python bindings for libghostty-vt, the terminal emulator from Ghostty"
 readme = "README.md"
 requires-python = ">=3.8"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 keywords = ["terminal", "vt", "ghostty", "emulator", "cffi"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Topic :: Terminals :: Terminal Emulators/X Terminals",
 ]

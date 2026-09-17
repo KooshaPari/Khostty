@@ -1,0 +1,22 @@
+# Source distribution contents.
+#
+# The wheel is fully described by pyproject.toml; this file adds the parts of
+# the repository that belong in an sdist so a user can read the examples and
+# run the suite from the unpacked archive.
+
+include README.md
+include pyproject.toml
+include LICENSE
+
+recursive-include khostty_vt py.typed *.py
+recursive-include tests *.py
+recursive-include examples *.py
+
+# Build artefacts and caches never belong in a distribution.
+global-exclude *.py[cod]
+global-exclude __pycache__
+prune .venv
+prune .ruff_cache
+prune .pytest_cache
+prune dist
+prune build

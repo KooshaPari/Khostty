@@ -65,17 +65,28 @@ class LibraryNotFoundError(OSError):
 
     def __init__(self, searched: List[str], detail: str = "") -> None:
         self.searched = searched
+
+        # The loader's own error enumerates every path it tried, which would
+        # swamp the message, so only its first line is kept.
+        first_line = detail.splitlines()[0].strip() if detail else ""
+        if first_line.lower().startswith("ctypes.util.find_library"):
+            first_line = ""
+
         lines = [
             "could not locate libghostty-vt.",
-            "Build it with:  zig build install -Doptimize=ReleaseFast",
-            "Then either set an environment variable:",
+            "",
+            "Build it with:",
+            "    zig build install -Doptimize=ReleaseFast",
+            "",
+            "Then point the bindings at it with either:",
             f"    export {LIBRARY_ENV}=/path/to/libghostty-vt.dylib",
             f"    export {LIBRARY_DIR_ENV}=/path/to/lib",
-            "or point it at one of the locations searched:",
+            "",
+            f"Locations searched ({len(searched)}):",
         ]
         lines.extend(f"    {path}" for path in searched)
-        if detail:
-            lines.append(f"last error: {detail}")
+        if first_line:
+            lines.extend(["", f"Loader said: {first_line}"])
         super().__init__("\n".join(lines))
 
 
