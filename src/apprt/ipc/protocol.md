@@ -163,6 +163,17 @@ of `event` rather than assuming a response.
 | `pane.equalize` | `apprt.Action.equalize_splits` |
 | `pane.zoom` | `apprt.Action.toggle_split_zoom` |
 
+Pane object (returned by `pane.create`, and each entry of `pane.list`):
+
+```json
+{"pane_id":"p-3","title":"bash","pid":12345,"cwd":"/tmp","cols":120,"rows":40,"focused":true,"exited":false}
+```
+
+> Deviation from the WBS draft: the draft used `"id"` in `pane.list` entries but
+> `"pane_id"` everywhere else. This implementation standardizes on `pane_id` in
+> requests, events, and every pane payload. Fields the host does not know are
+> `null`.
+
 `new_split` is fire-and-forget in upstream: it carries no return value. The host
 adapter therefore resolves the new pane by diffing the runtime's surface registry
 before and after the action (see `Host.create` in `pane.zig`, implemented by
