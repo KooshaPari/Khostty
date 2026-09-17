@@ -34,6 +34,17 @@ bindgen = { version = "0.73", optional = true }
 
 [dev-dependencies]
 
+# Examples link the native library, so they only build when the `link` feature is
+# on. Their bodies are additionally gated on the `ghostty_vt_linked` cfg, which
+# `build.rs` sets only when a prebuilt library was actually found.
+[[example]]
+name = "screen_dump"
+required-features = ["link"]
+
+[[example]]
+name = "agent_session"
+required-features = ["link"]
+
 [package.metadata.docs.rs]
 all-features = false
 features = ["link"]
