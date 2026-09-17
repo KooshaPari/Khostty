@@ -24,7 +24,8 @@
     "build": "./build.sh",
     "test": "node --test test/",
     "test:header": "./tools/verify-header.sh",
-    "check": "npm run test:header && npm test && npm run exports",
+    "typecheck": "npx --yes -p typescript@5 tsc -p tsconfig.json",
+    "check": "npm run test:header && npm run typecheck && npm test && npm run exports",
     "exports": "node tools/wasm-exports.mjs khostty-vt.wasm"
   },
   "sideEffects": false
