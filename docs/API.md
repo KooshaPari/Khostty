@@ -9,17 +9,17 @@ Each has a different stability story; read the status line before building on it
 | Rust | `khostty-vt/` crate | Pre-1.0; wrappers added incrementally | IN PROGRESS (G5) |
 | JS/TS (WASM) | `wasm/js/` package | Pre-1.0 (`version: 0.0.0`) | IN PROGRESS (G7) |
 | IPC | `src/apprt/ipc.zig` (3 actions) | Stable but narrow | DONE, narrow |
-| IPC (agent protocol) | `src/apprt/ipc/` *(planned)* | **Draft — not implemented** | NOT STARTED (G4) |
+| IPC (agent protocol) | `src/apprt/ipc/` | **No server yet — not reachable** | IN PROGRESS (G4) |
 | CLI | `khostty +<command>` | Follows upstream | DONE |
 
 Two surfaces are **not** available and must not be coded against:
 
-- The JSON agent IPC protocol in [AGENT.md](AGENT.md) is a **draft** from the
-  Deep WBS. `src/apprt/ipc/` does not exist. The Windows transport stub returns
-  `error.Unimplemented`.
-- Per-pane operations (create/close/focus/write/query/search) are **not exposed**
-  by any shipped API. Upstream splits are reachable only through the in-app
-  action system.
+- The JSON agent IPC protocol (v1) has an implemented wire layer and a full spec
+  at [`src/apprt/ipc/protocol.md`](../src/apprt/ipc/protocol.md), but **no
+  `server.zig` and no runtime wiring**, so nothing is listening. See §4.2.
+- Per-pane operations (create/close/focus/write/query/search) are therefore **not
+  reachable** through any shipped API, even though the modules exist. Upstream
+  splits remain reachable only through the in-app action system.
 
 ---
 
@@ -308,13 +308,60 @@ Supporting modules: `error` (`GhosttyError`, mapping every `GhosttyResult`),
 (`Style`, `StyleColor`, `Underline`), `ffi` (raw bindings, all `unsafe` isolated
 here).
 
+Safe RAII wrappers re-exported from the crate root (observed 2026-09-17 03:52 PT):
+
+| Export | Module | Wraps |
+|---|---|---|
+| `Terminal`, `Viewport` | `terminal` | Terminal lifecycle, queries, mutation |
+| `SnapshotDecoder`, `encode_snapshot` | `snapshot` | Snapshot encode/decode with lifetime-enforced rules |
+| `RenderState`, `Dirty` | `render` | Render state with borrow-checked row/cell access |
+| `Search`, `SearchStatus` | `search` | Scrollback search |
+| `Key`, `KeyEncoder`, `KeyEvent`, `Mods` | `key` | Key encoding |
+| `MouseEncoder`, `MouseEvent` | `mouse` | Mouse encoding |
+| `Selection`, `GridRef` | `selection` | Selection and stable grid references |
+
+Integration tests mirror these: `tests/terminal.rs`, `snapshot.rs`, `render.rs`,
+`search.rs`, `key_encoding.rs`, plus `abi_layout.rs` for the layout guard.
+
 ### Status and gaps
 
-IN PROGRESS (gate G5). As of 2026-09-17 the crate has raw bindings for 198
-functions and a safe `Terminal` wrapper. The safe wrappers named in the WBS for
-`snapshot`, `render`, `search`, `key`, and `mouse` are **not yet** present as
-public modules. `cargo test` for the wrappers requires a built
-`libghostty-vt`.
+IN PROGRESS (gate G5). The crate is feature-complete against the WBS module list
+and has raw bindings for 198 functions, but:
+
+- The crate-level doc comment in `lib.rs` still describes wrappers as arriving
+  incrementally; the exports above are ahead of that comment.
+- There is **no safe formatter wrapper**, so no `text()` / `html()` equivalent in
+  Rust. Use the raw `ffi` bindings or the WASM package.
+- `cargo test` for the wrappers requires a built `libghostty-vt`; without one the
+  test files compile to nothing via the `ghostty_vt_linked` cfg.
+- No `cargo test` run is recorded in this session's evidence. Treat the surface as
+  present-but-unverified.
+
+---
+
+## 2b. Go — `khostty-go`
+
+IN PROGRESS (gate G6). Cgo bindings for the same C ABI.
+
+| File | Contents |
+|---|---|
+| `go.mod` | Module definition |
+| `doc.go` | Package doc: link contract and toolchain caveats |
+| `link_default.go` / `link_custom.go` | cgo link directives; a `khostty_custom_lib` build tag selects an out-of-tree library |
+| `ffi.go`, `abi.go`, `manifest.go`, `enums.go` | FFI helpers, type manifest access, enum mirrors |
+| `ghostty_vt.go`, `ghostty_vt_get.go` | Terminal lifecycle and typed queries |
+| `ghostty_snapshot.go`, `ghostty_render.go`, `ghostty_search.go` | Snapshot, render state, search |
+| `style.go` | Style and colour mirrors |
+| `*_test.go` | Integration tests per area |
+| `Makefile` | Build/test entry points |
+
+Default link directives point at `../include` and `../zig-out/lib` with an rpath,
+so the shared object's `@rpath` install name resolves. Verified at commit time by
+its author: `go build ./...` and `go vet ./...` clean, with a link probe calling
+`ghostty_type_json()` returning the 43,543-byte type manifest. That verification is
+recorded in the commit ledger, not re-run here.
+
+There is **no Python wrapper** yet; that half of G6 is not started.
 
 ---
 
@@ -461,17 +508,49 @@ append to the end for ABI compatibility.
 **Not available:** pane create/close/focus, state query, scrollback search, event
 stream. There is no JSON wire format on this path.
 
-### 4.2 Khostty agent protocol — DRAFT, NOT IMPLEMENTED
+### 4.2 Khostty agent protocol v1 — IN PROGRESS, no server
 
-The Deep WBS specifies `src/apprt/ipc/` with `protocol.zig`, `server.zig`,
-`handler.zig`, `pane.zig`, `state.zig`, `events.zig`, and `auth.zig`. **None of
-these files exist as of 2026-09-17.** The only related code is
-`src/apprt/windows/ipc.zig`, a named-pipe stub whose every operation returns
-`error.Unimplemented`.
+**Normative spec:** [`src/apprt/ipc/protocol.md`](../src/apprt/ipc/protocol.md).
+That file is the authority for framing, commands, options, auth, versioning, and
+known limits. This subsection records status only.
 
-The drafted JSON shapes (`pane.create`, `pane.write`, `pane.state`, `pane.list`
-and async events) are reproduced in [AGENT.md](AGENT.md) labelled as a draft.
-They are a design proposal, not an interface. Do not build against them.
+Implemented modules (observed 2026-09-17 03:51 PT):
+
+| Path | Contents |
+|---|---|
+| `src/apprt/ipc/protocol.md` | v1 spec |
+| `src/apprt/ipc/protocol.zig` | Wire types, JSON codec |
+| `src/apprt/ipc/state.zig` | Terminal state snapshot |
+| `src/apprt/ipc/events.zig` | Async event broker |
+| `src/apprt/ipc/auth.zig` | Token auth, fail-closed |
+| `src/apprt/ipc/pane.zig` | Pane lifecycle + `Host` vtable |
+| `src/apprt/ipc/fake_host.zig` | Test host |
+
+Not implemented, which is why it is unreachable:
+
+| Missing | Consequence |
+|---|---|
+| `server.zig` | No accept loop; nothing listens on the documented socket |
+| `app_host.zig` | No app-backed `Host`; only the fake test host exists |
+| Re-export from `src/apprt/ipc/mod.zig` | Not reachable via the `apprt` interface |
+| Runtime wiring | No runtime constructs a server |
+
+Command set (13 commands), per the spec: `ping`, `pane.create`, `pane.close`,
+`pane.focus`, `pane.list`, `pane.write`, `pane.state`, `pane.search`,
+`pane.resize_split`, `pane.equalize`, `pane.zoom`, `events.subscribe`,
+`events.unsubscribe`.
+
+Transport: Unix domain socket, line-delimited JSON, integer version check.
+Default path `~/Library/Caches/khostty/ipc.sock` (macOS) or
+`$XDG_RUNTIME_DIR/khostty/ipc.sock` (Linux/BSD), overridable via
+`KHOSTTY_IPC_SOCKET`. Windows named pipe is a stated follow-up.
+
+Auth: token required for every command except `ping`. Sources in order:
+`KHOSTTY_IPC_TOKEN`, then a token file. **Fail-closed** — with no token
+configured, authenticated commands are rejected and the server never runs
+unauthenticated. Constant-time comparison.
+
+**Do not build against this yet.** See [AGENT.md](AGENT.md#4-agent-ipc-protocol-v1--in-progress-not-yet-reachable).
 
 ### 4.3 Windows named-pipe transport — SCAFFOLD
 

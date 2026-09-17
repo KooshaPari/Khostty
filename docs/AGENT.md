@@ -18,8 +18,8 @@ it will not work.
 | Encode key / mouse / focus events | **Available** | `key/encoder.h`, `mouse/encoder.h`, `focus.h` |
 | Run the parser in a browser or Node | **Available** | `@khostty/libghostty-vt-wasm` |
 | Open a new window / tab in a running instance | **Available (narrow)** | `khostty +new-window`, `+new-tab`, `+toggle-quick-terminal` |
-| Create, write to, focus, or query a **pane** | **NOT AVAILABLE** | Drafted only (G4) |
-| Subscribe to terminal events over IPC | **NOT AVAILABLE** | Drafted only (G4) |
+| Create, write to, focus, or query a **pane** | **Not reachable** | Modules implemented (G4); no `server.zig`, not wired |
+| Subscribe to terminal events over IPC | **Not reachable** | `events.zig` implemented (G4); no server |
 | Drive a Windows instance over IPC | **NOT AVAILABLE** | Named-pipe stub returns `error.Unimplemented` (G3) |
 
 **The reliable agent path today is embedding, not IPC.** An agent that needs to
@@ -152,90 +152,96 @@ This is a typed C ABI, not a text protocol. An agent that needs nothing more tha
 
 ---
 
-## 4. Drafted agent IPC protocol — NOT IMPLEMENTED
+## 4. Agent IPC protocol (v1) — IN PROGRESS, not yet reachable
 
-> **WARNING.** Everything in this section is a design proposal recorded in the
-> Deep WBS (G4, section "IPC Protocol (Draft)"). `src/apprt/ipc/` does not exist
-> as of 2026-09-17. The only related code is a Windows named-pipe stub whose
-> every operation returns `error.Unimplemented`. **Do not build against this.**
-> It is reproduced here so the design can be reviewed and so nobody invents a
-> third competing shape.
+**The authoritative specification is [`src/apprt/ipc/protocol.md`](../src/apprt/ipc/protocol.md).**
+Read that file, not this section. It is maintained next to the code and is far
+more detailed than anything a summary should repeat.
 
-### Message shapes
+This section records only the *status*, so nobody builds against an interface that
+cannot yet answer.
 
-```json
-// Agent → Khostty: create a pane
-{"cmd":"pane.create","opts":{"split":"vertical","cwd":"/tmp"}}
+### What exists (observed 2026-09-17 03:51 PT)
 
-// Khostty → Agent
-{"ok":true,"data":{"pane_id":"p-3","pid":12345}}
+| Path | Contents |
+|---|---|
+| `src/apprt/ipc/protocol.md` | v1 spec: transport, framing, message shapes, 13 commands, auth, versioning, limits, worked examples |
+| `src/apprt/ipc/protocol.zig` | Wire types and JSON codec |
+| `src/apprt/ipc/state.zig` | Machine-readable terminal state snapshot |
+| `src/apprt/ipc/events.zig` | Async event broker (title change, child exit, resize, bell) |
+| `src/apprt/ipc/auth.zig` | Token authentication, fail-closed |
+| `src/apprt/ipc/pane.zig` | Pane lifecycle and the `Host` vtable |
+| `src/apprt/ipc/fake_host.zig` | In-process host used by tests |
 
-// Agent → Khostty: write VT data into a pane
-{"cmd":"pane.write","pane_id":"p-3","data":"ls -la\n"}
+Upstream `src/apprt/ipc/mod.zig` (the three-action `new_window` / `new_tab` /
+`toggle_quick_terminal` channel) is unchanged. The v1 protocol is additive.
 
-// Agent → Khostty: query pane state
-{"cmd":"pane.state","pane_id":"p-3"}
+### What does not exist yet
 
-// Khostty → Agent
-{"ok":true,"data":{
-  "cursor":{"row":12,"col":45},
-  "title":"bash",
-  "size":{"cols":120,"rows":40}
-}}
+| Missing | Consequence |
+|---|---|
+| `src/apprt/ipc/server.zig` | **No accept loop. Nothing is listening.** The spec's §7 describes it; the file is not present. |
+| `src/apprt/ipc/app_host.zig` | No real app-backed `Host` implementation; only `fake_host.zig` for tests |
+| Re-export from `mod.zig` | The new modules are not reachable through the `apprt` interface |
+| Runtime wiring | No runtime constructs a server, so no running instance exposes the socket |
 
-// Agent → Khostty: list panes
-{"cmd":"pane.list"}
+**Conclusion:** the protocol is designed and partially implemented, but there is no
+end-to-end path. An agent cannot connect today. Do not build against it, and do not
+report it as shipped.
 
-// Khostty → Agent
-{"ok":true,"data":[
-  {"id":"p-3","title":"bash","pid":12345},
-  {"id":"p-7","title":"vim","pid":12389}
-]}
+### Protocol outline (see the spec for detail)
 
-// Khostty → Agent: asynchronous event
-{"event":"title_change","pane_id":"p-3","data":{"title":"~/projects/khostty"}}
-```
+Command set per `protocol.md` §4:
 
-Envelope conventions implied by the draft: responses carry `ok` plus `data`;
-events carry `event` with no `ok`; commands carry `cmd`; pane-scoped messages
-carry `pane_id`.
+| `cmd` | Purpose |
+|---|---|
+| `ping` | Liveness and version; intentionally unauthenticated |
+| `pane.create` | Split a pane (`vertical`/`horizontal`, or explicit `dir`, plus `cwd`, `title`, `focus`) |
+| `pane.close` / `pane.focus` / `pane.list` | Pane lifecycle |
+| `pane.write` | Inject VT bytes into a pane's parser (not into the child process) |
+| `pane.state` | Cursor, title, pid, cwd, size, modes, bell count, scrollback rows |
+| `pane.search` | Search screen and scrollback |
+| `pane.resize_split` / `pane.equalize` / `pane.zoom` | Layout control |
+| `events.subscribe` / `events.unsubscribe` | Async event stream |
 
-### Planned module layout
+Framing and transport, per `protocol.md` §2:
 
-```
-src/apprt/ipc/
-  protocol.zig   — JSON message types, versioning
-  server.zig     — Unix domain socket (+ Windows named pipe) accept loop
-  handler.zig    — command dispatch onto the action system
-  pane.zig       — create / close / focus / list / write / query / search
-  state.zig      — machine-readable state snapshot (JSON)
-  events.zig     — async event stream (title, exit, resize, bell)
-  auth.zig       — token-based authentication
-```
+| Item | Value |
+|---|---|
+| Transport | Unix domain socket (macOS/Linux); Windows named pipe is a stated follow-up |
+| Default path | macOS `~/Library/Caches/khostty/ipc.sock`; Linux/BSD `$XDG_RUNTIME_DIR/khostty/ipc.sock` (fallback `/tmp/khostty-$UID/ipc.sock`) |
+| Override | `KHOSTTY_IPC_SOCKET` |
+| Framing | Line-delimited JSON; integer version check, no negotiation |
 
-### Planned mappings onto the existing core
+Authentication, per `protocol.md` §5:
 
-The draft is deliberately a thin layer: each command wraps an existing capability
-rather than adding parser logic.
+- Required for **every** command except `ping`.
+- Token sources in order: `KHOSTTY_IPC_TOKEN`, then a token file
+  (`KHOSTTY_IPC_TOKEN_FILE`, else `ipc.token` next to the socket).
+- **Fail-closed:** with no token configured, every authenticated command is
+  rejected. It never runs unauthenticated.
+- Constant-time comparison; 32 random bytes hex-encoded (64 chars); token file
+  expected `0600` (loose permissions are logged, not refused).
+
+### How the design maps onto existing capability
+
+Each command wraps something that already exists, rather than adding parser logic:
 
 | Command | Wraps |
 |---|---|
-| `pane.create` | `Action.new_split` |
-| pane focus / navigation | `Action.goto_split` |
+| `pane.create` / `pane.focus` / `pane.close` | `apprt.Action.new_split`, `goto_split`, `close_tab` |
+| `pane.resize_split` / `pane.equalize` / `pane.zoom` | `apprt.Action.resize_split`, `equalize_splits`, `toggle_split_zoom` |
 | `pane.write` | `ghostty_terminal_vt_write` |
-| `pane.state` | `ghostty_terminal_get` (+ formatter for text) |
-| pane search | `ghostty_search_*` |
-| `pane.list` | pane registry built over the surface tree |
+| `pane.state` | `ghostty_terminal_get` |
+| `pane.search` | `ghostty_search_*` |
 
-### Authentication requirement
-
-The WBS acceptance criteria require a token for all commands. The rationale is
-direct: an unauthenticated socket that can write arbitrary VT into a live shell is
-remote code execution by design. See [SECURITY.md](SECURITY.md#3-ipc-authorization-requirement-drafted).
+One designed-in difficulty the spec calls out honestly: upstream `new_split` is
+fire-and-forget and returns nothing, so the host adapter resolves the new pane by
+diffing the runtime's surface registry before and after the action, and **fails**
+with `internal` rather than inventing a pane id when the runtime cannot report one
+within a bounded wait.
 
 ### G4 acceptance criteria (the definition of done)
-
-Reproduced from the WBS so this document does not overclaim:
 
 - Agent can create, close, and focus panes via JSON commands
 - Agent can write VT sequences to any pane
@@ -245,9 +251,9 @@ Reproduced from the WBS so this document does not overclaim:
 - Auth token required for all commands
 - Protocol documented with examples
 
-None of these are met today.
-
----
+Items 2, 3, 4, and 6 are implemented at the module level. Items 1 and 5 require the
+server and a real host, and remain unverified end to end. The protocol
+documentation criterion is met by `src/apprt/ipc/protocol.md`.
 
 ## 5. Transport notes for the Windows path
 
