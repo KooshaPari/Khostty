@@ -32,6 +32,7 @@ STRUCT_SIZES = {
     "GhosttyReader": 16,
     "GhosttyColorRgb": 3,
     "GhosttyGridRef": 24,
+    "GhosttyTerminalScrollbar": 24,
     "GhosttySelection": 64,
     "GhosttySelectionBuffer": 24,
     "GhosttyStyleColor": 16,
@@ -91,6 +92,12 @@ typedef struct {
     uint16_t x;
     uint16_t y;
 } GhosttyGridRef;
+
+typedef struct {
+    size_t total;
+    size_t offset;
+    size_t len;
+} GhosttyTerminalScrollbar;
 
 typedef struct {
     size_t size;

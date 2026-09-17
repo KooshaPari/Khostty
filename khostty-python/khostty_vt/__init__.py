@@ -47,18 +47,62 @@ from ._ffi import (
     type_manifest,
     validate_struct_sizes,
 )
+from ._verify import validate_abi, validate_enum_values
+from .constants import (
+    CursorShape,
+    FormatterFormat,
+    Result,
+    Screen,
+    SearchData,
+    SearchOption,
+    SearchScroll,
+    SearchStatus,
+    StyleColorKind,
+    TerminalData,
+    TerminalOption,
+    Underline,
+)
 from .errors import GhosttyError
+from .formatter import Format, Formatter, FormatterExtras, FormatterOptions
+from .search import Search
+from .snapshot import restore, snapshot_size
+from .style import Style, StyleColor
+from .terminal import Terminal
 
 __all__ = [
-    "GhosttyError",
     "LIBRARY_DIR_ENV",
     "LIBRARY_ENV",
+    "CursorShape",
+    "Format",
+    "Formatter",
+    "FormatterExtras",
+    "FormatterFormat",
+    "FormatterOptions",
+    "GhosttyError",
     "LibraryNotFoundError",
+    "Result",
+    "Screen",
+    "Search",
+    "SearchData",
+    "SearchOption",
+    "SearchScroll",
+    "SearchStatus",
+    "Style",
+    "StyleColor",
+    "StyleColorKind",
+    "Terminal",
+    "TerminalData",
+    "TerminalOption",
+    "Underline",
     "__version__",
     "library_path",
     "load",
     "reset",
+    "restore",
+    "snapshot_size",
     "type_manifest",
+    "validate_abi",
+    "validate_enum_values",
     "validate_struct_sizes",
 ]
 

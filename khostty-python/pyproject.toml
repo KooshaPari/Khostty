@@ -31,6 +31,34 @@ packages = ["khostty_vt"]
 [tool.setuptools.package-data]
 khostty_vt = ["py.typed"]
 
+[tool.ruff]
+# The package supports 3.8, so `typing.List`/`Optional` stay where they are
+# instead of being rewritten to PEP 585/604 syntax.
+target-version = "py38"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "RUF", "PYI"]
+ignore = [
+    # `__del__` must never raise, so the blind except-and-pass is deliberate.
+    "S110",
+    "BLE001",
+    # `__exit__` returns None by design: exceptions are not suppressed.
+    "PYI036",
+    # Callback options are declared but not callable from Python, so the
+    # declarations are deliberately incomplete relative to the C enum.
+    "PYI034",
+    "UP045",
+    "UP006",
+    "UP007",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+# The cdef block reproduces the C header's declarations, so its lines are as
+# long as the header's are.
+"khostty_vt/_cdef.py" = ["E501"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"

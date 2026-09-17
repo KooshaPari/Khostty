@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-__all__ = ["GhosttyError", "LibraryNotFoundError", "RESULT_NAMES", "check"]
+__all__ = ["RESULT_NAMES", "GhosttyError", "LibraryNotFoundError", "check"]
 
 
 # Result codes, mirroring GhosttyResult in include/ghostty/vt/types.h.

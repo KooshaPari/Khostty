@@ -31,15 +31,15 @@ from ._cdef import CDEF, STRUCT_SIZES
 
 __all__ = [
     "CDEF",
-    "LIBRARY_ENV",
     "LIBRARY_DIR_ENV",
+    "LIBRARY_ENV",
+    "STRUCT_SIZES",
     "LibraryNotFoundError",
-    "load",
+    "ffi",
     "library",
     "library_path",
-    "ffi",
+    "load",
     "reset",
-    "STRUCT_SIZES",
     "type_manifest",
     "validate_struct_sizes",
 ]
@@ -143,7 +143,7 @@ def library_path() -> str:
 
 def _import_cffi() -> Any:
     try:
-        import cffi  # noqa: PLC0415 - deliberately lazy
+        import cffi
     except ImportError as exc:  # pragma: no cover - depends on the environment
         raise ImportError(
             "khostty_vt needs the 'cffi' package. Install it with:\n"
