@@ -216,9 +216,33 @@ fn colours_are_configurable_and_queryable() {
     term.set_background(Color::rgb(0xaa, 0xbb, 0xcc)).unwrap();
     term.set_cursor_color(Color::rgb(0x55, 0x66, 0x77)).unwrap();
 
-    assert_eq!(term.foreground().unwrap(), Color::rgb(0x11, 0x22, 0x33));
-    assert_eq!(term.background().unwrap(), Color::rgb(0xaa, 0xbb, 0xcc));
-    assert_eq!(term.cursor_color().unwrap(), Color::rgb(0x55, 0x66, 0x77));
+    assert_eq!(
+        term.foreground().unwrap(),
+        Some(Color::rgb(0x11, 0x22, 0x33))
+    );
+    assert_eq!(
+        term.background().unwrap(),
+        Some(Color::rgb(0xaa, 0xbb, 0xcc))
+    );
+    assert_eq!(
+        term.cursor_color().unwrap(),
+        Some(Color::rgb(0x55, 0x66, 0x77))
+    );
+}
+
+#[test]
+fn unset_colours_report_no_value_rather_than_an_error() {
+    // A fresh terminal has no colours set, and the C contract reports
+    // GHOSTTY_NO_VALUE for them. That is the normal state, so it maps to None.
+    let term = terminal();
+    assert_eq!(term.foreground().unwrap(), None);
+    assert_eq!(term.background().unwrap(), None);
+    assert_eq!(term.cursor_color().unwrap(), None);
+    assert_eq!(term.default_foreground().unwrap(), None);
+    assert_eq!(term.default_background().unwrap(), None);
+    assert_eq!(term.default_cursor_color().unwrap(), None);
+    // The palette, by contrast, always has values.
+    assert_eq!(term.default_palette().unwrap().len(), 256);
 }
 
 #[test]

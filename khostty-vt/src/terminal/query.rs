@@ -189,25 +189,46 @@ impl Terminal {
 
     // ---- Colours -----------------------------------------------------------
 
-    /// The current foreground colour.
-    pub fn foreground(&self) -> Result<Color> {
-        Ok(Color::from_ffi(
-            self.get_value(ffi::GHOSTTY_TERMINAL_DATA_COLOR_FOREGROUND)?,
-        ))
+    /// The foreground colour, if one has been set.
+    ///
+    /// The C contract reports `GHOSTTY_NO_VALUE` when nothing has set it, which
+    /// is the state of a fresh terminal rather than an error, so it maps to
+    /// `Ok(None)`. Use [`Terminal::default_foreground`] for the value ignoring any
+    /// program override, and the render state's colours when a renderer needs a
+    /// value that is always present.
+    pub fn foreground(&self) -> Result<Option<Color>> {
+        self.get_optional_color(ffi::GHOSTTY_TERMINAL_DATA_COLOR_FOREGROUND)
     }
 
-    /// The current background colour.
-    pub fn background(&self) -> Result<Color> {
-        Ok(Color::from_ffi(
-            self.get_value(ffi::GHOSTTY_TERMINAL_DATA_COLOR_BACKGROUND)?,
-        ))
+    /// The background colour, if one has been set.
+    ///
+    /// See [`Terminal::foreground`] for the `None` case.
+    pub fn background(&self) -> Result<Option<Color>> {
+        self.get_optional_color(ffi::GHOSTTY_TERMINAL_DATA_COLOR_BACKGROUND)
     }
 
-    /// The current cursor colour.
-    pub fn cursor_color(&self) -> Result<Color> {
-        Ok(Color::from_ffi(
-            self.get_value(ffi::GHOSTTY_TERMINAL_DATA_COLOR_CURSOR)?,
-        ))
+    /// The cursor colour, if one has been set.
+    ///
+    /// See [`Terminal::foreground`] for the `None` case.
+    pub fn cursor_color(&self) -> Result<Option<Color>> {
+        self.get_optional_color(ffi::GHOSTTY_TERMINAL_DATA_COLOR_CURSOR)
+    }
+
+    /// The foreground colour ignoring any program override, if configured.
+    ///
+    /// This is what a renderer treats as the theme default.
+    pub fn default_foreground(&self) -> Result<Option<Color>> {
+        self.get_optional_color(ffi::GHOSTTY_TERMINAL_DATA_COLOR_FOREGROUND_DEFAULT)
+    }
+
+    /// The background colour ignoring any program override, if configured.
+    pub fn default_background(&self) -> Result<Option<Color>> {
+        self.get_optional_color(ffi::GHOSTTY_TERMINAL_DATA_COLOR_BACKGROUND_DEFAULT)
+    }
+
+    /// The cursor colour ignoring any program override, if configured.
+    pub fn default_cursor_color(&self) -> Result<Option<Color>> {
+        self.get_optional_color(ffi::GHOSTTY_TERMINAL_DATA_COLOR_CURSOR_DEFAULT)
     }
 
     /// The active 256-entry palette.
@@ -304,6 +325,18 @@ impl Terminal {
     /// Rust `bool`.
     fn get_bool(&self, key: ffi::GhosttyTerminalData) -> Result<bool> {
         Ok(self.get_value::<u8>(key)? != 0)
+    }
+
+    /// Read a colour, mapping "not set" to `None`.
+    ///
+    /// All six colour data keys document `GHOSTTY_NO_VALUE` when nothing has set
+    /// them, so that code is a normal answer rather than a failure.
+    fn get_optional_color(&self, key: ffi::GhosttyTerminalData) -> Result<Option<Color>> {
+        match self.get_value::<ffi::GhosttyColorRgb>(key) {
+            Ok(value) => Ok(Some(Color::from_ffi(value))),
+            Err(err) if err.is_empty_value() => Ok(None),
+            Err(err) => Err(err),
+        }
     }
 
     /// Read a borrowed `GhosttyString` and copy it out.

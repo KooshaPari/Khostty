@@ -181,6 +181,17 @@ impl RenderState {
 
     /// Frame colours, including the palette needed to resolve indexed colours.
     ///
+    /// # What the theme colours contain
+    ///
+    /// The palette is populated, but the theme colours here were observed to stay
+    /// at zero in this build and do **not** track
+    /// [`Terminal::set_background`](crate::terminal::Terminal::set_background) or
+    /// an `OSC 11` override, both of which do show up through
+    /// [`Terminal::background`](crate::terminal::Terminal::background). Treat the
+    /// theme colours as renderer-supplied rather than derived: a renderer that
+    /// wants a real background should use its own theme value, and use
+    /// [`Colors::palette`] from here to resolve palette-indexed cell colours.
+    ///
     /// # Errors
     ///
     /// Whatever the query reports, plus [`GhosttyError::InvalidValue`] if the
@@ -229,7 +240,9 @@ impl RenderState {
     /// The background colour.
     ///
     /// Prefer [`RenderState::colors`], which reads background, foreground,
-    /// cursor, and the palette in one call.
+    /// cursor, and the palette in one call. See that method for what these theme
+    /// colours contain: unlike the terminal's own colours they were observed not
+    /// to follow the terminal's colour options.
     ///
     /// # Errors
     ///
@@ -260,7 +273,10 @@ impl RenderState {
         let mut raw = ffi::GhosttyColorRgb { r: 0, g: 0, b: 0 };
         match self.get_into(ffi::GHOSTTY_RENDER_STATE_DATA_COLOR_CURSOR, &mut raw) {
             Ok(()) => Ok(Some(Color::from_ffi(raw))),
-            Err(GhosttyError::InvalidValue) => Ok(None),
+            // The header documents GHOSTTY_INVALID_VALUE for "no explicit cursor
+            // colour"; GHOSTTY_NO_VALUE is accepted as the same answer so a
+            // library revision that reports it instead does not break callers.
+            Err(GhosttyError::InvalidValue) | Err(GhosttyError::NoValue) => Ok(None),
             Err(err) => Err(err),
         }
     }
