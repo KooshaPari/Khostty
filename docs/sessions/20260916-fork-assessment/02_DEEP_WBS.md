@@ -117,12 +117,12 @@ The fork's value is NOT rebuilding what upstream has. It is:
 |------|------|-------|-----|--------|----------|
 | G0 | Fork Hygiene | 4 | 40m | DONE | -- |
 | G1 | Native Build Validation | 3 | 30m | DONE | -- |
-| G2 | Conformance Evidence | 12 | 120m | NOT STARTED | CRITICAL |
-| G3 | Windows App Runtime | 15 | 150m | NOT STARTED | HIGH |
+| G2 | Conformance Evidence | 12 | 120m | DONE (84/84 pass) | CRITICAL |
+| G3 | Windows App Runtime | 15 | 150m | IN PROGRESS | HIGH |
 | G4 | Agent/IPC Surface | 14 | 140m | NOT STARTED | HIGH |
-| G5 | Polyglot FFI — Rust | 10 | 100m | NOT STARTED | HIGH |
+| G5 | Polyglot FFI — Rust | 10 | 100m | IN PROGRESS | HIGH |
 | G6 | Polyglot FFI — Go + Python | 8 | 80m | NOT STARTED | MEDIUM |
-| G7 | WASM Cross-Compilation | 10 | 100m | NOT STARTED | HIGH |
+| G7 | WASM Cross-Compilation | 10 | 100m | IN PROGRESS | HIGH |
 | G8 | Khostty-Specific Improvements | 10 | 100m | NOT STARTED | MEDIUM |
 | G9 | Documentation + Packaging | 8 | 80m | NOT STARTED | MEDIUM |
 | G10 | Release Artifacts | 6 | 60m | NOT STARTED | MEDIUM |
@@ -151,7 +151,7 @@ The fork's value is NOT rebuilding what upstream has. It is:
 
 ---
 
-## G2: Conformance Evidence (NOT STARTED)
+## G2: Conformance Evidence (DONE — 84/84 pass, `b2c388c9b`)
 
 **Gate objective**: Prove "no unacceptable terminal correctness regression." The parser
 must work via conformance tests, not just compile.
@@ -182,7 +182,7 @@ must work via conformance tests, not just compile.
 
 ---
 
-## G3: Windows App Runtime (NOT STARTED) — HIGH PRIORITY
+## G3: Windows App Runtime (IN PROGRESS) — HIGH PRIORITY
 
 **Gate objective**: Upstream has NO Windows app runtime. Only `embedded.zig` (macOS) and
 `gtk.zig` (Linux) exist. Khostty fills this gap by creating `src/apprt/windows/` — a
