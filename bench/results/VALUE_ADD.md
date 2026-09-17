@@ -73,7 +73,7 @@ Consistent directional results in **both** passes:
 | Library allocator bytes, 200x50 | 48,744 B | 68,084 B | 28.4% smaller |
 | OSC-title ingest | 9.5-15.5 MiB/s | 6.3-6.9 MiB/s | 1.5-2.5x faster |
 | Plain-text ingest | 40.9-69.1 MiB/s | 43.3-65.4 MiB/s | no signal (order flips) |
-| Grid page memory | 13.98 / 34.82 MiB | 14.09-14.11 / 34.93 MiB | within 1% |
+| Grid page memory | 13,648 / 34,000 KiB | 13,760-13,776 / 34,112 KiB | within 1% |
 | Snapshot size | 155,728 / 156,083 B | 155,792 / 156,147 B | within 0.04% |
 
 **Attribution caveat, stated plainly:** none of those improvements are fork

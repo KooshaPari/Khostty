@@ -203,11 +203,11 @@ where the terminal grid lives. Corpus: 10,000 records, two physical rows each.
 | 80x24 allocator at 10k records | 23,192 B | 23,192 B | 29,906 B | 29,906 B |
 | 80x24 allocator bytes per row | 0.84 B | 0.84 B | 0.94 B | 0.94 B |
 | 80x24 allocator residual after free | 0 B | 0 B | 0 B | 0 B |
-| 80x24 anonymous delta | 13.98 MiB | 13.98 MiB | 14.11 MiB | 14.09 MiB |
-| 80x24 rss delta | 13.98 MiB | 13.98 MiB | 14.11 MiB | 14.09 MiB |
+| 80x24 anonymous delta | 13,648 KiB (13.33 MiB) | 13,648 KiB | 13,776 KiB (13.45 MiB) | 13,760 KiB |
+| 80x24 rss delta | 13,648 KiB | 13,648 KiB | 13,776 KiB | 13,760 KiB |
 | 200x50 allocator at 10k records | 48,744 B | 48,744 B | 68,084 B | 68,084 B |
 | 200x50 allocator bytes per row | 2.13 B | 2.13 B | 2.86 B | 2.86 B |
-| 200x50 anonymous delta | 34.82 MiB | 34.82 MiB | 34.93 MiB | 34.93 MiB |
+| 200x50 anonymous delta | 34,000 KiB (33.20 MiB) | 34,000 KiB | 34,112 KiB (33.31 MiB) | 34,112 KiB |
 
 Observations:
 
@@ -218,7 +218,9 @@ Observations:
   80x24; 2.13 vs 2.86 B at 200x50).
 * Grid page memory is within 1%: the engine stores the same history in about
   the same number of pages. 20,001 retained rows at 80 columns cost
-  ~13.98 MiB, or ~0.72 KiB per 80-column row.
+  13,648 KiB (13.33 MiB), or 0.68 KiB per 80-column row. At 200 columns the
+  same row count costs 34,000 KiB (33.20 MiB), or 1.70 KiB per row, so the
+  cost scales with columns rather than with row count alone.
 * Both libraries release everything on `ghostty_terminal_free()`: allocator
   residual is 0 B and anonymous memory returns to baseline (16-112 KiB
   residual, which is harness noise).
