@@ -143,6 +143,17 @@ pub const SearchMatch = struct {
     }
 };
 
+/// Result of `pane.write`.
+pub const WriteResult = struct {
+    written: usize,
+
+    pub fn writeJson(self: WriteResult, w: *std.Io.Writer) WriteError!void {
+        var o = try Obj.init(w);
+        try o.uint("written", self.written);
+        try o.close('}');
+    }
+};
+
 /// Render a list of panes as a JSON array. Uses one reusable scratch buffer so
 /// arbitrarily long titles or paths cannot overflow a fixed stack buffer.
 pub fn writePaneListJson(
@@ -328,6 +339,45 @@ pub const Manager = struct {
         self.mutex.lockUncancelable(io);
         defer self.mutex.unlock(io);
         try self.host.focus(id);
+    }
+
+    /// Inject VT bytes into a pane's terminal parser.
+    ///
+    /// This goes through the same parser path as the child process's pty
+    /// output, so escape sequences, modes, and the grid are all updated exactly
+    /// as if the program had written them. It does *not* type into the child
+    /// process; see `protocol.md` (non-goals).
+    ///
+    /// The host is authoritative about existence: panes created by the user
+    /// (or by a non-IPC path) are valid targets even though the registry has
+    /// never seen them.
+    pub fn write(self: *Manager, io: std.Io, id: PaneId, data: []const u8) Error!usize {
+        self.mutex.lockUncancelable(io);
+        defer self.mutex.unlock(io);
+        return self.host.write(id, data);
+    }
+
+    /// Read a pane's machine-readable terminal state.
+    pub fn snapshot(
+        self: *Manager,
+        arena: Allocator,
+        io: std.Io,
+        id: PaneId,
+    ) Error!state.Snapshot {
+        self.mutex.lockUncancelable(io);
+        defer self.mutex.unlock(io);
+
+        // A pane the host no longer has is reported as closed rather than
+        // missing, because the registry proved it existed at some point.
+        var snap: state.Snapshot = undefined;
+        self.host.snapshot(arena, id, &snap) catch |err| switch (err) {
+            error.PaneNotFound => return if (self.findKnown(id) != null)
+                error.PaneClosed
+            else
+                error.PaneNotFound,
+            else => return err,
+        };
+        return snap;
     }
 
     /// List panes. Prefers the host's list; falls back to the registry with
@@ -690,4 +740,132 @@ test "json: search match payload" {
         "{\"row\":-3,\"col\":8,\"len\":5,\"text\":\"error\"}",
         w.buffered(),
     );
+}
+
+test "write: injects VT and updates cursor and size" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+    const io = testIo();
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    const handle = try manager.create(a, io, .{});
+
+    // Move to row 5, column 10 (1-based), then print two characters.
+    const written = try manager.write(io, handle.id, "\x1b[5;10Hok");
+    try testing.expectEqual(@as(usize, 9), written);
+
+    const snap = try manager.snapshot(a, io, handle.id);
+    try testing.expectEqual(@as(u32, 4), snap.cursor.row);
+    try testing.expectEqual(@as(u32, 11), snap.cursor.col);
+    try testing.expectEqual(@as(u16, 80), snap.size.cols);
+    try testing.expectEqual(@as(u16, 24), snap.size.rows);
+    try testing.expectEqual(@as(?u32, 24), snap.viewport_rows);
+}
+
+test "write: OSC 0 sets the queryable title" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+    const io = testIo();
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    const handle = try manager.create(a, io, .{ .title = "zsh" });
+    _ = try manager.write(io, handle.id, "\x1b]0;~/projects/khostty\x07");
+
+    const snap = try manager.snapshot(a, io, handle.id);
+    try testing.expectEqualStrings("~/projects/khostty", snap.title.?);
+}
+
+test "write: CR/LF and modes are parsed, not echoed" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+    const io = testIo();
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    const handle = try manager.create(a, io, .{});
+    _ = try manager.write(io, handle.id, "ab\r\ncd");
+    var snap = try manager.snapshot(a, io, handle.id);
+    try testing.expectEqual(@as(u32, 1), snap.cursor.row);
+    try testing.expectEqual(@as(u32, 2), snap.cursor.col);
+
+    _ = try manager.write(io, handle.id, "\x1b[?1049h");
+    snap = try manager.snapshot(a, io, handle.id);
+    try testing.expectEqual(@as(?bool, true), snap.alt_screen);
+
+    _ = try manager.write(io, handle.id, "\x1b[?1049l");
+    snap = try manager.snapshot(a, io, handle.id);
+    try testing.expectEqual(@as(?bool, false), snap.alt_screen);
+}
+
+test "write: unknown pane is PaneNotFound" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+    try testing.expectError(
+        error.PaneNotFound,
+        manager.write(testIo(), PaneId.init(404), "hello"),
+    );
+}
+
+test "snapshot: a pane the host has lost is reported as closed, not missing" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+    const io = testIo();
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+
+    const handle = try manager.create(a, io, .{});
+
+    // The child exits and the runtime drops the pane without IPC knowing.
+    const p = fake.find(handle.id).?;
+    p.exited = true;
+    p.exit_code = 0;
+
+    const snap = try manager.snapshot(a, io, handle.id);
+    try testing.expectEqual(@as(?bool, true), snap.exited);
+    try testing.expectEqual(@as(?i32, 0), snap.exit_code);
+
+    fake.dropPane(handle.id);
+    try testing.expectError(error.PaneClosed, manager.snapshot(a, io, handle.id));
+}
+
+test "snapshot: never-seen pane is PaneNotFound" {
+    var fake = FakeHost.init(testing.allocator);
+    defer fake.deinit();
+    var manager = Manager.init(testing.allocator, fake.host());
+    defer manager.deinit(testIo());
+
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena.deinit();
+    try testing.expectError(
+        error.PaneNotFound,
+        manager.snapshot(arena.allocator(), testIo(), PaneId.init(77)),
+    );
+}
+
+test "json: write result payload" {
+    const result: WriteResult = .{ .written = 9 };
+    var buf: [64]u8 = undefined;
+    var w: std.Io.Writer = .fixed(&buf);
+    try result.writeJson(&w);
+    try testing.expectEqualStrings("{\"written\":9}", w.buffered());
 }

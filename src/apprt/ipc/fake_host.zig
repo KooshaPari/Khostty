@@ -61,6 +61,18 @@ pub const FakeHost = struct {
         return null;
     }
 
+    /// Drop a pane the way the runtime would when the child exits, without
+    /// telling the IPC layer.
+    pub fn dropPane(self: *FakeHost, id: PaneId) void {
+        for (self.panes.items, 0..) |p, i| {
+            if (p.id != id.raw) continue;
+            p.text.deinit(self.gpa);
+            self.gpa.destroy(p);
+            _ = self.panes.swapRemove(i);
+            return;
+        }
+    }
+
     /// Add a pane directly, bypassing the IPC surface.
     pub fn addPane(self: *FakeHost) !*Pane {
         const p = try self.gpa.create(Pane);
