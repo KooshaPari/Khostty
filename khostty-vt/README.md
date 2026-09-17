@@ -276,6 +276,11 @@ declarations, bare `struct Tag { .. };` definitions, array members, and the
 `#ifdef __wasm__` guard that excludes WebAssembly-only symbols. Anything it cannot
 represent is listed in the generated file's `SKIPPED` section rather than dropped.
 
+The generator is three files, each with one concern: `tools/cscan.py` scans C text
+(comment stripping, brace-aware declaration boundaries, target guards),
+`tools/cabitypes.py` maps C types to Rust and models emitted items, and
+`tools/gen_ffi.py` discovers headers and emits Rust.
+
 `build.rs` can additionally generate bindings with bindgen into `$OUT_DIR` under
 the `bindgen` feature, which is how the generator's function set was originally
 cross-checked against libclang's view of the same headers.
