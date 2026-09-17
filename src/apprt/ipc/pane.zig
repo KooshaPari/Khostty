@@ -193,6 +193,29 @@ pub const WriteResult = struct {
 
 /// Render a list of panes as a JSON array. Uses one reusable scratch buffer so
 /// arbitrarily long titles or paths cannot overflow a fixed stack buffer.
+/// Find the pane that appeared between two observations of the runtime's pane
+/// set.
+///
+/// Upstream split actions are fire-and-forget: `new_split` returns no handle,
+/// so a host that must report the new pane id has to diff the runtime's
+/// surfaces before and after the action. This is that diff, kept here (and
+/// tested here) rather than inside the app adapter.
+pub fn findNewPane(previous: []const PaneId, current: []const PaneInfo) ?PaneInfo {
+    for (current) |candidate| {
+        var seen = false;
+        for (previous) |id| {
+            if (id.raw == candidate.id.raw) {
+                seen = true;
+                break;
+            }
+        }
+        if (!seen) return candidate;
+    }
+    return null;
+}
+
+/// Render a list of panes as a JSON array. Uses one reusable scratch buffer so
+/// arbitrarily long titles or paths cannot overflow a fixed stack buffer.
 pub fn writePaneListJson(
     gpa: Allocator,
     panes: []const PaneInfo,
@@ -1151,4 +1174,36 @@ test "resizeSplit, equalize, zoom: delegated through the manager lock" {
 
     try testing.expectError(error.PaneNotFound, manager.resizeSplit(io, PaneId.init(8), .up, 1));
     try testing.expectError(error.PaneNotFound, manager.zoom(io, PaneId.init(8)));
+}
+
+test "findNewPane: detects the pane added by a fire-and-forget split" {
+    const before = [_]PaneId{ PaneId.init(1), PaneId.init(2) };
+    const after = [_]PaneInfo{
+        .{ .id = PaneId.init(1) },
+        .{ .id = PaneId.init(2) },
+        .{ .id = PaneId.init(7), .title = "new", .pid = 999 },
+    };
+
+    const found = findNewPane(&before, &after).?;
+    try testing.expectEqual(@as(u64, 7), found.id.raw);
+    try testing.expectEqualStrings("new", found.title.?);
+}
+
+test "findNewPane: nothing new means null" {
+    const before = [_]PaneId{ PaneId.init(1), PaneId.init(2) };
+    const after = [_]PaneInfo{ .{ .id = PaneId.init(2) }, .{ .id = PaneId.init(1) } };
+    try testing.expectEqual(@as(?PaneInfo, null), findNewPane(&before, &after));
+}
+
+test "findNewPane: a first pane counts as new" {
+    const after = [_]PaneInfo{.{ .id = PaneId.init(3) }};
+    const found = findNewPane(&.{}, &after).?;
+    try testing.expectEqual(@as(u64, 3), found.id.raw);
+}
+
+test "findNewPane: a pane that closed is not reported as new" {
+    const before = [_]PaneId{ PaneId.init(1), PaneId.init(2) };
+    const after = [_]PaneInfo{.{ .id = PaneId.init(1) }};
+    // Pane 2 went away; nothing appeared, so there is no new pane to report.
+    try testing.expectEqual(@as(?PaneInfo, null), findNewPane(&before, &after));
 }

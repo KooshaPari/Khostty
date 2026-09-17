@@ -197,7 +197,7 @@ pub fn init(b: *std.Build, appVersion: []const u8, libVersion: []const u8) !Conf
     config.app_runtime = b.option(
         ApprtRuntime,
         "app-runtime",
-        "The app runtime to use. Not all values supported on all platforms.",
+        "Application runtime: none, gtk, or windows (experimental scaffold, Windows targets only).",
     ) orelse ApprtRuntime.default(target.result);
 
     config.renderer = b.option(

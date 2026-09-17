@@ -20,6 +20,8 @@ pub const browser = @import("apprt/browser.zig");
 pub const embedded = @import("apprt/embedded.zig");
 pub const surface = @import("apprt/surface.zig");
 
+pub const windows = @import("apprt/windows/mod.zig");
+
 pub const Action = action.Action;
 pub const Runtime = @import("apprt/runtime.zig").Runtime;
 pub const Target = action.Target;
@@ -43,6 +45,7 @@ pub const SurfaceSize = structs.SurfaceSize;
 pub const runtime = switch (build_config.artifact) {
     .exe => switch (build_config.app_runtime) {
         .none => none,
+        .windows => windows,
         .gtk => gtk,
     },
     .lib => embedded,

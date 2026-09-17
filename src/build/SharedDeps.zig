@@ -694,7 +694,7 @@ pub fn add(
         }
 
         switch (self.config.app_runtime) {
-            .none => {},
+            .none, .windows => {},
             .gtk => try self.addGtkNg(step),
         }
     }

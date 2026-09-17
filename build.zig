@@ -41,6 +41,12 @@ pub fn build(b: *std.Build) !void {
         file_version orelse app_zon_version,
         lib_version,
     );
+    // Opt-in scaffold: -Dtarget=x86_64-windows-gnu -Dapp-runtime=windows.
+    // Native initialization deliberately returns error.Unimplemented.
+    if (config.app_runtime == .windows and config.target.result.os.tag != .windows) {
+        std.log.err("-Dapp-runtime=windows requires a Windows target", .{});
+        return error.InvalidAppRuntimeTarget;
+    }
     const test_filters = b.option(
         [][]const u8,
         "test-filter",
