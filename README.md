@@ -1,18 +1,21 @@
+# Khostty
+
+**Working name:** `phenotype-khostty`
+**Assessment snapshot:** 2026-09-16
+**Scope owner:** Terminal runtime for Phenotype Fabric surfaces and embedded terminal consumers
+**Upstream:** [`ghostty-org/ghostty`](https://github.com/ghostty-org/ghostty)
+
+> Khostty is the Phenotype fork of Ghostty. It preserves the upstream terminal experience, validates the embeddable VT engine, and defines a focused delta for Windows, agent control, and polyglot consumers.
+
+---
+
 <!-- LOGO -->
 <p align="center">
   <img src="https://github.com/user-attachments/assets/fe853809-ba8b-400b-83ab-a9a0da25be8a" alt="Ghostty logo" width="128">
 </p>
 
-<h1 align="center">Khostty</h1>
-
 <p align="center">
-  <strong>Phenotype fork of Ghostty, focused on Windows support, an agent-first IPC surface, and polyglot FFI for the modern terminal.</strong>
-  <br />
-  Native GUI terminal on macOS, Linux, and (soon) Windows — plus a first-class embeddable VT engine (<code>libghostty-vt</code>) wrapped for Rust, Go, Python, and WASM.
-</p>
-
-<p align="center">
-  <a href="#status">Status</a> · <a href="#platform-support">Platforms</a> · <a href="#quickstart">Quickstart</a> · <a href="#architecture">Architecture</a> · <a href="#agent-ipc-surface">Agent/IPC</a> · <a href="#polyglot-ffi">Polyglot FFI</a> · <a href="#conformance">Conformance</a> · <a href="#contributing">Contributing</a> · <a href="#license">License</a>
+  <a href="#status">Status</a> · <a href="#platform-support">Platforms</a> · <a href="#quickstart">Quickstart</a> · <a href="#architecture">Architecture</a> · <a href="#agent-ipc-surface">Agent/IPC</a> · <a href="#polyglot-ffi">Polyglot FFI</a> · <a href="#conformance">Conformance</a> · <a href="#development">Development</a> · <a href="#contributing">Contributing</a> · <a href="#license">License</a>
 </p>
 
 ---
@@ -21,413 +24,306 @@
 
 Khostty is the **Phenotype-flavored fork of [Ghostty](https://github.com/ghostty-org/ghostty)**, the fast, native, feature-rich terminal emulator written in Zig by Mitchell Hashimoto and contributors.
 
-We do **not** maintain a divergent terminal UX. Khostty tracks upstream Ghostty and adds a focused, well-scoped delta on top. The fork exists so we can:
+Ghostty ships `libghostty-vt`, a standalone C library with 12,285 lines of headers across 32+ files, 30 examples in C, Zig, and WASM, fuzz tests, benchmarks, and a complete terminal emulator. The engine covers parsing, screen state, scrollback, cursor handling, styles, selection, search, render state, snapshots, Kitty graphics, SGR, OSC, and key and mouse encoding.
 
-1. **Run the world's best terminal on Windows** — upstream Ghostty ships a native macOS app (Swift/AppKit) and a Linux/BSD app (GTK), but has **no Windows runtime**. Khostty fills that gap with a native Win32/DirectWrite application.
-2. **Expose a machine-friendly IPC surface** — upstream IPC supports `new_window`, `new_tab`, and `toggle_quick_terminal` only. Khostty adds a JSON command/event protocol for pane creation, manipulation, content writing, and state query, designed for agents and embedded use.
-3. **Wrap `libghostty-vt` for every language that matters** — upstream exposes a C API and a Zig API. Khostty wraps that C API with safe idiomatic bindings for **Rust, Go, Python, and WASM** so agents and tools in any ecosystem can embed a correct terminal.
-4. **Embed the terminal in Phenotype Fabric** — the VT engine becomes a reusable surface in the Phenotype Fabric graph alongside windows, routes, and other composable elements.
+Khostty does not rebuild that engine or maintain a separate terminal user experience. It tracks upstream and focuses the fork delta on capabilities that upstream does not provide:
 
-If you just want a terminal, use upstream [Ghostty](https://ghostty.org/). If you want to embed a terminal, drive one from an agent, or run one on Windows, Khostty is for you.
+| Value area | Upstream Ghostty | Khostty direction | Status |
+|---|---|---|---|
+| Embedding | `libghostty-vt` C ABI and examples | Prove the embedding path end to end with Khostty-specific tooling | Roadmap; validation continues in G1/G2 |
+| Windows | Native macOS AppKit and Linux/BSD GTK runtimes; no Windows app runtime | Native Win32 and DirectWrite application in `src/apprt/windows/` | **NOT STARTED, G3** |
+| Agent/IPC | `ipc.zig` supports `new_window`, `new_tab`, and `toggle_quick_terminal` | JSON command and event protocol for panes, state, and automation | **NOT STARTED, G4** |
+| Polyglot FFI | C and Zig APIs, with examples for other languages | Safe Rust, Go, Python, and hardened WASM wrappers | **NOT STARTED, G5-G7** |
+| Phenotype integration | General-purpose terminal and embeddable VT engine | Reusable terminal surfaces in the Phenotype Fabric graph | Planned |
 
----
+If you want a finished desktop terminal today, use upstream Ghostty. Khostty is the integration and extension path for embedding a terminal, driving it from an agent, or bringing the upstream engine to Windows and additional language ecosystems.
 
 ## Status
 
-Khostty is on the critical path of the Phenotype platform. The fork delta is well-defined, validated end-to-end for the native build, and has a sequenced WBS for everything else.
+The authoritative task decomposition is [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md). The assessment records G0 and G1 as complete. The remaining Khostty capability gates are not started.
 
 | Gate | Scope | Tasks | Estimate | Status |
-|------|-------|-------|----------|--------|
-| **G0** | Fork Hygiene (CI replacement, Metal toolchain fix, docs seed) | 4 | 40m | **DONE** |
-| **G1** | Native Build Validation (`libghostty-vt` static + dynamic + xcframework, WASM cross-compile, `zig fmt --check`) | 3 | 30m | **DONE** |
-| **G2** | Conformance Evidence (run all 30 upstream examples + fuzz corpus) | 12 | 120m | NOT STARTED |
-| **G3** | Windows App Runtime (Win32 + DirectWrite + named-pipe IPC) | 15 | 150m | NOT STARTED |
-| **G4** | Agent/IPC Surface Expansion (JSON protocol, pane CRUD, state query, events) | 14 | 140m | NOT STARTED |
-| **G5** | Polyglot FFI — Rust (`khostty-vt` safe crate) | 10 | 100m | NOT STARTED |
-| **G6** | Polyglot FFI — Go + Python | 8 | 80m | NOT STARTED |
-| **G7** | WASM Cross-Compilation + FFI export | 10 | 100m | NOT STARTED |
-| **G8** | Khostty-specific Improvements + Benchmarks | 10 | 100m | NOT STARTED |
-| **G9** | Documentation + Packaging | 8 | 80m | NOT STARTED |
-| **G10** | Release Artifacts + Ecosystem Sign-off | 6 | 60m | NOT STARTED |
-| | **Total** | **100** | **~1000m (16.7h)** | **70m done** |
+|---|---|---:|---:|---|
+| **G0** | Fork Hygiene | 4 | 40m | **DONE** |
+| **G1** | Native Build Validation | 3 | 30m | **DONE** |
+| **G2** | Conformance Evidence | 12 | 120m | **NOT STARTED** |
+| **G3** | Windows App Runtime | 15 | 150m | **NOT STARTED** |
+| **G4** | Agent/IPC Surface Expansion | 14 | 140m | **NOT STARTED** |
+| **G5** | Polyglot FFI — Rust | 10 | 100m | **NOT STARTED** |
+| **G6** | Polyglot FFI: Go and Python | 8 | 80m | **NOT STARTED** |
+| **G7** | WASM Cross-Compilation | 10 | 100m | **NOT STARTED** |
+| **G8** | Khostty-Specific Improvements | 10 | 100m | **NOT STARTED** |
+| **G9** | Documentation and Packaging | 8 | 80m | **NOT STARTED** |
+| **G10** | Release Artifacts | 6 | 60m | **NOT STARTED** |
 
-**Fork state:** 14 commits ahead of `ghostty-org/ghostty`, 0 behind. Upstream sync runs through the same Zig-aware CI we added in G0.
-
-The full task decomposition lives at [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md).
-
----
+The WBS records 100 tasks and approximately 16.7 hours of planned work, with 70 minutes completed at the assessment snapshot. Status labels in this README follow that WBS and are not claims of shipped functionality.
 
 ## Platform Support
 
-| Platform | Status | Runtime | Renderer | Notes |
-|----------|--------|---------|----------|-------|
-| **macOS** | **DONE** (upstream) | `src/apprt/embedded.zig` (Swift/AppKit) | Metal / OpenGL | Native shell, full UI. Builds and runs today. |
-| **Linux / BSD** | **DONE** (upstream) | `src/apprt/gtk.zig` (GTK4) | OpenGL | Native shell, full UI. Builds and runs today. |
-| **Windows** | **NOT STARTED** (Khostty G3) | `src/apprt/windows/` (Win32 + DirectWrite) — planned | GDI/DirectX — planned | No upstream Windows runtime. Khostty adds one. |
-| **WASM** | Partial (upstream example only) | `libghostty-vt.wasm` (795KB, 40+ signatures) | n/a | Upstream ships a WASM example. G7 hardens + exports for embedding. |
+| Platform | Status | Runtime or artifact |
+|---|---|---|
+| **macOS** | **DONE** | Upstream Swift/AppKit application runtime; G1 build validation |
+| **Linux/BSD** | **DONE** | Upstream GTK application runtime; G1 build validation |
+| **Windows** | **NOT STARTED** | Planned Win32/DirectWrite runtime in `src/apprt/windows/` under G3 |
+| **WASM** | **NOT STARTED** | Planned hardened WASM build and polyglot export under G7 |
 
-The `libghostty-vt` C library itself — parser, screen, scrollback, cursor, styles, selection, search, render state, snapshots, Kitty graphics, SGR, OSC, key/mouse encoding — is **fully functional on every platform with a C compiler** today. The platform-support matrix above tracks the *GUI shell*, not the embeddable library.
-
----
+G1 separately verified a 795KB `ghostty-vt.wasm` cross-compile artifact with 40+ function signatures. That evidence is not a claim that the Khostty-hardened WASM product, typed JavaScript API, or package distribution is complete.
 
 ## Quickstart
 
 ### Prerequisites
 
-- **Zig 0.16.0+** (see `.zig-cache/` or `zig version`)
-- A C11-compatible C toolchain (Xcode CLT on macOS, `build-essential` + `pkg-config` on Linux, MSVC on Windows)
-- macOS users: Xcode Command Line Tools (`xcode-select --install`)
-- Linux users: GTK4 development libraries (`libgtk-4-dev`, `libadwaita-1-dev`)
+- Zig **0.16.0 or newer**, as declared by [`build.zig.zon`](build.zig.zon)
+- A supported native platform for the current upstream runtimes
+- The upstream development dependencies documented in [`HACKING.md`](HACKING.md)
 
-### Build
+### Build From Source
 
 ```bash
-# Build everything (libghostty-vt + apprt targets)
+git clone https://github.com/1jehuang/khostty.git
+cd khostty
+
+# Build the repository with Zig
 zig build
-
-# Run the macOS GUI shell
-zig build run
-
-# Build the embeddable C library only
-zig build -Demit-lib-vt=true
 ```
 
-Outputs land under `zig-out/`:
-
-```
-zig-out/
-  lib/
-    libghostty-vt.a              # static archive
-    libghostty-vt.dylib          # shared library (macOS/Linux)
-    libghostty-vt.xcframework    # Apple multi-arch bundle
-  bin/
-    ghostty                       # native GUI shell
-```
-
-### Test
+### Validate Formatting and Tests
 
 ```bash
-# Run all Zig tests (~200+ files)
+# Check formatting
+zig fmt --check src/ build.zig
+
+# Run the Zig test suite
 zig build test
 
-# Run only the libghostty-vt example tests (the conformance gate)
+# Build and run the libghostty-vt conformance target when G2 is active
 zig build test-lib-vt
-
-# Build (but do not run) the libghostty-vt examples
-zig build test-lib-vt-build
-
-# Validate the JSON C-types schema
-zig build test-lib-vt-schema
 ```
 
-### Format
+`zig build` and a passing test command establish build behavior only. They do not close G2. G2 requires the complete conformance corpus and fuzz evidence described below.
+
+### Build the VT Library
+
+The repository exposes `libghostty-vt` through the Zig build system. Use the build options documented by the project build help when producing a platform artifact:
 
 ```bash
-zig fmt --check src/ build.zig
+zig build --help
 ```
 
-CI runs `fmt --check` and a debug build on every push. See `.github/workflows/ci.yml`.
-
----
+Do not treat a library artifact as a completed Khostty binding. The Rust, Go, Python, and hardened WASM packages remain **NOT STARTED**.
 
 ## Architecture
 
-Khostty inherits Ghostty's clean three-layer architecture and extends only the topmost layer (`apprt`).
+Khostty keeps the upstream engine intact and places the planned fork surface above it.
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│  apprt (Application Runtime)                                         │
-│  ─────────────────────────                                           │
-│  Platform-specific GUI shells. This is the ONLY layer Khostty        │
-│  diverges from upstream.                                             │
-│                                                                      │
-│    src/apprt/embedded.zig   — macOS shell (Swift/AppKit)  [upstream] │
-│    src/apprt/gtk.zig        — Linux/BSD shell (GTK4)      [upstream] │
-│    src/apprt/windows/       — Windows shell (Win32/DW)    [PLANNED]  │
-│    src/apprt/khostty/       — Khostty-specific runtime    [PLANNED]  │
-│    src/apprt/ipc/           — JSON IPC server (planned)   [PLANNED]  │
-└──────────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│  terminal (Headless Engine)                                          │
-│  ─────────────────────────                                           │
-│  Cross-platform terminal logic: parser, screen, scrollback, cursor,  │
-│  styles, selection, search, render state, snapshots, Kitty graphics, │
-│  SGR, OSC, key/mouse encoding. NO GUI dependencies.                  │
-│                                                                      │
-│  Exposed to the world as libghostty-vt (C ABI).                     │
-│  src/terminal/ contains the Zig source and src/terminal/c/ the      │
-│  generated C headers (32 files, 12,285 lines).                       │
-└──────────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│  renderer + Surface                                                  │
-│  ──────────────────                                                  │
-│  Metal/OpenGL/DirectWrite renderers + per-platform surface           │
-│  implementations. Unchanged from upstream.                           │
-└──────────────────────────────────────────────────────────────────────┘
+```text
+Khostty
+├── apprt: platform-specific application runtimes
+│   ├── embedded.zig       macOS AppKit runtime, upstream
+│   ├── gtk.zig            Linux/BSD GTK runtime, upstream
+│   ├── windows/            Win32/DirectWrite runtime, planned G3
+│   ├── khostty/            Khostty-specific runtime, planned
+│   └── ipc/                JSON IPC server, planned G4
+├── terminal: headless upstream engine
+│   ├── parser, screen, scrollback, cursor, selection, search
+│   ├── render state, snapshots, Kitty graphics, SGR, OSC
+│   └── key and mouse encoding
+├── libghostty-vt: C ABI exported from the upstream engine
+├── renderer and surfaces
+│   ├── Metal and OpenGL for upstream platforms
+│   └── DirectWrite planned for Windows
+└── planned polyglot layer
+    ├── Rust: khostty-vt
+    ├── Go: khostty/vt
+    ├── Python: khostty
+    └── hardened WASM package
 ```
 
-**Design principles:**
+### Layer Responsibilities
 
-- **Wrap, do not handroll.** Every Khostty capability comes from wrapping `libghostty-vt` over FFI, not from reimplementing parser logic in the target language.
-- **Agent-first IPC.** Every terminal operation is a JSON-serializable command. Agents can create panes, write content, read screen state, and query metadata without a human at the keyboard.
-- **Correctness before features.** Conformance tests (G2) gate all new feature work. No capability merges without passing the conformance corpus.
-- **Minimal fork surface.** Khostty-specific code lives in `src/apprt/khostty/` and `src/apprt/windows/`. Upstream core (`src/terminal/`, `src/renderer/`) is untouched.
+1. **`libghostty-vt`** is the stable C ABI and the source of terminal correctness. Khostty wraps it rather than reimplementing parser behavior in another language.
+2. **`apprt`** owns platform shells, input, windowing, rendering integration, and the eventual IPC server.
+3. **The Agent/IPC layer** will translate JSON commands into terminal actions and expose machine-readable state and events.
+4. **The polyglot layer** will provide safe language-specific ownership, error, and lifetime semantics around the C ABI.
+5. **Phenotype Fabric** can embed the resulting terminal surface without depending on a particular GUI framework.
 
----
+The planned minimal fork surface is `src/apprt/khostty/` and `src/apprt/windows/`. Upstream `src/terminal/` and `src/renderer/` remain the source of truth.
 
 ## Agent/IPC Surface
 
-> **Status: NOT STARTED (G4)** — protocol below is a *draft* in the WBS and is **not implemented yet**. We document it here so consumers know what to expect.
+> **Status: NOT STARTED, G4.** The protocol below is a draft from the Deep WBS. It is a usage preview, not an implemented API.
 
-Khostty extends Ghostty's IPC from three commands to a full JSON command/event protocol. The shell listens on a Unix domain socket (or a Windows named pipe) and accepts authenticated JSON commands.
+The planned IPC layer expands upstream's three commands into a versioned JSON command, response, and event protocol. The architecture calls for a Unix domain socket on Unix-like platforms and a Windows named pipe on Windows, with token-based authentication.
 
 ```json
-// Agent → Khostty: create a pane
+// Agent to Khostty: create a pane
 {"cmd":"pane.create","opts":{"split":"vertical","cwd":"/tmp"}}
 
-// Khostty → Agent: response
+// Khostty to Agent: response
 {"ok":true,"data":{"pane_id":"p-3","pid":12345}}
 
-// Agent → Khostty: write VT sequences to the pane
+// Agent to Khostty: write VT sequences to the pane
 {"cmd":"pane.write","pane_id":"p-3","data":"ls -la\n"}
 
-// Agent → Khostty: query machine-readable state
+// Agent to Khostty: query machine-readable state
 {"cmd":"pane.state","pane_id":"p-3"}
 
-// Khostty → Agent: state snapshot
+// Khostty to Agent: state snapshot
 {"ok":true,"data":{"cursor":{"row":12,"col":45},"title":"bash","size":{"cols":120,"rows":40}}}
 
-// Agent → Khostty: list all panes
+// Agent to Khostty: list all panes
 {"cmd":"pane.list"}
 
-// Khostty → Agent: pane list
+// Khostty to Agent: pane list
 {"ok":true,"data":[{"id":"p-3","title":"bash","pid":12345},{"id":"p-7","title":"vim","pid":12389}]}
 
-// Khostty → Agent: async event push
+// Khostty to Agent: asynchronous event
 {"event":"title_change","pane_id":"p-3","data":{"title":"~/projects/khostty"}}
 ```
 
-Planned capabilities:
+The planned command set includes:
 
-| Command | Description |
-|---------|-------------|
-| `pane.create` | Create a new pane (vertical/horizontal split, custom cwd) |
-| `pane.close` | Close a pane by id |
-| `pane.focus` | Focus a pane by id |
-| `pane.list` | List all live panes |
+| Command or event | Planned purpose |
+|---|---|
+| `pane.create` | Create a pane with split and working-directory options |
+| `pane.close` | Close a pane by identifier |
+| `pane.focus` | Focus a pane by identifier |
+| `pane.list` | List live panes |
 | `pane.write` | Write a VT byte stream to a pane |
-| `pane.state` | Snapshot cursor, title, size, scrollback range |
+| `pane.state` | Return cursor, title, size, and scrollback metadata |
 | `pane.search` | Search scrollback text |
-| `pane.resize` | Resize the pane's grid |
-| `surface.list` / `window.list` | Enumerate top-level surfaces and windows |
-| events | `title_change`, `pane_exit`, `resize`, `bell`, `osc_*` |
+| `pane.resize` | Resize a pane grid |
+| `surface.list` and `window.list` | Enumerate surfaces and windows |
+| `title_change`, `pane_exit`, `resize`, `bell`, `osc_*` | Asynchronous events |
 
-All commands require a token (generated at first launch, stored with 0600 permissions on Unix, DPAPI on Windows). The protocol will be versioned (`protocol_version: 1`) for forward compatibility.
-
----
+G4 acceptance requires authenticated commands, pane lifecycle operations, state and scrollback queries, concurrent operation safety, protocol documentation, and examples. None of those acceptance criteria are complete yet.
 
 ## Polyglot FFI
 
-> **Status: NOT STARTED (G5/G6/G7)** — bindings below are *planned*, not shipped. Upstream ships a C header set (32 files, 12,285 lines) and a WASM example; Khostty wraps that for additional languages.
+> **Status: NOT STARTED, G5-G7.** The following table distinguishes the upstream ABI and examples from Khostty packages that still need to be built.
 
-`libghostty-vt` exposes a stable C ABI. Khostty ships first-class safe bindings for every language our agents run in.
+| Language | Status | Planned package | Purpose |
+|---|---|---|---|
+| **Rust** | **NOT STARTED, G5** | `khostty-vt` | Safe Rust wrapper with RAII handles, typed errors, and integration tests |
+| **Go** | **NOT STARTED, G6** | `khostty/vt` | cgo-based idiomatic Go wrapper with context and error handling |
+| **Python** | **NOT STARTED, G6** | `khostty` | cffi-based Python package for terminal automation and scripting |
+| **WASM** | **NOT STARTED, G7** | Hardened WASM package and typed JavaScript API | Browser and sandbox consumption of the VT engine |
 
-| Binding | Status | Crate / Module | Notes |
-|---------|--------|----------------|-------|
-| **C** (upstream) | DONE | `libghostty-vt.h` (32 headers) | The ABI everything else wraps. |
-| **Zig** (upstream) | DONE | `src/terminal/c/` | Native API. |
-| **C++** (upstream example) | DONE | `examples/cpp-vt/` | Demonstrates C++ wrapping. |
-| **Swift** (upstream example) | DONE | `examples/swift-vt/` | Demonstrates Swift wrapping. |
-| **WASM** (upstream example) | DONE | `examples/wasm-vt/`, `zig-out/lib/ghostty-vt.wasm` | 795KB, 40+ function signatures. G7 hardens this. |
-| **Rust** (`khostty-vt`) | NOT STARTED (G5, HIGH) | `crates/khostty-vt/` (planned) | Safe wrapper using `bindgen` + newtype + `Result<T, Error>`. |
-| **Go** (`khostty/vt`) | NOT STARTED (G6, MEDIUM) | `bindings/go/khostty/` (planned) | `cgo`-based, idiomatic Go errors, context support. |
-| **Python** (`khostty`) | NOT STARTED (G6, MEDIUM) | `bindings/python/khostty/` (planned) | `cffi`-based, follows CPython API conventions. |
-| **WASM (Khostty-hardened)** | NOT STARTED (G7, HIGH) | `pkg/wasm/` (planned) | Smaller surface, typed JS API, npm package. |
-
-The Rust crate design wraps the C functions 1:1 and adds:
-
-- `Result<T, GhosttyError>` instead of integer error codes
-- Newtypes for handles (`TerminalHandle`, `OscHandle`) so they cannot be mixed up
-- Lifetime tracking via `PhantomData` where Zig uses pointers
-- `Send + Sync` enforcement where upstream's allocator is thread-safe
-
----
+The upstream C ABI and existing examples remain the baseline that these packages wrap. The Rust design calls for raw bindings isolated behind a documented unsafe boundary, safe `Terminal`, `Snapshot`, `RenderState`, `Search`, `KeyEncoder`, and `MouseEncoder` types, and an explicit `GhosttyError` result type. Go and Python follow the same wrap-over-handroll rule.
 
 ## Conformance
 
-> **Status: NOT STARTED (G2, CRITICAL)** — the gate has 12 sub-tasks and **must pass before Windows/IPC/FFI work begins**.
+> **Status: NOT STARTED, G2.** This is the critical gate before Windows, IPC, FFI, and feature work.
 
-The fork's correctness bar is: every one of upstream Ghostty's 30 examples builds and runs without crash, plus the upstream fuzz corpus produces zero new crashes.
+G2 must prove that Khostty has no unacceptable terminal correctness regression. Build success is not enough. The gate covers the upstream Zig tests, the fuzz corpus, and the complete set of upstream examples.
 
-| Example | Language | What it proves | Status |
-|---------|----------|----------------|--------|
-| `c-vt` | C | OSC parser works end-to-end | not yet run |
-| `c-vt-stream` | C | Streaming incremental parse works | not yet run |
-| `c-vt-sgr` | C | SGR attribute handling works | not yet run |
-| `c-vt-encode-key` / `c-vt-encode-mouse` / `c-vt-encode-focus` | C | Input encoding round-trips | not yet run |
-| `c-vt-paste` | C | Paste safety + bracketed-paste encoding | not yet run |
-| `c-vt-snapshot` | C | Full state encode/decode round-trip | not yet run |
-| `c-vt-render` | C | Render-state tracking + dirty regions | not yet run |
-| `c-vt-search` | C | Scrollback search/find | not yet run |
-| `c-vt-formatter` | C | Text/VT/HTML export | not yet run |
-| `c-vt-grid-traverse`, `c-vt-grid-ref-tracked` | C | Grid cell access | not yet run |
-| `c-vt-compression` | C | Scrollback compression | not yet run |
-| `c-vt-colors`, `c-vt-effects` | C | Color + effect parsing | not yet run |
-| `c-vt-selection`, `c-vt-selection-gesture` | C | Selection + gestures | not yet run |
-| `c-vt-kitty-graphics` | C | Kitty graphics protocol | not yet run |
-| `c-vt-build-info` | C | Build-info query | not yet run |
-| `c-vt-static`, `c-vt-cmake-static`, `c-vt-cmake-cross` | C | Static + CMake builds | not yet run |
-| `wasm-vt`, `wasm-key-encode`, `wasm-sgr` | JS/WASM | WASM surface works | not yet run |
-| `zig-vt` | Zig | Zig API works | not yet run |
-| `c++-vt` | C++ | C++ wrapping works | not yet run |
-| `swift-vt` | Swift | Swift wrapping works | not yet run |
-| `python-vt` | Python | Python wrapping works | not yet run |
-| `test/fuzz-libghostty/` | fuzz | Fuzz corpus produces zero new crashes | not yet run |
+Acceptance criteria from the WBS:
 
-Pass/fail results will be committed as a conformance matrix under `docs/sessions/` once G2 runs.
+- All 30 upstream examples build and run without crashing.
+- The fuzz corpus in `test/fuzz-libghostty/` produces zero new crashes.
+- A pass/fail matrix is committed to the session documentation with observed evidence.
+- Failures include upstream issue references and a documented resolution path.
 
----
-
-## Repository Layout
-
-```
-khostty/
-├── src/
-│   ├── apprt/                  # Application runtime (the layer we extend)
-│   │   ├── embedded.zig        # macOS shell [upstream]
-│   │   ├── gtk.zig             # Linux/BSD shell [upstream]
-│   │   ├── windows/            # Windows shell [PLANNED, G3]
-│   │   ├── khostty/            # Khostty-specific runtime [PLANNED]
-│   │   └── ipc/                # JSON IPC server [PLANNED, G4]
-│   ├── terminal/               # Headless engine (untouched upstream core)
-│   │   ├── c/                  # C headers (generated, 32 files, 12,285 lines)
-│   │   ├── Parser.zig
-│   │   ├── Screen.zig
-│   │   ├── ...
-│   └── renderer/               # Metal/OpenGL/DirectWrite renderers
-├── pkg/translate-c/            # C translation helper (Zig dependency)
-├── examples/                   # 30 upstream C/Zig/WASM/C++/Swift/Python examples
-├── test/fuzz-libghostty/       # Fuzz corpus
-├── docs/
-│   ├── GLOBAL_HANDBOOK.md      # Phenotype platform handbook
-│   └── sessions/
-│       └── 20260916-fork-assessment/
-│           ├── 00_SESSION_OVERVIEW.md
-│           ├── 02_DEEP_WBS.md        # full 681-line task decomposition
-│           └── ...
-├── build.zig                   # Zig build entrypoint
-├── build.zig.zon               # Package metadata (name: ghostty, version 1.3.2-dev)
-├── HACKING.md                  # Upstream dev workflow (still valid)
-├── CONTRIBUTING.md             # Upstream contribution guide (still valid)
-├── LICENSE                     # MIT (Ghostty)
-└── README.md                   # ← you are here
-```
-
----
+The conformance target includes parsing and streaming, SGR, key and mouse encoding, Kitty graphics, snapshots, render state, search, formatting, grid access, compression, colors, effects, selection, static and CMake builds, WASM examples, Zig, C++, Swift, and Python examples.
 
 ## Development
 
-### Day-to-day workflow
+### Repository Pointers
 
-The upstream Ghostty development workflow (Zig toolchain, `zig fmt`, `zig build test`) applies unchanged. See [`HACKING.md`](HACKING.md) for the developer guide inherited from upstream.
+- [`HACKING.md`](HACKING.md): inherited upstream development workflow.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md): contribution and review conventions.
+- [`build.zig`](build.zig): Zig build entrypoint and test targets.
+- [`build.zig.zon`](build.zig.zon): package metadata and minimum Zig version.
+- [`docs/sessions/20260916-fork-assessment/`](docs/sessions/20260916-fork-assessment/): assessment history and the authoritative Deep WBS.
+- [`docs/GLOBAL_HANDBOOK.md`](docs/GLOBAL_HANDBOOK.md): Phenotype platform handbook.
 
-### Working on Khostty-specific gates
+### Recommended Workflow
 
-Each gate has a 10-minute-task decomposition in `docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`. The file is the source of truth for what "done" means for each gate and what evidence is required.
+1. Read the relevant gate in the Deep WBS before changing code.
+2. Run formatting and the narrowest relevant build or test target.
+3. Keep upstream engine changes separate from Khostty-specific apprt, IPC, and binding work.
+4. Add conformance evidence for correctness-sensitive changes.
+5. Update the README, API examples, and WBS status only after the evidence exists.
 
-**The critical path** (smallest remaining effort, fastest useful outcome, fewest dependencies):
-
-```
-G2 (conformance)  →  G3 (Windows runtime)  →  G4 (agent/IPC)  →  G10 (release)
-                                  ↓
-                          G5 (Rust FFI)  →  G6 (Go/Python FFI)  →  G7 (WASM)
-```
-
-G2 must complete first — it proves we have not regressed upstream correctness. Everything else builds on a green conformance suite.
-
-### Sync with upstream
+### Sync With Upstream
 
 ```bash
 git fetch upstream
-git merge upstream/main        # or use the configured sync workflow
-zig build && zig build test    # verify nothing broke
-zig fmt --check src/ build.zig # verify formatting
+git merge upstream/main
+zig build
+zig build test
+zig fmt --check src/ build.zig
 ```
 
-We track upstream aggressively. The current fork is **14 commits ahead, 0 behind**.
-
----
+The assessment snapshot records Khostty as 14 commits ahead and 0 behind upstream. Treat that as historical assessment evidence and verify the current remote state before a release.
 
 ## Contributing
 
-Issues, bug reports, and pull requests that touch **upstream code** (`src/terminal/`, `src/renderer/`, upstream `apprt/`) should go to [ghostty-org/ghostty](https://github.com/ghostty-org/ghostty) first. We do not want Khostty to drift from upstream on shared code.
+Issues, bug reports, and pull requests that change upstream code in `src/terminal/`, `src/renderer/`, or the upstream `apprt` implementations should go to [ghostty-org/ghostty](https://github.com/ghostty-org/ghostty) first. This keeps the shared engine aligned with upstream.
 
-Contributions to Khostty-specific code (`src/apprt/windows/`, `src/apprt/khostty/`, `src/apprt/ipc/`, `bindings/`, `crates/`) are welcome here.
+Khostty-specific contributions are welcome in the planned areas:
 
-Before opening a PR:
+- `src/apprt/windows/`
+- `src/apprt/khostty/`
+- `src/apprt/ipc/`
+- `bindings/`
+- `crates/`
+- WASM packaging and examples
 
-1. Run `zig fmt src/ build.zig` (CI runs `--check`)
-2. Run `zig build test` and confirm all tests pass
-3. If your change touches the IPC protocol, update the JSON schema and add an example under `examples/`
-4. If your change touches the FFI, run the relevant `test-lib-vt-*` target
-5. Commit messages follow the [immutable transaction ledger](https://github.com/1jehuang/jcode) convention:
-   ```
-   feat(apprt/windows): implement DirectWrite renderer
-   
-   tx-agent:     jcode
-   tx-task:      G3.5
-   tx-validated: test
-   tx-scope:     src/apprt/windows/renderer.zig
-   tx-intent:    First-cut DirectWrite text rendering for Khostty Windows shell
-   ```
+Before opening a pull request:
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) (inherited from upstream) for general style and review conventions.
+1. Run `zig fmt --check src/ build.zig`.
+2. Run the relevant `zig build test` target.
+3. For IPC work, add protocol examples and authentication tests.
+4. For FFI work, add language-specific ownership, error, and integration tests.
+5. Record conformance evidence when terminal behavior changes.
+6. Keep commits focused and include the repository's transaction-ledger metadata when applicable.
 
----
+## Links
 
-## Upstream
-
-Khostty is a fork of [**Ghostty**](https://github.com/ghostty-org/ghostty) by **Mitchell Hashimoto** and the Ghostty contributors. Every line of parser, screen, and renderer logic in this repository is upstream work. Khostty adds only the platform-specific shells, IPC layer, and polyglot FFI wrappers needed for our use cases.
-
-- **Upstream:** [github.com/ghostty-org/ghostty](https://github.com/ghostty-org/ghostty)
-- **Upstream docs:** [ghostty.org/docs](https://ghostty.org/docs)
-- **Upstream download:** [ghostty.org/download](https://ghostty.org/download)
-- **Upstream CI:** the upstream project's GitHub Actions
-
-We thank Mitchell and the Ghostty contributors for building the best terminal emulator available and licensing it under MIT so forks like ours can extend it freely.
-
----
+- **Upstream Ghostty:** <https://github.com/ghostty-org/ghostty>
+- **Upstream documentation:** <https://ghostty.org/docs>
+- **Upstream download:** <https://ghostty.org/download>
+- **Khostty assessment history:** [`docs/sessions/20260916-fork-assessment/`](docs/sessions/20260916-fork-assessment/)
+- **Deep WBS:** [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md)
+- **Phenotype handbook:** [`docs/GLOBAL_HANDBOOK.md`](docs/GLOBAL_HANDBOOK.md)
 
 ## License
 
-Khostty is licensed under the **MIT License** — the same license as upstream Ghostty.
+Khostty is distributed under the **MIT License**, the same license as upstream Ghostty. The complete repository license is in [`LICENSE`](LICENSE).
 
-```
+```text
 MIT License
 
 Copyright (c) 2024 Mitchell Hashimoto, Ghostty contributors
-Copyright (c) 2026 Phenotype — Khostty fork contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the above copyright notice and this
-permission notice appearing in all copies or substantial portions of the
-Software.
+furnished to do so, subject to the following conditions:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND...
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
-See [`LICENSE`](LICENSE) for the full text.
+## Acknowledgments
+
+Khostty is built on [Ghostty](https://github.com/ghostty-org/ghostty) by **Mitchell Hashimoto** and the Ghostty contributors. The fork exists to extend Ghostty's embeddable terminal engine for Phenotype use cases while keeping the upstream parser, renderer, and terminal behavior as the source of truth.
+
+Thanks to the Phenotype team and community contributors for the integration requirements, assessment work, and roadmap feedback.
 
 ---
 
 <p align="center">
-  <sub>Built on the shoulders of <a href="https://github.com/ghostty-org/ghostty">Ghostty</a> · Maintained by the <a href="https://github.com/1jehuang/jcode">Phenotype</a> platform team</sub>
+  <sub>Built on Ghostty. Maintained for the Phenotype platform.</sub>
 </p>
