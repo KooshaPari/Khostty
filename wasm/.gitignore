@@ -1,0 +1,3 @@
+# Compiled libghostty-vt wasm module. Regenerate with ./build.sh.
+# Not committed: it is a build product (813 KB) of include/ghostty + src/terminal.
+khostty-vt.wasm
