@@ -36,7 +36,7 @@
 use core::ffi::{c_char, c_int, c_void};
 
 // ---------------------------------------------------------------------
-// Coverage: 198 functions, 179 types, 779 constants
+// Coverage: 198 functions, 179 types, 794 constants
 // declared across 34 headers (201 `GHOSTTY_API` declarations detected).
 // ---------------------------------------------------------------------
 
@@ -409,6 +409,11 @@ pub const GHOSTTY_KITTY_IMAGE_FORMAT_PNG: GhosttyKittyImageFormat = 2;
 pub const GHOSTTY_KITTY_IMAGE_FORMAT_RGB: GhosttyKittyImageFormat = 0;
 pub const GHOSTTY_KITTY_IMAGE_FORMAT_RGBA: GhosttyKittyImageFormat = 1;
 pub const GHOSTTY_KITTY_KEY_DISABLED: c_int = 0;
+pub const GHOSTTY_KITTY_KEY_DISAMBIGUATE: c_int = 1 << 0;
+pub const GHOSTTY_KITTY_KEY_REPORT_ALL: c_int = 1 << 3;
+pub const GHOSTTY_KITTY_KEY_REPORT_ALTERNATES: c_int = 1 << 2;
+pub const GHOSTTY_KITTY_KEY_REPORT_ASSOCIATED: c_int = 1 << 4;
+pub const GHOSTTY_KITTY_KEY_REPORT_EVENTS: c_int = 1 << 1;
 pub const GHOSTTY_KITTY_PLACEMENT_LAYER_ABOVE_TEXT: GhosttyKittyPlacementLayer = 3;
 pub const GHOSTTY_KITTY_PLACEMENT_LAYER_ALL: GhosttyKittyPlacementLayer = 0;
 pub const GHOSTTY_KITTY_PLACEMENT_LAYER_BELOW_BG: GhosttyKittyPlacementLayer = 1;
@@ -421,6 +426,16 @@ pub const GHOSTTY_MODE_REPORT_PERMANENTLY_RESET: GhosttyModeReportState = 4;
 pub const GHOSTTY_MODE_REPORT_PERMANENTLY_SET: GhosttyModeReportState = 3;
 pub const GHOSTTY_MODE_REPORT_RESET: GhosttyModeReportState = 2;
 pub const GHOSTTY_MODE_REPORT_SET: GhosttyModeReportState = 1;
+pub const GHOSTTY_MODS_ALT: c_int = 1 << 2;
+pub const GHOSTTY_MODS_ALT_SIDE: c_int = 1 << 8;
+pub const GHOSTTY_MODS_CAPS_LOCK: c_int = 1 << 4;
+pub const GHOSTTY_MODS_CTRL: c_int = 1 << 1;
+pub const GHOSTTY_MODS_CTRL_SIDE: c_int = 1 << 7;
+pub const GHOSTTY_MODS_NUM_LOCK: c_int = 1 << 5;
+pub const GHOSTTY_MODS_SHIFT: c_int = 1 << 0;
+pub const GHOSTTY_MODS_SHIFT_SIDE: c_int = 1 << 6;
+pub const GHOSTTY_MODS_SUPER: c_int = 1 << 3;
+pub const GHOSTTY_MODS_SUPER_SIDE: c_int = 1 << 9;
 pub const GHOSTTY_MOUSE_ACTION_MAX_VALUE: GhosttyMouseAction = c_int::MAX;
 pub const GHOSTTY_MOUSE_ACTION_MOTION: GhosttyMouseAction = 2;
 pub const GHOSTTY_MOUSE_ACTION_PRESS: GhosttyMouseAction = 0;

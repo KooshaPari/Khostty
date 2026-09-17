@@ -191,6 +191,29 @@ def strip_target_guards(src: str) -> tuple[str, list[str]]:
     return "\n".join(out_lines), excluded
 
 
+def strip_redundant_outer_parens(value: str) -> str:
+    """Drop an outer paren pair that wraps the whole macro body.
+
+    `#define FLAG (1 << 0)` becomes `1 << 0` so the emitted Rust does not trip
+    `unused_parens`. Only a pair that encloses the entire body is removed.
+    """
+    while len(value) >= 2 and value[0] == "(" and value[-1] == ")":
+        depth = 0
+        encloses_all = True
+        for index, ch in enumerate(value):
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0 and index != len(value) - 1:
+                    encloses_all = False
+                    break
+        if not encloses_all:
+            break
+        value = value[1:-1].strip()
+    return value
+
+
 def split_top_level(text: str, sep: str = ",") -> list[str]:
     """Split on `sep` at nesting depth zero."""
     parts, depth, current = [], 0, []
@@ -342,11 +365,15 @@ def parse_header(path: str, out: Emitted) -> None:
         )
 
     # --- object-like macros -------------------------------------------------
+    # Requiring whitespace after the macro name excludes function-like macros
+    # (`#define FOO(x) ...`), while still accepting parenthesised bodies such as
+    # `#define GHOSTTY_MODS_SHIFT (1 << 0)`.
     for m in re.finditer(
-        r"^#define\s+(GHOSTTY_[A-Z0-9_]+)\s+([^(\n].*?)\s*$", src, re.M
+        r"^#define\s+(GHOSTTY_[A-Z0-9_]+)\s+([^\n].*?)\s*$", src, re.M
     ):
         name, value = m.group(1), m.group(2).strip()
         value = value.replace("GHOSTTY_ENUM_MAX_VALUE", "c_int::MAX")
+        value = strip_redundant_outer_parens(value)
         # Trailing // already stripped; reject function-like or complex bodies.
         if re.fullmatch(r"[-+0-9xXa-fA-F\s()<>|&~]*", value) and value:
             out.consts[name] = f"pub const {name}: c_int = {value};"

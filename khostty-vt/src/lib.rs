@@ -20,6 +20,8 @@
 pub mod color;
 pub mod error;
 pub mod ffi;
+pub mod key;
+pub mod mouse;
 pub mod render;
 pub mod search;
 pub mod selection;
@@ -30,6 +32,8 @@ pub mod terminal;
 
 pub use color::Color;
 pub use error::{GhosttyError, Result};
+pub use key::{Key, KeyEncoder, KeyEvent, Mods};
+pub use mouse::{MouseEncoder, MouseEvent};
 pub use render::{Dirty, RenderState};
 pub use search::{Search, SearchStatus};
 pub use selection::{GridRef, Selection};
