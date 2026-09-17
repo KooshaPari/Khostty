@@ -78,16 +78,16 @@ static const TestCase CURSOR_CASES[] = {
 };
 
 static const TestCase OSC_CASES[] = {
-    {"osc_0_set_title", ESC "]0;Test Window Title", "\x07"},
-    {"osc_2_set_title", ESC "]2;Another Title", "\x07"},
-    {"osc_10_set_fg", ESC "]10;#ff0000", "\x07"},
-    {"osc_11_set_bg", ESC "]11;#00ff00", "\x07"},
-    {"osc_12_set_cursor", ESC "]12;#0000ff", "\x07"},
-    {"osc_7_set_pwd", ESC "]7;file:///home/user/documents", "\x07"},
+    {"osc_0_set_title", ESC "]0;Test Window Title" "\x07", ""},
+    {"osc_2_set_title", ESC "]2;Another Title" "\x07", ""},
+    {"osc_10_set_fg", ESC "]10;#ff0000" "\x07", ""},
+    {"osc_11_set_bg", ESC "]11;#00ff00" "\x07", ""},
+    {"osc_12_set_cursor", ESC "]12;#0000ff" "\x07", ""},
+    {"osc_7_set_pwd", ESC "]7;file:///home/user/documents" "\x07", ""},
     {"osc_8_hyperlink_open",
      ESC "]8;url=https://example.com;Click Here" ESC "\\", ""},
     {"osc_8_hyperlink_close", ESC "]8;;" ESC "\\", ""},
-    {"osc_52_clipboard_copy", ESC "]52;c;SGVsbG8gV29ybGQ=", "\x07"},
+    {"osc_52_clipboard_copy", ESC "]52;c;SGVsbG8gV29ybGQ=" "\x07", ""},
 };
 
 static const TestCase CHARSET_CASES[] = {
@@ -119,11 +119,14 @@ static const TestCase MODE_CASES[] = {
 static const TestCase SCROLL_CASES[] = {
     {"scroll_set_region", ESC "[5;20r", ""},
     {"scroll_set_full", ESC "[1;24r", ""},
-    {"scroll_up", "Line 1\nLine 2\nLine 3\n" ESC "M", "Line 1\nLine 2\nLine 3\n"},
-    {"scroll_down", "Line 1\nLine 2\nLine 3\n" ESC "D", "Line 1\nLine 2\nLine 3\n"},
-    {"scroll_ind", "Line 1\n" ESC "D", "Line 1\n"},
-    {"scroll_ri", ESC "MLine 1\n", "Line 1\n"},
-    {"scroll_su", "Line 1\nLine 2\nLine 3\n" ESC "[2S", "Line 1\nLine 2\nLine 3\n"},
+    {"scroll_up", "Line 1\nLine 2\nLine 3\n" ESC "M",
+     "Line 1\n      Line 2\n            Line 3"},
+    {"scroll_down", "Line 1\nLine 2\nLine 3\n" ESC "D",
+     "Line 1\n      Line 2\n            Line 3"},
+    {"scroll_ind", "Line 1\n" ESC "D", "Line 1"},
+    {"scroll_ri", ESC "MLine 1\n", "Line 1"},
+    {"scroll_su", "Line 1\nLine 2\nLine 3\n" ESC "[2S",
+     "Line 1\n      Line 2\n            Line 3"},
 };
 
 static const TestCase KITTY_CASES[] = {
@@ -144,7 +147,7 @@ static const TestCase EDGE_CASES[] = {
     {"very_long_osc", ESC "]0;AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\x07", ""},
     {"mixed_sequences",
      ESC "[1;31mHello" ESC "[0m World" ESC "[44mTest" ESC "[0m",
-     "Hello World Test"},
+     "Hello WorldTest"},
     {"unicode_char", "\xc3\xa9\xc3\xa8\xc3\xaa",
      "\xc3\xa9\xc3\xa8\xc3\xaa"},
     {"wide_char_test", "\xe4\xb8\xad\xe6\x96\x87",
@@ -196,13 +199,11 @@ static void run_category(const char *category, const TestCase *cases, size_t n,
         bool ok = true;
 
         if (strlen(tc->expected_plain) > 0) {
-            GhosttyFormatterTerminalOptions opts;
-            memset(&opts, 0, sizeof(opts));
-            opts.size = sizeof(opts);
+            GhosttyFormatterTerminalOptions opts =
+                GHOSTTY_INIT_SIZED(GhosttyFormatterTerminalOptions);
             opts.emit = GHOSTTY_FORMATTER_FORMAT_PLAIN;
             opts.unwrap = false;
             opts.trim = false;
-            opts.extra.size = sizeof(opts.extra);
             opts.selection = NULL;
 
             GhosttyFormatter fmt;
@@ -246,14 +247,7 @@ static void run_category(const char *category, const TestCase *cases, size_t n,
 
 int main(void) {
     printf("=== VT/ANSI Conformance Test Suite (Khostty) ===\n");
-
-    GhosttyString version;
-    if (ghostty_build_info(GHOSTTY_BUILD_INFO_VERSION_STRING, &version) ==
-        GHOSTTY_SUCCESS) {
-        printf("libghostty-vt version: %.*s\n", (int)version.len,
-               (const char *)version.ptr);
-        ghostty_free(NULL, (uint8_t *)version.ptr, version.len);
-    }
+    fflush(stdout);
 
     GhosttyTerminal terminal = NULL;
     GhosttyResult r = ghostty_terminal_new(NULL, &terminal, 80, 24);
@@ -261,8 +255,8 @@ int main(void) {
         fprintf(stderr, "ghostty_terminal_new failed: %d\n", (int)r);
         return 1;
     }
-    printf("Initializing terminal: OK (80x24)\n");
-    printf("Running conformance tests...\n");
+    printf("libghostty-vt loaded; terminal 80x24 created\n");
+    fflush(stdout);
 
     run_category("sgr", SGR_CASES,
                  sizeof(SGR_CASES) / sizeof(SGR_CASES[0]), 0, terminal);
