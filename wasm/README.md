@@ -220,7 +220,7 @@ its function set differs from the union of the real headers (203 functions).
 ```bash
 cd wasm
 npm run test:header     # consolidated header is in sync and compiles
-npm test                # 52 runtime + ABI tests against the built artifact
+npm test                # 54 runtime + ABI tests against the built artifact
 npm run typecheck       # tsc --strict over the declarations and a type-level test
 npm run exports         # dump the module's import/export sections
 npm run check           # all of the above

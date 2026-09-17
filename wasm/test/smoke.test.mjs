@@ -189,6 +189,35 @@ describe("snapshot", () => {
     assert.equal(meta.sourceOffset, 0);
   });
 
+  test("metadata leaves progress fields undefined because nothing is decoded", async () => {
+    await using term = await Terminal.open({ vt, cols: 20, rows: 3 });
+    // Ten lines into a three-row viewport, so there is real history to report.
+    term.write(Array.from({ length: 10 }, (_, i) => `line ${i}`).join("\r\n"));
+    assert.ok(term.scrollbackRows > 0);
+    const meta = term.snapshot().metadata();
+    // historyRowsPrimary is only known once the decoder makes progress, and
+    // metadata() deliberately does not drive it.
+    assert.equal(meta.historyRowsPrimary, undefined);
+    assert.equal(meta.historyRowsAlternate, undefined);
+    assert.equal(typeof meta.maxContinuationBytes, "number");
+  });
+
+  test("round-trips scrollback, not just the visible screen", async () => {
+    await using term = await Terminal.open({ vt, cols: 20, rows: 3 });
+    const content = Array.from({ length: 12 }, (_, i) => `line ${i}`).join("\r\n");
+    term.write(content);
+    assert.equal(term.scrollbackRows, 9);
+
+    using restored = term.snapshot().restore();
+    assert.equal(restored.scrollbackRows, term.scrollbackRows);
+    assert.equal(restored.totalRows, term.totalRows);
+    assert.equal(restored.text(), term.text());
+    // And the restored history is searchable, i.e. it is real scrollback.
+    using search = restored.search("line 0");
+    search.run();
+    assert.equal(search.totalMatches, 1);
+  });
+
   test("restored terminal is independent of the original", async () => {
     await using term = await Terminal.open({ vt, cols: 20, rows: 3 });
     term.write("original");
