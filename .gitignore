@@ -35,3 +35,7 @@ vgcore.*
 
 # Benchmark harness build output
 /bench/.build/
+
+# Release engineering output (G9/G10). Artifacts are reproducible from
+# `packaging/`; only the manifests under `release/` are committed.
+/dist-release/
