@@ -112,6 +112,25 @@ impl Terminal {
         })
     }
 
+    /// Take ownership of a terminal handle produced by the library.
+    ///
+    /// Used by [`crate::snapshot`], where `ghostty_snapshot_decoder_ready` and
+    /// `ghostty_snapshot_decoder_decode` hand back a *caller-owned* terminal.
+    ///
+    /// The handle must be non-null, be owned by nobody else, and never be freed
+    /// by another path: the returned `Terminal` frees it in `Drop`.
+    pub(crate) fn from_owned_raw(raw: ffi::GhosttyTerminal) -> Result<Self> {
+        if raw.is_null() {
+            return Err(GhosttyError::NullHandle);
+        }
+        Ok(Terminal {
+            raw,
+            write_pty: None,
+            bell: None,
+            _not_thread_safe: PhantomData,
+        })
+    }
+
     /// The raw handle, for handing to sibling APIs that borrow a terminal.
     ///
     /// This is the escape hatch used by [`crate::render`], [`crate::search`],
