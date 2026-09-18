@@ -38,21 +38,28 @@ Status vocabulary used throughout:
 | 1 | `khostty-libghostty-vt-wasm-0.1.0.tar.gz` | any — Node ≥ 20 / browser | VERIFIED | Tarball `sha256 ce5d1f1d…` matches the sidecar `.sha256` written beside it, verified with `shasum -a 256 -c` (exit 0). Freshly extracted to a scratch directory and `node smoke.mjs --json` returned 13/13 checks, 0 failed, exit 0. A direct `import` of the extracted `js/api.js` opened a terminal and echoed text back. Repository WASM suite re-run the same day: 54 tests, 54 pass, 0 fail. |
 | 2 | `libghostty-vt.0.1.0.dylib` + `include/ghostty/` headers | macOS arm64 | VERIFIED | `zig build -Demit-lib-vt -Doptimize=ReleaseSafe --prefix <scratch>` installed a prefix (exit 0); a C program including the **installed** headers and linking the **installed** dylib compiled, ran, and printed `RESULT: PASS` with the library reporting `0.1.0-dev` (see §3.2). Conformance harness against the built library: 84/84 passed, 0 failed. |
 | 3 | `Khostty-0.1.0-macos.zip` — the `Ghostty.app` bundle | macOS | BLOCKED | `packaging/macos-app.sh --probe` reports `status: blocked`. `xcrun metal --version` exits 1: `cannot execute tool 'metal' due to missing Metal Toolchain`. The metallib step is unconditional for macOS targets, so no `.app` can be produced here. No bundle exists in the tree. |
-| 4 | `khostty_0.1.0_amd64.deb` | Debian / Ubuntu x86-64 | NOT BUILT | `bash packaging/linux/deb.sh --probe` runs (exit 0) and reports `zig: 0.16.0`, `dpkg-deb: MISSING`. Assembling a `.deb` requires `dpkg-deb`; the payload inside it additionally requires a Linux/GTK build, which this macOS host cannot produce. No `.deb` exists in the tree. |
-| 5 | `Khostty-0.1.0-windows-x86_64-setup.exe` | Windows x86-64 | NOT BUILT | `bash packaging/windows/installer.sh --probe` runs (exit 0) and reports `status: blocked`, `ISCC.exe: MISSING`. The installer payload and the generated `khostty.iss` are staged and hashed, but Inno Setup has never compiled them. |
-| 6 | `ghostty.exe` + `ghostty-vt.dll` (row 5's payload) | Windows x86-64 | VERIFIED | Both are real PE32+ files built 2026-09-18 (43.5 MB and 7.5 MB), staged and hashed 2026-09-18T03:33 local. `file` confirms `PE32+ executable (GUI) x86-64` and `PE32+ executable (DLL)`. **They have not been executed**: macOS cannot run PE binaries and no wine or Windows host is present. |
+| 4 | `khostty_0.1.0_amd64.deb` — the GTK **application** | Debian / Ubuntu x86-64 | NOT BUILT | `bash packaging/linux/deb.sh --probe` runs (exit 0) and reports `zig: 0.16.0` and now resolves `dpkg-deb: /opt/homebrew/bin/dpkg-deb` (`brew install dpkg`, installed 2026-09-18, exit 0). The remaining blocker is the payload, not the assembler: `zig build -Dtarget=x86_64-linux-gnu -Dapp-runtime=gtk -Demit-macos-app=false -Doptimize=ReleaseFast` exits 1 with `fatal error: 'adwaita.h' not found` and `fatal error: 'gtk/gtk.h' not found`. The GTK4/libadwaita development headers for the *target* are absent, and Homebrew's `gtk4` is a macOS-native build that cannot supply a Linux sysroot. No GTK-app `.deb` exists in the tree. |
+| 5 | `khostty-vt_0.1.0_amd64.deb` — the libghostty-vt **library** | Debian / Ubuntu x86-64 | VERIFIED | `packaging/linux/deb-libvt.sh` cross-compiles libghostty-vt for `x86_64-linux-gnu` and packages it. `sha256 3c080d13a74d6bf6dca9d28dc2c685f6b4350ec3130f3f3fafa5cb4d77d834cf`, 2,320,612 bytes; `ar t` → `debian-binary`, `control.tar.xz`, `data.tar.xz`; `dpkg-deb --info` and `--contents` (54 entries) both succeed. **Installed and run, not inferred:** in an x86-64 Debian 12 (bookworm, glibc 2.36) container, `dpkg -i` exited 0 with `Status: install ok installed`; `dpkg -V` found no modified or missing files; `ldconfig -p` resolved the SONAME; the shipped `example/c-vt-formatter` compiled against the **installed** headers and **installed** `.so` and passed 4/4 VT assertions; `dpkg -r` removed it cleanly. This is the library payload, not the GTK application. See §3.4.2. |
+| 6 | `Khostty-0.1.0-windows-x86_64-setup.exe` | Windows x86-64 | NOT BUILT | `bash packaging/windows/installer.sh --probe` runs (exit 0) and reports `status: blocked`, `ISCC.exe: MISSING`. The installer payload and the generated `khostty.iss` are staged and hashed, but Inno Setup has never compiled them. |
+| 7 | `ghostty.exe` + `ghostty-vt.dll` (row 6's payload) | Windows x86-64 | VERIFIED | Both are real PE32+ files built 2026-09-18 (43.5 MB and 7.5 MB), staged and hashed 2026-09-18T03:33 local. `file` confirms `PE32+ executable (GUI) x86-64` and `PE32+ executable (DLL)`. **They have not been executed**: macOS cannot run PE binaries and no wine or Windows host is present. |
 
-**No row in this table claims a runtime test that was not run.** Rows 1 and 2 are
-the only rows whose checks were executed end to end on 2026-09-18. Row 6 is
-verified as a *build product*, not as a running program.
+**No row in this table claims a runtime test that was not run.** Rows 1, 2 and 5
+are the rows whose checks were executed end to end on 2026-09-18. Row 5 is the
+only one whose install-and-run check ran on Linux, and it exercised the
+libghostty-vt *library* payload — not the GTK application. Row 7 is verified as
+a *build product*, not as a running program.
 
 ### What is still missing for the WBS 9.15 acceptance criteria
 
 [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](sessions/20260916-fork-assessment/02_DEEP_WBS.md)
 requires that the macOS `.app`, the Linux `.deb`, and the Windows `.exe` each
-"install and run". None of those three can be demonstrated from this host: each
-needs a toolchain or an operating system that is not available here. §5 lists,
-per artifact, the exact requirement that is missing and where it can be met. The
+"install and run". Two of the three remain undemonstrable from this host: the
+macOS `.app` needs a Metal toolchain component that cannot be fetched here, and
+the Windows `.exe` needs Inno Setup plus a Windows host. The Linux `.deb`
+criterion **is** now satisfied, but only for the libghostty-vt library payload
+(§3.4.2) — the GTK *application* `.deb` still cannot be built, because the
+GTK4/libadwaita headers for the target are absent (§3.4.1). §5 lists, per
+artifact, the exact requirement that is missing and where it can be met. The
 fourth criterion — the WASM dist being consumable via npm/ESM — **is** satisfied,
 observed 2026-09-18 (§3.1).
 
@@ -65,7 +72,8 @@ observed 2026-09-18 (§3.1).
 | WASM tarball | macOS or Linux | any (Node ≥ 20) | `zig` 0.16.0, `node`, `tar`, `gzip` |
 | macOS library | macOS | macOS | `zig` 0.16.0, `cc`; Metal toolchain **not** required for `-Demit-lib-vt` |
 | macOS `.app` | macOS | macOS with a GUI session | `zig` 0.16.0, Xcode, **Metal Toolchain component** |
-| Linux `.deb` | Linux (cross-build from macOS is not viable: the payload needs GTK4 for the target) | Debian/Ubuntu x86-64 | `zig` 0.16.0, `dpkg-deb` |
+| Linux `.deb` (GTK application) | Linux (cross-build from macOS is not viable: the payload needs GTK4 for the target) | Debian/Ubuntu x86-64 | `zig` 0.16.0, `dpkg-deb`, GTK4 + libadwaita development headers for `x86_64-linux-gnu` |
+| Linux `.deb` (libghostty-vt library) | macOS or Linux — cross-compiles cleanly | Debian/Ubuntu x86-64 | `zig` 0.16.0, `dpkg-deb` (`brew install dpkg`); `docker` only for `--verify` |
 | Windows installer | any host with `zig` | Windows x86-64 | `zig` 0.16.0, Inno Setup 6.3+ (`ISCC.exe`); on a non-Windows host also `wine` + `winepath` |
 
 All packaging scripts accept a probe mode that only *reports* readiness and
@@ -74,7 +82,8 @@ changes nothing. Run it first on any new host:
 ```bash
 bash packaging/version.sh                # resolved version + upstream base
 bash packaging/macos-app.sh --probe      # writes dist-release/macos/toolchain-probe.txt
-bash packaging/linux/deb.sh --probe      # prints, writes nothing
+bash packaging/linux/deb.sh --probe           # prints, writes nothing
+bash packaging/linux/deb-libvt.sh --probe     # library `.deb`; prints, writes nothing
 bash packaging/windows/installer.sh --probe   # writes dist-release/windows/toolchain-probe.txt
 ```
 
@@ -341,7 +350,13 @@ script would sign with it rather than ad-hoc; and notarytool credentials are not
 configured, so notarization is impossible here regardless. A launch test is also
 meaningless outside a logged-in GUI session, which this host does not have.
 
-### 3.4 Linux — `.deb` — NOT BUILT
+### 3.4 Linux — `.deb`
+
+Two different `.deb`s belong to this section and they have different status.
+§3.4.1 is the GTK application package; §3.4.2 is the libghostty-vt library
+package, which is the one that has actually been installed and run.
+
+#### 3.4.1 `khostty_0.1.0_amd64.deb` — GTK application — NOT BUILT
 
 **Artifact (does not exist):** `dist/khostty_0.1.0_amd64.deb`
 **Produced by:** `packaging/linux/deb.sh`
@@ -380,24 +395,94 @@ update-desktop-database ~/.local/share/applications 2>/dev/null || true
 gio info /usr/share/applications/com.khostty.Khostty.desktop >/dev/null && echo "desktop entry readable"
 ```
 
-**Status, observed 2026-09-18.** The script is present and its probe runs green,
-but the `.deb` has never been produced:
+**Status, re-observed 2026-09-18 (updated).** The script is present, its probe
+runs green, and the *assembler* gap is now closed — `brew install dpkg` exited 0
+and installed `dpkg-deb` 1.23.11:
 
 ```
 $ bash packaging/linux/deb.sh --probe
 packaging/linux/deb.sh --probe
   VERSION:        0.1.0
   zig:            0.16.0
-  dpkg-deb:       MISSING (install dpkg)
+  dpkg-deb:       /opt/homebrew/bin/dpkg-deb
   Output:         /Users/kooshapari/CodeProjects/Phenotype/repos/khostty/dist/khostty_0.1.0_amd64.deb
 ```
 
-Two distinct gaps: the assembler (`dpkg-deb`) is absent, and the payload is a
-Linux GTK build (`zig build -Dtarget=x86_64-linux-gnu -Dapp-runtime=gtk`) that
-needs GTK4 development headers for the target, which this macOS host does not
-have. `dist/` in the tree contains upstream packaging *templates* only. The verify
-commands above are therefore **documented but unexecuted**; treat them as the
-checklist to run on the Linux host, not as evidence.
+One gap remains, and it is the payload rather than the assembler. `bash
+packaging/linux/deb.sh` now reaches the build step and fails there, exit 1:
+
+```
+$ zig build -Dtarget=x86_64-linux-gnu -Dapp-runtime=gtk -Demit-macos-app=false -Doptimize=ReleaseFast
+./.zig-cache/.../adw_c.h:1:10: fatal error: 'adwaita.h' not found
+./.zig-cache/.../gtk_c.h:1:10: fatal error: 'gtk/gtk.h' not found
+error: the following build command failed with exit code 1
+```
+
+The GTK4 and libadwaita development headers for `x86_64-linux-gnu` are absent, and
+Homebrew's `gtk4` is a macOS-native build that cannot supply a Linux target
+sysroot — so this is not one `brew install` away. The verify commands above are
+therefore **documented but unexecuted**; treat them as the checklist to run on a
+Linux host that has the GTK4 development packages, not as evidence.
+
+#### 3.4.2 `khostty-vt_0.1.0_amd64.deb` — libghostty-vt library — VERIFIED
+
+**Artifact:** `dist/khostty-vt_0.1.0_amd64.deb` — 2,320,612 bytes,
+`sha256 3c080d13a74d6bf6dca9d28dc2c685f6b4350ec3130f3f3fafa5cb4d77d834cf`,
+computed twice with independent tools (`shasum -a 256` and `openssl dgst
+-sha256`).
+**Produced by:** `packaging/linux/deb-libvt.sh` (new).
+
+This is a different payload, not a relabelled substitute. libghostty-vt is the
+only Khostty artifact that cross-compiles from macOS to `x86_64-linux-gnu`. It is
+a real x86-64 Linux ELF — `file` reports `ELF 64-bit LSB shared object, x86-64`,
+`objdump -p` reports `SONAME libghostty-vt.so.0` and `NEEDED libm.so.6 libc.so.6
+librt.so.1` — packaged with its SONAME and development symlinks, the public C
+headers, and a `pkg-config` file. It is **not** the GTK terminal application.
+
+Build and structural verification:
+
+```bash
+bash packaging/linux/deb-libvt.sh          # exit 0
+#   payload ELF verified: soname=libghostty-vt.so.0 needs=[libc.so.6 libm.so.6 librt.so.1]
+#   ar members: debian-binary control.tar.xz data.tar.xz
+#   debian-binary = 2.0
+#   dpkg-deb --info succeeded; dpkg-deb --contents succeeded (54 entries)
+```
+
+The archive holds 54 entries: 39 regular files, 2 symlinks
+(`libghostty-vt.so` → `.so.0` → `.so.0.1.0`), and 13 directories, including 34
+headers under `/usr/include/ghostty/vt/`. The first `ar` member is
+`debian-binary`, and `debian-binary` reads exactly `2.0`.
+
+Install-and-run verification — executed, not inferred:
+
+```bash
+bash packaging/linux/deb-libvt.sh --verify   # exit 0
+```
+
+observed in an `x86_64` `debian:bookworm` container (Debian 12.15, glibc 2.36) on
+this host, launched with `docker run --platform linux/amd64` with the repository
+mounted read-only:
+
+| Check | Observed |
+|---|---|
+| `dpkg -i dist/khostty-vt_0.1.0_amd64.deb` | exit 0; `Setting up khostty-vt (0.1.0) ...`; `dpkg -s` → `Status: install ok installed` |
+| `dpkg -L khostty-vt` | 54 entries, including `/usr/lib/x86_64-linux-gnu/libghostty-vt.so.0.1.0`, `.../libghostty-vt.so.0`, `.../libghostty-vt.so`, `/usr/include/ghostty/vt.h`, the `vt/**` headers, and `.../pkgconfig/libghostty-vt.pc` |
+| `dpkg -V khostty-vt` | no modified or missing files — the package's `md5sums` integrity holds |
+| `ldconfig -p \| grep ghostty` | `libghostty-vt.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libghostty-vt.so.0` |
+| `gcc example/c-vt-formatter/src/main.c -lghostty-vt` | compiled against the **installed** headers and the **installed** `.so`; ran and printed the formatted 80×24 screen |
+| functional assertions | 4/4 PASS — literal text, `CSI 2K` erase-and-rewrite, CUP placement at (5,10), right-edge clamp |
+| `dpkg -r khostty-vt` | exit 0; clean removal |
+
+**What this does not prove.** The GTK application `.deb` is still not built, so
+"the Khostty terminal *application* installs and runs from a `.deb`" remains
+**unverified** — §3.4.1 records exactly what is missing. The container is an
+emulated x86-64 userspace on Apple Silicon rather than bare-metal Debian, and it
+is not a desktop session, so this validates package metadata, file layout, loader
+resolution and the library's C ABI, not a GUI launch. No `apt`-repository install
+path was exercised. The WBS 9.15 acceptance bullet for the Linux `.deb` is
+therefore satisfied for the library payload only, and is stated that way in the
+status table above.
 
 ### 3.5 Windows — `.exe` installer — NOT BUILT
 
@@ -536,7 +621,12 @@ here is inferred.
 | Version resolution | `bash packaging/version.sh` | `0.1.0 (dev)`, upstream base `ghostty 1.3.2-dev @ d4c88d8`, source `c2bac90` (dirty) |
 | macOS toolchain | `bash packaging/macos-app.sh --probe` | `status: blocked` — Metal toolchain missing |
 | Metal compiler | `xcrun metal --version` | exit 1, `cannot execute tool 'metal' due to missing Metal Toolchain` |
-| Linux toolchain | `bash packaging/linux/deb.sh --probe` | exit 0; `zig 0.16.0`, `dpkg-deb: MISSING` |
+| Linux toolchain | `bash packaging/linux/deb.sh --probe` | exit 0; `zig 0.16.0`, `dpkg-deb: /opt/homebrew/bin/dpkg-deb` (was `MISSING` before `brew install dpkg`) |
+| dpkg assembler install | `brew install dpkg` | exit 0; poured `dpkg 1.23.11` + deps `gnu-tar`, `gpatch`, `libmd`, `perl`; caveat printed: `dpkg -i`/`--configure` are not configured to install software, but `dpkg-deb` builds and reads archives |
+| Linux GTK-app `.deb` build | `bash packaging/linux/deb.sh` | **exit 1.** Reaches the build step and dies on missing target headers: `adw_c.h:1:10: fatal error: 'adwaita.h' not found`, `gtk_c.h:1:10: fatal error: 'gtk/gtk.h' not found`, `error: the following build command failed with exit code 1`. Assembler is no longer the blocker. |
+| Linux library `.deb` build | `bash packaging/linux/deb-libvt.sh --probe` then `bash packaging/linux/deb-libvt.sh` | probe exit 0; build exit 0; produced `dist/khostty-vt_0.1.0_amd64.deb` |
+| Linux library `.deb` structure | `dpkg-deb --info` / `--contents` / `ar t` on the artifact | all exit 0; `ar t` → `debian-binary`, `control.tar.xz`, `data.tar.xz` (first member `debian-binary`, contents `2.0`); 54 entries (39 files, 2 symlinks, 13 dirs) |
+| Linux library `.deb` install + run | `bash packaging/linux/deb-libvt.sh --verify` (exit 0) | **PASS.** x86-64 `debian:bookworm` (12.15, glibc 2.36) under `docker run --platform linux/amd64`: `dpkg -i` exit 0 → `Status: install ok installed`; `dpkg -V` no modified/missing files; `ldconfig -p` resolves `libghostty-vt.so.0`; `example/c-vt-formatter` compiles against the installed headers and `.so` and passes 4/4 VT assertions; `dpkg -r` exit 0 |
 | Windows toolchain | `bash packaging/windows/installer.sh --probe` | exit 0; `status: blocked`, `ISCC.exe: MISSING` |
 | WASM tarball integrity | `cd dist-release/wasm && shasum -a 256 -c khostty-libghostty-vt-wasm-0.1.0.tar.gz.sha256` | `khostty-libghostty-vt-wasm-0.1.0.tar.gz: OK`, exit 0 |
 | WASM tarball consumer test | extract to scratch, `node smoke.mjs --json` | 13/13 checks, 0 failed, exit 0 |
@@ -552,6 +642,7 @@ here is inferred.
 
 | Artifact | Bytes | SHA-256 |
 |---|---|---|
+| `khostty-vt_0.1.0_amd64.deb` | 2,320,612 | `3c080d13a74d6bf6dca9d28dc2c685f6b4350ec3130f3f3fafa5cb4d77d834cf` |
 | `libghostty-vt.0.1.0.dylib` | 7,685,808 | `bc74fa7171e3abceb7e32904266cb23876c50a1313f6f65cd7b92c34a962642a` |
 | `wasm/khostty-vt.wasm` | 813,670 | `08ac8ed881ffdae68b9f96f9afa6c834e57ba7ea49280d220e882938508e5bf6` |
 | `khostty-libghostty-vt-wasm-0.1.0.tar.gz` | 680,607 | `ce5d1f1dfcf03cade7add0c6564b72b2690b496859e5c91fd432234db655c709` |
@@ -579,16 +670,22 @@ durable record of what was built is the one reproduced here and in each script's
    catalog serves it, then `bash packaging/macos-app.sh`. Expect an ad-hoc
    signature unless a Developer ID Application identity is present, and no
    notarization without notarytool credentials.
-2. **Linux `.deb`** — run `bash packaging/linux/deb.sh` on a Debian/Ubuntu host
-   with GTK4 dev packages. The probe must stop reporting `dpkg-deb: MISSING`.
-3. **Windows `.exe`** — install Inno Setup 6.3+ on a Windows host and run
+2. **Linux `.deb` (GTK application)** — run `bash packaging/linux/deb.sh` on a
+   Debian/Ubuntu host with the GTK4 and libadwaita development packages for
+   `x86_64-linux-gnu`. The probe already reports `dpkg-deb`; the build step is
+   what fails on the missing target headers.
+3. **Linux `.deb` (libghostty-vt library)** — **closed 2026-09-18.** §3.4.2
+   records the artifact, its hash, and an executed `dpkg -i` + run. Re-run
+   `bash packaging/linux/deb-libvt.sh --verify` after any change to the VT core;
+   the pass describes the library built on 2026-09-18, not the current tree.
+4. **Windows `.exe`** — install Inno Setup 6.3+ on a Windows host and run
    `bash packaging/windows/installer.sh`, or set `KHOSTTY_ISCC` and add wine on a
    POSIX host. The `.iss` is generated with `ArchitecturesAllowed=x64compatible`,
    which requires Inno 6.3 or newer; on 6.0–6.2 substitute `x64`.
-4. **macOS library** — already verified; re-run `bash conformance/build.sh run`
+5. **macOS library** — already verified; re-run `bash conformance/build.sh run`
    after any change to the VT core, because the 84/84 pass describes the library
    built on 2026-09-18, not the current source tree.
-5. **Documentation consistency** — [BUILD.md](BUILD.md) and
+6. **Documentation consistency** — [BUILD.md](BUILD.md) and
    [README.md](README.md) still state, as of 2026-09-17, that the committed
    revision does not build. A `zig build -Demit-lib-vt` from the working tree
    succeeded on 2026-09-18 (§3.2), so those dated claims are stale. They were not
@@ -604,4 +701,6 @@ durable record of what was built is the one reproduced here and in each script's
 - [AGENT.md](AGENT.md) — driving the installed binary from an agent
 - `packaging/lib.sh` — the shared rules every packaging script follows, including
   "never fabricate a result"
+- `packaging/linux/deb-libvt.sh` — the libghostty-vt `.deb`; `--probe`, plain,
+  and `--verify` (installs and runs the package in an x86-64 Debian container)
 - `packaging/version.sh` — the single source of truth for the version number

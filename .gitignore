@@ -40,3 +40,9 @@ vgcore.*
 # Release engineering output (G9/G10). Artifacts are reproducible from
 # `packaging/`; only the manifests under `release/` are committed.
 /dist-release/
+
+# .deb packages built by packaging/linux/*.sh. `dist/` also holds tracked
+# upstream packaging *templates* (dist/linux, dist/macos, dist/windows), so
+# only the archives are ignored. Address and hash them from the script output
+# or `docs/INSTALL.md`; they are reproducible, not source.
+/dist/*.deb

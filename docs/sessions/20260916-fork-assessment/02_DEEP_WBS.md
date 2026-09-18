@@ -706,7 +706,7 @@ docs/
 | ID | Task | Est | Depends | Notes |
 |----|------|-----|---------|-------|
 | 9.11 | Package macOS .app bundle (notarized if possible) | 10m | G1 | Info.plist, icon, codesign |
-| 9.12 | Package Linux .deb (and optionally .rpm) | 10m | G1 | dpkg packaging, desktop entry | DONE (`935b354c9`, `packaging/linux/deb.sh`, probe PASS) |
+| 9.12 | Package Linux .deb (and optionally .rpm) | 10m | G1 | dpkg packaging, desktop entry | DONE (`935b354c9`, `packaging/linux/deb.sh`, probe PASS). **[2026-09-18]** `deb.sh` still cannot produce the GTK-app package from macOS: `bash packaging/linux/deb.sh` exits 1 on `'adwaita.h' not found` / `'gtk/gtk.h' not found`. Added `packaging/linux/deb-libvt.sh`, which packages the cross-compilable libghostty-vt payload; the resulting `khostty-vt_0.1.0_amd64.deb` **installs and runs** on x86-64 Debian 12 (evidence rows below). |
 | 9.13 | Package Windows .exe installer (MSI optional) | 10m | G3 | Inno Setup / WiX / MSIX | DONE (`004119f54`, `packaging/windows/installer.sh`, probe PASS; ISCC pending a Windows host) |
 | 9.14 | Package WASM dist (npm-style) | 10m | G7 | tar/zip + README | DONE (`76ad36fc3`, `packaging/wasm-dist.sh`, 54 tests) |
 | 9.15 | Write install docs + verification steps | 10m | 9.11-9.14 | Test each installer | DONE (`cd91fb549`, `docs/INSTALL.md`; status table 3 VERIFIED / 2 NOT BUILT / 1 BLOCKED, observed 2026-09-18) |
@@ -714,7 +714,7 @@ docs/
 **Acceptance criteria**:
 - All docs committed, cross-linked, no dead links
 - macOS .app installs and runs (verified outside source tree)
-- Linux .deb installs and runs
+- Linux .deb installs and runs — **SATISFIED for the libghostty-vt library payload** (`khostty-vt_0.1.0_amd64.deb`: `dpkg -i` exit 0, installed library linked and run, exit 0, in x86-64 Debian 12). **STILL OPEN for the GTK application payload** (`khostty_0.1.0_amd64.deb` is not buildable on this host). Closed only as narrowly scoped, not in general.
 - Windows .exe installs and runs
 - WASM dist is consumable via npm/ESM
 - Dossier compliant with Phenotype docs-3 contract
@@ -726,7 +726,12 @@ after first observation; results reproduced.
 
 | Check | Command | Result |
 |-------|---------|--------|
-| Linux .deb script | `bash packaging/linux/deb.sh --probe` | exit 0; reports version 0.1.0, zig 0.16.0, `dpkg-deb: MISSING` |
+| Linux .deb script | `bash packaging/linux/deb.sh --probe` | exit 0; reports version 0.1.0, zig 0.16.0, `dpkg-deb: /opt/homebrew/bin/dpkg-deb` (installed 2026-09-18 by `brew install dpkg`, exit 0, `dpkg-deb` 1.23.11; previously `MISSING`) |
+| **Linux .deb (GTK app) build** | `bash packaging/linux/deb.sh` | **exit 1.** Reaches the build step and dies on missing target headers: `adw_c.h:1:10: fatal error: 'adwaita.h' not found`, `gtk_c.h:1:10: fatal error: 'gtk/gtk.h' not found`, `error: the following build command failed with exit code 1`. The assembler is no longer the blocker; the GTK4/libadwaita headers for `x86_64-linux-gnu` are, and Homebrew's `gtk4` is a macOS-native build that cannot supply a Linux sysroot. |
+| **Linux .deb (library) build** | `bash packaging/linux/deb-libvt.sh` (new) | **exit 0.** Produced `dist/khostty-vt_0.1.0_amd64.deb`, 2,320,612 bytes, `sha256 3c080d13a74d6bf6dca9d28dc2c685f6b4350ec3130f3f3fafa5cb4d77d834cf` — computed with `shasum -a 256` and independently reproduced with `openssl dgst -sha256`. Payload is a real x86-64 Linux ELF (`file`: `ELF 64-bit LSB shared object, x86-64`; `objdump -p`: `SONAME libghostty-vt.so.0`, `NEEDED libm.so.6 libc.so.6 librt.so.1`). The script also refuses to package if the installed headers drift from `include/ghostty/vt`, so the shipped ABI cannot silently diverge. |
+| **Linux .deb (library) structure** | `dpkg-deb --info` / `dpkg-deb --contents` / `ar t` / `dpkg-deb -x` on the artifact | **PASS.** `--info` and `--contents` both exit 0; 54 entries = 39 regular files + 2 symlinks (`libghostty-vt.so` → `.so.0` → `.so.0.1.0`, extracted and target-checked) + 13 directories, including 34 headers under `/usr/include/ghostty/vt/`. `ar t` lists exactly `debian-binary`, `control.tar.xz`, `data.tar.xz`, with `debian-binary` first; its contents read `2.0`. `control` parses with `Package: khostty-vt`, `Architecture: amd64`, `Depends: libc6 (>= 2.29)`, `Installed-Size: 10628`. |
+| **Linux .deb installs and runs** (acceptance bullet, library payload) | `bash packaging/linux/deb-libvt.sh --verify` → in x86-64 `debian:bookworm` (12.15, glibc 2.36) via `docker run --platform linux/amd64 -v <repo>:/w:ro gcc:12-bookworm`: `dpkg -i`, `dpkg -L`, `dpkg -V`, `ldconfig -p`, `gcc /w/example/c-vt-formatter/src/main.c -lghostty-vt`, run, `dpkg -r` | **PASS — exit 0.** `dpkg -i` exit 0 with `Setting up khostty-vt (0.1.0) ...` and `dpkg -s` → `Status: install ok installed`; `dpkg -L` lists all 54 paths; `dpkg -V` reports no modified or missing files, so the package's `md5sums` hold; `ldconfig -p` resolves `libghostty-vt.so.0`; the shipped example **compiles against the installed headers and the installed `.so`** and running it passes 4/4 VT assertions (literal text, `CSI 2K` erase+rewrite, CUP placement at (5,10), right-edge clamp) and prints the formatted 80×24 screen; `dpkg -r` exit 0. **Scope:** the *library* payload only. The GTK *application* `.deb` is still not built; the container is emulated x86-64 userspace, not bare metal, and is not a desktop session, so this does not evidence a GUI launch; no `apt`-repository install path was exercised. |
+| Linux library `.deb` toolchain probe | `bash packaging/linux/deb-libvt.sh --probe` | exit 0; reports zig 0.16.0, `dpkg-deb`, `ar`, `docker`, image `gcc:12-bookworm (linux/amd64)` |
 | Windows installer | `bash packaging/windows/installer.sh --probe` | exit 0; reports zig 0.16.0, `ISCC.exe: MISSING`, real PE inputs hashed |
 | macOS .app | `bash packaging/macos-app.sh --probe` | exit 0; reports `blocked` — Metal toolchain unusable, bundle excluded from the manifest |
 | Dossier | `docs/dossiers/KHOSTTY.md` | 300 lines, 10 sections (9 numbered + See also) |
@@ -740,9 +745,18 @@ after first observation; results reproduced.
 | **Cross-links** (supporting `docs committed`) | programmatic scan of `docs/README.md` for the nine required targets + file existence | **PASS** — README links to all of `ARCHITECTURE`, `API`, `AGENT`, `PLATFORMS`, `BUILD`, `CONTRIBUTING`, `FORK`, `SECURITY`, `INSTALL`; every target exists on disk. README also links `TESTING` and `GLOSSARY`, the sessions WBS, `../README.md`, `src/apprt/ipc/protocol.md`, and five nested READMEs. Its own "every document ends with a See also section" convention holds for 13 of 14 files; `docs/GLOBAL_HANDBOOK.md` (not part of WBS 9.1–9.10) has none. |
 | **Dossier compliant** (acceptance bullet) | `docs/dossiers/KHOSTTY.md` (300 lines, 10 headings) compared against the canonical `docs-5/qa/DOSSIER-TEMPLATE.md` required-concern list | **PARTIAL — not met in full.** The four concerns named in this criterion are all present: **identity** (`§1` product name, version, ABI soname, upstream base, lifecycle, manifest agreement), **scope** (`§2` layers + four deltas + explicit non-goals preserving `src/terminal/`, `src/renderer/`, `src/font/`, `src/config/`), **evidence** (`§8` gate table with dated denominators; `§3`–`§6` cite concrete paths, commits and hashes), **risks** (`§9` top-5 risks with mitigation, `§7` ten known limitations). Mapped against the template's full seven concerns, **3 are met** (identity/boundary, source-grounded atlas, evidence and unresolved obligations), **3 are partial** (comparator/reuse — `§2` non-goals and the "wrap, do not reimplement" rule exist but there is no version-pinned peer table or per-subsystem retain/adopt/patch/wrap record; bounded pilot — `§8` carries measurements with observed denominators but no pilot with agreed conditions or negative controls; delivery gate — `§8` binds evidence to gates and `§3` separates verified from never-executed, but there is no clean-install journey or consumer acceptance), and **1 is absent: ownership/next handoff** — no product owner, no independent assurance owner, no named next bounded task with artifact and proof. **[Updated 2026-09-18, `3c78867a0`]:** `§10` was added, so that concern is no longer absent. It names the next bounded task (close WBS 9.11 on a host with a working Metal toolchain, with artifact and proof) and records product owner / independent-assurance owner as **UNASSIGNED** — the gap is now stated rather than omitted. The three partial concerns remain partial. |
 
-**Not met**: the three installer acceptance bullets (macOS/Linux/Windows install-and-run)
-cannot be closed on this host — `dpkg-deb` and Inno Setup are absent and the Metal toolchain
-is unfetchable. Each is recorded as NOT BUILT or BLOCKED rather than claimed.
+**Partly closed 2026-09-18.** The Linux `.deb` acceptance bullet is now satisfied for the
+libghostty-vt **library** payload: the `.deb` was built, structurally validated, then
+installed with `dpkg -i` and used to compile and run the shipped C example in an x86-64
+Debian 12 container, exit 0 (evidence rows above). It is **not** satisfied for the GTK
+**application** payload, which cannot be built here because the GTK4/libadwaita headers for
+`x86_64-linux-gnu` are absent — so the bullet is closed only as narrowed, and is written
+that way in the criteria list rather than claimed whole.
+
+**Still not met**: the macOS `.app` and Windows `.exe` installer acceptance bullets
+(install-and-run) cannot be closed on this host — the Metal toolchain component is
+unfetchable, and Inno Setup plus a Windows host are absent. Each is recorded as NOT BUILT
+or BLOCKED rather than claimed.
 
 **Also not met in full**: the dossier bullet is **PARTIAL**, not PASS. Its four narrowly named
 concerns are satisfied and independently reproduced above, but the canonical template's
