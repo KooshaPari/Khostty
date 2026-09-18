@@ -328,6 +328,26 @@ normative protocol spec is `src/apprt/ipc/protocol.md`, cited from the dossier a
 > and hop commands onto the app thread, then add an end-to-end test that drives a live instance.
 > This is the difference between a proven protocol and a usable agent surface, and it is a
 > stronger candidate for next work than any remaining release mechanic.
+>
+> **Scoped 2026-09-18 (every dependency already exists; nothing needs inventing):**
+> the boot sequence the tests use is
+> `Server.bind(gpa, io, Config{ .socket_path, … }, Deps{ .manager, .broker, .authenticator, .server_pid })`
+> then `server.start()` (see `server.zig:526`). The real runtime must therefore supply:
+> - `pane.Manager` over the **app** host, not the fake — `app_host.zig:113 AppHost.host()`
+>   already returns the windowed vtable when `windowed`, and an all-`Unsupported` vtable
+>   otherwise, with `unavailableReason()` explaining why.
+> - `events.Broker`, already wired by `AppHost.setEventBroker` (`app_host.zig:120`).
+> - `auth.Auth`, which the app must generate once per process.
+> - A socket path in the app's runtime/state directory.
+> - The **app-thread hop**: commands arrive on a server thread but mutate surfaces the app
+>   thread owns, so dispatch must marshal onto the app thread. This is the genuinely new
+>   code, and it is why `app_host.zig` calls itself "the only file that knows about the app
+>   runtime".
+>
+> Acceptance for the follow-on: an external client can connect to a **running** Khostty,
+> issue `pane.create`, and observe a new pane — i.e. the 458-test protocol exercised through
+> a live instance rather than in-process. `windowed` is false for `.none`, the `windows`
+> scaffold, and the lib/wasm artifacts, so the GTK app is the target for this work.
 
 ### IPC Protocol (Draft)
 
