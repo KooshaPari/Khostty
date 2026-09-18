@@ -124,9 +124,8 @@ The fork's value is NOT rebuilding what upstream has. It is:
 | G6 | Polyglot FFI — Go + Python | 8 | 80m | DONE (207 tests) | MEDIUM |
 | G7 | WASM Cross-Compilation | 10 | 100m | DONE (54/54 tests) | HIGH |
 | G8 | Khostty-Specific Improvements | 10 | 100m | DONE (measured) | MEDIUM |
-| G9 | Documentation + Packaging | 15 | 150m | IN PROGRESS (15/15 tasks built; 9.11 macOS .app now builds — install-and-run clause open) | MEDIUM |
+| G9 | Documentation + Packaging | 15 | 150m | DONE (15/15; macOS .app build+sign+verify+run verified; Linux .deb installs on Debian 12; Windows exe not executed) | MEDIUM |
 | G10 | Release Artifacts | 6 | 60m | NOT STARTED | MEDIUM |
-| | **TOTAL** | **100** | **1000m (~16.7h)** | **70m done** | |
 
 ---
 
