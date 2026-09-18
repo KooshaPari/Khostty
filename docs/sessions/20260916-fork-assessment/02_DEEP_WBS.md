@@ -505,9 +505,14 @@ Two further tasks were therefore added to close the gate honestly:
 | 6.9 | Go key + mouse event encoding | `ghostty_key*.go`, `ghostty_mouse*.go`, `keys_gen.go` |
 | 6.10 | Python key + mouse event encoding | `key.py`, `keyencoder.py`, `mouse.py`, `mouseevent.py`, `_enums_gen.py` |
 
-**Task status update** (added 2026-09-18): 6.1-6.10 **DONE** — recorded figure is 207 tests
-across the Go and Python bindings; `pytest` on Python 3.12 re-verified 162/162 on 2026-09-18.
-`go test` cannot run on this host (cgo link failure, host-wide — see the G6 caveat above).
+**Task status update** (added 2026-09-18): 6.1-6.10 **DONE**. **162/162 verified by execution
+this session** — `pytest -q` under a Python 3.12 venv with `cffi` installed and
+`GHOSTTY_VT_LIB_DIR` pointed at `zig-out/lib` → `162 passed in 0.99s`, exit 0. Recorded total
+for the Go + Python bindings is 207.
+> **Setup note (not a code defect):** the system Python 3.9 lacks `cffi`, so a bare
+> `pytest` reports 150 `ImportError` collections. Install `cffi` (or use the package's own
+> dependencies) first; the suite then passes fully.
+> `go test` remains unrunnable on this host (cgo link failure, host-wide — see the G6 caveat above).
 
 **Evidence**
 
