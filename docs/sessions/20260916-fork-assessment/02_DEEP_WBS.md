@@ -732,6 +732,8 @@ after first observation; results reproduced.
 | Dossier | `docs/dossiers/KHOSTTY.md` | 300 lines, 10 sections (9 numbered + See also) |
 | Install docs | `docs/INSTALL.md` | 607 lines; status table 3 VERIFIED / 2 NOT BUILT / 1 BLOCKED |
 | Docs set | `docs/{README,ARCHITECTURE,API,AGENT,PLATFORMS,BUILD,CONTRIBUTING,FORK,SECURITY}.md` | all present |
+| **WASM consumable** (acceptance bullet) | extracted `khostty-libghostty-vt-wasm-0.1.0.tar.gz` to scratch; `shasum -a 256 -c` → OK; `node smoke.mjs` (Node v26.8.1) | **PASS — 13/13 checks, exit 0.** Real ESM import of `js/api.js`: opened a 37x11 terminal, parsed VT text + SGR colour, rendered cells to HTML, reported cursor/screen state, handled resize/reflow, round-tripped a snapshot. 187 exported `ghostty_*` functions. |
+| **Windows artifacts** | `file` + `objdump -p` on `zig-out/bin/ghostty.exe` / `ghostty-vt.dll` | exe 43,470,336 B `PE32+ executable (GUI) x86-64`; dll 7,545,344 B `PE32+ executable (DLL)`; **198 distinct `ghostty_*` functions in the DLL export table**; sha256 `df0b4c87…` / `b4cff87e…`. NOT executed: no Windows host and `wine` is absent. |
 
 **Not met**: the three installer acceptance bullets (macOS/Linux/Windows install-and-run)
 cannot be closed on this host — `dpkg-deb` and Inno Setup are absent and the Metal toolchain
