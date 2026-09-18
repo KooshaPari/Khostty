@@ -95,8 +95,8 @@ Linux terminal application from this release.
 
 ## 4. WASM / npm-style package
 
-**Get it:** `dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz` (680,607 B,
-`sha256 ce5d1f1d…55c709`), or `bash packaging/wasm-dist.sh`.
+**Get it:** `dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz` (680,598 B,
+`sha256 55cfc675…8604dc`), or `bash packaging/wasm-dist.sh`.
 
 **Verified (recorded 2026-09-18):**
 - Sidecar `.sha256` verified with `shasum -a 256 -c` → `OK`, exit 0.
@@ -116,8 +116,9 @@ Linux terminal application from this release.
 - **Kitty graphics is absent by design** (upstream disables it on freestanding targets),
   so 16 of the 203 declared functions are not exported. The conformance suite's
   kitty-gfx case does not apply to this artifact.
-- **The tarball was built from a dirty tree** (`khostty-version.json` →
-  `source_dirty: yes` at `7585c498`). Hash-stable, but not attributable to a clean commit.
+- **The tarball provenance gap is closed** (`source_dirty: no`, built 2026-09-18 from
+  clean commit `7cd94370e`). An earlier revision was built from a dirty tree; that
+  artifact has been superseded by the clean rebuild recorded below.
 
 **Consumer advice:** this is the most consumable artifact in the release. Node ≥ 20.
 
@@ -248,26 +249,28 @@ Do not trust today:
 
 ## 10. Next bounded task
 
-**Next task: rebuild the WASM distribution from a clean tree and re-verify its
-checksum, so the artifact is attributable to a commit.**
-
-Why this one: it is 10 minutes of work, it does not depend on any host this machine
-lacks, it removes one of the two known attribution gaps in the release artifacts
-(the other, Windows execution, needs a Windows host and cannot be closed here), and
-the WASM package is the artifact a consumer is most likely to adopt first. The
-procedure already exists and is documented; this is a re-run against a clean tree plus
-the hash update in [RELEASE.md §6](RELEASE.md) and `dist-release/CHECKSUMS.txt`.
+**Completed 2026-09-18: the WASM distribution was rebuilt from a clean tree.**
 
 ```bash
-git status --porcelain          # must be empty
-bash packaging/wasm-dist.sh
-shasum -a 256 dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz
-cat dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0/khostty-version.json   # expect source_dirty: no
+git status --porcelain          # empty (tracked tree clean)
+bash packaging/wasm-dist.sh     # exit 0
+# khostty-version.json -> source_dirty: "no", source_commit 7cd94370ebdf8dc151a9253974271d281af150b3
+# tarball 680,598 B, sha256 55cfc67572696db9eaf48cb69ae231ca99119aa1caf064e0c08c8c8c178604dc
 ```
 
-Acceptance: `khostty-version.json` records `source_dirty: no`; the new hash is recorded
-in both the versioned manifest (RELEASE.md §6) and `dist-release/CHECKSUMS.txt`; the
-sidecar `.sha256` is regenerated and `shasum -a 256 -c` passes.
+Executed evidence: WASM suite 54 passed / 0 failed against the rebuilt module; the
+repack was **byte-identical** (`55cfc675…` both times); extracted-tarball consumer smoke
+test 13/13, exit 0; sidecar `shasum -a 256 -c` → OK. The artifact is now attributable
+to a clean commit. Hash updated in [RELEASE.md §6](RELEASE.md), `docs/INSTALL.md`, the
+changelog, and `dist-release/CHECKSUMS.txt`.
+
+**New next bounded task: close the Windows runtime gap on a Windows host (or a host with
+a working x86_64 Windows emulation layer).** It is the only remaining artifact whose
+*runtime* behaviour is unverified. Acceptance: `ghostty.exe` launches on Windows and
+`ghostty-vt.dll` loads, with the 198 exported symbols callable. This host cannot do it:
+no Windows host, no `wine` (all Homebrew casks Gatekeeper-disabled since 2026-09-01),
+and no Rosetta for x86_64 emulation. The ABI *shape* is already verified statically
+(see [RELEASE.md §6](RELEASE.md)), so only runtime behaviour is outstanding.
 
 **Blocked on authorization (not on capability):** WBS 10.5 (publish FFI packages),
 10.6 (create the GitHub release), 10.8 (announce), and creating the `v0.1.0` tag.

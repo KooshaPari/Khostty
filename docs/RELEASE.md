@@ -201,7 +201,7 @@ so the file itself is not versioned.
 
 ```
 94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb  dist-release/macos/Khostty-0.1.0-macos.zip
-ce5d1f1dfcf03cade7add0c6564b72b2690b496859e5c91fd432234db655c709  dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz
+55cfc67572696db9eaf48cb69ae231ca99119aa1caf064e0c08c8c8c178604dc  dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz
 3c080d13a74d6bf6dca9d28dc2c685f6b4350ec3130f3f3fafa5cb4d77d834cf  dist/khostty-vt_0.1.0_amd64.deb
 df0b4c8772ad5de8c65078cf0ade6645ad16601b1b4ca37097e314abf028d03e  zig-out/bin/ghostty.exe
 b4cff87e6ee95dd97e0872fdaf752122aceb4f7536662f6ceadf3905eae6654f  zig-out/bin/ghostty-vt.dll
@@ -213,7 +213,7 @@ b4cff87e6ee95dd97e0872fdaf752122aceb4f7536662f6ceadf3905eae6654f  zig-out/bin/gh
 | # | Artifact | Bytes | Built | Status (2026-09-18) | Check executed here |
 |---|---|---|---|---|---|
 | 1 | `dist-release/macos/Khostty-0.1.0-macos.zip` | 35,953,098 | 2026-09-18 05:13 | **MATCH** | `shasum -a 256` → `94abd2a7…4317cb`. Matches the sidecar `.sha256` written beside it, matches the value recorded in `dist-release/macos/EVIDENCE.txt`, and matches `docs/INSTALL.md`. `codesign --verify --deep --strict` → *valid on disk*; bundled binary `--version` → exit 0. **Not notarized** (no `notarytool` credentials) and **no GUI session was observed**. |
-| 2 | `dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz` | 680,607 | 2026-09-17 07:19 | **MATCH** | `shasum -a 256` → `ce5d1f1d…55c709`; sidecar verified with `shasum -a 256 -c` → `OK`, exit 0. Inner `khostty-vt.wasm` hash matches its own sidecar. |
+| 2 | `dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz` | 680,598 | 2026-09-17 07:19 | **MATCH** | `shasum -a 256` → `55cfc675…8604dc`; sidecar verified with `shasum -a 256 -c` → `OK`, exit 0. Inner `khostty-vt.wasm` hash matches its own sidecar. |
 | 3 | `dist/khostty-vt_0.1.0_amd64.deb` | 2,320,612 | 2026-09-18 05:07 | **MATCH** | `shasum -a 256` → `3c080d13…d834cf`, matching the value recorded in `docs/INSTALL.md` and the WBS G9.12 evidence row. Installed-and-run evidence lives in `dist-release/evidence/deb-full-build.log`. |
 | 4 | `zig-out/bin/ghostty.exe` | 43,470,336 | 2026-09-18 01:23 | **HASHED, NOT EXECUTED** | `shasum -a 256` → `df0b4c87…8d03e`. Identical to the staged copy at `dist-release/stage/windows/Khostty-0.1.0-win64/payload/ghostty.exe`. `file` → `PE32+ executable (GUI) x86-64`. **Never run**: macOS cannot execute PE binaries, `wine` is absent, and every Homebrew wine cask is disabled by Gatekeeper. |
 | 5 | `zig-out/bin/ghostty-vt.dll` | 7,545,344 | 2026-09-18 01:22 | **HASHED, NOT EXECUTED** | `shasum -a 256` → `b4cff87e…5e6654f`. Same hash as the staged copy. `file` → `PE32+ executable (DLL)`; ABI shape checked statically (198 exports, 0 undeclared). **Never run.** |
@@ -233,13 +233,13 @@ have no runtime check anywhere in this repository's evidence.
 | Upstream base | ghostty `1.3.2-dev` @ `d4c88d8069912b653d707191388ca98e24751f12` (2026-09-15) |
 | Source revision at manifest time | `7fcb7691638ee0396cd30ad61ca6c6c779e0a362` (`7fcb769`), dirty: no |
 | macOS bundle source revision | `41b24baad24227e22fefc35ae74ee5999f3591d1` (`41b24baa`) |
-| WASM package recorded revision | `7585c49812277ee2ac84f46548efbb50f0ffc999`, **dirty: yes** |
+| WASM package recorded revision | `7cd94370ebdf8dc151a9253974271d281af150b3` (`7cd94370e`), **dirty: no** |
 
-That last row is not a typo. The WASM tarball's own `khostty-version.json` records
-`source_dirty: yes`, so the tarball was built from a tree that had uncommitted
-changes. The artifact hashes reproducibly because the tarball is deterministic, but
-the tarball cannot be attributed to a clean commit. **Re-build the WASM dist from a
-clean tree before publishing it**, or say so in the release notes.
+**Updated 2026-09-18:** this row previously read `7585c498…`, **dirty: yes**. The WASM
+dist was rebuilt from a clean tracked tree, so the artifact is now attributable to a
+commit. `khostty-version.json` records `source_dirty: "no"`; the rebuild was verified by
+a 54/54 repository suite run, a byte-identical repack, and a 13/13 extracted-tarball
+consumer check. The superseded hash `ce5d1f1d…` no longer appears in this document.
 
 ## 7. What this document does not authorize
 
