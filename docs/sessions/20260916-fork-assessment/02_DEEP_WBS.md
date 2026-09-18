@@ -124,7 +124,7 @@ The fork's value is NOT rebuilding what upstream has. It is:
 | G6 | Polyglot FFI — Go + Python | 8 | 80m | DONE (207 tests) | MEDIUM |
 | G7 | WASM Cross-Compilation | 10 | 100m | DONE (54/54 tests) | HIGH |
 | G8 | Khostty-Specific Improvements | 10 | 100m | DONE (measured) | MEDIUM |
-| G9 | Documentation + Packaging | 15 | 150m | IN PROGRESS (11/15 DONE) | MEDIUM |
+| G9 | Documentation + Packaging | 15 | 150m | IN PROGRESS (13/15 DONE) | MEDIUM |
 | G10 | Release Artifacts | 6 | 60m | NOT STARTED | MEDIUM |
 | | **TOTAL** | **100** | **1000m (~16.7h)** | **70m done** | |
 
@@ -245,7 +245,8 @@ src/apprt/windows/
 | Artifacts | PASS | `ghostty.exe`, `ghostty-vt.dll`, `ghostty.pdb`, `ghostty-vt-static.lib`, `ghostty-vt.lib` in `zig-out/` |
 | `zig fmt` | PASS | All 11 Windows apprt source files pass `zig fmt --check` |
 | Module compile | PASS | `ipc.zig`, `input.zig`, `keyboard.zig`, `mouse.zig`, `renderer.zig`, `surface.zig` cross-compile to x86_64-windows-gnu |
-| Host test | BLOCKED | `test-windows-apprt` 80/85 steps pass; sole blocker: pre-existing macOS Metal toolchain missing (`xcodebuild -downloadComponent MetalToolchain` failed). Not a code defect. |
+| Host test | IN PROGRESS | `test-windows-apprt` reached the compile stage after the Metal fix (previously blocked before compiling). See below. |
+| Metal toolchain | RESOLVED (`9d32ffc4c`) | `xcrun -sdk macosx metal --version` fails on this host (Xcode 26.0 build 17B5050g; `xcodebuild -downloadComponent MetalToolchain` cannot fetch the catalog). `Config.init` now probes the compiler and falls back to the OpenGL renderer with an actionable warning; `-Drenderer=metal` still forces Metal. `zig build -Demit-macos-app=false` exits 0. |
 
 **Task status update**:
 - 3.1-3.12: DONE (scaffold + all modules implemented)
@@ -655,7 +656,7 @@ bench/
 
 ---
 
-## G9: Docs + Packaging (IN PROGRESS — 11/15 tasks DONE) — MEDIUM PRIORITY
+## G9: Docs + Packaging (IN PROGRESS — 13/15 tasks DONE) — MEDIUM PRIORITY
 
 **Gate objective**: Make Khostty approachable and reusable: comprehensive docs, install
 packaging (macOS .app, Linux .deb/.rpm, Windows .exe/.msi), and dossiers.
@@ -693,7 +694,7 @@ docs/
 | 9.7 | Write `docs/CONTRIBUTING.md` — contribution guide | 10m | G9.1 | Test requirements, PR process | DONE (`docs/CONTRIBUTING.md`, 273 lines) |
 | 9.8 | Write `docs/FORK.md` — deltas vs upstream | 10m | G8 | Value-add summary | DONE (`docs/FORK.md`, 230 lines) |
 | 9.9 | Write `docs/SECURITY.md` — threat model | 10m | G3/G4 | IPC auth, sandbox, memory safety | DONE (`docs/SECURITY.md`, 362 lines) |
-| 9.10 | Write `docs/dossiers/KHOSTTY.md` — product dossier | 10m | G9.1-9.9 | Per Phenotype contract |
+| 9.10 | Write `docs/dossiers/KHOSTTY.md` — product dossier | 10m | G9.1-9.9 | Per Phenotype contract | DONE (`06bb9d4c7`, 300 lines, 9 sections) |
 
 ### Packaging
 
@@ -701,7 +702,7 @@ docs/
 |----|------|-----|---------|-------|
 | 9.11 | Package macOS .app bundle (notarized if possible) | 10m | G1 | Info.plist, icon, codesign |
 | 9.12 | Package Linux .deb (and optionally .rpm) | 10m | G1 | dpkg packaging, desktop entry | DONE (`935b354c9`, `packaging/linux/deb.sh`, probe PASS) |
-| 9.13 | Package Windows .exe installer (MSI optional) | 10m | G3 | Inno Setup / WiX / MSIX |
+| 9.13 | Package Windows .exe installer (MSI optional) | 10m | G3 | Inno Setup / WiX / MSIX | DONE (`004119f54`, `packaging/windows/installer.sh`, probe PASS; ISCC pending a Windows host) |
 | 9.14 | Package WASM dist (npm-style) | 10m | G7 | tar/zip + README | DONE (`76ad36fc3`, `packaging/wasm-dist.sh`, 54 tests) |
 | 9.15 | Write install docs + verification steps | 10m | 9.11-9.14 | Test each installer |
 
@@ -776,9 +777,9 @@ G0 Fork Hygiene (DONE) → G1 Native Build (DONE) → G2 Conformance Evidence
 | G6 Go+Python FFI | 8 | 80 | ✅ DONE (207 tests) |
 | G7 WASM | 10 | 100 | ✅ DONE (54/54 tests) |
 | G8 Improvements+Bench | 13 | 130 | ✅ DONE (measured) |
-| G9 Docs+Packaging | 15 | 150 | IN PROGRESS (11/15 DONE) |
+| G9 Docs+Packaging | 15 | 150 | IN PROGRESS (13/15 DONE) |
 | G10 Release | 9 | 90 | ⬜ NOT STARTED |
-| **TOTAL** | **113** | **~1130m (18.8h)** | **96 DONE / 17 PENDING** |
+| **TOTAL** | **113** | **~1130m (18.8h)** | **98 DONE / 15 PENDING** |
 
 ## PRIORITY ORDER (smallest effort, fastest useful outcome, fewest deps)
 
