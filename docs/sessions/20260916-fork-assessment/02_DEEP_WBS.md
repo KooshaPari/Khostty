@@ -778,7 +778,12 @@ untracked. Not a docs-criterion failure; recorded because it weakens the packagi
 
 ---
 
-## G10: Release Artifacts + Ecosystem (NOT STARTED) — MEDIUM PRIORITY
+## G10: Release Artifacts + Ecosystem (IN PROGRESS — 4 of 9 DONE) — MEDIUM PRIORITY
+
+**Status 2026-09-18**: the four non-publishing tasks (10.1, 10.3, 10.4, 10.7) are
+DONE. **10.5, 10.6 and 10.8 remain NOT STARTED and require explicit publish
+authorization** — no tag, push, registry publish, GitHub release or deploy has been
+performed. 10.2's artifacts exist (built under G9); no new release build was run here.
 
 **Gate objective**: Produce a tagged release with verified artifacts, publish
 consumable packages, hand off to ecosystem. Define the 0.1.0 release.
@@ -790,22 +795,22 @@ consumable packages, hand off to ecosystem. Define the 0.1.0 release.
 
 | ID | Task | Est | Depends | Notes |
 |----|------|-----|---------|-------|
-| 10.1 | Define release version scheme + git tag | 10m | G8/G9 | `v0.1.0`, semantic versioning |
+| 10.1 | Define release version scheme + git tag | 10m | G8/G9 | **DONE** (`89df76054`, `docs/RELEASE.md`). Scheme `<major>.<minor>.<patch>[-pre][+ghostty.<base>.<sha7>]` documented from `packaging/version.sh`; derived from the single source of truth `build.zig` `lib_version` (`0.1.0-dev` → `0.1.0`), which is also the ABI soname `libghostty-vt.0.1.0`; `0.x` means the agent surfaces (IPC v1, polyglot bindings) are not frozen. Tag `v0.1.0` documented and **NOT created** — `git rev-parse --verify v0.1.0` fails, `git tag -l 'v0.1.0'` is empty. |
 | 10.2 | Build final artifacts for all platforms | 10m | G9.11-9.14 | macOS .app, Linux .deb, Windows .exe, WASM |
-| 10.3 | Verify artifacts (checksums, run smoke tests) | 10m | 10.2 | sha256sum, launch each |
-| 10.4 | Write release notes (`docs/changelog/0.1.0.md`) | 10m | 10.2 | Features, fixes, known issues |
-| 10.5 | Publish FFI crates/packages (crates.io, PyPI, Go, npm) | 10m | G5/G6/G7 | If credentials available |
-| 10.6 | Create GitHub release with artifacts | 10m | 10.3-10.4 | Attach all binaries + checksums |
-| 10.7 | Create ecosystem handoff doc (README for docs-3 reference) | 10m | 10.6 | Dossier link, consumer guidance |
-| 10.8 | Announce release (Slack/README banner) | 10m | 10.7 | Optional, if org channel exists |
+| 10.3 | Verify artifacts (checksums, run smoke tests) | 10m | 10.2 | **DONE** (`89df76054`). Every hash recomputed 2026-09-18 with `shasum -a 256`: macOS zip `94abd2a7…4317cb` **MATCH**, WASM tarball `ce5d1f1d…55c709` **MATCH** (sidecar `shasum -c` → OK, exit 0), `khostty-vt_0.1.0_amd64.deb` `3c080d13…d834cf` **MATCH**, `ghostty.exe` `df0b4c87…8d03e` / `ghostty-vt.dll` `b4cff87e…5e6654f` **hashed, not executed** (no Windows host). **0 discrepancies.** Manifest written to `dist-release/CHECKSUMS.txt` (gitignored) and reproduced inline in `docs/RELEASE.md` §6 so it is versioned; self-check `shasum -a 256 -c` → 8/8 OK, exit 0, no warnings. |
+| 10.4 | Write release notes (`docs/changelog/0.1.0.md`) | 10m | 10.2 | **DONE** (`54d071dad`). Four deltas + gate evidence from this WBS; known issues include the three required ones (Windows built and ABI-checked but never executed on Windows; macOS `.app` verified by codesign + `--version` with no GUI session observed and not notarized; GTK Linux app does not cross-compile from macOS). Re-verified while writing: IPC 458/458 across 7 modules, `cargo test` 199/199. New discrepancy reported not fixed: `go test ./...` fails at link on this host (clang 17 vs MacOSX27.0 SDK `.tbd`), so G6's "45 pass" is not reproducible here today. |
+| 10.5 | Publish FFI crates/packages (crates.io, PyPI, Go, npm) | 10m | G5/G6/G7 | **NOT STARTED — requires publish authorization.** Nothing is on any registry: the Rust crate, Go module, Python package and npm tarball all exist as source trees or local files only. |
+| 10.6 | Create GitHub release with artifacts | 10m | 10.3-10.4 | **NOT STARTED — requires publish authorization.** No GitHub release exists and no asset has been uploaded. |
+| 10.7 | Create ecosystem handoff doc (README for docs-3 reference) | 10m | 10.6 | **DONE** (`65315d553`, `docs/HANDOFF.md`) — written ahead of 10.6 because the task it depends on is blocked. Per-artifact pick-up path, build command, verified-vs-unverified status, and the next bounded task (rebuild the WASM dist from a clean tree to close its dirty-tree attribution gap). |
+| 10.8 | Announce release (Slack/README banner) | 10m | 10.7 | **NOT STARTED — requires publish authorization.** No announcement was made anywhere. |
 | 10.9 | Write post-release check (re-verify artifacts after 1 week) | 10m | 10.6 | Confirm nothing rot before archive |
 
-**Acceptance criteria**:
-- `v0.1.0` tagged with verified artifacts (checksums + smoke tests observed)
-- All platform installers run and launch
-- Release notes complete with known issues
-- FFI packages published or explicitly deferred (with reason)
-- GitHub release assets attached and verified
+**Acceptance criteria** (status 2026-09-18 — the gate is not accepted yet):
+- `v0.1.0` tagged with verified artifacts (checksums + smoke tests observed) — **NOT MET**: artifacts are verified and `docs/RELEASE.md` §6 records the manifest, but the tag is deliberately not created (blocked on publish authorization; WBS 10.6).
+- All platform installers run and launch — **NOT MET**: no GTK application `.deb` exists, the Windows installer was never compiled, and the macOS `.app` was never launched in a GUI session. See `docs/INSTALL.md` and `docs/changelog/0.1.0.md` §4.
+- Release notes complete with known issues — **MET** (`docs/changelog/0.1.0.md`, `54d071dad`).
+- FFI packages published or explicitly deferred (with reason) — **DEFERRED, explicitly**: nothing is published and the reason is publish authorization (WBS 10.5).
+- GitHub release assets attached and verified — **NOT MET**: no GitHub release exists (WBS 10.6).
 
 ---
 
@@ -840,7 +845,7 @@ G0 Fork Hygiene (DONE) → G1 Native Build (DONE) → G2 Conformance Evidence
 | G7 WASM | 10 | 100 | ✅ DONE (54/54 tests) |
 | G8 Improvements+Bench | 13 | 130 | ✅ DONE (measured) |
 | G9 Docs+Packaging | 15 | 150 | ✅ 15/15 built (9.11 unblocked; app build/sign/run verified) |
-| G10 Release | 9 | 90 | ⬜ NOT STARTED |
+| G10 Release | 9 | 90 | 🔶 IN PROGRESS — 4/9 DONE (10.1, 10.3, 10.4, 10.7); 10.5/10.6/10.8 blocked on publish authorization |
 | **TOTAL** | **113** | **~1130m (18.8h)** | **99 DONE / 14 PENDING** |
 
 ## PRIORITY ORDER (smallest effort, fastest useful outcome, fewest deps)
