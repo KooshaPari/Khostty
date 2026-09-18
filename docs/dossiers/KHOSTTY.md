@@ -287,6 +287,36 @@ fresher.
 
 ---
 
+## 10. Ownership and next handoff
+
+Recorded 2026-09-18. This section exists because the docs-5 dossier template requires an
+ownership/next-handoff concern and the earlier revision had none. Nothing here is inferred
+from convention; where a name is absent, that absence is the finding.
+
+| Role | State |
+|------|-------|
+| Product owner | **UNASSIGNED.** No per-product owner is recorded in this repository. Commits carry `tx-agent` trailers identifying the tool (`jcode`, `human`), not a person accountable for the product. |
+| Independent assurance owner | **UNASSIGNED.** The G2 conformance run (84/84) and the G3 apprt run (25/25) were produced in the same working session that produced the code under test. They are executed evidence, but they are **not independent verification** — no separate party has reproduced them. |
+| Release authority | **Not established.** WBS G10 (9 tasks) is NOT STARTED. Publishing, tagging, and artifact distribution have not been authorised or performed. |
+
+### Named next bounded task
+
+**Close WBS 9.11 — the macOS `.app` bundle — on a host where the Metal toolchain is available.**
+
+- Artifact: `zig-out/Ghostty.app`, produced by `packaging/macos-app.sh` (now tracked).
+- Proof required: `packaging/macos-app.sh --probe` reports `metal compiler: usable`, then
+  `--probe` → build → `codesign --verify` → launch, with the `.app` copied outside the source
+  tree before launching.
+- Why it is bounded: the blocker is external and singular. On this host
+  `xcrun -sdk macosx metal --version` exits 1 and
+  `xcodebuild -downloadComponent MetalToolchain` cannot fetch the catalog for Xcode 26.0 build
+  17B5050g. On a host where that command succeeds, the build path is already wired.
+- Why it is next: it is the only remaining item in G9 and the only thing gating a full G9 pass.
+  It unblocks nothing else, so it is deliberately not treated as urgent.
+
+Everything else in this dossier is either verified with a dated command (see §8) or explicitly
+marked unverified.
+
 ## See also
 
 - [`docs/README.md`](../README.md) — entry point and status table
