@@ -124,7 +124,7 @@ The fork's value is NOT rebuilding what upstream has. It is:
 | G6 | Polyglot FFI — Go + Python | 8 | 80m | DONE (207 tests) | MEDIUM |
 | G7 | WASM Cross-Compilation | 10 | 100m | DONE (54/54 tests) | HIGH |
 | G8 | Khostty-Specific Improvements | 10 | 100m | DONE (measured) | MEDIUM |
-| G9 | Documentation + Packaging | 8 | 80m | docs DONE, packaging pending | MEDIUM |
+| G9 | Documentation + Packaging | 15 | 150m | IN PROGRESS (11/15 DONE) | MEDIUM |
 | G10 | Release Artifacts | 6 | 60m | NOT STARTED | MEDIUM |
 | | **TOTAL** | **100** | **1000m (~16.7h)** | **70m done** | |
 
@@ -655,7 +655,7 @@ bench/
 
 ---
 
-## G9: Docs + Packaging (NOT STARTED) — MEDIUM PRIORITY
+## G9: Docs + Packaging (IN PROGRESS — 11/15 tasks DONE) — MEDIUM PRIORITY
 
 **Gate objective**: Make Khostty approachable and reusable: comprehensive docs, install
 packaging (macOS .app, Linux .deb/.rpm, Windows .exe/.msi), and dossiers.
@@ -684,15 +684,15 @@ docs/
 
 | ID | Task | Est | Depends | Notes |
 |----|------|-----|---------|-------|
-| 9.1 | Write `docs/README.md` — overview, badges, quickstart | 10m | G1 | Point to install docs |
-| 9.2 | Write `docs/ARCHITECTURE.md` | 10m | G1 | Layers: AppRT, terminal, IPC, FFI |
-| 9.3 | Write `docs/API.md` — FFI + IPC + CLI reference | 10m | G4/G5 | All public surfaces |
-| 9.4 | Write `docs/AGENT.md` — agent integration guide | 10m | G4 | IPC examples, pane workflows |
-| 9.5 | Write `docs/PLATFORMS.md` — support matrix | 10m | G1/G3/G7 | macOS/Linux/Windows/WASM |
-| 9.6 | Write `docs/BUILD.md` — per-platform build | 10m | G1/G3 | zig build, deps, Windows toolchain |
-| 9.7 | Write `docs/CONTRIBUTING.md` — contribution guide | 10m | G9.1 | Test requirements, PR process |
-| 9.8 | Write `docs/FORK.md` — deltas vs upstream | 10m | G8 | Value-add summary |
-| 9.9 | Write `docs/SECURITY.md` — threat model | 10m | G3/G4 | IPC auth, sandbox, memory safety |
+| 9.1 | Write `docs/README.md` — overview, badges, quickstart | 10m | G1 | Point to install docs | DONE (`docs/README.md`, 103 lines) |
+| 9.2 | Write `docs/ARCHITECTURE.md` | 10m | G1 | Layers: AppRT, terminal, IPC, FFI | DONE (`docs/ARCHITECTURE.md`, 349 lines) |
+| 9.3 | Write `docs/API.md` — FFI + IPC + CLI reference | 10m | G4/G5 | All public surfaces | DONE (`docs/API.md`, 497 lines) |
+| 9.4 | Write `docs/AGENT.md` — agent integration guide | 10m | G4 | IPC examples, pane workflows | DONE (`docs/AGENT.md`, 298 lines) |
+| 9.5 | Write `docs/PLATFORMS.md` — support matrix | 10m | G1/G3/G7 | macOS/Linux/Windows/WASM | DONE (`docs/PLATFORMS.md`, 316 lines) |
+| 9.6 | Write `docs/BUILD.md` — per-platform build | 10m | G1/G3 | zig build, deps, Windows toolchain | DONE (`docs/BUILD.md`, 478 lines) |
+| 9.7 | Write `docs/CONTRIBUTING.md` — contribution guide | 10m | G9.1 | Test requirements, PR process | DONE (`docs/CONTRIBUTING.md`, 273 lines) |
+| 9.8 | Write `docs/FORK.md` — deltas vs upstream | 10m | G8 | Value-add summary | DONE (`docs/FORK.md`, 230 lines) |
+| 9.9 | Write `docs/SECURITY.md` — threat model | 10m | G3/G4 | IPC auth, sandbox, memory safety | DONE (`docs/SECURITY.md`, 362 lines) |
 | 9.10 | Write `docs/dossiers/KHOSTTY.md` — product dossier | 10m | G9.1-9.9 | Per Phenotype contract |
 
 ### Packaging
@@ -700,9 +700,9 @@ docs/
 | ID | Task | Est | Depends | Notes |
 |----|------|-----|---------|-------|
 | 9.11 | Package macOS .app bundle (notarized if possible) | 10m | G1 | Info.plist, icon, codesign |
-| 9.12 | Package Linux .deb (and optionally .rpm) | 10m | G1 | dpkg packaging, desktop entry |
+| 9.12 | Package Linux .deb (and optionally .rpm) | 10m | G1 | dpkg packaging, desktop entry | DONE (`935b354c9`, `packaging/linux/deb.sh`, probe PASS) |
 | 9.13 | Package Windows .exe installer (MSI optional) | 10m | G3 | Inno Setup / WiX / MSIX |
-| 9.14 | Package WASM dist (npm-style) | 10m | G7 | tar/zip + README |
+| 9.14 | Package WASM dist (npm-style) | 10m | G7 | tar/zip + README | DONE (`76ad36fc3`, `packaging/wasm-dist.sh`, 54 tests) |
 | 9.15 | Write install docs + verification steps | 10m | 9.11-9.14 | Test each installer |
 
 **Acceptance criteria**:
@@ -776,9 +776,9 @@ G0 Fork Hygiene (DONE) → G1 Native Build (DONE) → G2 Conformance Evidence
 | G6 Go+Python FFI | 8 | 80 | ✅ DONE (207 tests) |
 | G7 WASM | 10 | 100 | ✅ DONE (54/54 tests) |
 | G8 Improvements+Bench | 13 | 130 | ✅ DONE (measured) |
-| G9 Docs+Packaging | 15 | 150 | ⬜ docs DONE, packaging pending |
+| G9 Docs+Packaging | 15 | 150 | IN PROGRESS (11/15 DONE) |
 | G10 Release | 9 | 90 | ⬜ NOT STARTED |
-| **TOTAL** | **113** | **~1130m (18.8h)** | **9 DONE / 24 PENDING** |
+| **TOTAL** | **113** | **~1130m (18.8h)** | **96 DONE / 17 PENDING** |
 
 ## PRIORITY ORDER (smallest effort, fastest useful outcome, fewest deps)
 
