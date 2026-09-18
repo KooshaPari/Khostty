@@ -118,7 +118,7 @@ The fork's value is NOT rebuilding what upstream has. It is:
 | G0 | Fork Hygiene | 4 | 40m | DONE | -- |
 | G1 | Native Build Validation | 3 | 30m | DONE | -- |
 | G2 | Conformance Evidence | 12 | 120m | DONE (84/84 pass) | CRITICAL |
-| G3 | Windows App Runtime | 15 | 150m | IN PROGRESS | HIGH |
+| G3 | Windows App Runtime | 15 | 150m | IN PROGRESS (cross-build PASS, 3.14 Metal-blocked) | HIGH |
 | G4 | Agent/IPC Surface | 14 | 140m | DONE | HIGH |
 | G5 | Polyglot FFI — Rust | 10 | 100m | DONE (199/199 tests) | HIGH |
 | G6 | Polyglot FFI — Go + Python | 8 | 80m | DONE (207 tests) | MEDIUM |
@@ -182,7 +182,7 @@ must work via conformance tests, not just compile.
 
 ---
 
-## G3: Windows App Runtime (IN PROGRESS) — HIGH PRIORITY
+## G3: Windows App Runtime (IN PROGRESS — cross-build PASS, host test BLOCKED by Metal) — HIGH PRIORITY
 
 **Gate objective**: Upstream has NO Windows app runtime. Only `embedded.zig` (macOS) and
 `gtk.zig` (Linux) exist. Khostty fills this gap by creating `src/apprt/windows/` — a
@@ -236,6 +236,22 @@ src/apprt/windows/
 
 **Key risk**: Win32 API declarations in Zig are non-trivial. May need to use
 `@import("win32")` from Zig stdlib or maintain custom declarations.
+
+### Build Evidence (2026-09-18)
+
+| Check | Result | Evidence |
+|-------|--------|----------|
+| Cross-build | PASS | `zig build -Dtarget=x86_64-windows-gnu -Dapp-runtime=windows -Demit-macos-app=false` exit 0, 8m12s |
+| Artifacts | PASS | `ghostty.exe`, `ghostty-vt.dll`, `ghostty.pdb`, `ghostty-vt-static.lib`, `ghostty-vt.lib` in `zig-out/` |
+| `zig fmt` | PASS | All 11 Windows apprt source files pass `zig fmt --check` |
+| Module compile | PASS | `ipc.zig`, `input.zig`, `keyboard.zig`, `mouse.zig`, `renderer.zig`, `surface.zig` cross-compile to x86_64-windows-gnu |
+| Host test | BLOCKED | `test-windows-apprt` 80/85 steps pass; sole blocker: pre-existing macOS Metal toolchain missing (`xcodebuild -downloadComponent MetalToolchain` failed). Not a code defect. |
+
+**Task status update**:
+- 3.1-3.12: DONE (scaffold + all modules implemented)
+- 3.13: DONE (cross-build succeeds)
+- 3.14: PARTIAL (test-windows-apprt compiles, Metal linker blocks full run)
+- 3.15: DONE (documented in this WBS)
 
 ---
 
