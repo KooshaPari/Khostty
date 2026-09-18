@@ -454,6 +454,12 @@ pub fn build(b: *std.Build) !void {
         });
         _ = try deps.add(win_apprt_test);
 
+        // The apprt modules reach `src/lib/enum.zig`, whose tests import the
+        // translated `ghostty.h` module. The main test root gets this via
+        // addGhosttyH; the apprt root needs the same wiring or the module is
+        // missing and every containing test fails to compile.
+        addGhosttyH(b, win_apprt_test.root_module, config.baselineTarget(b.graph.io), .Debug);
+
         const win_apprt_run = b.addRunArtifact(win_apprt_test);
         config.addPatchElf(win_apprt_test, &win_apprt_run.step);
         test_windows_apprt_step.dependOn(&win_apprt_run.step);
