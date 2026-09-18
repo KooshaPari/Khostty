@@ -124,7 +124,7 @@ The fork's value is NOT rebuilding what upstream has. It is:
 | G6 | Polyglot FFI — Go + Python | 8 | 80m | DONE (207 tests) | MEDIUM |
 | G7 | WASM Cross-Compilation | 10 | 100m | DONE (54/54 tests) | HIGH |
 | G8 | Khostty-Specific Improvements | 10 | 100m | DONE (measured) | MEDIUM |
-| G9 | Documentation + Packaging | 15 | 150m | IN PROGRESS (13/15 DONE) | MEDIUM |
+| G9 | Documentation + Packaging | 15 | 150m | IN PROGRESS (14/15 DONE) | MEDIUM |
 | G10 | Release Artifacts | 6 | 60m | NOT STARTED | MEDIUM |
 | | **TOTAL** | **100** | **1000m (~16.7h)** | **70m done** | |
 
@@ -656,7 +656,7 @@ bench/
 
 ---
 
-## G9: Docs + Packaging (IN PROGRESS — 13/15 tasks DONE) — MEDIUM PRIORITY
+## G9: Docs + Packaging (IN PROGRESS — 14/15 tasks DONE) — MEDIUM PRIORITY
 
 **Gate objective**: Make Khostty approachable and reusable: comprehensive docs, install
 packaging (macOS .app, Linux .deb/.rpm, Windows .exe/.msi), and dossiers.
@@ -704,7 +704,7 @@ docs/
 | 9.12 | Package Linux .deb (and optionally .rpm) | 10m | G1 | dpkg packaging, desktop entry | DONE (`935b354c9`, `packaging/linux/deb.sh`, probe PASS) |
 | 9.13 | Package Windows .exe installer (MSI optional) | 10m | G3 | Inno Setup / WiX / MSIX | DONE (`004119f54`, `packaging/windows/installer.sh`, probe PASS; ISCC pending a Windows host) |
 | 9.14 | Package WASM dist (npm-style) | 10m | G7 | tar/zip + README | DONE (`76ad36fc3`, `packaging/wasm-dist.sh`, 54 tests) |
-| 9.15 | Write install docs + verification steps | 10m | 9.11-9.14 | Test each installer |
+| 9.15 | Write install docs + verification steps | 10m | 9.11-9.14 | Test each installer | DONE (`cd91fb549`, `docs/INSTALL.md`; status table 3 VERIFIED / 2 NOT BUILT / 1 BLOCKED, observed 2026-09-18) |
 
 **Acceptance criteria**:
 - All docs committed, cross-linked, no dead links
@@ -777,9 +777,9 @@ G0 Fork Hygiene (DONE) → G1 Native Build (DONE) → G2 Conformance Evidence
 | G6 Go+Python FFI | 8 | 80 | ✅ DONE (207 tests) |
 | G7 WASM | 10 | 100 | ✅ DONE (54/54 tests) |
 | G8 Improvements+Bench | 13 | 130 | ✅ DONE (measured) |
-| G9 Docs+Packaging | 15 | 150 | IN PROGRESS (13/15 DONE) |
+| G9 Docs+Packaging | 15 | 150 | IN PROGRESS (14/15 DONE) |
 | G10 Release | 9 | 90 | ⬜ NOT STARTED |
-| **TOTAL** | **113** | **~1130m (18.8h)** | **98 DONE / 15 PENDING** |
+| **TOTAL** | **113** | **~1130m (18.8h)** | **99 DONE / 14 PENDING** |
 
 ## PRIORITY ORDER (smallest effort, fastest useful outcome, fewest deps)
 
