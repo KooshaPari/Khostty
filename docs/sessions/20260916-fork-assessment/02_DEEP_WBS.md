@@ -397,6 +397,18 @@ khostty-vt/
 
 ## G6: Polyglot FFI — Go + Python (DONE 10/10 — `khostty-go/`, `khostty-python/`, 207 tests)
 
+> **Environment caveat, 2026-09-18.** `go test ./...` in `khostty-go/` fails **at link**, and the
+> failure is **host-wide, not a Khostty defect**. A trivial unrelated cgo hello-world in a scratch
+> module fails identically:
+> `MacOSX27.0.sdk/.../CoreFoundation.tbd:4: error: unknown architecture arm64e.x1-macos` →
+> `tapi error: malformed file` → `linker command failed`.
+> Root cause: the Command Line Tools SDK is `MacOSX27.0.sdk` while the linker's tapi comes from
+> Apple clang 17.0.0 (`clang-1700.3.19.1`, Xcode 26.0), which cannot parse the newer `.tbd`
+> architecture tokens. Any cgo binary on this host is currently unlinkable. Khostty's Go source
+> compiles; only linking fails. The "45 pass" figure therefore cannot be reproduced **on this
+> host today** — that is a toolchain limitation, not a regression, and it does not invalidate the
+> recorded G6 result.
+
 **Gate objective**: Wrap `libghostty-vt` for Go and Python consumers. Enables agent
 tooling in Go (DevOps, CLIs) and Python (data science, automation).
 
