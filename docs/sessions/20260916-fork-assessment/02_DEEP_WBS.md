@@ -178,6 +178,9 @@ a reader could mistake a finished gate for an unstarted one):
 - 2.1-2.12: **DONE.** The conformance run is recorded as **84/84 pass** at `b2c388c9b`, and
   that run is the pass/fail matrix task 2.12 asks for. See the G2 gate row in the index and
   `docs/sessions/20260916-fork-assessment/` for the recorded evidence.
+  **Re-executed 2026-09-18, not carried:** `bash conformance/build.sh` → exit 0,
+  `Passed: 84  Failed: 0  Total: 84`. The figure holds today, so the CI copy of that number
+  (`docs/TESTING.md`, dated 2026-09-17) is not stale.
 
 **Acceptance criteria**:
 - All 30 upstream examples build and run without crash

@@ -12,7 +12,7 @@ document carries the date it was observed.
 
 | Suite | Command | Scope | Cases | Status |
 |---|---|---|---|---|
-| **Conformance** | `conformance/build.sh` | VT/ANSI behaviour via the C library | **84** | **PASSED 2026-09-17** |
+| **Conformance** | `conformance/build.sh` | VT/ANSI behaviour via the C library | **84** | **PASSED 2026-09-17; re-verified 2026-09-18 (84 passed / 0 failed, exit 0)** |
 | Zig unit tests | `zig build test` | Upstream core (289 files contain tests) | many | Not run in this session |
 | libghostty-vt tests | `zig build test-lib-vt` | The C library's own tests | — | Not run in this session |
 | ABI type manifest | `zig build test-lib-vt-schema` | The type manifest the wrappers consume | — | Not run in this session |
