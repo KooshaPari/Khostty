@@ -249,18 +249,31 @@ Trust today:
   install` + bare-specifier path.
 - **The `libghostty-vt` library `.deb`** — installed and exercised on x86-64 Debian 12.
 - **The Rust crate** — 199/199 tests re-verified 2026-09-18.
+- **The macOS `.app` bundle** — built, signed, `codesign --verify --deep --strict` clean,
+  launched from outside the source tree, one terminal window observed, quit cleanly.
+  (Notarization is the part still unverified — see below.)
 - **The checksums** — recomputed 2026-09-18, all match, none discrepancy.
 
 Do not trust today:
 
 - **Anything Windows as a running program.**
-- **The macOS `.app` as a usable application** — signed and executable, never launched
-  in a GUI, not notarized.
+- **The macOS `.app` on a pristine machine** — the bundle *was* launched and verified
+  2026-09-18 (unzipped outside the source tree, `codesign --verify --deep --strict` →
+  valid + satisfies its Designated Requirement, `open -a Ghostty.app`, one terminal window
+  observed, quit cleanly). What remains unverified is **notarization**: no `notarytool`
+  credentials, so a first launch on someone else's machine may require an explicit
+  Gatekeeper override. That specific path was not tested.
 - **The GTK Linux application** — it does not exist for this release.
 - **Any performance claim** — no baseline, one run under load 425, dirty tree.
 - **The IPC surface as a live service** — 458 module tests pass, including over real
   sockets, but the server is not started from the application and the app-thread hop is
-  not wired. Nothing listens in a running Khostty.
+  not wired. Nothing listens in a running Khostty. Verified against the tree 2026-09-18,
+  not assumed: `grep -rl 'apprt/ipc' src/` outside `src/apprt/ipc/` returns only
+  `apprt.zig` (the import), the GTK/Windows/embedded/none runtimes (which use it for
+  *outgoing* performs, not a listener), and one test asserting
+  `expectError(error.Unimplemented, Server.init(...))`. No call site constructs
+  `ipc.Server` outside its own module, so the acceptance test "agent can talk to a
+  running Khostty" has never been exercised.
 
 ## 10. Next bounded task
 

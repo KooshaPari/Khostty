@@ -313,6 +313,21 @@ src/apprt/ipc/
 
 **Task status update** (added 2026-09-18): 4.1-4.14 **DONE** — gate row reads `DONE`. The
 normative protocol spec is `src/apprt/ipc/protocol.md`, cited from the dossier and handoff.
+458/458 module tests pass (re-verified by execution; see G10.4).
+
+> **Gap found 2026-09-18 — the surface is implemented and tested, but not *reachable*.**
+> 4.12/4.13 are satisfied at the module level, yet no running Khostty ever starts the server.
+> Verified against the tree, not assumed: outside `src/apprt/ipc/`, `apprt/ipc` is referenced
+> only by `apprt.zig` (the import), the GTK/Windows/embedded/none runtimes (which use it for
+> *outgoing* performs), and one test asserting
+> `expectError(error.Unimplemented, Server.init(...))`. No call site constructs `ipc.Server`.
+> So the real acceptance question — "can an agent talk to a running Khostty?" — has never been
+> exercised, and the 458 tests prove the protocol, not the wiring.
+>
+> **Follow-on task (not in the original 15):** start `ipc.Server` from the application runtime
+> and hop commands onto the app thread, then add an end-to-end test that drives a live instance.
+> This is the difference between a proven protocol and a usable agent surface, and it is a
+> stronger candidate for next work than any remaining release mechanic.
 
 ### IPC Protocol (Draft)
 
