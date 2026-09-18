@@ -308,6 +308,9 @@ src/apprt/ipc/
 | 4.13 | Write integration test: concurrent pane operations | 10m | 4.12 | Multi-pane stress test |
 | 4.14 | Document IPC protocol + agent usage examples | 10m | 4.13 | Protocol spec + code samples |
 
+**Task status update** (added 2026-09-18): 4.1-4.14 **DONE** — gate row reads `DONE`. The
+normative protocol spec is `src/apprt/ipc/protocol.md`, cited from the dossier and handoff.
+
 ### IPC Protocol (Draft)
 
 ```json
@@ -391,6 +394,10 @@ khostty-vt/
 | 5.8 | Implement `key.rs` + `mouse.rs` — input encoding | 10m | 5.2-5.3 | `KeyEncoder`, `MouseEncoder` |
 | 5.9 | Write integration tests: VT parse → snapshot → read | 10m | 5.4-5.8 | End-to-end proof |
 | 5.10 | Publish crate metadata (README, examples, docs) | 10m | 5.9 | crates.io-ready |
+
+**Task status update** (added 2026-09-18): 5.1-5.10 **DONE** — `cargo test` 199/199 (195 +
+4 doc-tests). 10.5's pre-flight adds that the crate packages and verifies under
+`cargo publish --dry-run`, but does not link without an external `libghostty-vt`.
 
 **Acceptance criteria**:
 - `cargo build` succeeds with `libghostty-vt` linked
@@ -485,6 +492,10 @@ Two further tasks were therefore added to close the gate honestly:
 |----|------|---------|
 | 6.9 | Go key + mouse event encoding | `ghostty_key*.go`, `ghostty_mouse*.go`, `keys_gen.go` |
 | 6.10 | Python key + mouse event encoding | `key.py`, `keyencoder.py`, `mouse.py`, `mouseevent.py`, `_enums_gen.py` |
+
+**Task status update** (added 2026-09-18): 6.1-6.10 **DONE** — recorded figure is 207 tests
+across the Go and Python bindings; `pytest` on Python 3.12 re-verified 162/162 on 2026-09-18.
+`go test` cannot run on this host (cgo link failure, host-wide — see the G6 caveat above).
 
 **Evidence**
 
@@ -581,6 +592,10 @@ dist/
 | 7.9 | Verify C ABI export: ctypes/py cffi load dist libs | 10m | 7.4, G1 | Confirm symbols resolve |
 | 7.10 | Write WASM usage docs + example | 10m | 7.8 | npm-style README, CDN note |
 
+**Task status update** (added 2026-09-18): 7.1-7.10 **DONE** — 54/54 repository WASM tests,
+and the packed tarball passes a 13/13 extracted-consumer check. Rebuilt from a clean tree
+(`source_dirty: "no"`) so the artifact is attributable to a commit.
+
 **Acceptance criteria**:
 - `libghostty-vt.wasm` builds from `build.zig` (wasm32 target)
 - JS/TS consumers can create a Terminal, write VT, read screen via ESM
@@ -671,6 +686,11 @@ bench/
 | 8.11 | Implement agent-friendly default config preset | 10m | G4 | `khostty-agent.conf`, `--agent` flag |
 | 8.12 | Document benchmark methodology + results | 10m | 8.8 | Reproducible, machine spec, date |
 | 8.13 | Write Khostty value-add summary (why fork exists) | 10m | 8.8-8.12 | Compare vs upstream, list Khostty extras |
+
+**Task status update** (added 2026-09-18): 8.1-8.13 **DONE**. Benchmarks were run and
+described as `measured` in the gate row; `docs/FORK.md` carries the value-add summary. Note
+the changelog's standing caveat: "Khostty is faster than Ghostty" is **unsupported** —
+reproduce on an idle machine before citing any number.
 
 **Acceptance criteria**:
 - Benchmarks run from `zig build bench`, produce JSON + human-readable report
