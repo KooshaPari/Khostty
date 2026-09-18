@@ -239,6 +239,11 @@ src/apprt/windows/
 
 ### Build Evidence (2026-09-18)
 
+Re-verified 2026-09-18 after first observation; results reproduced.
+- `zig build -Demit-macos-app=false` → exit 0, prints the Metal fallback warning
+- filtered apprt test binary → `All 25 tests passed.` exit 0 (re-run: reproduced)
+- `xcrun -sdk macosx metal --version` → exit 1 (premise of the fallback still holds)
+
 | Check | Result | Evidence |
 |-------|--------|----------|
 | Cross-build | PASS | `zig build -Dtarget=x86_64-windows-gnu -Dapp-runtime=windows -Demit-macos-app=false` exit 0, 8m12s |
@@ -716,14 +721,15 @@ docs/
 
 ### Verification Evidence (2026-09-18)
 
-Every probe was executed on this host, not inferred:
+Every probe was executed on this host, not inferred. All rows re-run 2026-09-18
+after first observation; results reproduced.
 
 | Check | Command | Result |
 |-------|---------|--------|
 | Linux .deb script | `bash packaging/linux/deb.sh --probe` | exit 0; reports version 0.1.0, zig 0.16.0, `dpkg-deb: MISSING` |
 | Windows installer | `bash packaging/windows/installer.sh --probe` | exit 0; reports zig 0.16.0, `ISCC.exe: MISSING`, real PE inputs hashed |
 | macOS .app | `bash packaging/macos-app.sh --probe` | exit 0; reports `blocked` — Metal toolchain unusable, bundle excluded from the manifest |
-| Dossier | `docs/dossiers/KHOSTTY.md` | 300 lines, 9 sections |
+| Dossier | `docs/dossiers/KHOSTTY.md` | 300 lines, 10 sections (9 numbered + See also) |
 | Install docs | `docs/INSTALL.md` | 607 lines; status table 3 VERIFIED / 2 NOT BUILT / 1 BLOCKED |
 | Docs set | `docs/{README,ARCHITECTURE,API,AGENT,PLATFORMS,BUILD,CONTRIBUTING,FORK,SECURITY}.md` | all present |
 
