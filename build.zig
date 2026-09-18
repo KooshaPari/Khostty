@@ -72,6 +72,10 @@ pub fn build(b: *std.Build) !void {
         "Run the app under valgrind",
     );
     const test_step = b.step("test", "Run tests");
+    const test_windows_apprt_step = b.step(
+        "test-windows-apprt",
+        "Run Windows app runtime tests (host-runnable; see src/main_windows_apprt.zig)",
+    );
     const test_lib_vt_step = b.step(
         "test-lib-vt",
         "Run libghostty-vt tests",
@@ -427,6 +431,32 @@ pub fn build(b: *std.Build) !void {
         valgrind_run.addArtifactArg(test_exe);
         config.addPatchElf(test_exe, &valgrind_run.step);
         test_valgrind_step.dependOn(&valgrind_run.step);
+    }
+
+    // Windows app runtime tests. The modules under src/apprt/windows/ decode
+    // Win32 message parameters and never call Win32, so their tests run on the
+    // host even though the runtime they serve is Windows-only. Their root file
+    // has to sit in src/ for their `../../input/*` imports to stay inside the
+    // module; see src/main_windows_apprt.zig.
+    {
+        const win_apprt_test = b.addTest(.{
+            .name = "windows-apprt-test",
+            .filters = test_filters,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/main_windows_apprt.zig"),
+                .target = config.baselineTarget(b.graph.io),
+                .optimize = .Debug,
+                .strip = false,
+                .omit_frame_pointer = false,
+                .unwind_tables = .sync,
+            }),
+            .use_llvm = true,
+        });
+        _ = try deps.add(win_apprt_test);
+
+        const win_apprt_run = b.addRunArtifact(win_apprt_test);
+        config.addPatchElf(win_apprt_test, &win_apprt_run.step);
+        test_windows_apprt_step.dependOn(&win_apprt_run.step);
     }
 
     // update-translations does what it sounds like and updates the "pot"
