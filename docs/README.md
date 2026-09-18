@@ -20,6 +20,7 @@ For a project overview and quickstart, see the [root README](../README.md).
 | [AGENT.md](AGENT.md) | Driving Khostty from an agent: what works today, recipes, and the v1 IPC status |
 | [PLATFORMS.md](PLATFORMS.md) | macOS / Linux / Windows / WASM support matrix with verified vs unverified separated |
 | [BUILD.md](BUILD.md) | Building from source, per-platform notes, troubleshooting, and current build status |
+| [INSTALL.md](INSTALL.md) | Installing each built artifact, per-platform verification steps, and a dated VERIFIED / NOT BUILT / BLOCKED status table |
 | [TESTING.md](TESTING.md) | Conformance suite mechanics, every test suite, the WBS gate structure, dated results |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Fork vs upstream contribution paths, definition of done, style, ledger commits, real CI coverage |
 | [FORK.md](FORK.md) | What this fork adds over upstream, and what the evidence does not yet support |
