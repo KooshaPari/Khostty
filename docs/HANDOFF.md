@@ -163,8 +163,15 @@ verification of the Rust gate's recorded figure.
 
 **Unverified / caveats:**
 - Not on crates.io. A consumer must vendor the directory or use a path/git dependency.
-- The crate depends on a built `libghostty-vt`; `build.rs` discovers it. See
-  `packaging/` for producing the library.
+  **Publish-readiness checked 2026-09-18:** `cargo publish --dry-run` exits 0, packaging
+  45 files / 503.0 KiB and verifying, ending with `aborting upload due to dry run` — so the
+  crate *would* publish cleanly, but nothing was uploaded.
+- The crate depends on a built `libghostty-vt`; `build.rs` discovers it. The dry run
+  surfaced exactly how: it searches `GHOSTTY_VT_LIB_DIR` then `../zig-out/lib`,
+  `../build/lib`, `../dist/lib`, and warns `no prebuilt libghostty-vt found ... The crate
+  will typecheck but not link`. **So a consumer must supply the native library or set
+  `GHOSTTY_VT_LIB_DIR`** — the crate alone is not a working dependency. See `packaging/`
+  for producing the library.
 - Not part of a tagged release, so there is no versioned artifact to pin beyond the
   in-tree `Cargo.toml` version `0.1.0`.
 
