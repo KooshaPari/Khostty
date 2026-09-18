@@ -245,7 +245,7 @@ src/apprt/windows/
 | Artifacts | PASS | `ghostty.exe`, `ghostty-vt.dll`, `ghostty.pdb`, `ghostty-vt-static.lib`, `ghostty-vt.lib` in `zig-out/` |
 | `zig fmt` | PASS | All 11 Windows apprt source files pass `zig fmt --check` |
 | Module compile | PASS | `ipc.zig`, `input.zig`, `keyboard.zig`, `mouse.zig`, `renderer.zig`, `surface.zig` cross-compile to x86_64-windows-gnu |
-| Host test | IN PROGRESS | `test-windows-apprt` reached the compile stage after the Metal fix (previously blocked before compiling). See below. |
+| Host test | PARTIAL | `test-windows-apprt` now compiles (after wiring `ghostty.h` for the apprt root, `0f358f9ec`) and the binary executes. It discovers **3812 tests** because the apprt modules transitively import the apprt/terminal tree, so the step runs the entire suite, not only apprt tests. Observation 2026-09-18: 1295/3812 executed, 0 failures, run still in progress at time of writing (each full pass exceeds ~15 min on this host). |
 | Metal toolchain | RESOLVED (`9d32ffc4c`) | `xcrun -sdk macosx metal --version` fails on this host (Xcode 26.0 build 17B5050g; `xcodebuild -downloadComponent MetalToolchain` cannot fetch the catalog). `Config.init` now probes the compiler and falls back to the OpenGL renderer with an actionable warning; `-Drenderer=metal` still forces Metal. `zig build -Demit-macos-app=false` exits 0. |
 
 **Task status update**:
