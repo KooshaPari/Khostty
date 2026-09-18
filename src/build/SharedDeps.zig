@@ -135,12 +135,20 @@ fn initTarget(
     b: *std.Build,
     target: std.Build.ResolvedTarget,
 ) !void {
-    // Update our metallib
-    self.metallib = .create(b, .{
-        .name = "Ghostty",
-        .target = target,
-        .sources = &.{b.path("src/renderer/shaders/shaders.metal")},
-    });
+    // Compile the Metal shader library, but only when the Metal renderer is
+    // actually selected. The Metal renderer is comptime-chosen, so an
+    // OpenGL build never embeds `ghostty_metallib` and must not require the
+    // Metal toolchain to be installed. This keeps `-Drenderer=opengl` usable
+    // on machines (e.g. Xcode betas) where the MetalToolchain component is
+    // absent.
+    self.metallib = if (self.config.renderer == .metal)
+        .create(b, .{
+            .name = "Ghostty",
+            .target = target,
+            .sources = &.{b.path("src/renderer/shaders/shaders.metal")},
+        })
+    else
+        null;
 
     // Change our config
     const config = try b.allocator.create(Config);
@@ -505,11 +513,12 @@ pub fn add(
     if (step.rootModuleTarget().os.tag.isDarwin()) {
         try @import("apple_sdk").addPaths(b, step);
 
-        const metallib = self.metallib.?;
-        metallib.output.addStepDependencies(&step.step);
-        step.root_module.addAnonymousImport("ghostty_metallib", .{
-            .root_source_file = metallib.output,
-        });
+        if (self.metallib) |metallib| {
+            metallib.output.addStepDependencies(&step.step);
+            step.root_module.addAnonymousImport("ghostty_metallib", .{
+                .root_source_file = metallib.output,
+            });
+        }
     }
 
     // Other dependencies, mostly pure Zig

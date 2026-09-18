@@ -206,6 +206,21 @@ pub fn init(b: *std.Build, appVersion: []const u8, libVersion: []const u8) !Conf
         "The app runtime to use. Not all values supported on all platforms.",
     ) orelse RendererBackend.default(target.result, wasm_target);
 
+    // The Metal renderer requires the Metal toolchain, which recent Xcode
+    // versions ship as a separately-downloadable component. When it is absent
+    // (common on Xcode betas) a Metal build fails deep in the build with an
+    // opaque `xcrun` error. Detect that here and fall back to OpenGL so a plain
+    // `zig build` still works. Pass `-Drenderer=metal` to force Metal.
+    if (config.renderer == .metal and !metalToolchainAvailable(b)) {
+        std.log.warn(
+            "Metal toolchain not found; using the OpenGL renderer instead. " ++
+                "Install it via `xcodebuild -downloadComponent MetalToolchain`, " ++
+                "or pass -Drenderer=metal to force the Metal renderer.",
+            .{},
+        );
+        config.renderer = .opengl;
+    }
+
     //---------------------------------------------------------------
     // Feature Flags
 
@@ -614,6 +629,23 @@ pub fn init(b: *std.Build, appVersion: []const u8, libVersion: []const u8) !Conf
     }
 
     return config;
+}
+
+/// Reports whether `xcrun -sdk macosx metal` can actually run. Recent Xcode
+/// versions ship the Metal compiler as a separately-downloadable component, so
+/// the `metal` shim can be present while its toolchain is not. Probing the
+/// compiler is the only reliable check, because the shim reports the missing
+/// component at runtime rather than failing lookup.
+fn metalToolchainAvailable(b: *std.Build) bool {
+    const result = std.process.run(b.allocator, b.graph.io, .{
+        .argv = &.{ "/usr/bin/xcrun", "-sdk", "macosx", "metal", "--version" },
+    }) catch return false;
+    defer b.allocator.free(result.stdout);
+    defer b.allocator.free(result.stderr);
+    return switch (result.term) {
+        .exited => |code| code == 0,
+        else => false,
+    };
 }
 
 const PatchElf = struct {
