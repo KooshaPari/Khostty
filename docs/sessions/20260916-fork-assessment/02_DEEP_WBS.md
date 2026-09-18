@@ -118,7 +118,7 @@ The fork's value is NOT rebuilding what upstream has. It is:
 | G0 | Fork Hygiene | 4 | 40m | DONE | -- |
 | G1 | Native Build Validation | 3 | 30m | DONE | -- |
 | G2 | Conformance Evidence | 12 | 120m | DONE (84/84 pass) | CRITICAL |
-| G3 | Windows App Runtime | 15 | 150m | DONE (cross-build PASS, 43/43 apprt tests pass) | HIGH |
+| G3 | Windows App Runtime | 15 | 150m | DONE (cross-build PASS; isolated apprt run 25/25 pass) | HIGH |
 | G4 | Agent/IPC Surface | 14 | 140m | DONE | HIGH |
 | G5 | Polyglot FFI — Rust | 10 | 100m | DONE (199/199 tests) | HIGH |
 | G6 | Polyglot FFI — Go + Python | 8 | 80m | DONE (207 tests) | MEDIUM |
@@ -832,7 +832,7 @@ G0 Fork Hygiene (DONE) → G1 Native Build (DONE) → G2 Conformance Evidence
 | G0 Fork Hygiene | 4 | 40 | ✅ DONE |
 | G1 Native Build | 3 | 30 | ✅ DONE |
 | G2 Conformance Evidence | 12 | 120 | ✅ DONE (84/84 pass) |
-| G3 Windows App Runtime | 15 | 150 | ✅ DONE (cross-build PASS, 3.14 Metal-blocked) |
+| G3 Windows App Runtime | 15 | 150 | ✅ DONE (cross-build PASS; isolated apprt run 25/25) |
 | G4 Agent/IPC | 14 | 140 | ✅ DONE |
 | G5 Rust FFI | 10 | 100 | ✅ DONE (199/199 tests) |
 | G6 Go+Python FFI | 8 | 80 | ✅ DONE (207 tests) |
