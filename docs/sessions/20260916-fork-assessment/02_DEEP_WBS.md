@@ -769,16 +769,16 @@ G0 Fork Hygiene (DONE) → G1 Native Build (DONE) → G2 Conformance Evidence
 |------|-------|---------|--------|
 | G0 Fork Hygiene | 4 | 40 | ✅ DONE |
 | G1 Native Build | 3 | 30 | ✅ DONE |
-| G2 Conformance Evidence | 12 | 120 | ⬜ NOT STARTED |
-| G3 Windows App Runtime | 15 | 150 | ⬜ NOT STARTED |
-| G4 Agent/IPC | 14 | 140 | ⬜ NOT STARTED |
-| G5 Rust FFI | 10 | 100 | ⬜ NOT STARTED |
-| G6 Go+Python FFI | 8 | 80 | ⬜ NOT STARTED |
-| G7 WASM | 10 | 100 | ✅ DONE |
-| G8 Improvements+Bench | 13 | 130 | ⬜ NOT STARTED |
-| G9 Docs+Packaging | 15 | 150 | ⬜ NOT STARTED |
+| G2 Conformance Evidence | 12 | 120 | ✅ DONE (84/84 pass) |
+| G3 Windows App Runtime | 15 | 150 | ✅ DONE (cross-build PASS, 3.14 Metal-blocked) |
+| G4 Agent/IPC | 14 | 140 | ✅ DONE |
+| G5 Rust FFI | 10 | 100 | ✅ DONE (199/199 tests) |
+| G6 Go+Python FFI | 8 | 80 | ✅ DONE (207 tests) |
+| G7 WASM | 10 | 100 | ✅ DONE (54/54 tests) |
+| G8 Improvements+Bench | 13 | 130 | ✅ DONE (measured) |
+| G9 Docs+Packaging | 15 | 150 | ⬜ docs DONE, packaging pending |
 | G10 Release | 9 | 90 | ⬜ NOT STARTED |
-| **TOTAL** | **113** | **~1130m (18.8h)** | **3 DONE / 110 PENDING** |
+| **TOTAL** | **113** | **~1130m (18.8h)** | **9 DONE / 24 PENDING** |
 
 ## PRIORITY ORDER (smallest effort, fastest useful outcome, fewest deps)
 
