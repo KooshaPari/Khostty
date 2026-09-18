@@ -245,13 +245,13 @@ src/apprt/windows/
 | Artifacts | PASS | `ghostty.exe`, `ghostty-vt.dll`, `ghostty.pdb`, `ghostty-vt-static.lib`, `ghostty-vt.lib` in `zig-out/` |
 | `zig fmt` | PASS | All 11 Windows apprt source files pass `zig fmt --check` |
 | Module compile | PASS | `ipc.zig`, `input.zig`, `keyboard.zig`, `mouse.zig`, `renderer.zig`, `surface.zig` cross-compile to x86_64-windows-gnu |
-| Host test | PARTIAL (apprt PASS) | `test-windows-apprt` compiles after wiring `ghostty.h` for the apprt root (`0f358f9ec`). Run 2026-09-18: **43/43 apprt tests pass, 0 failures** — every `apprt.windows.*` module (Window, input, interface, ipc, mouse, renderer, surface) plus the `ghostty.h` enum tests the fix enabled. The step then continues into the full suite (3812 tests, pulled in by the apprt modules' transitive imports) and stops at `terminal.search.Thread.test_0` (Timeout + segfault at 2210/3812) after 2150 passes; that test is unrelated upstream code. The step therefore cannot exit 0 as a whole, but the Windows apprt acceptance is met. |
+| Host test | **PASS (25/25)** | Isolated run 2026-09-18: `zig build test-windows-apprt -Dtest-filter=apprt`, then the produced binary run directly → **`All 25 tests passed.` exit 0**. Covers every `apprt.windows.*` module: Window, input, keyboard, interface, ipc, mouse, renderer, surface. (The build step itself cannot exit 0 because the apprt modules transitively pull in the full 3812-test suite, which stops at the unrelated `terminal.search.Thread.test_0`; the apprt acceptance is nevertheless a clean pass when isolated.) |
 | Metal toolchain | RESOLVED (`9d32ffc4c`) | `xcrun -sdk macosx metal --version` fails on this host (Xcode 26.0 build 17B5050g; `xcodebuild -downloadComponent MetalToolchain` cannot fetch the catalog). `Config.init` now probes the compiler and falls back to the OpenGL renderer with an actionable warning; `-Drenderer=metal` still forces Metal. `zig build -Demit-macos-app=false` exits 0. |
 
 **Task status update**:
 - 3.1-3.12: DONE (scaffold + all modules implemented)
 - 3.13: DONE (cross-build succeeds)
-- 3.14: PARTIAL (test-windows-apprt compiles, Metal linker blocks full run)
+- 3.14: DONE (isolated apprt run: `All 25 tests passed.` exit 0)
 - 3.15: DONE (documented in this WBS)
 
 ---
@@ -713,6 +713,23 @@ docs/
 - Windows .exe installs and runs
 - WASM dist is consumable via npm/ESM
 - Dossier compliant with Phenotype docs-3 contract
+
+### Verification Evidence (2026-09-18)
+
+Every probe was executed on this host, not inferred:
+
+| Check | Command | Result |
+|-------|---------|--------|
+| Linux .deb script | `bash packaging/linux/deb.sh --probe` | exit 0; reports version 0.1.0, zig 0.16.0, `dpkg-deb: MISSING` |
+| Windows installer | `bash packaging/windows/installer.sh --probe` | exit 0; reports zig 0.16.0, `ISCC.exe: MISSING`, real PE inputs hashed |
+| macOS .app | `bash packaging/macos-app.sh --probe` | exit 0; reports `blocked` — Metal toolchain unusable, bundle excluded from the manifest |
+| Dossier | `docs/dossiers/KHOSTTY.md` | 300 lines, 9 sections |
+| Install docs | `docs/INSTALL.md` | 607 lines; status table 3 VERIFIED / 2 NOT BUILT / 1 BLOCKED |
+| Docs set | `docs/{README,ARCHITECTURE,API,AGENT,PLATFORMS,BUILD,CONTRIBUTING,FORK,SECURITY}.md` | all present |
+
+**Not met**: the three installer acceptance bullets (macOS/Linux/Windows install-and-run)
+cannot be closed on this host — `dpkg-deb` and Inno Setup are absent and the Metal toolchain
+is unfetchable. Each is recorded as NOT BUILT or BLOCKED rather than claimed.
 
 ---
 
