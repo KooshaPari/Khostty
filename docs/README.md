@@ -26,6 +26,9 @@ For a project overview and quickstart, see the [root README](../README.md).
 | [FORK.md](FORK.md) | What this fork adds over upstream, and what the evidence does not yet support |
 | [SECURITY.md](SECURITY.md) | Trust boundaries, IPC authorization, memory-safety approach, undefended surfaces |
 | [GLOSSARY.md](GLOSSARY.md) | VT, AppRT, surface, pane, snapshot, gate, ledger |
+| [RELEASE.md](RELEASE.md) | The version scheme, how the version is derived (build.zig `lib_version`), what `0.x` means, the cut-a-release commands, and the artifact checksum manifest |
+| [HANDOFF.md](HANDOFF.md) | Picking up each artifact as a consumer: macOS zip, Linux `.deb`, WASM npm package, Rust/Go/Python FFI — with verified vs unverified per artifact |
+| [changelog/0.1.0.md](changelog/0.1.0.md) | Release notes for 0.1.0: the four fork deltas, gate evidence, and the known issues |
 
 Related reference material elsewhere in the repository:
 
