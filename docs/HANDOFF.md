@@ -135,7 +135,10 @@ helpers in `vt/modes.h` and the 8 `__wasm__`-gated `ghostty_wasm_*` allocators.
 
 **Unverified — and this is the important part:**
 - **Never executed on Windows.** No Windows host, `wine` absent, wine casks
-  Gatekeeper-disabled, no Rosetta.
+  Gatekeeper-disabled, no Rosetta. **Attempted 2026-09-18 via Docker x86_64 emulation:**
+  `wine --version` returns `wine-11.0` (exit 0), but prefix creation fails immediately
+  (`run_wineboot failed to start wineboot 1` → `could not load kernel32.dll, status
+  c0000135`), so the PE cannot be loaded. Emulation runs Wine but cannot build a prefix.
 - **No installer.** `packaging/windows/installer.sh --probe` reports
   `ISCC.exe: MISSING`; the Inno Setup script was generated but never compiled, so there
   is no `setup.exe`.
@@ -267,9 +270,10 @@ changelog, and `dist-release/CHECKSUMS.txt`.
 **New next bounded task: close the Windows runtime gap on a Windows host (or a host with
 a working x86_64 Windows emulation layer).** It is the only remaining artifact whose
 *runtime* behaviour is unverified. Acceptance: `ghostty.exe` launches on Windows and
-`ghostty-vt.dll` loads, with the 198 exported symbols callable. This host cannot do it:
-no Windows host, no `wine` (all Homebrew casks Gatekeeper-disabled since 2026-09-01),
-and no Rosetta for x86_64 emulation. The ABI *shape* is already verified statically
+`ghostty-vt.dll` loads, with the 198 exported symbols callable. This host cannot do it: no Windows host, no `wine` (all Homebrew casks Gatekeeper-disabled
+since 2026-09-01), no Rosetta for x86_64 emulation — and Docker `--platform linux/amd64`
+emulation runs `wine-11.0` but fails to create a Wine prefix (`wineboot` will not start),
+so the PE still cannot be loaded. The ABI *shape* is already verified statically
 (see [RELEASE.md §6](RELEASE.md)), so only runtime behaviour is outstanding.
 
 **Blocked on authorization (not on capability):** WBS 10.5 (publish FFI packages),
