@@ -358,6 +358,20 @@ normative protocol spec is `src/apprt/ipc/protocol.md`, cited from the dossier a
 > issue `pane.create`, and observe a new pane — i.e. the 458-test protocol exercised through
 > a live instance rather than in-process. `windowed` is false for `.none`, the `windows`
 > scaffold, and the lib/wasm artifacts, so the GTK app is the target for this work.
+>
+> ⛔ **BLOCKED ON THIS HOST for implementation, verified 2026-09-18.** The target is the GTK
+> app, and the GTK app **cannot be built here**: `zig build -Dapp-runtime=gtk
+> -Demit-macos-app=false` exits 1 with `'gtk/gtk.h' not found` and `'adwaita.h' not found`.
+> Confirmed it is not a PATH problem — `gtk4` and `libadwaita` are not installed
+> (`/opt/homebrew/include/gtk-4.0/…` and `…/libadwaita-1/…` both absent), and this is the
+> same blocker that prevents the GTK `.deb` payload from building. So the wiring can be
+> *written* here but not *compiled* or *validated*, which means writing it now would produce
+> unverifiable code — precisely the kind of change this WBS has been careful to avoid.
+>
+> **What this work needs:** a Linux host with GTK4 + libadwaita development headers (a
+> Debian container with `libgtk-4-dev libadwaita-1-dev` would likely suffice, and the Docker
+> x86_64 path already works for the `.deb` verification). Then: implement, build, run, and
+> drive `pane.create` against a live instance.
 
 ### IPC Protocol (Draft)
 
