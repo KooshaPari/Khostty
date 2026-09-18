@@ -395,9 +395,18 @@ khostty-vt/
 | 5.9 | Write integration tests: VT parse → snapshot → read | 10m | 5.4-5.8 | End-to-end proof |
 | 5.10 | Publish crate metadata (README, examples, docs) | 10m | 5.9 | crates.io-ready |
 
-**Task status update** (added 2026-09-18): 5.1-5.10 **DONE** — `cargo test` 199/199 (195 +
-4 doc-tests). 10.5's pre-flight adds that the crate packages and verifies under
-`cargo publish --dry-run`, but does not link without an external `libghostty-vt`.
+**Task status update** (added 2026-09-18): 5.1-5.10 **DONE**. **199/199 verified by execution
+this session** — plain `cargo test` in `khostty-vt/` exits 0 with 65 unit + 134 integration
+across 11 suites, 0 failed. 10.5's pre-flight adds that the crate packages and verifies under
+`cargo publish --dry-run`.
+> **Gotcha found while verifying (self-inflicted, worth knowing):** running
+> `cargo publish --dry-run` first makes a subsequent plain `cargo test` **fail at link**
+> with `Undefined symbols: _ghostty_alloc`. The dry run builds the crate inside
+> `target/package/khostty-vt-0.1.0/`, where the search path `../zig-out/lib` does not
+> resolve, and cargo caches that build-script output; the cached "no prebuilt
+> libghostty-vt found" then applies to the normal source build too. `cargo clean -p
+> khostty-vt` clears it and `cargo test` passes unchanged. Not a crate defect — an
+> ordering hazard in the pre-flight itself.
 
 **Acceptance criteria**:
 - `cargo build` succeeds with `libghostty-vt` linked
