@@ -124,7 +124,7 @@ The fork's value is NOT rebuilding what upstream has. It is:
 | G6 | Polyglot FFI — Go + Python | 8 | 80m | DONE (207 tests) | MEDIUM |
 | G7 | WASM Cross-Compilation | 10 | 100m | DONE (54/54 tests) | HIGH |
 | G8 | Khostty-Specific Improvements | 10 | 100m | DONE (measured) | MEDIUM |
-| G9 | Documentation + Packaging | 15 | 150m | IN PROGRESS (14/15; 9.11 macOS .app externally blocked) | MEDIUM |
+| G9 | Documentation + Packaging | 15 | 150m | IN PROGRESS (15/15 tasks built; 9.11 macOS .app now builds — install-and-run clause open) | MEDIUM |
 | G10 | Release Artifacts | 6 | 60m | NOT STARTED | MEDIUM |
 | | **TOTAL** | **100** | **1000m (~16.7h)** | **70m done** | |
 
@@ -182,7 +182,7 @@ must work via conformance tests, not just compile.
 
 ---
 
-## G3: Windows App Runtime (IN PROGRESS — cross-build PASS, host test BLOCKED by Metal) — HIGH PRIORITY
+## G3: Windows App Runtime (cross-build PASS; host test BLOCKED — no Windows host) — HIGH PRIORITY
 
 **Gate objective**: Upstream has NO Windows app runtime. Only `embedded.zig` (macOS) and
 `gtk.zig` (Linux) exist. Khostty fills this gap by creating `src/apprt/windows/` — a
@@ -240,9 +240,12 @@ src/apprt/windows/
 ### Build Evidence (2026-09-18)
 
 Re-verified 2026-09-18 after first observation; results reproduced.
-- `zig build -Demit-macos-app=false` → exit 0, prints the Metal fallback warning
+- `zig build -Demit-macos-app=false` → exit 0, prints the Metal fallback warning **[2026-09-18]**
+  This warning is a dated prior observation. Metal now probes successfully on this host, so
+  the fallback may no longer fire; that specific re-run was **not** repeated and is not claimed.
 - filtered apprt test binary → `All 25 tests passed.` exit 0 (re-run: reproduced)
-- `xcrun -sdk macosx metal --version` → exit 1 (premise of the fallback still holds)
+- `xcrun -sdk macosx metal --version` → exit 1 (premise of the fallback still holds) —
+  **[corrected 2026-09-18] no longer true; see the Metal toolchain row below.**
 
 | Check | Result | Evidence |
 |-------|--------|----------|
@@ -251,7 +254,7 @@ Re-verified 2026-09-18 after first observation; results reproduced.
 | `zig fmt` | PASS | All 11 Windows apprt source files pass `zig fmt --check` |
 | Module compile | PASS | `ipc.zig`, `input.zig`, `keyboard.zig`, `mouse.zig`, `renderer.zig`, `surface.zig` cross-compile to x86_64-windows-gnu |
 | Host test | **PASS (25/25)** | Isolated run 2026-09-18: `zig build test-windows-apprt -Dtest-filter=apprt`, then the produced binary run directly → **`All 25 tests passed.` exit 0**. Covers every `apprt.windows.*` module: Window, input, keyboard, interface, ipc, mouse, renderer, surface. (The build step itself cannot exit 0 because the apprt modules transitively pull in the full 3812-test suite, which stops at the unrelated `terminal.search.Thread.test_0`; the apprt acceptance is nevertheless a clean pass when isolated.) |
-| Metal toolchain | RESOLVED (`9d32ffc4c`) | `xcrun -sdk macosx metal --version` fails on this host (Xcode 26.0 build 17B5050g; `xcodebuild -downloadComponent MetalToolchain` cannot fetch the catalog). `Config.init` now probes the compiler and falls back to the OpenGL renderer with an actionable warning; `-Drenderer=metal` still forces Metal. `zig build -Demit-macos-app=false` exits 0. |
+| Metal toolchain | RESOLVED (`9d32ffc4c`) | `xcrun -sdk macosx metal --version` fails on this host (Xcode 26.0 build 17B5050g; `xcodebuild -downloadComponent MetalToolchain` cannot fetch the catalog). `Config.init` now probes the compiler and falls back to the OpenGL renderer with an actionable warning; `-Drenderer=metal` still forces Metal. `zig build -Demit-macos-app=false` exits 0. **[Corrected 2026-09-18]** The unfetchable-catalog claim below was wrong: `xcodebuild -downloadComponent MetalToolchain -buildVersion 17B5045g` exits 0 (the installed build `17B5050g` simply has no mapping entry, so the unpinned command has no catalog target). `xcrun -sdk macosx metal --version` now exits 0, and `packaging/macos-app.sh` builds the `.app` end to end (exit 0). The fallback in `Config.init` remains correct and is still what keeps non-`.app` macOS builds green. Evidence: `docs/sessions/20260918-macos-app-unblock/`. |
 
 **Task status update**:
 - 3.1-3.12: DONE (scaffold + all modules implemented)
@@ -705,11 +708,11 @@ docs/
 
 | ID | Task | Est | Depends | Notes |
 |----|------|-----|---------|-------|
-| 9.11 | Package macOS .app bundle (notarized if possible) | 10m | G1 | Info.plist, icon, codesign |
+| 9.11 | Package macOS .app bundle (notarized if possible) | 10m | G1 | Info.plist, icon, codesign | **DONE (build) 2026-09-18.** `packaging/macos-app.sh` exit 0; `zig-out/Ghostty.app` built, signed, `codesign --verify` → *valid on disk*; `dist-release/macos/Khostty-0.1.0-macos.zip` 35,953,098 B, `sha256 94abd2a7…`; bundled binary `--version` exit 0. **Not `blocked`** — the earlier reason was wrong (see the G3 Build Evidence correction and `docs/sessions/20260918-macos-app-unblock/`). Notarization still impossible; no GUI launch. |
 | 9.12 | Package Linux .deb (and optionally .rpm) | 10m | G1 | dpkg packaging, desktop entry | DONE (`935b354c9`, `packaging/linux/deb.sh`, probe PASS). **[2026-09-18]** `deb.sh` still cannot produce the GTK-app package from macOS: `bash packaging/linux/deb.sh` exits 1 on `'adwaita.h' not found` / `'gtk/gtk.h' not found`. Added `packaging/linux/deb-libvt.sh`, which packages the cross-compilable libghostty-vt payload; the resulting `khostty-vt_0.1.0_amd64.deb` **installs and runs** on x86-64 Debian 12 (evidence rows below). |
 | 9.13 | Package Windows .exe installer (MSI optional) | 10m | G3 | Inno Setup / WiX / MSIX | DONE (`004119f54`, `packaging/windows/installer.sh`, probe PASS; ISCC pending a Windows host) |
 | 9.14 | Package WASM dist (npm-style) | 10m | G7 | tar/zip + README | DONE (`76ad36fc3`, `packaging/wasm-dist.sh`, 54 tests) |
-| 9.15 | Write install docs + verification steps | 10m | 9.11-9.14 | Test each installer | DONE (`cd91fb549`, `docs/INSTALL.md`; status table 3 VERIFIED / 2 NOT BUILT / 1 BLOCKED, observed 2026-09-18) |
+| 9.15 | Write install docs + verification steps | 10m | 9.11-9.14 | Test each installer | DONE (`cd91fb549`, `docs/INSTALL.md`; status table 4 VERIFIED (one build-only) / 2 NOT BUILT / 0 BLOCKED, as corrected 2026-09-18) |
 
 **Acceptance criteria**:
 - All docs committed, cross-linked, no dead links
@@ -733,9 +736,9 @@ after first observation; results reproduced.
 | **Linux .deb installs and runs** (acceptance bullet, library payload) | `bash packaging/linux/deb-libvt.sh --verify` → in x86-64 `debian:bookworm` (12.15, glibc 2.36) via `docker run --platform linux/amd64 -v <repo>:/w:ro gcc:12-bookworm`: `dpkg -i`, `dpkg -L`, `dpkg -V`, `ldconfig -p`, `gcc /w/example/c-vt-formatter/src/main.c -lghostty-vt`, run, `dpkg -r` | **PASS — exit 0.** `dpkg -i` exit 0 with `Setting up khostty-vt (0.1.0) ...` and `dpkg -s` → `Status: install ok installed`; `dpkg -L` lists all 54 paths; `dpkg -V` reports no modified or missing files, so the package's `md5sums` hold; `ldconfig -p` resolves `libghostty-vt.so.0`; the shipped example **compiles against the installed headers and the installed `.so`** and running it passes 4/4 VT assertions (literal text, `CSI 2K` erase+rewrite, CUP placement at (5,10), right-edge clamp) and prints the formatted 80×24 screen; `dpkg -r` exit 0. **Scope:** the *library* payload only. The GTK *application* `.deb` is still not built; the container is emulated x86-64 userspace, not bare metal, and is not a desktop session, so this does not evidence a GUI launch; no `apt`-repository install path was exercised. |
 | Linux library `.deb` toolchain probe | `bash packaging/linux/deb-libvt.sh --probe` | exit 0; reports zig 0.16.0, `dpkg-deb`, `ar`, `docker`, image `gcc:12-bookworm (linux/amd64)` |
 | Windows installer | `bash packaging/windows/installer.sh --probe` | exit 0; reports zig 0.16.0, `ISCC.exe: MISSING`, real PE inputs hashed |
-| macOS .app | `bash packaging/macos-app.sh --probe` | exit 0; reports `blocked` — Metal toolchain unusable, bundle excluded from the manifest |
+| macOS .app | `bash packaging/macos-app.sh --probe` | exit 0; `status: ok`, `metal compiler: usable`. Then `bash packaging/macos-app.sh` → **exit 0**, bundle built + signed + verified + zipped (`sha256 94abd2a7…`) |
 | Dossier | `docs/dossiers/KHOSTTY.md` | 300 lines, 10 sections (9 numbered + See also) |
-| Install docs | `docs/INSTALL.md` | 607 lines; status table 3 VERIFIED / 2 NOT BUILT / 1 BLOCKED |
+| Install docs | `docs/INSTALL.md` | 748 lines; status table 4 VERIFIED (one build-only) / 2 NOT BUILT / 0 BLOCKED |
 | Docs set | `docs/{README,ARCHITECTURE,API,AGENT,PLATFORMS,BUILD,CONTRIBUTING,FORK,SECURITY}.md` | all present |
 | **WASM consumable** (acceptance bullet) | extracted `khostty-libghostty-vt-wasm-0.1.0.tar.gz` to scratch; `shasum -a 256 -c` → OK; `node smoke.mjs` (Node v26.8.1) | **PASS — 13/13 checks, exit 0.** Real ESM import of `js/api.js`: opened a 37x11 terminal, parsed VT text + SGR colour, rendered cells to HTML, reported cursor/screen state, handled resize/reflow, round-tripped a snapshot. 187 exported `ghostty_*` functions. |
 | **WASM consumable via npm** (acceptance bullet) | fresh consumer dir: `npm install <tarball>` then a script importing the **bare specifier** `khostty-libghostty-vt-wasm/api` (resolved through the package `exports` map) | **PASS — exit 0.** `npm install` → "added 1 package"; `loadGhosttyVt()` → 813,670 B module; `Terminal.open({vt, cols:20, rows:3})` → 20x3; VT write with SGR → `term.text()` = `"Green via npm"`; `snapshot()` → 1157 B, `restore()` round-trip matched. |
@@ -753,10 +756,13 @@ Debian 12 container, exit 0 (evidence rows above). It is **not** satisfied for t
 `x86_64-linux-gnu` are absent — so the bullet is closed only as narrowed, and is written
 that way in the criteria list rather than claimed whole.
 
-**Still not met**: the macOS `.app` and Windows `.exe` installer acceptance bullets
-(install-and-run) cannot be closed on this host — the Metal toolchain component is
-unfetchable, and Inno Setup plus a Windows host are absent. Each is recorded as NOT BUILT
-or BLOCKED rather than claimed.
+**Still not met**: the Windows `.exe` installer acceptance bullet (install-and-run) cannot
+be closed on this host — Inno Setup plus a Windows host are absent; it is recorded as NOT
+BUILT rather than claimed. **[Corrected 2026-09-18]** The macOS `.app` bullet is no longer in
+this list: the Metal toolchain *is* obtainable here (G3 Build Evidence correction above), the bundle
+builds, signs, verifies and executes its binary, so the bullet moves from BLOCKED to
+**half-met** — the remaining half is copying the `.app` outside the source tree and launching
+it in a real GUI session, which has not been done and is not claimed.
 
 **Also not met in full**: the dossier bullet is **PARTIAL**, not PASS. Its four narrowly named
 concerns are satisfied and independently reproduced above, but the canonical template's

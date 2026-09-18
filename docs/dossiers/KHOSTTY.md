@@ -195,14 +195,32 @@ toolchain is absent, **falls back to the OpenGL renderer with a warning**
 (commit `9d32ffc4c`); `-Drenderer=metal` still forces Metal, and `SharedDeps` only
 creates the metallib step when Metal is selected.
 
+**Correction, observed 2026-09-18:** the component *is* obtainable on this host, and the
+`.app` gate is not externally blocked. `xcodebuild -downloadComponent MetalToolchain`
+fails only because it is invoked **without** `-buildVersion`: Xcode 26.0 build `17B5050g`
+has no entry in `XcodeToMetalToolchainIndexMapping.plist`, so the catalog lookup has no
+target. `xcodebuild -downloadComponent MetalToolchain -buildVersion 17B5045g` succeeds
+(exit 0, 704.6 MB asset, `cryptexd` graft). A second, separate defect then had to be
+closed: `xcrun metal` is a shim that resolves `XcodeDefault.xctoolchain/usr/metal` and
+nothing created that path. Full command log, exit codes and durability caveat:
+[`docs/sessions/20260918-macos-app-unblock/`](../sessions/20260918-macos-app-unblock/00_SESSION_OVERVIEW.md).
+
 ---
 
 ## 7. Known limitations
 
-1. **Metal toolchain absent on this host.** Default macOS builds auto-fall back to
-   the OpenGL renderer (commit `9d32ffc4c`; re-observed 2026-09-18 — the fallback
-   warning is the only output besides success, exit 0). Consequence: no
-   Metal-shader or Metal-rendering claim is supported here.
+1. **Metal toolchain: obtainable here, but the fix is session-scoped.** Default macOS
+   builds auto-fall back to the OpenGL renderer when the Metal toolchain is missing
+   (commit `9d32ffc4c`; re-observed 2026-09-18 — the fallback warning is the only output
+   besides success, exit 0). **[Corrected 2026-09-18]** The toolchain is no longer absent:
+   after pinning the asset build and adding the graft that Xcode failed to create,
+   `xcrun -sdk macosx metal --version` exits 0 (`Apple metal version 32023.830`) and
+   `bash packaging/macos-app.sh` completes with exit 0. This **supersedes** the earlier
+   claim that no Metal-shader claim is supportable here. Two caveats remain: the
+   symlinks target a per-boot cryptex mount name, so a reboot undoes the fix, and the
+   toolchain (`17B5045g`) is a deliberate one-build mismatch from the installed Xcode
+   (`17B5050g`). Notarization is still impossible (no `notarytool` credentials), and the
+   bundle has not been launched in a GUI session.
 2. **Windows runtime is never exercised on real Windows hardware.** Cross-compile
    and link pass; no native or Wine launch, no glyph rendered, no clipboard, no
    window created. `App`/`renderer.zig` still return `error.Unimplemented`.
@@ -251,7 +269,7 @@ Gate record: [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](../sessio
 | G6 | Polyglot FFI — Go + Python | **DONE** | 207 tests (WBS record) |
 | G7 | WASM cross-compilation | **DONE** | 54/54 tests, 189 exports, artifact hash above |
 | G8 | Improvements + benchmarks | **DONE** (measured, not comparable) | Harness built; upstream baseline empty — see limitation 6 |
-| G9 | Documentation + packaging | **IN PROGRESS** (11/15) | `docs/` set, `.deb`, WASM dist; this dossier is 9.10 |
+| G9 | Documentation + packaging | **IN PROGRESS** (11/15) | `docs/` set, `.deb`, WASM dist; this dossier is 9.10. **[2026-09-18]** `9.11` now builds: `packaging/macos-app.sh` exit 0, bundle signs and verifies; the install-and-run clause is still unexecuted (see §10) |
 | G10 | Release artifacts | **NOT STARTED** | — |
 
 Verification rules the fork holds itself to: every status claim carries an
@@ -301,18 +319,42 @@ from convention; where a name is absent, that absence is the finding.
 
 ### Named next bounded task
 
-**Close WBS 9.11 — the macOS `.app` bundle — on a host where the Metal toolchain is available.**
+**Run the macOS `.app` outside the source tree and record the result — then the `.app` half
+of the G9 acceptance criterion is closed.**
 
-- Artifact: `zig-out/Ghostty.app`, produced by `packaging/macos-app.sh` (now tracked).
-- Proof required: `packaging/macos-app.sh --probe` reports `metal compiler: usable`, then
-  `--probe` → build → `codesign --verify` → launch, with the `.app` copied outside the source
-  tree before launching.
-- Why it is bounded: the blocker is external and singular. On this host
-  `xcrun -sdk macosx metal --version` exits 1 and
-  `xcodebuild -downloadComponent MetalToolchain` cannot fetch the catalog for Xcode 26.0 build
-  17B5050g. On a host where that command succeeds, the build path is already wired.
-- Why it is next: it is the only remaining item in G9 and the only thing gating a full G9 pass.
-  It unblocks nothing else, so it is deliberately not treated as urgent.
+Superseded task, now discharged (2026-09-18): the previous revision named *"Close WBS 9.11 on
+a host where the Metal toolchain is available"* and recorded the blocker as external and
+singular. **That was wrong, and the error is worth recording.** The blocker was two local
+defects, both fixable on this host:
+
+- `xcodebuild -downloadComponent MetalToolchain` fails only because the asset build is not
+  pinned. Xcode 26.0 build `17B5050g` has no entry in
+  `XcodeToMetalToolchainIndexMapping.plist`, so the catalog request has no target.
+  `-buildVersion 17B5045g` succeeds (exit 0).
+- `xcrun metal` is a shim that resolves `XcodeDefault.xctoolchain/usr/metal/current/bin`,
+  and nothing created that path. One symlink closes it (plus one for the `metallib` shim).
+
+Result, executed 2026-09-18: `packaging/macos-app.sh --probe` → `ok`; `bash
+packaging/macos-app.sh` → exit 0; `zig-out/Ghostty.app` signs and verifies; the bundled
+binary runs (`--version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0); the zip is
+`sha256 94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb`. Evidence:
+[`docs/sessions/20260918-macos-app-unblock/`](../sessions/20260918-macos-app-unblock/00_SESSION_OVERVIEW.md).
+
+What remains is the part the WBS acceptance criterion actually asks for:
+
+- Artifact: `zig-out/Ghostty.app` (built), and `dist-release/macos/Khostty-0.1.0-macos.zip`
+  (hash-verified against its sidecar).
+- Proof still required: copy the `.app` **outside** the source tree and launch it in a real
+  GUI session on a machine that accepts an un-notarized bundle, then record dated output.
+  A `--version` run is not a launch and is not claimed as one.
+- Why it is bounded: one artifact, one host, one observation. No other task depends on it.
+- Why it is next: it is the last unmet clause of the G9 acceptance criteria.
+
+**Do not treat the Metal fix as durable.** Both symlinks resolve through a cryptex mount
+whose path carries a per-mount suffix, and neither is restored after a reboot or an Xcode
+update. The durable remedy is an Xcode whose build appears in
+`XcodeToMetalToolchainIndexMapping.plist`, so that the documented command works unpinned and
+Xcode performs the graft itself.
 
 Everything else in this dossier is either verified with a dated command (see §8) or explicitly
 marked unverified.

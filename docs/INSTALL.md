@@ -37,7 +37,7 @@ Status vocabulary used throughout:
 |---|---|---|---|---|
 | 1 | `khostty-libghostty-vt-wasm-0.1.0.tar.gz` | any — Node ≥ 20 / browser | VERIFIED | Tarball `sha256 ce5d1f1d…` matches the sidecar `.sha256` written beside it, verified with `shasum -a 256 -c` (exit 0). Freshly extracted to a scratch directory and `node smoke.mjs --json` returned 13/13 checks, 0 failed, exit 0. A direct `import` of the extracted `js/api.js` opened a terminal and echoed text back. Repository WASM suite re-run the same day: 54 tests, 54 pass, 0 fail. |
 | 2 | `libghostty-vt.0.1.0.dylib` + `include/ghostty/` headers | macOS arm64 | VERIFIED | `zig build -Demit-lib-vt -Doptimize=ReleaseSafe --prefix <scratch>` installed a prefix (exit 0); a C program including the **installed** headers and linking the **installed** dylib compiled, ran, and printed `RESULT: PASS` with the library reporting `0.1.0-dev` (see §3.2). Conformance harness against the built library: 84/84 passed, 0 failed. |
-| 3 | `Khostty-0.1.0-macos.zip` — the `Ghostty.app` bundle | macOS | BLOCKED | `packaging/macos-app.sh --probe` reports `status: blocked`. `xcrun metal --version` exits 1: `cannot execute tool 'metal' due to missing Metal Toolchain`. The metallib step is unconditional for macOS targets, so no `.app` can be produced here. No bundle exists in the tree. |
+| 3 | `Khostty-0.1.0-macos.zip` — the `Ghostty.app` bundle | macOS | VERIFIED (build) / LAUNCH NOT EXECUTED | Built, signed, verified and hashed on this host 2026-09-18: `bash packaging/macos-app.sh` exited **0**, producing `dist-release/macos/Khostty-0.1.0-macos.zip` (35,953,098 B, `sha256 94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb`, `shasum -c` OK). `codesign --verify --deep --strict` → *valid on disk* / *satisfies its Designated Requirement*. The bundled binary was executed non-interactively: `Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0. **This row was `BLOCKED` until 2026-09-18; the previous reason was wrong** — see §3.3. Not notarized (no `notarytool` credentials), and no GUI launch was attempted, so the WBS "installs and runs" clause is only half-met. |
 | 4 | `khostty_0.1.0_amd64.deb` — the GTK **application** | Debian / Ubuntu x86-64 | NOT BUILT | `bash packaging/linux/deb.sh --probe` runs (exit 0) and reports `zig: 0.16.0` and now resolves `dpkg-deb: /opt/homebrew/bin/dpkg-deb` (`brew install dpkg`, installed 2026-09-18, exit 0). The remaining blocker is the payload, not the assembler: `zig build -Dtarget=x86_64-linux-gnu -Dapp-runtime=gtk -Demit-macos-app=false -Doptimize=ReleaseFast` exits 1 with `fatal error: 'adwaita.h' not found` and `fatal error: 'gtk/gtk.h' not found`. The GTK4/libadwaita development headers for the *target* are absent, and Homebrew's `gtk4` is a macOS-native build that cannot supply a Linux sysroot. No GTK-app `.deb` exists in the tree. |
 | 5 | `khostty-vt_0.1.0_amd64.deb` — the libghostty-vt **library** | Debian / Ubuntu x86-64 | VERIFIED | `packaging/linux/deb-libvt.sh` cross-compiles libghostty-vt for `x86_64-linux-gnu` and packages it. `sha256 3c080d13a74d6bf6dca9d28dc2c685f6b4350ec3130f3f3fafa5cb4d77d834cf`, 2,320,612 bytes; `ar t` → `debian-binary`, `control.tar.xz`, `data.tar.xz`; `dpkg-deb --info` and `--contents` (54 entries) both succeed. **Installed and run, not inferred:** in an x86-64 Debian 12 (bookworm, glibc 2.36) container, `dpkg -i` exited 0 with `Status: install ok installed`; `dpkg -V` found no modified or missing files; `ldconfig -p` resolved the SONAME; the shipped `example/c-vt-formatter` compiled against the **installed** headers and **installed** `.so` and passed 4/4 VT assertions; `dpkg -r` removed it cleanly. This is the library payload, not the GTK application. See §3.4.2. |
 | 6 | `Khostty-0.1.0-windows-x86_64-setup.exe` | Windows x86-64 | NOT BUILT | `bash packaging/windows/installer.sh --probe` runs (exit 0) and reports `status: blocked`, `ISCC.exe: MISSING`. The installer payload and the generated `khostty.iss` are staged and hashed, but Inno Setup has never compiled them. |
@@ -53,13 +53,15 @@ a *build product*, not as a running program.
 
 [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](sessions/20260916-fork-assessment/02_DEEP_WBS.md)
 requires that the macOS `.app`, the Linux `.deb`, and the Windows `.exe` each
-"install and run". Two of the three remain undemonstrable from this host: the
-macOS `.app` needs a Metal toolchain component that cannot be fetched here, and
-the Windows `.exe` needs Inno Setup plus a Windows host. The Linux `.deb`
-criterion **is** now satisfied, but only for the libghostty-vt library payload
-(§3.4.2) — the GTK *application* `.deb` still cannot be built, because the
-GTK4/libadwaita headers for the target are absent (§3.4.1). §5 lists, per
-artifact, the exact requirement that is missing and where it can be met. The
+"install and run". One of the three remains undemonstrable from this host: the
+Windows `.exe` needs Inno Setup plus a Windows host. The macOS `.app` **builds**,
+signs and verifies, and its binary executes (`--version`, exit 0), but it has not
+been installed outside the source tree or launched in a GUI session, so its clause
+is half-met rather than met (§3.3). The Linux `.deb` criterion **is** now satisfied,
+but only for the libghostty-vt library payload (§3.4.2) — the GTK *application*
+`.deb` still cannot be built, because the GTK4/libadwaita headers for the target are
+absent (§3.4.1). §5 lists, per artifact, the exact requirement that is missing and
+where it can be met. The
 fourth criterion — the WASM dist being consumable via npm/ESM — **is** satisfied,
 observed 2026-09-18 (§3.1).
 
@@ -287,13 +289,14 @@ The build emits one warning that does not block this target:
 `Metal toolchain not found; using the OpenGL renderer instead`. It is relevant
 only to §3.3.
 
-### 3.3 macOS — the `.app` bundle — BLOCKED
+### 3.3 macOS — the `.app` bundle — VERIFIED (build); launch not executed
 
-**Artifacts (neither exists):** `zig-out/Ghostty.app`,
-`dist-release/macos/Khostty-0.1.0-macos.zip`
+**Artifacts (both exist, observed 2026-09-18):** `zig-out/Ghostty.app`,
+`dist-release/macos/Khostty-0.1.0-macos.zip` (35,953,098 B,
+`sha256 94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb`)
 **Produced by:** `packaging/macos-app.sh`
 
-Build (once the blocker below is cleared):
+Build (no longer blocked — see the correction below):
 
 ```bash
 bash packaging/macos-app.sh              # build, sign, verify signature, zip
@@ -317,38 +320,66 @@ codesign --verify --deep --strict --verbose=2 /Applications/Ghostty.app
 spctl --assess --type execute --verbose /Applications/Ghostty.app
 ```
 
-**Blocker, observed 2026-09-18.** `packaging/macos-app.sh --probe` reports
-`status: blocked` and writes the detail to
-`dist-release/macos/toolchain-probe.txt`:
+**Correction, observed 2026-09-18: this section previously reported `BLOCKED`, and that
+report was wrong.** The blocker was not external. It was two local defects, and both were
+fixed on this host without `sudo` and without touching source.
+
+1. **The asset build was not pinned.** `xcodebuild -downloadComponent MetalToolchain` asks
+   the `gdmf.apple.com` catalog for `RequestedBuild = 17B5050g` (the installed Xcode 26.0
+   build). `~/Library/Developer/Xcode/XcodeToMetalToolchainIndexMapping.plist` has no entry
+   for that build — its `17B5*` entries stop at `17B5045g` — so the request has no target
+   and the command exits **70** with
+   `Failed fetching catalog for assetType (com.apple.MobileAsset.MetalToolchain)`.
+   Pinning a build that *is* mapped succeeds:
+
+   ```bash
+   $ xcodebuild -downloadComponent MetalToolchain -buildVersion 17B5045g
+   Downloaded asset to: /System/Library/AssetsV2/com_apple_MobileAsset_MetalToolchain/c3195e2b….asset/AssetData/Restore/022-20562-020.dmg
+   Done downloading: Metal Toolchain 17B5045g.
+   $ echo $?
+   0
+   ```
+
+   A first attempt can exit 70 with `Download is not allowed as mobileassetd was starting
+   up.` — that is transient; the retry succeeds. `cryptexd` then mounts the asset read-only
+   as `MetalToolchainCryptex`, containing a working compiler:
+   `Apple metal version 32023.830 (metalfe-32023.830.2)` (exit 0).
+
+2. **Xcode never linked the graft into its toolchain.** `xcrun metal` is a thin shim that
+   resolves `XcodeDefault.xctoolchain/usr/metal/current/bin/<argv[0]>`; it links only
+   libc++/libSystem, so it reads no plist, and nothing had created `usr/metal`. Two symlinks
+   inside the (user-owned) `Xcode.app` closed it: `usr/metal` → the cryptex's `usr/metal`,
+   and `usr/bin/metallib` → `metal`, because that shim dispatches on the executable name.
+
+The probe then reports:
 
 ```
+status: ok
 detail: xcodebuild: Xcode 26.0 Build version 17B5050g
-detail: metal compiler: NOT USABLE (exit 1)
-detail: error: cannot execute tool 'metal' due to missing Metal Toolchain; use: xcodebuild -downloadComponent MetalToolchain
+detail: developer dir: /Applications/Xcode.app/Contents/Developer
+detail: metal compiler: usable
+detail: codesigning identity: 1+ Developer ID Application present (of 3 valid)
 detail: notarytool credentials: NOT configured (notarization impossible on this host)
 ```
 
-`xcrun metal --version` exits 1 on this host, confirmed independently:
+Full command log with exit codes, the throwaway-tree experiments that located the graft
+point, and the alternatives that were tested and rejected:
+[`sessions/20260918-macos-app-unblock/01_RESEARCH.md`](sessions/20260918-macos-app-unblock/01_RESEARCH.md).
 
-```bash
-$ xcrun metal --version
-error: error: cannot execute tool 'metal' due to missing Metal Toolchain; use: xcodebuild -downloadComponent MetalToolchain
-$ echo $?
-1
-```
+**Two caveats keep the WBS clause open.** First, the fix is **not durable**: both symlinks
+resolve through a cryptex mount whose path carries a per-mount suffix, and neither is
+restored after a reboot or an Xcode upgrade. Second, the bundle has **not been launched** in
+a GUI session and is **not notarized**, so "install and run" is not demonstrated. What *is*
+demonstrated: the bundle builds (exit 0), signs, verifies
+(`codesign --verify --deep --strict` → *valid on disk*, *satisfies its Designated
+Requirement*), hashes to `94abd2a7…`, and its binary executes non-interactively
+(`Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0).
 
-The remediation (`xcodebuild -downloadComponent MetalToolchain`) also fails here,
-because the asset catalog cannot be fetched for this Xcode build. The `.metallib`
-step in the app chain is unconditional for macOS targets
-(`src/build/MetallibStep.zig` returns null only for non-macOS), so the fallback
-to the OpenGL renderer that lets `zig build` succeed does **not** unblock the
-`.app`.
-
-Two further facts from the same probe, relevant on a host where Metal does work:
-a Developer ID Application identity *is* present (1 of 3 valid identities), so the
-script would sign with it rather than ad-hoc; and notarytool credentials are not
-configured, so notarization is impossible here regardless. A launch test is also
-meaningless outside a logged-in GUI session, which this host does not have.
+Two further facts from the probe, unchanged: a Developer ID Application identity *is*
+present (1 of 3 valid identities), so the script signs with it rather than ad-hoc; and
+notarytool credentials are not configured, so notarization is impossible here regardless.
+An app launch is also meaningless outside a logged-in GUI session, which this host does not
+have.
 
 ### 3.4 Linux — `.deb`
 
@@ -619,8 +650,14 @@ here is inferred.
 | Check | Command | Result |
 |---|---|---|
 | Version resolution | `bash packaging/version.sh` | `0.1.0 (dev)`, upstream base `ghostty 1.3.2-dev @ d4c88d8`, source `c2bac90` (dirty) |
-| macOS toolchain | `bash packaging/macos-app.sh --probe` | `status: blocked` — Metal toolchain missing |
-| Metal compiler | `xcrun metal --version` | exit 1, `cannot execute tool 'metal' due to missing Metal Toolchain` |
+| macOS toolchain | `bash packaging/macos-app.sh --probe` | `status: ok` — `metal compiler: usable` (was `blocked`; corrected 2026-09-18, §3.3) |
+| Metal compiler | `xcrun metal --version` | exit 0, `Apple metal version 32023.830 (metalfe-32023.830.2)` (was exit 1 / missing toolchain) |
+| Metal linker | `xcrun metallib --version` | exit 0, `AIR-LLD 32023.830 (metalfe-32023.830.2)` — required for the `metallib` step; needed its own shim |
+| Metal asset fetch | `xcodebuild -downloadComponent MetalToolchain` | **exit 70**, `Failed fetching catalog … RequestedBuild = 17B5050g` (no mapping entry) |
+| Metal asset fetch (pinned) | `xcodebuild -downloadComponent MetalToolchain -buildVersion 17B5045g` | **exit 0**, `Done downloading: Metal Toolchain 17B5045g.` (704.6 MB; first attempt exited 70 with a transient `mobileassetd was starting up`) |
+| macOS `.app` build | `bash packaging/macos-app.sh` | **exit 0**; built, signed, `codesign --verify` passed, zip written |
+| macOS `.app` artifact | `shasum -a 256 -c Khostty-0.1.0-macos.zip.sha256` | `Khostty-0.1.0-macos.zip: OK`; 35,953,098 B |
+| macOS `.app` liveness | `zig-out/Ghostty.app/Contents/MacOS/ghostty --version` | exit 0, `Ghostty 1.3.2-main-+41b24baad` — non-interactive; **not** a GUI launch |
 | Linux toolchain | `bash packaging/linux/deb.sh --probe` | exit 0; `zig 0.16.0`, `dpkg-deb: /opt/homebrew/bin/dpkg-deb` (was `MISSING` before `brew install dpkg`) |
 | dpkg assembler install | `brew install dpkg` | exit 0; poured `dpkg 1.23.11` + deps `gnu-tar`, `gpatch`, `libmd`, `perl`; caveat printed: `dpkg -i`/`--configure` are not configured to install software, but `dpkg-deb` builds and reads archives |
 | Linux GTK-app `.deb` build | `bash packaging/linux/deb.sh` | **exit 1.** Reaches the build step and dies on missing target headers: `adw_c.h:1:10: fatal error: 'adwaita.h' not found`, `gtk_c.h:1:10: fatal error: 'gtk/gtk.h' not found`, `error: the following build command failed with exit code 1`. Assembler is no longer the blocker. |
@@ -666,10 +703,15 @@ durable record of what was built is the one reproduced here and in each script's
 
 ## 5. What would change these statuses
 
-1. **macOS `.app`** — obtain the Metal Toolchain component on a host whose asset
-   catalog serves it, then `bash packaging/macos-app.sh`. Expect an ad-hoc
-   signature unless a Developer ID Application identity is present, and no
-   notarization without notarytool credentials.
+1. **macOS `.app`** — **build closed 2026-09-18.** The Metal toolchain was obtained on this
+   host by pinning the asset build and adding the graft Xcode failed to create (§3.3), after
+   which `bash packaging/macos-app.sh` exited 0. Two things still change this status:
+   (a) a **reboot or Xcode upgrade** silently undoes the fix, because the symlinks resolve
+   through a per-boot cryptex mount name — re-run the two `ln -sfn` commands from §3.3,
+   or use an Xcode whose build appears in `XcodeToMetalToolchainIndexMapping.plist`;
+   (b) the WBS "installs and runs" clause needs the `.app` copied **outside** the source
+   tree and launched in a real GUI session, which has not been done. Notarization remains
+   impossible without `notarytool` credentials.
 2. **Linux `.deb` (GTK application)** — run `bash packaging/linux/deb.sh` on a
    Debian/Ubuntu host with the GTK4 and libadwaita development packages for
    `x86_64-linux-gnu`. The probe already reports `dpkg-deb`; the build step is
