@@ -173,6 +173,12 @@ must work via conformance tests, not just compile.
 | 2.11 | Build + run `c-vt-formatter` (text/VT/HTML) | 10m | G1 | Proves text export |
 | 2.12 | Document conformance results: pass/fail matrix per example | 10m | 2.1-2.11 | Session doc with evidence |
 
+**Task status update** (added 2026-09-18 — the table above carried no completion markers, so
+a reader could mistake a finished gate for an unstarted one):
+- 2.1-2.12: **DONE.** The conformance run is recorded as **84/84 pass** at `b2c388c9b`, and
+  that run is the pass/fail matrix task 2.12 asks for. See the G2 gate row in the index and
+  `docs/sessions/20260916-fork-assessment/` for the recorded evidence.
+
 **Acceptance criteria**:
 - All 30 upstream examples build and run without crash
 - Fuzz corpus produces zero new crashes
@@ -263,7 +269,7 @@ Re-verified 2026-09-18 after first observation; results reproduced.
 
 ---
 
-## G4: Agent/IPC Surface Expansion (NOT STARTED) — HIGH PRIORITY
+## G4: Agent/IPC Surface Expansion (DONE) — HIGH PRIORITY
 
 **Gate objective**: Upstream IPC (`ipc.zig`, 252 lines) is minimal — only `new_window`,
 `new_tab`, `toggle_quick_terminal`. No pane creation, manipulation, or machine-readable
@@ -341,7 +347,7 @@ src/apprt/ipc/
 
 ---
 
-## G5: Polyglot FFI — Rust (NOT STARTED) — HIGH PRIORITY
+## G5: Polyglot FFI — Rust (DONE — 199/199 tests) — HIGH PRIORITY
 
 **Gate objective**: Wrap `libghostty-vt` C headers in a safe Rust crate (`khostty-vt`).
 This enables Rust-native agent tools and terminal automation without Zig dependency.
@@ -621,7 +627,7 @@ Deviations and open items:
 
 ---
 
-## G8: Khostty Improvements + Benchmarks (NOT STARTED) — MEDIUM PRIORITY
+## G8: Khostty Improvements + Benchmarks (DONE — measured) — MEDIUM PRIORITY
 
 **Gate objective**: Beyond the upstream fork, Khostty adds concrete value: performance
 benchmarks against upstream, cross-renderer consistency checks, agent-oriented
