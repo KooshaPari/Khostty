@@ -839,7 +839,7 @@ G0 Fork Hygiene (DONE) → G1 Native Build (DONE) → G2 Conformance Evidence
 | G6 Go+Python FFI | 8 | 80 | ✅ DONE (207 tests) |
 | G7 WASM | 10 | 100 | ✅ DONE (54/54 tests) |
 | G8 Improvements+Bench | 13 | 130 | ✅ DONE (measured) |
-| G9 Docs+Packaging | 15 | 150 | IN PROGRESS (14/15 DONE) |
+| G9 Docs+Packaging | 15 | 150 | ✅ 15/15 built (9.11 unblocked; app build/sign/run verified) |
 | G10 Release | 9 | 90 | ⬜ NOT STARTED |
 | **TOTAL** | **113** | **~1130m (18.8h)** | **99 DONE / 14 PENDING** |
 
