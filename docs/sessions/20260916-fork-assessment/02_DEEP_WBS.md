@@ -340,9 +340,19 @@ normative protocol spec is `src/apprt/ipc/protocol.md`, cited from the dossier a
 > - `auth.Auth`, which the app must generate once per process.
 > - A socket path in the app's runtime/state directory.
 > - The **app-thread hop**: commands arrive on a server thread but mutate surfaces the app
->   thread owns, so dispatch must marshal onto the app thread. This is the genuinely new
->   code, and it is why `app_host.zig` calls itself "the only file that knows about the app
->   runtime".
+>   thread owns, so dispatch must marshal onto the app thread. This is the part that needed
+>   checking against the runtime, and it is why `app_host.zig` calls itself "the only file
+>   that knows about the app runtime". **See below — the mechanism already exists.**
+>
+> **The hop mechanism is not new — the idiom already exists in this codebase.** GTK code
+> crosses onto the main loop thread with `glib.idleAdd`, used in at least four places
+> (`split_tree.zig:870/916/1430/1443`, `surface.zig:2421/2822`, `resize_overlay.zig:195`)
+> and via `glib.idleAddOnce`. `application.zig:194` documents the rule directly — "This
+> must only be set by the main loop thread". And the dispatch entry point already exists:
+> `App.performAction(target, action, value)` (`application.zig:682`) takes the target and a
+> comptime action, which is exactly what `app_host.zig`'s `pane.Host` vtable calls.
+> So the wiring is: server thread → `glib.idleAdd` → `App.performAction`. Nothing has to be
+> invented; the work is composition plus a live test.
 >
 > Acceptance for the follow-on: an external client can connect to a **running** Khostty,
 > issue `pane.create`, and observe a new pane — i.e. the 458-test protocol exercised through
