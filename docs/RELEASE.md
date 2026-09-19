@@ -256,6 +256,48 @@ Those are the WBS G10 tasks **10.5** (publish FFI packages), **10.6** (create th
 GitHub release), and **10.8** (announce), and they remain **NOT STARTED** pending
 explicit publish authorization. The WBS rows record this.
 
+### 7.1 The runbook to execute once authorized
+
+Staged and rehearsed 2026-09-19; every command below was validated **up to the upload step**.
+Copy the block, or approve it verbally and it will be run as written.
+
+```bash
+# 0. Preconditions (all verified 2026-09-19)
+git status --porcelain          # only .probe_khostty.zig, a scratch probe, is untracked
+git tag -l 'v0.1.0'             # empty; the tag does not yet exist
+
+# 1. Publish the commits and the tag
+git push origin main
+git tag -a v0.1.0 -m "Khostty 0.1.0"
+git push origin v0.1.0
+
+# 2. Publish the packages  (ORDER MATTERS: run cargo test BEFORE the dry run)
+cd khostty-vt      && cargo test && cargo publish
+cd ../khostty-python && uv publish dist/khostty_vt-0.1.0-py3-none-any.whl dist/khostty_vt-0.1.0.tar.gz
+cd ../dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0 && npm publish
+
+# 3. GitHub release with artifacts + checksums
+gh release create v0.1.0 \
+  --title "Khostty 0.1.0" \
+  --notes-file docs/changelog/0.1.0.md \
+  dist-release/macos/Khostty-0.1.0-macos.zip \
+  dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz \
+  dist/khostty-vt_0.1.0_amd64.deb \
+  dist-release/CHECKSUMS.txt
+```
+
+The two open decisions, and why they matter, are recorded in
+[HANDOFF.md §6](HANDOFF.md) and the WBS 10.5 row:
+
+1. **`khostty-vt` cannot link standalone** — it looks for a prebuilt `libghostty-vt` via
+   `GHOSTTY_VT_LIB_DIR` or `../zig-out/lib`, and otherwise warns *"will typecheck but not
+   link"*. Publishing ships a crate that fails to build on its own. Either add a prominent
+   README warning, vendor the library, or defer crates.io for 0.1.0.
+2. **The macOS `.app` is not notarized** — it was built, signed, verified, launched and
+   observed running (see [HANDOFF.md](HANDOFF.md) §9), but no `notarytool` credentials were
+   available, so a first launch on a pristine machine may require an explicit Gatekeeper
+   override. That specific path is untested.
+
 ---
 
 ## See also
