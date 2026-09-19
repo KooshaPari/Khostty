@@ -379,10 +379,14 @@ normative protocol spec is `src/apprt/ipc/protocol.md`, cited from the dossier a
 >
 > But `zig build -Dapp-runtime=gtk` inside that container **crashes the build runner**:
 > `error: the following build command terminated with signal SEGV` after **~22 minutes** of
-> emulated x86_64 compilation. So this is not merely slow, it is not working, and a 22-minute
-> crash-per-iteration loop would not support development even if it were. **A native
-> x86_64 Linux host (or a native arm64 Linux container, untested) is required** — emulation
-> under QEMU is not a substitute for this workload.
+> emulated x86_64 compilation. A 23 MB QEMU core dump was produced, and its `execfn` is
+> `.zig-cache/o/…/build` invoked as `/opt/zig-x86_64-linux-0.16`, i.e. **Zig's own build
+> runner under QEMU emulation** — not Khostty code. That attribution matters: the crash says
+> nothing about the GTK app's correctness, only that emulated x86_64 cannot run this build.
+> So this is not merely slow, it is not working, and a 22-minute crash-per-iteration loop
+> would not support development even if it were. **A native x86_64 Linux host (or a native
+> arm64 Linux container, untested) is required** — emulation under QEMU is not a substitute
+> for this workload.
 
 ### IPC Protocol (Draft)
 
