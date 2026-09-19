@@ -368,14 +368,21 @@ normative protocol spec is `src/apprt/ipc/protocol.md`, cited from the dossier a
 > *written* here but not *compiled* or *validated*, which means writing it now would produce
 > unverifiable code — precisely the kind of change this WBS has been careful to avoid.
 >
-> **What this work needs:** a Linux host with GTK4 + libadwaita development headers. **Verified
-> 2026-09-19 that a container can supply them:** `docker run --platform linux/amd64
-> debian:bookworm` + `apt-get install libgtk-4-dev libadwaita-1-dev` succeeds, and
-> `/usr/include/gtk-4.0/gtk/gtk.h` + `/usr/include/libadwaita-1/adwaita.h` both exist.
-> Zig 0.16.0 for Linux is at `https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz`
-> (note the `x86_64-linux` ordering — `zig-linux-x86_64-…` 404s). So the header side of the
-> blocker is **resolved**; whether the full GTK app *builds* under emulated x86_64 is being
-> tested separately, and the emulated build is slow enough (>10 min) to need a detached run.
+> **What this work needs:** a Linux host with GTK4 + libadwaita development headers.
+> **Container route tested 2026-09-19 and found NOT viable.** The header side works:
+> `docker run --platform linux/amd64 debian:bookworm` + `apt-get install libgtk-4-dev
+> libadwaita-1-dev` succeeds and both headers land
+> (`/usr/include/gtk-4.0/gtk/gtk.h`, `/usr/include/libadwaita-1/adwaita.h`); Zig 0.16.0 for
+> Linux is at `https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz` (note the
+> `x86_64-linux` ordering — `zig-linux-x86_64-…` 404s); and a read-only host mount needs an
+> in-container `cp -r` or Zig fails with `PermissionDenied`.
+>
+> But `zig build -Dapp-runtime=gtk` inside that container **crashes the build runner**:
+> `error: the following build command terminated with signal SEGV` after **~22 minutes** of
+> emulated x86_64 compilation. So this is not merely slow, it is not working, and a 22-minute
+> crash-per-iteration loop would not support development even if it were. **A native
+> x86_64 Linux host (or a native arm64 Linux container, untested) is required** — emulation
+> under QEMU is not a substitute for this workload.
 
 ### IPC Protocol (Draft)
 
