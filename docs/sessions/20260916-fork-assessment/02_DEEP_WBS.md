@@ -368,10 +368,14 @@ normative protocol spec is `src/apprt/ipc/protocol.md`, cited from the dossier a
 > *written* here but not *compiled* or *validated*, which means writing it now would produce
 > unverifiable code — precisely the kind of change this WBS has been careful to avoid.
 >
-> **What this work needs:** a Linux host with GTK4 + libadwaita development headers (a
-> Debian container with `libgtk-4-dev libadwaita-1-dev` would likely suffice, and the Docker
-> x86_64 path already works for the `.deb` verification). Then: implement, build, run, and
-> drive `pane.create` against a live instance.
+> **What this work needs:** a Linux host with GTK4 + libadwaita development headers. **Verified
+> 2026-09-19 that a container can supply them:** `docker run --platform linux/amd64
+> debian:bookworm` + `apt-get install libgtk-4-dev libadwaita-1-dev` succeeds, and
+> `/usr/include/gtk-4.0/gtk/gtk.h` + `/usr/include/libadwaita-1/adwaita.h` both exist.
+> Zig 0.16.0 for Linux is at `https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz`
+> (note the `x86_64-linux` ordering — `zig-linux-x86_64-…` 404s). So the header side of the
+> blocker is **resolved**; whether the full GTK app *builds* under emulated x86_64 is being
+> tested separately, and the emulated build is slow enough (>10 min) to need a detached run.
 
 ### IPC Protocol (Draft)
 
