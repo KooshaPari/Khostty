@@ -121,11 +121,11 @@ The fork's value is NOT rebuilding what upstream has. It is:
 | G3 | Windows App Runtime | 15 | 150m | DONE (cross-build PASS; isolated apprt run 25/25 pass) | HIGH |
 | G4 | Agent/IPC Surface | 14 | 140m | DONE | HIGH |
 | G5 | Polyglot FFI — Rust | 10 | 100m | DONE (199/199 tests) | HIGH |
-| G6 | Polyglot FFI — Go + Python | 8 | 80m | DONE (207 tests) | MEDIUM |
+| G6 | Polyglot FFI — Go + Python | 10 | 100m | DONE (207 tests) | MEDIUM |
 | G7 | WASM Cross-Compilation | 10 | 100m | DONE (54/54 tests) | HIGH |
-| G8 | Khostty-Specific Improvements | 10 | 100m | DONE (measured) | MEDIUM |
+| G8 | Khostty-Specific Improvements | 13 | 130m | DONE (measured) | MEDIUM |
 | G9 | Documentation + Packaging | 15 | 150m | DONE (15/15; macOS .app builds+signs+verifies and its binary executes (GUI launch NOT performed; see 9.11); Linux .deb installs on Debian 12; Windows exe not executed) | MEDIUM |
-| G10 | Release Artifacts | 6 | 60m | IN PROGRESS (4 of 9; 10.5/10.6/10.8 blocked on publish authorization) | MEDIUM |
+| G10 | Release Artifacts | 9 | 90m | IN PROGRESS (4 of 9; 10.5/10.6/10.8 blocked on publish authorization) | MEDIUM |
 
 ---
 
@@ -903,8 +903,9 @@ carries an owner, an assurance owner, and a named next bounded task.
 `macos .app` probe command in the table above. It was **untracked** when this row was
 written; **[corrected 2026-09-19]** it and `src/main_windows_apprt.zig` are now tracked
 (`9001a4e6e`, "fix(build): track the windows-apprt test root and macOS packaging script"),
-so that evidence now references versioned scripts. `.probe_khostty.zig` and `a.out` are
-still untracked, and `a.out` is a zero-byte stray. Not a docs-criterion failure.
+so that evidence now references versioned scripts. `.probe_khostty.zig` and `a.out` were
+untracked scratch probes (`a.out` zero-byte, gitignored); **[removed 2026-09-19]** both were
+deleted, so the working tree now carries no stray probe artifacts. Not a docs-criterion failure.
 
 ---
 
@@ -971,12 +972,19 @@ G0 Fork Hygiene (DONE) → G1 Native Build (DONE) → G2 Conformance Evidence
 | G3 Windows App Runtime | 15 | 150 | ✅ DONE (cross-build PASS; isolated apprt run 25/25) |
 | G4 Agent/IPC | 14 | 140 | ✅ DONE |
 | G5 Rust FFI | 10 | 100 | ✅ DONE (199/199 tests) |
-| G6 Go+Python FFI | 8 | 80 | ✅ DONE (207 tests) |
+| G6 Go+Python FFI | 10 | 100 | ✅ DONE (207 tests) |
 | G7 WASM | 10 | 100 | ✅ DONE (54/54 tests) |
 | G8 Improvements+Bench | 13 | 130 | ✅ DONE (measured) |
-| G9 Docs+Packaging | 15 | 150 | ✅ 15/15 built (9.11 unblocked; app build/sign/run verified) |
+| G9 Docs+Packaging | 15 | 150 | ✅ 15/15 rows present; 9.11 build+sign+binary-exec verified, **GUI launch NOT performed**; GTK .deb not buildable on this host |
 | G10 Release | 9 | 90 | 🔶 IN PROGRESS — 4/9 DONE (10.1, 10.3, 10.4, 10.7); 10.5/10.6/10.8 blocked on publish authorization |
-| **TOTAL** | **113** | **~1130m (18.8h)** | **99 DONE / 14 PENDING** |
+| **TOTAL** | **115** | **~1150m (19.2h)** | **110 DONE / 5 PENDING** |
+
+> **Count reconciliation (2026-09-19).** Task rows were counted directly from each gate's
+> table (`^\| N.M \|`): G0=4, G1=3, G2=12, G3=15, G4=14, G5=10, G6=10, G7=10, G8=13,
+> G9=15, G10=9 → **115** tasks, 10m each → **1150m**. Earlier text said 113 tasks /
+> "14 PENDING"; the pending set is exactly five numbered tasks — G10.2, G10.5, G10.6,
+> G10.8, G10.9 — so "14" was wrong and is corrected here. G9.11 counts as DONE with its
+> GUI-launch half explicitly open (see its row); it is not double-counted as pending.
 
 ## PRIORITY ORDER (smallest effort, fastest useful outcome, fewest deps)
 
