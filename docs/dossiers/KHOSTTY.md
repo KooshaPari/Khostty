@@ -83,7 +83,7 @@ capability and fork-verified capability are different claims.
 | Platform | VT library | Terminal app | Agent IPC | FFI | Renderer | Verified in this fork |
 |---|---|---|---|---|---|---|
 | **macOS** arm64/x86_64 | **VERIFIED** (`-Demit-lib-vt`, ReleaseSafe) | Upstream AppKit (Xcode-driven) | v1 modules; no server constructed | C, Rust, WASM | Metal, else **OpenGL fallback** (`9d32ffc4c`) | **YES** — 2026-09-16/17 |
-| **Linux** x86_64/arm64 | Upstream supported | Upstream GTK4 (`zig build run`) | same | C, Rust | OpenGL | **NO** — never built or tested here |
+| **Linux** x86_64/arm64 | Upstream supported | Upstream GTK4 (`zig build run`) | same | C, Rust | OpenGL | **BUILT 2026-09-19** — GTK app runtime + `.deb` built in WSL Fedora 44 on `kooshapari-desk`; no GUI launch, no arm64 |
 | **Windows** x86_64 | Cross-build **PASS** | **SCAFFOLD only** | Named-pipe stub (`error.Unimplemented`) | C, Rust (Go cgo untested) | OpenGL (unproven) | **PARTIAL** — cross-compile only, never executed |
 | **WASM** `wasm32-freestanding` | **VERIFIED** artifact | n/a (headless) | n/a | JS/TS | n/a | **YES** — Node tests; no browser run |
 | **iOS** | xcframework slice present | Not supported | n/a | C | Metal | Artifact only, never built/run |
@@ -164,7 +164,7 @@ zig build -Demit-lib-vt -Demit-xcframework -Doptimize=ReleaseSafe
 # macOS — application (Xcode-driven .app); skip with =false    [library path verified]
 zig build -Demit-macos-app=true -Doptimize=ReleaseSafe
 
-# Linux / FreeBSD — GTK4 application                          [NOT verified in this fork]
+# Linux / FreeBSD — GTK4 application                          [x86_64 BUILT 2026-09-19 in WSL; no GUI launch; arm64 not]
 zig build -Doptimize=ReleaseSafe
 zig build run
 
@@ -184,7 +184,7 @@ cd wasm && npm run check            # header sync + typecheck + runtime/ABI test
 zig build test-lib-vt               # targeted: -Dtest-filter=<name>
 zig build test-lib-vt-schema        # ABI type manifest
 conformance/build.sh run            # 84-case behavioural gate
-packaging/linux/deb.sh              # .deb (probe PASS, 2026-09-17)
+packaging/linux/deb.sh              # .deb (BUILT 2026-09-19 in WSL Fedora 44)
 packaging/wasm-dist.sh              # WASM dist tarball
 packaging/version.sh --json         # version + upstream base + manifest agreement
 ```
@@ -232,17 +232,22 @@ nothing created that path. Full command log, exit codes and durability caveat:
 4. **Agent IPC v1 is not reachable.** All modules and 130 unit tests exist against
    `fake_host.zig`, but no runtime constructs the server, and `app_host.zig` is not
    wired into the build graph as a live host.
-5. **Linux is unverified.** No Linux build, test, or GTK launch is recorded, and no
-   CI job builds or tests Linux (the Ubuntu job runs `zig fmt --check` only).
+5. **Linux is partly verified.** The GTK application runtime and `.deb` were built in
+   WSL Fedora 44 on 2026-09-19 (x86_64 only), but no GUI launch or install-verify is
+   recorded, and no CI job builds or tests Linux (the Ubuntu job runs `zig fmt --check`
+   only). arm64 Linux is untouched.
 6. **No usable *absolute* benchmark comparison.** The `bench/` harness exists and two
    paired Khostty/upstream passes were captured on 2026-09-17
    (`bench/results/README.md`), but every pass ran at load 548-674 on a dirty tree
    (`git_head` `fc0aea2bc` / `d7ec3a36e`), which the harness's own methodology says
    makes the absolute medians unreliable. **No absolute performance claim is
    supported.**
-7. **No release.** G10 NOT STARTED: no tag, no verified installer set, no published
-   crates/PyPI/npm packages. G9 packaging is partial (Linux `.deb` and WASM dist
-   exist; macOS `.app`, Windows installer, install docs do not).
+7. **No release.** G10 IN PROGRESS: no tag, no published crates/PyPI/npm packages.
+   G9 packaging is now complete as builds (7 of 7 artifacts built: Linux GTK-app
+   `.deb` built 2026-09-19 in WSL; library `.deb` install-and-run-verified on Debian
+   12; macOS `.app`, Windows installer built + install/uninstall-verified, install
+   docs). Install-verify halves remain open for the macOS `.app` (no GUI launch) and
+   the GTK `.deb` (no install/GUI launch).
 8. **C ABI is explicitly unstable.** `include/ghostty/vt.h` states the API is
    incomplete and "definitely going to change". Consumers must pin a revision.
 9. **Shared-library load caveat.** Nothing is defended by default: no OS sandbox,
@@ -270,8 +275,8 @@ Gate record: [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](../sessio
 | G6 | Polyglot FFI — Go + Python | **DONE** | 207 tests (WBS record) |
 | G7 | WASM cross-compilation | **DONE** | 54/54 tests, 189 exports, artifact hash above |
 | G8 | Improvements + benchmarks | **DONE** (measured, not comparable) | Harness built; upstream baseline empty — see limitation 6 |
-| G9 | Documentation + packaging | **IN PROGRESS** (11/15) | `docs/` set, `.deb`, WASM dist; this dossier is 9.10. **[2026-09-18]** `9.11` now builds: `packaging/macos-app.sh` exit 0, bundle signs and verifies; the install-and-run clause is still unexecuted (see §10) |
-| G10 | Release artifacts | **NOT STARTED** | — |
+| G9 | Documentation + packaging | **DONE** (15/15) | `docs/` set, all 7 artifacts built (GTK `.deb` 2026-09-19 in WSL; library `.deb` Debian-12 verified; macOS `.app` signed+binary-exec; Windows installer compiled + install/uninstall-verified; WASM dist npm-verified); this dossier is 9.10. Install-verify halves open: macOS `.app` GUI launch, GTK `.deb` install/GUI launch (see §10) |
+| G10 | Release artifacts | **IN PROGRESS** | 10.1/10.3/10.4/10.7 DONE; 10.2 mostly DONE (Windows installer + GTK `.deb` built); 10.5/10.6/10.8 blocked on publish authorization |
 
 Verification rules the fork holds itself to: every status claim carries an
 observation date; a historical pass is not a fresh pass; a percentage needs an

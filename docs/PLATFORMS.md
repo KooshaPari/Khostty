@@ -11,7 +11,7 @@ Khostty-verified support are different columns, because they are different claim
 | Platform | VT library | Terminal app | Agent IPC | FFI | Renderer | Verified in this fork? |
 |---|---|---|---|---|---|---|
 | **macOS** (arm64/x86_64) | **VERIFIED** | Upstream AppKit; Metal toolchain caveat | 3 actions | C, Rust, WASM | Metal / OpenGL | **YES** — 2026-09-16/17 |
-| **Linux** (x86_64/arm64) | Upstream supported | Upstream GTK4 | 3 actions | C, Rust, WASM | OpenGL | **NO** — not built here |
+| **Linux** (x86_64/arm64) | Upstream supported | Upstream GTK4 | 3 actions | C, Rust, WASM | OpenGL | **BUILT 2026-09-19** (x86_64, WSL Fedora 44; no GTK launch, no arm64) |
 | **Windows** (x86_64) | Upstream builds; **no app runtime** | **SCAFFOLD only** | Named-pipe stub | C, Rust, Go | OpenGL (unproven) | **NO** — G3 IN PROGRESS |
 | **WASM** (`wasm32-freestanding`) | **VERIFIED** | n/a (headless) | n/a | JS/TS | WebGL (n/a for VT-only) | **YES** — artifact verified |
 | **iOS** | Library only (xcframework slice) | Not supported | n/a | C | Metal | Artifact present, app not attempted |
@@ -297,7 +297,7 @@ behaviour; it does not mean a Khostty application runs there.
 | Row | Evidence needed to move it |
 |---|---|
 | macOS app | A successful full build with a Metal toolchain present, then a launch |
-| Linux | `zig build` on a Linux host, `zig build test`, and a GTK launch |
+| Linux | `zig build` on a Linux host (DONE 2026-09-19, WSL), `zig build test`, and a GTK launch |
 | Windows | `zig build -Dtarget=x86_64-windows` succeeding, then running the binary |
 | WASM in a browser | A headless-Chromium smoke run (current tests are Node, exercising the same code path) |
 | iOS | A build and run of a host app linking the xcframework slice |
