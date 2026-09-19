@@ -187,7 +187,7 @@ bash packaging/windows/installer.sh --probe
 | WASM tarball | macOS or Linux | `zig` 0.16.0, `node`, `tar`, `gzip` | yes |
 | macOS `.app` zip | macOS | `zig`, Xcode, **Metal Toolchain component** | yes, for the macOS artifact |
 | `libghostty-vt` `.deb` | macOS or Linux — cross-compiles | `zig`, `dpkg-deb` | yes, for the Linux library artifact |
-| GTK application `.deb` | Linux | GTK4 + libadwaita dev headers for the target | **not buildable from macOS** (see §6) |
+| GTK application `.deb` | Linux (native x86_64) | GTK4 + libadwaita dev headers for the host | **built in WSL Fedora 44, 2026-09-19** (`9daf736e8` + `45e6d086b`); still not buildable from macOS (see §6) |
 | Windows installer | Windows | `zig`, Inno Setup 6.3+ (`ISCC.exe`) | **yes, as of 2026-09-19** — compiled with Inno Setup 6.7.1 on `kooshapari-desk` and install-verified (`4070e89e…095546`) |
 
 ## 6. Artifact verification manifest
