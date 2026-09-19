@@ -59,25 +59,25 @@ operation returns `error.Unimplemented`) · **NOT STARTED** · **UNKNOWN**.
 | G0 | Fork hygiene | DONE |
 | G1 | Native build validation | DONE |
 | G2 | Conformance evidence | **DONE — 84/84, verified 2026-09-17** |
-| G3 | Windows application runtime | IN PROGRESS — scaffold only |
-| G4 | Agent/IPC surface | IN PROGRESS — modules exist, no server |
-| G5 | Polyglot FFI — Rust | IN PROGRESS |
-| G6 | Polyglot FFI — Go + Python | IN PROGRESS — Go implemented, Python scaffold |
-| G7 | WASM cross-compilation | IN PROGRESS — artifact verified |
-| G8 | Improvements + benchmarks | IN PROGRESS — harness exists, no upstream baseline |
-| G9 | Documentation + packaging | IN PROGRESS — this set |
-| G10 | Release artifacts | NOT STARTED |
+| G3 | Windows application runtime | DONE — cross-build + 25/25 host-side apprt tests; **never executed on Windows** |
+| G4 | Agent/IPC surface | DONE — protocol complete and tested; **not wired into the running app** |
+| G5 | Polyglot FFI — Rust | DONE — 199/199 tests |
+| G6 | Polyglot FFI — Go + Python | DONE — 207 tests (Go not reproducible on this host: SDK/clang link failure) |
+| G7 | WASM cross-compilation | DONE — 54/54 tests, artifact verified |
+| G8 | Improvements + benchmarks | DONE — paired runs captured; no absolute performance claim |
+| G9 | Documentation + packaging | DONE — 15/15, with the `.deb` and `.app` caveats in [changelog/0.1.0.md](changelog/0.1.0.md) |
+| G10 | Release artifacts | IN PROGRESS — non-publishing items done; 10.5/10.6/10.8 blocked on authorization |
 
 ### Two things to know before you build on Khostty
 
-1. **The source tree does not currently build.** `zig build -Demit-lib-vt` fails on
-   broken relative imports in `src/apprt/ipc/mod.zig`, introduced by commit
-   `e1277bea2`. The newest working artifacts are from 2026-09-16. Diagnosis and the
-   two-line fix: [BUILD.md](BUILD.md#unable-to-load-mainzig-filenotfound--unable-to-load-quirkszig).
-2. **There is no usable benchmark comparison yet.** A harness exists at `bench/`
-   and has produced one run (2026-09-17), but the upstream baseline file is empty
-   and the run happened at load average 425, which the harness's own methodology
-   says makes the numbers unreliable. No performance claim is supported. See
+1. **The source tree builds.** `zig build -Demit-lib-vt` exits 0, re-verified
+   2026-09-19, so the relative-import failure in `src/apprt/ipc/mod.zig` recorded on
+   2026-09-17 (commit `e1277bea2`) is no longer reproducible. Historical diagnosis:
+   [BUILD.md](BUILD.md#unable-to-load-mainzig-filenotfound--unable-to-load-quirkszig).
+2. **There is no usable *absolute* benchmark comparison yet.** A harness exists at
+   `bench/` and produced paired Khostty/upstream passes on 2026-09-17, but every pass
+   ran at load 548-674 on a dirty tree, which the harness's own methodology says makes
+   the absolute numbers unreliable. No absolute performance claim is supported. See
    [FORK.md](FORK.md#4-what-the-evidence-does-not-support).
 
 ---

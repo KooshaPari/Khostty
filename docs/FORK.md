@@ -132,6 +132,10 @@ That is a real, transferable improvement over "write the offsets down and hope".
 
 ## 4. What the evidence does not support
 
+> **[Corrected 2026-09-19]** The benchmark figures below were written on 2026-09-17
+> before the four recorded passes were committed. The values are updated here; the
+> conclusion (no supported performance claim) is unchanged.
+
 Stated plainly, because the alternative is a fork that overclaims.
 
 **No performance claim is justified yet.** The harness now exists (gate G8,
@@ -142,21 +146,24 @@ short of usable evidence:
 |---|---|
 | `bench/` harness | **Exists** — C harness linked against the shipped library: VT ingest throughput, snapshot latency, scrollback search, memory footprint, resize cost |
 | `bench/results/khostty-20260917.{txt,json}` | **Captured** — 2026-09-17 03:57 PT, Apple M1 Pro, macOS 27.0 |
-| `bench/results/upstream-20260917.txt` | **0 bytes — the upstream comparison did not complete** |
-| `bench/results/README.md` | Absent, though `bench/README.md` points readers at it |
+| `bench/results/upstream-20260917.txt` | **Captured — 7,561 B**, paired with `upstream-run2`, `khostty`, `khostty-run2` and a results README |
+| `bench/results/README.md` | **Present** — provenance, per-pass load averages, paired tables, and what the comparison does and does not show |
 | Cross-renderer consistency run | Not attempted |
 | IPC round-trip and FFI overhead benchmarks | Not attempted |
 
 Why the captured numbers are not yet a claim:
 
-1. **No upstream baseline.** The comparison file is empty, so there is nothing to
-   compare against. "Khostty is faster than Ghostty" remains unsupported.
-2. **Measured under extreme load.** The run recorded a 1-minute load average of
-   **425** on a 10-core machine. The harness's own README states that observed
-   medians moved by more than 3x between a loaded and an idle window, and that a
-   run on a quiet machine is required for the numbers to mean anything.
-3. **Tree was dirty.** The JSON records `git_status: dirty` at `1e6687dd2`, so the
-   numbers do not describe a specific committable revision.
+1. **The baseline is not the same vintage.** The upstream library is a sibling
+   checkout dated 2026-08-05, 41 days older than Khostty's 2026-09-15 merge base, so
+   the pairing is directional rather than controlled. "Khostty is faster than
+   Ghostty" remains unsupported.
+2. **Measured under extreme load.** The four passes recorded 1-minute load averages
+   of **548, 572, 599 and 674** on 10 logical CPUs. The harness's own README states
+   that observed medians moved by more than 3x between a loaded and an idle window,
+   and that a run on a quiet machine is required for the numbers to mean anything.
+3. **Tree was dirty.** The JSON records `git_status: dirty` with `git_head`
+   `fc0aea2bc` / `d7ec3a36e`, so the numbers do not describe a specific committable
+   revision.
 
 Reproduce on an idle machine before citing anything:
 
@@ -168,15 +175,15 @@ Additional gaps:
 
 | Gap | Consequence |
 |---|---|
-| No completed upstream comparison | No relative performance claim is possible |
-| Benchmark run under load 425 | Captured medians are not stable enough to cite; only the paired back-to-back method would be |
+| Baseline is a different vintage | Only the paired, within-pass directional readings are defensible |
+| Benchmarks run at load 548-674 | Captured medians are not stable enough to cite; only the paired back-to-back method would be |
 | Benchmarks ran against a dirty tree | No revision-pinned result |
 | Cross-renderer consistency untested | No evidence that macOS Metal and Linux GL produce the same output for the same input |
 | WASM browser run never executed | Tests are Node-only; the same code path, but not a browser |
 | Linux build and test never run | The GTK runtime is inherited and unexercised here |
 | No agent config preset | WBS 8.11 (`khostty-agent.conf`, `--agent`) not started |
 | Release not produced | G10 not started; no tagged artifacts |
-| Build currently broken | Commit `e1277bea2` broke relative imports in `src/apprt/ipc/mod.zig`. See [BUILD.md](BUILD.md#unable-to-load-mainzig-filenotfound--unable-to-load-quirkszig) |
+| Build blocker resolved | The `src/apprt/ipc/mod.zig` relative-import failure from `e1277bea2` no longer reproduces; `zig build -Demit-lib-vt` exits 0 (re-verified 2026-09-19). See [BUILD.md](BUILD.md#unable-to-load-mainzig-filenotfound--unable-to-load-quirkszig) |
 
 ---
 
@@ -211,9 +218,10 @@ The WBS asks this explicitly. An honest read of the current evidence (observed
   polyglot FFI is sound and already shipping in two ecosystems.
 - **Unproven:** Windows support, agent IPC reachability, and any performance claim.
   All three are the reasons the fork exists, and none has an observed result.
-- **Present but not yet evidence:** a benchmark harness exists and has produced one
-  run, but with no upstream baseline and under load 425 it does not support a claim.
-- **Missing entirely:** a completed benchmark comparison and a release.
+- **Present but not yet evidence:** a benchmark harness exists and paired
+  Khostty/upstream passes were captured, but they ran at load 548-674 on a dirty tree
+  against a 41-day-old baseline, so they do not support an absolute claim.
+- **Missing entirely:** a controlled, quiet-machine benchmark comparison and a published release.
 
 The fork is currently a well-documented *plan* with one completed and verified gate.
 That is a legitimate state to be in, provided it is described as such.

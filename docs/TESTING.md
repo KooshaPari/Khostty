@@ -30,13 +30,13 @@ covering VT ingest throughput, snapshot latency, search latency, memory footprin
 and resize cost, with both text and JSON output carrying machine spec, toolchain,
 library build info, git revision, and load average.
 
-It is not yet usable as evidence:
+It is not usable as an *absolute* claim **[corrected 2026-09-19]**:
 
 | Problem | Detail |
 |---|---|
-| No upstream baseline | `bench/results/upstream-20260917.txt` is 0 bytes; the comparison did not complete |
-| Measured under extreme load | 1-minute load average 425 on a 10-core machine. `bench/README.md` states medians moved >3x between loaded and idle windows. |
-| Dirty tree | The JSON records `git_status: dirty`, so no revision-pinned result |
+| Baseline is a different vintage | The upstream library is dated 2026-08-05, 41 days older than Khostty's 2026-09-15 merge base; only directional, within-pass readings are defensible |
+| Measured under extreme load | 1-minute load averages of 548, 572, 599 and 674 across the four passes on a 10-core machine. `bench/README.md` states medians moved >3x between loaded and idle windows. |
+| Dirty tree | The JSON records `git_status: dirty` at `git_head` `fc0aea2bc` / `d7ec3a36e`, so no revision-pinned result |
 
 Also note: `-Demit-bench` builds **upstream's** bench tooling, which is a different
 thing from this harness; do not cite it as G8 evidence.
@@ -351,8 +351,8 @@ Rules:
 | 2026-09-17 | `zig build -Demit-lib-vt` (fresh cache), working tree | **FAIL** | Unhandled `Runtime.windows` arm in `src/build/SharedDeps.zig` |
 | 2026-09-17 | `zig build -Demit-lib-vt`, detached worktree at `a4bf9e98f` | **FAIL** | `src/apprt/ipc/mod.zig` relative imports resolve to missing files; 50/64 steps succeeded, 2 compile errors |
 | 2026-09-17 | WASM artifact | Present | 813,670 bytes, sha256 `08ac8ed8…`, mtime 2026-09-16 04:35 |
-| 2026-09-17 | `bench/run.sh` (Khostty label) | **CAPTURED, NOT USABLE** | `bench/results/khostty-20260917.{txt,json}`; load average 425, tree dirty |
-| 2026-09-17 | `bench/run.sh --upstream` | **NO OUTPUT** | `bench/results/upstream-20260917.txt` is 0 bytes |
+| 2026-09-17 | `bench/run.sh` (Khostty label) | **CAPTURED, NOT USABLE FOR ABSOLUTE CLAIMS** | `bench/results/khostty-20260917.{txt,json}`; load 548, tree dirty |
+| 2026-09-17 | `bench/run.sh --upstream` | **CAPTURED** | `bench/results/upstream-20260917.{txt,json}` (7,561 B, load 572). An earlier pass produced no output; the four-pass run recorded here supersedes it **[corrected 2026-09-19]** |
 | 2026-09-17 | `cargo test`, `npm run check`, `zig build test` | **NOT RUN** | Not executed in this session |
 
 ### Consequence for this document

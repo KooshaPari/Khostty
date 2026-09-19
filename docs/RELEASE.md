@@ -213,11 +213,11 @@ b4cff87e6ee95dd97e0872fdaf752122aceb4f7536662f6ceadf3905eae6654f  zig-out/bin/gh
 | # | Artifact | Bytes | Built | Status (2026-09-18) | Check executed here |
 |---|---|---|---|---|---|
 | 1 | `dist-release/macos/Khostty-0.1.0-macos.zip` | 35,953,098 | 2026-09-18 05:13 | **MATCH** | `shasum -a 256` → `94abd2a7…4317cb`. Matches the sidecar `.sha256` written beside it, matches the value recorded in `dist-release/macos/EVIDENCE.txt`, and matches `docs/INSTALL.md`. `codesign --verify --deep --strict` → *valid on disk*; bundled binary `--version` → exit 0. **Not notarized** (no `notarytool` credentials) and **no GUI session was observed**. |
-| 2 | `dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz` | 680,598 | 2026-09-17 07:19 | **MATCH** | `shasum -a 256` → `55cfc675…8604dc`; sidecar verified with `shasum -a 256 -c` → `OK`, exit 0. Inner `khostty-vt.wasm` hash matches its own sidecar. |
-| 3 | `dist/khostty-vt_0.1.0_amd64.deb` | 2,320,612 | 2026-09-18 05:07 | **MATCH** | `shasum -a 256` → `3c080d13…d834cf`, matching the value recorded in `docs/INSTALL.md` and the WBS G9.12 evidence row. Installed-and-run evidence lives in `dist-release/evidence/deb-full-build.log`. |
+| 2 | `dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz` | 680,598 | 2026-09-18 06:12 | **MATCH** | `shasum -a 256` → `55cfc675…8604dc`; sidecar verified with `shasum -a 256 -c` → `OK`, exit 0. Inner `khostty-vt.wasm` hash matches its own sidecar. (This row previously read `2026-09-17 07:19`, the superseded dirty-tree build; the tarball was repacked 2026-09-18 as recorded in §6.3.) |
+| 3 | `dist/khostty-vt_0.1.0_amd64.deb` | 2,320,612 | 2026-09-18 05:07 | **MATCH** | `shasum -a 256` → `3c080d13…d834cf`, matching the value recorded in `docs/INSTALL.md` and the WBS G9.12 evidence row. Installed-and-run evidence lives in `dist-release/evidence/deb-libvt-verify.log` (`deb-full-build.log` is the *GTK application* build attempt, which fails on missing headers). |
 | 4 | `zig-out/bin/ghostty.exe` | 43,470,336 | 2026-09-18 01:23 | **HASHED, NOT EXECUTED** | `shasum -a 256` → `df0b4c87…8d03e`. Identical to the staged copy at `dist-release/stage/windows/Khostty-0.1.0-win64/payload/ghostty.exe`. `file` → `PE32+ executable (GUI) x86-64`. **Never run**: macOS cannot execute PE binaries, `wine` is absent, and every Homebrew wine cask is disabled by Gatekeeper. |
 | 5 | `zig-out/bin/ghostty-vt.dll` | 7,545,344 | 2026-09-18 01:22 | **HASHED, NOT EXECUTED** | `shasum -a 256` → `b4cff87e…5e6654f`. Same hash as the staged copy. `file` → `PE32+ executable (DLL)`; ABI shape checked statically (198 exports, 0 undeclared). **Never run.** |
-| 6 | `khostty-vt.wasm` (inside the WASM dist) | 813,670 | 2026-09-16 | **MATCH** | Hash matches `khostty-vt.wasm.sha256` inside the extracted package. |
+| 6 | `khostty-vt.wasm` (inside the WASM dist) | 813,670 | 2026-09-16 (binary; packaged 2026-09-18) | **MATCH** | Hash matches `khostty-vt.wasm.sha256` inside the extracted package. |
 
 **Result: all recomputed hashes match the values expected for this build. No
 discrepancy was found.** Five of the six rows are build-product or packaging checks;
@@ -271,12 +271,15 @@ git push origin main
 git tag -a v0.1.0 -m "Khostty 0.1.0"
 git push origin v0.1.0
 
-# 2. Publish the packages  (ORDER MATTERS: run cargo test BEFORE the dry run)
+# 2. Publish the packages  (ORDER MATTERS: run cargo test BEFORE any dry run)
+#    Each line leaves the shell in the directory it enters, so step 3 returns to
+#    the repository root explicitly before naming any relative path.
 cd khostty-vt      && cargo test && cargo publish
 cd ../khostty-python && uv publish dist/khostty_vt-0.1.0-py3-none-any.whl dist/khostty_vt-0.1.0.tar.gz
 cd ../dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0 && npm publish
 
 # 3. GitHub release with artifacts + checksums
+cd "$(git rev-parse --show-toplevel)"   # step 2 left the shell in the npm stage dir
 gh release create v0.1.0 \
   --title "Khostty 0.1.0" \
   --notes-file docs/changelog/0.1.0.md \
@@ -293,10 +296,11 @@ The two open decisions, and why they matter, are recorded in
    `GHOSTTY_VT_LIB_DIR` or `../zig-out/lib`, and otherwise warns *"will typecheck but not
    link"*. Publishing ships a crate that fails to build on its own. Either add a prominent
    README warning, vendor the library, or defer crates.io for 0.1.0.
-2. **The macOS `.app` is not notarized** — it was built, signed, verified, launched and
-   observed running (see [HANDOFF.md](HANDOFF.md) §9), but no `notarytool` credentials were
-   available, so a first launch on a pristine machine may require an explicit Gatekeeper
-   override. That specific path is untested.
+2. **The macOS `.app` is not notarized** — it was built, signed, hash-verified and its
+   binary executed non-interactively (see [HANDOFF.md](HANDOFF.md) §2), but it was **never
+   launched in a GUI session** and no `notarytool` credentials were available, so a first
+   launch on a pristine machine may require an explicit Gatekeeper override. Both of
+   those paths are untested.
 
 ---
 

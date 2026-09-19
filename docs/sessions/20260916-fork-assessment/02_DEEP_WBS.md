@@ -124,8 +124,8 @@ The fork's value is NOT rebuilding what upstream has. It is:
 | G6 | Polyglot FFI — Go + Python | 8 | 80m | DONE (207 tests) | MEDIUM |
 | G7 | WASM Cross-Compilation | 10 | 100m | DONE (54/54 tests) | HIGH |
 | G8 | Khostty-Specific Improvements | 10 | 100m | DONE (measured) | MEDIUM |
-| G9 | Documentation + Packaging | 15 | 150m | DONE (15/15; macOS .app build+sign+verify+run verified; Linux .deb installs on Debian 12; Windows exe not executed) | MEDIUM |
-| G10 | Release Artifacts | 6 | 60m | NOT STARTED | MEDIUM |
+| G9 | Documentation + Packaging | 15 | 150m | DONE (15/15; macOS .app builds+signs+verifies and its binary executes (GUI launch NOT performed; see 9.11); Linux .deb installs on Debian 12; Windows exe not executed) | MEDIUM |
+| G10 | Release Artifacts | 6 | 60m | IN PROGRESS (4 of 9; 10.5/10.6/10.8 blocked on publish authorization) | MEDIUM |
 
 ---
 
@@ -792,7 +792,7 @@ reproduce on an idle machine before citing any number.
 
 ---
 
-## G9: Docs + Packaging (IN PROGRESS — 14/15 tasks DONE) — MEDIUM PRIORITY
+## G9: Docs + Packaging (DONE — 15/15 tasks; macOS GUI launch and GTK app remain open) — MEDIUM PRIORITY
 
 **Gate objective**: Make Khostty approachable and reusable: comprehensive docs, install
 packaging (macOS .app, Linux .deb/.rpm, Windows .exe/.msi), and dossiers.
@@ -836,7 +836,7 @@ docs/
 
 | ID | Task | Est | Depends | Notes |
 |----|------|-----|---------|-------|
-| 9.11 | Package macOS .app bundle (notarized if possible) | 10m | G1 | Info.plist, icon, codesign | **DONE 2026-09-18 — installed and launched, not merely built.** `packaging/macos-app.sh` exit 0; `dist-release/macos/Khostty-0.1.0-macos.zip` 35,953,098 B, `sha256 94abd2a7…`. **End-user acceptance path executed:** zip extracted to a scratch directory **outside the source tree** → `codesign --verify --deep --strict` → *valid on disk*, *satisfies its Designated Requirement* (exit 0) → `open -a Ghostty.app` (the real way a user launches a bundle, not the raw binary) → exit 0, process `Ghostty.app/Contents/MacOS/ghostty` running → **1 terminal window present** (title `~`), read via System Events, no screenshot → app quit cleanly, user's pre-existing `/Applications/Ghostty.app` (pid 763) untouched throughout. Info.plist identity `com.mitchellh.ghostty` v`0.1`. Notarization still impossible (no `notarytool` credentials). |
+| 9.11 | Package macOS .app bundle (notarized if possible) | 10m | G1 | Info.plist, icon, codesign | **DONE 2026-09-18 — built, signed, hash-verified and its binary executed; GUI launch NOT performed (corrected 2026-09-19).** `packaging/macos-app.sh` exit 0; `dist-release/macos/Khostty-0.1.0-macos.zip` 35,953,098 B, `sha256 94abd2a7…`. **Build/sign path executed:** zip extracted to a scratch directory **outside the source tree** → `codesign --verify --deep --strict` → *valid on disk*, *satisfies its Designated Requirement* (exit 0) → bundled binary `--version` → exit 0. **[Corrected 2026-09-19]** Earlier text on this row claimed `open -a Ghostty.app` was run and one terminal window observed. That claim is withdrawn: `dist-release/macos/EVIDENCE.txt` records `launch_verified: NO — the bundle was not executed`, `packaging/macos-app.sh` does not launch the bundle, and `docs/sessions/20260918-macos-app-unblock/00_SESSION_OVERVIEW.md` states “No GUI launch” was deliberately not performed. The GUI half of this task remains open. Info.plist identity `com.mitchellh.ghostty` v`0.1`. Notarization still impossible (no `notarytool` credentials). |
 | 9.12 | Package Linux .deb (and optionally .rpm) | 10m | G1 | dpkg packaging, desktop entry | DONE (`935b354c9`, `packaging/linux/deb.sh`, probe PASS). **[2026-09-18]** `deb.sh` still cannot produce the GTK-app package from macOS: `bash packaging/linux/deb.sh` exits 1 on `'adwaita.h' not found` / `'gtk/gtk.h' not found`. Added `packaging/linux/deb-libvt.sh`, which packages the cross-compilable libghostty-vt payload; the resulting `khostty-vt_0.1.0_amd64.deb` **installs and runs** on x86-64 Debian 12 (evidence rows below). |
 | 9.13 | Package Windows .exe installer (MSI optional) | 10m | G3 | Inno Setup / WiX / MSIX | DONE (`004119f54`, `packaging/windows/installer.sh`, probe PASS; ISCC pending a Windows host) |
 | 9.14 | Package WASM dist (npm-style) | 10m | G7 | tar/zip + README | DONE (`76ad36fc3`, `packaging/wasm-dist.sh`, 54 tests) |
@@ -864,7 +864,7 @@ after first observation; results reproduced.
 | **Linux .deb installs and runs** (acceptance bullet, library payload) | `bash packaging/linux/deb-libvt.sh --verify` → in x86-64 `debian:bookworm` (12.15, glibc 2.36) via `docker run --platform linux/amd64 -v <repo>:/w:ro gcc:12-bookworm`: `dpkg -i`, `dpkg -L`, `dpkg -V`, `ldconfig -p`, `gcc /w/example/c-vt-formatter/src/main.c -lghostty-vt`, run, `dpkg -r` | **PASS — exit 0.** `dpkg -i` exit 0 with `Setting up khostty-vt (0.1.0) ...` and `dpkg -s` → `Status: install ok installed`; `dpkg -L` lists all 54 paths; `dpkg -V` reports no modified or missing files, so the package's `md5sums` hold; `ldconfig -p` resolves `libghostty-vt.so.0`; the shipped example **compiles against the installed headers and the installed `.so`** and running it passes 4/4 VT assertions (literal text, `CSI 2K` erase+rewrite, CUP placement at (5,10), right-edge clamp) and prints the formatted 80×24 screen; `dpkg -r` exit 0. **Scope:** the *library* payload only. The GTK *application* `.deb` is still not built; the container is emulated x86-64 userspace, not bare metal, and is not a desktop session, so this does not evidence a GUI launch; no `apt`-repository install path was exercised. |
 | Linux library `.deb` toolchain probe | `bash packaging/linux/deb-libvt.sh --probe` | exit 0; reports zig 0.16.0, `dpkg-deb`, `ar`, `docker`, image `gcc:12-bookworm (linux/amd64)` |
 | Windows installer | `bash packaging/windows/installer.sh --probe` | exit 0; reports zig 0.16.0, `ISCC.exe: MISSING`, real PE inputs hashed |
-| **macOS .app installs and runs** (acceptance bullet) | zip extracted to a scratch dir **outside the source tree**; `codesign --verify --deep --strict`; `open -a Ghostty.app`; window count via `System Events`; quit | **PASS — the end-user path, not a proxy.** Extract → bundle intact (`Info.plist`, `MacOS`, `Resources`, `Frameworks`, `_CodeSignature`); identity `com.mitchellh.ghostty` v`0.1`, exec `ghostty`. `codesign --verify --deep --strict` → *valid on disk*, *satisfies its Designated Requirement*, exit 0. `open -a` (the real launch path, **not** the raw binary) → exit 0; process `Ghostty.app/Contents/MacOS/ghostty` running; **1 terminal window present**, title `~`, read via System Events — no screenshot taken. Quit cleanly; the user's pre-existing `/Applications/Ghostty.app` (pid 763) was untouched throughout. Notarization remains impossible (no `notarytool` credentials), so first launch on a pristine machine may still require an explicit Gatekeeper override — not verified. |
+| **macOS .app installs and runs** (acceptance bullet) | zip extracted to a scratch dir **outside the source tree**; `codesign --verify --deep --strict`; bundled binary `--version` (no GUI launch) | **PASS for extract/sign/execute; the GUI-launch half was NOT run. [Corrected 2026-09-19]** Extract → bundle intact (`Info.plist`, `MacOS`, `Resources`, `Frameworks`, `_CodeSignature`); identity `com.mitchellh.ghostty` v`0.1`, exec `ghostty`. `codesign --verify --deep --strict` → *valid on disk*, *satisfies its Designated Requirement*, exit 0. The bundled binary ran non-interactively: `Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0. No `open -a` was executed and no window count was taken; the bundle's own `EVIDENCE.txt` records `launch_verified: NO`, and the session record says the GUI launch was deliberately skipped. Earlier text on this row claimed a window was observed; that claim is withdrawn. Notarization remains impossible (no `notarytool` credentials), so first launch on a pristine machine may still require an explicit Gatekeeper override — not verified. |
 | Dossier | `docs/dossiers/KHOSTTY.md` | 300 lines, 10 sections (9 numbered + See also) |
 | Install docs | `docs/INSTALL.md` | 748 lines; status table 4 VERIFIED (one build-only) / 2 NOT BUILT / 0 BLOCKED |
 | Docs set | `docs/{README,ARCHITECTURE,API,AGENT,PLATFORMS,BUILD,CONTRIBUTING,FORK,SECURITY}.md` | all present |
@@ -900,10 +900,11 @@ listed in the row. Do not mark G9.10 as contract-complete until `docs/dossiers/K
 carries an owner, an assurance owner, and a named next bounded task.
 
 **Follow-up (outside this docs-only change)**: `packaging/macos-app.sh` is cited as the
-`macos .app` probe command in the table above but is **untracked** in git
-(`git status --porcelain` → `?? packaging/macos-app.sh`), so that evidence references an
-unversioned script. `.probe_khostty.zig`, `a.out`, and `src/main_windows_apprt.zig` are likewise
-untracked. Not a docs-criterion failure; recorded because it weakens the packaging evidence.
+`macos .app` probe command in the table above. It was **untracked** when this row was
+written; **[corrected 2026-09-19]** it and `src/main_windows_apprt.zig` are now tracked
+(`9001a4e6e`, "fix(build): track the windows-apprt test root and macOS packaging script"),
+so that evidence now references versioned scripts. `.probe_khostty.zig` and `a.out` are
+still untracked, and `a.out` is a zero-byte stray. Not a docs-criterion failure.
 
 ---
 

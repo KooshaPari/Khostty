@@ -234,10 +234,11 @@ nothing created that path. Full command log, exit codes and durability caveat:
    wired into the build graph as a live host.
 5. **Linux is unverified.** No Linux build, test, or GTK launch is recorded, and no
    CI job builds or tests Linux (the Ubuntu job runs `zig fmt --check` only).
-6. **No usable benchmark comparison.** The `bench/` harness exists and produced one
-   run on 2026-09-17, but the upstream baseline file is empty and the run happened
-   at load average 425 on a dirty tree at `1e6687dd2`, which the harness's own
-   methodology says makes the medians unreliable. **No performance claim is
+6. **No usable *absolute* benchmark comparison.** The `bench/` harness exists and two
+   paired Khostty/upstream passes were captured on 2026-09-17
+   (`bench/results/README.md`), but every pass ran at load 548-674 on a dirty tree
+   (`git_head` `fc0aea2bc` / `d7ec3a36e`), which the harness's own methodology says
+   makes the absolute medians unreliable. **No absolute performance claim is
    supported.**
 7. **No release.** G10 NOT STARTED: no tag, no verified installer set, no published
    crates/PyPI/npm packages. G9 packaging is partial (Linux `.deb` and WASM dist
@@ -300,7 +301,7 @@ fresher.
 | 1 | **The headline delta (Windows) never reaches runtime.** Spec, scaffold, cross-build and keyboard mapping exist, but no Windows binary has been launched on Windows hardware. | `docs/PLATFORMS.md` §5; G3 G3 exit criteria unmet (no window, no DirectWrite glyphs, no clipboard) | Run `ghostty.exe` on a Windows host or under Wine; record dated output; that result is what unblocks the value claim |
 | 2 | **Windows IPC authorization hole.** Malformed pipe path (single leading backslash) plus no DACL design; the unit test encodes the same wrong value, so it cannot catch it. | `docs/SECURITY.md` §4; `src/apprt/windows/ipc.zig` | Fix the constant and its test; design an explicit DACL before G3/G4 converge; do not ship an unauthenticated pipe |
 | 3 | **ABI/version drift across four language surfaces.** Upstream calls the C ABI unstable; a wrapper with a stale layout corrupts memory silently. | `include/ghostty/vt.h` warning; `docs/ARCHITECTURE.md` §4 | Keep `ghostty_type_json()` as the only layout source (already asserted by Rust/WASM); run `packaging/version.sh` agreement checks in CI; pin revisions |
-| 4 | **No defensible performance or comparison claim.** Benchmarks exist but the baseline is empty and the only run was at load 425 on a dirty tree. | `docs/FORK.md` §4; `bench/results/upstream-20260917.txt` = 0 bytes | Re-run paired Khostty-vs-upstream on an idle machine, pinned to a committed revision; publish only then |
+| 4 | **No defensible absolute performance claim.** A paired Khostty/upstream baseline exists, but every pass ran at load 548-674 on a dirty tree, so only directional readings are defensible. | `docs/FORK.md` §4 (2026-09-17 snapshot); `bench/results/README.md` | Re-run paired Khostty-vs-upstream on an idle machine, pinned to a committed revision; publish only then |
 | 5 | **Gate progress outruns verification, and CI cannot catch regressions.** Gate labels say DONE while runtime behaviour is unobserved; CI builds only macOS lint plus one macOS build, and 12 inherited upstream workflows are ungated. | `docs/README.md` status caveat; `docs/CONTRIBUTING.md` §9; `docs/BUILD.md` §11 (tree broken twice on 2026-09-17) | Add a Linux build+test job; guard or delete the ungated upstream workflows; keep the "SCAFFOLD vs DONE" distinction visible in every superseding doc |
 
 ---
