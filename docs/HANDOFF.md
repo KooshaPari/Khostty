@@ -141,9 +141,11 @@ headers (203 `GHOSTTY_API` + 3 `static inline`), with **0 exports undeclared**; 
   `wine --version` returns `wine-11.0` (exit 0), but prefix creation fails immediately
   (`run_wineboot failed to start wineboot 1` → `could not load kernel32.dll, status
   c0000135`), so the PE cannot be loaded. Emulation runs Wine but cannot build a prefix.
-- **No installer.** `packaging/windows/installer.sh --probe` reports
-  `ISCC.exe: MISSING`; the Inno Setup script was generated but never compiled, so there
-  is no `setup.exe`.
+- **Installer: BUILT and verified 2026-09-19.** Inno Setup 6.7.1 was installed on the
+  Windows runner `kooshapari-desk`; `ISCC.exe` compiled the staged `khostty.iss` into
+  `Khostty-0.1.0-windows-x86_64-setup.exe` (19,766,307 B, `sha256 4070e89e…095546`).
+  Silent install → payload hash-match → installed `ghostty.exe` runs → silent uninstall
+  with 0 residual files. See `docs/INSTALL.md` row 6.
 - The named-pipe IPC transport is a scaffold returning `error.Unimplemented`, and its
   pipe-path constant is known to be malformed.
 
@@ -317,7 +319,8 @@ TITLE readback correct, 0 failures). Raw log:
 **What is still open on Windows:** the run used the CLI `+version` action only, so no
 GUI window was launched and windowed interaction is unverified; the artifact is a
 `.Debug` build; and the Inno Setup installer
-(`Khostty-0.1.0-windows-x86_64-setup.exe`) is still uncompiled (needs `ISCC.exe`).
+(`Khostty-0.1.0-windows-x86_64-setup.exe`) is now **compiled and install-verified** (see
+§above and `docs/INSTALL.md` row 6).
 
 **Blocked on authorization (not on capability):** WBS 10.5 (publish FFI packages),
 10.6 (create the GitHub release), 10.8 (announce), and creating the `v0.1.0` tag.

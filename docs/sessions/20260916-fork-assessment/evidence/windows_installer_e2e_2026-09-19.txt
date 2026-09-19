@@ -1,0 +1,36 @@
+=== SETUP ARTIFACT ===
+path:   C:\Users\koosh\khostty-verify\Khostty-0.1.0-win64\output\Khostty-0.1.0-windows-x86_64-setup.exe
+bytes:  19766307
+sha256: 4070E89E8F693C44ABDA13DA1B718DCA4E53D73279F3D945854431D76F095546
+ver:    0.1.0.0             
+
+=== SILENT INSTALL ===
+target: C:\Users\koosh\khostty-verify\installed
+installer exited: True
+
+=== INSTALLED PAYLOAD ===
+MATCH  B4CFF87E6EE95DD97E0872FDAF752122ACEB4F7536662F6CEADF3905EAE6654F  ghostty-vt.dll
+MATCH  DF0B4C8772AD5DE8C65078CF0ADE6645AD16601B1B4CA37097E314ABF028D03E  ghostty.exe
+uninstaller present: True
+
+=== RUN INSTALLED ghostty.exe +version ===
+exited: True
+--- stdout ---
+Ghostty 1.3.2-main-+5a85344f0
+
+Version
+  - version: 1.3.2-main-+5a85344f0
+  - channel: tip
+Build Config
+  - Zig version   : 0.16.0
+  - build mode    : .Debug
+  - app runtime   : .windows
+  - font engine   : .freetype_windows
+  - renderer      : renderer.generic.Renderer(renderer.OpenGL)
+  - libxev        : iocp
+
+=== SILENT UNINSTALL ===
+uninstaller exited: True
+residual installed files: 0
+
+=== DONE failures=0 ===

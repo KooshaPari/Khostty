@@ -40,8 +40,8 @@ Status vocabulary used throughout:
 | 3 | `Khostty-0.1.0-macos.zip` — the `Ghostty.app` bundle | macOS | VERIFIED (build) / LAUNCH NOT EXECUTED | Built, signed, verified and hashed on this host 2026-09-18: `bash packaging/macos-app.sh` exited **0**, producing `dist-release/macos/Khostty-0.1.0-macos.zip` (35,953,098 B, `sha256 94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb`, `shasum -c` OK). `codesign --verify --deep --strict` → *valid on disk* / *satisfies its Designated Requirement*. The bundled binary was executed non-interactively: `Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0. **This row was `BLOCKED` until 2026-09-18; the previous reason was wrong** — see §3.3. Not notarized (no `notarytool` credentials), and no GUI launch was attempted, so the WBS "installs and runs" clause is only half-met. |
 | 4 | `khostty_0.1.0_amd64.deb` — the GTK **application** | Debian / Ubuntu x86-64 | NOT BUILT | `bash packaging/linux/deb.sh --probe` runs (exit 0) and reports `zig: 0.16.0` and now resolves `dpkg-deb: /opt/homebrew/bin/dpkg-deb` (`brew install dpkg`, installed 2026-09-18, exit 0). The remaining blocker is the payload, not the assembler: `zig build -Dtarget=x86_64-linux-gnu -Dapp-runtime=gtk -Demit-macos-app=false -Doptimize=ReleaseFast` exits 1 with `fatal error: 'adwaita.h' not found` and `fatal error: 'gtk/gtk.h' not found`. The GTK4/libadwaita development headers for the *target* are absent, and Homebrew's `gtk4` is a macOS-native build that cannot supply a Linux sysroot. No GTK-app `.deb` exists in the tree. |
 | 5 | `khostty-vt_0.1.0_amd64.deb` — the libghostty-vt **library** | Debian / Ubuntu x86-64 | VERIFIED | `packaging/linux/deb-libvt.sh` cross-compiles libghostty-vt for `x86_64-linux-gnu` and packages it. `sha256 3c080d13a74d6bf6dca9d28dc2c685f6b4350ec3130f3f3fafa5cb4d77d834cf`, 2,320,612 bytes; `ar t` → `debian-binary`, `control.tar.xz`, `data.tar.xz`; `dpkg-deb --info` and `--contents` (54 entries) both succeed. **Installed and run, not inferred:** in an x86-64 Debian 12 (bookworm, glibc 2.36) container, `dpkg -i` exited 0 with `Status: install ok installed`; `dpkg -V` found no modified or missing files; `ldconfig -p` resolved the SONAME; the shipped `example/c-vt-formatter` compiled against the **installed** headers and **installed** `.so` and passed 4/4 VT assertions; `dpkg -r` removed it cleanly. This is the library payload, not the GTK application. See §3.4.2. |
-| 6 | `Khostty-0.1.0-windows-x86_64-setup.exe` | Windows x86-64 | NOT BUILT | `bash packaging/windows/installer.sh --probe` runs (exit 0) and reports `status: blocked`, `ISCC.exe: MISSING`. The installer payload and the generated `khostty.iss` are staged and hashed, but Inno Setup has never compiled them. |
-| 7 | `ghostty.exe` + `ghostty-vt.dll` (row 6's payload) | Windows x86-64 | VERIFIED (build) / EXECUTED | Both are real PE32+ files built 2026-09-18 (43.5 MB and 7.5 MB), staged and hashed 2026-09-18T03:33 local. `file` confirms `PE32+ executable (GUI) x86-64` and `PE32+ executable (DLL)`. **Executed 2026-09-19 on `kooshapari-desk` (Windows NT 10.0.28120, AMD64)**, copied there byte-identically (sha256 re-verified): `ghostty.exe +version` → exit 0, reporting `app runtime: .windows`, `font engine: .freetype_windows`, `libxev: iocp`, `Zig 0.16.0`, build mode `.Debug`; `ghostty-vt.dll` loads via `LoadLibraryW` and its ABI runs live — `terminal_new(80,24)` rc 0, `get COLS/ROWS` 80/24, `resize(100,40)` → 100/40, `vt_write` + OSC-0 → `CURSOR_Y` 1 / `TITLE` `Khostty-Win`, `terminal_free` clean — **0 failures**. Evidence `sessions/20260916-fork-assessment/evidence/windows_runtime_verify_2026-09-19.txt`. Caveat: CLI `+version` only; no GUI window was launched. |
+| 6 | `Khostty-0.1.0-windows-x86_64-setup.exe` | Windows x86-64 | BUILT + VERIFIED | **Built 2026-09-19.** Inno Setup 6.7.1 was installed on the Windows runner `kooshapari-desk`; `ISCC.exe khostty.iss` → *Successful compile (11.891 s)*, producing **19,766,307 B**, `sha256 4070e89e8f693c44abda13da1b718dca4e53d73279f3d945854431d76f095546`, `VersionInfo.FileVersion 0.1.0.0`. **Installed, run and uninstalled, not inferred:** silent install to a scratch dir (exit 0) produced `ghostty.exe` + `ghostty-vt.dll` + `ghostty.ico` + `LICENSE` + `unins000.exe`; the two payload files **hash-match the staged originals**; the installed `ghostty.exe +version` ran (`app runtime: .windows`); silent uninstall left **0 residual files**. Evidence `sessions/20260916-fork-assessment/evidence/windows_installer_e2e_2026-09-19.txt`. |
+| 7 | `ghostty.exe` + `ghostty-vt.dll` (row 6's payload) | Windows x86-64 | BUILT + EXECUTED | Both are real PE32+ files built 2026-09-18 (43.5 MB and 7.5 MB), staged and hashed 2026-09-18T03:33 local. `file` confirms `PE32+ executable (GUI) x86-64` and `PE32+ executable (DLL)`. **Executed 2026-09-19 on `kooshapari-desk` (Windows NT 10.0.28120, AMD64)**, copied there byte-identically (sha256 re-verified): `ghostty.exe +version` → exit 0, reporting `app runtime: .windows`, `font engine: .freetype_windows`, `libxev: iocp`, `Zig 0.16.0`, build mode `.Debug`; `ghostty-vt.dll` loads via `LoadLibraryW` and its ABI runs live — `terminal_new(80,24)` rc 0, `get COLS/ROWS` 80/24, `resize(100,40)` → 100/40, `vt_write` + OSC-0 → `CURSOR_Y` 1 / `TITLE` `Khostty-Win`, `terminal_free` clean — **0 failures**. Evidence `sessions/20260916-fork-assessment/evidence/windows_runtime_verify_2026-09-19.txt`. Caveat: CLI `+version` only; no GUI window was launched. |
 
 **No row in this table claims a runtime test that was not run.** Rows 1, 2 and 5
 are the rows whose checks were executed end to end on 2026-09-18. Row 5 is the
@@ -518,11 +518,13 @@ path was exercised. The WBS 9.15 acceptance bullet for the Linux `.deb` is
 therefore satisfied for the library payload only, and is stated that way in the
 status table above.
 
-### 3.5 Windows — `.exe` installer — NOT BUILT
+### 3.5 Windows — `.exe` installer — BUILT + install-verified 2026-09-19
 
-**Artifact (does not exist):**
-`dist-release/windows/stage/Khostty-0.1.0-win64/output/Khostty-0.1.0-windows-x86_64-setup.exe`
-**Produced by:** `packaging/windows/installer.sh`
+**Artifact:**
+`dist-release/stage/windows/Khostty-0.1.0-win64/output/Khostty-0.1.0-windows-x86_64-setup.exe`
+(19,766,307 B, `sha256 4070e89e8f693c44abda13da1b718dca4e53d73279f3d945854431d76f095546`,
+`VersionInfo.FileVersion 0.1.0.0`)
+**Produced by:** `packaging/windows/installer.sh` (payload) + `ISCC.exe khostty.iss` (compiler)
 
 Build:
 
@@ -574,16 +576,38 @@ Get-FileHash "$env:LOCALAPPDATA\Programs\Khostty\ghostty-vt.dll" -Algorithm SHA2
 #    compare against dist-release/windows/EVIDENCE.txt (written only by a full build)
 ```
 
-**Status, observed 2026-09-18.** The payload and the Inno script are staged, but
-the installer has never been compiled:
+**Status, observed 2026-09-19. The installer is BUILT and was installed, run and
+uninstalled.** Inno Setup 6.7.1 was installed on the Windows runner `kooshapari-desk`
+(via Chocolatey), and the staged `khostty.iss` was compiled:
+
+```
+ISCC.exe khostty.iss
+   Successful compile (11.891 sec). Resulting Setup program filename is:
+   ...\output\Khostty-0.1.0-windows-x86_64-setup.exe
+```
+
+Then, on the same host (`docs/sessions/20260916-fork-assessment/evidence/windows_installer_e2e_2026-09-19.txt`):
+
+```
+SETUP ARTIFACT   bytes 19766307   sha256 4070E89E…095546   ver 0.1.0.0
+SILENT INSTALL   installer exited: True
+INSTALLED PAYLOAD
+  MATCH  DF0B4C87…  ghostty.exe
+  MATCH  B4CFF87E…  ghostty-vt.dll
+  uninstaller present: True
+RUN INSTALLED ghostty.exe +version  ->  app runtime: .windows
+SILENT UNINSTALL  residual installed files: 0
+DONE failures=0
+```
+
+The earlier 2026-09-18 probe output, kept for contrast (this host, no Windows host
+tried yet):
 
 ```
 $ bash packaging/windows/installer.sh --probe
     zig: 0.16.0 (/opt/homebrew/bin/zig)
     ISCC.exe: MISSING (install Inno Setup 6.3+, or set KHOSTTY_ISCC)
     wine: not needed yet (ISCC.exe itself is missing)
-    input ghostty.exe:    41.4 MiB (built 2026-09-18T08:23:00Z)
-    input ghostty-vt.dll: 7.1 MiB (built 2026-09-18T08:22:36Z)
 status: blocked
 ```
 
@@ -667,7 +691,7 @@ here is inferred.
 | Linux library `.deb` build | `bash packaging/linux/deb-libvt.sh --probe` then `bash packaging/linux/deb-libvt.sh` | probe exit 0; build exit 0; produced `dist/khostty-vt_0.1.0_amd64.deb` |
 | Linux library `.deb` structure | `dpkg-deb --info` / `--contents` / `ar t` on the artifact | all exit 0; `ar t` → `debian-binary`, `control.tar.xz`, `data.tar.xz` (first member `debian-binary`, contents `2.0`); 54 entries (39 files, 2 symlinks, 13 dirs) |
 | Linux library `.deb` install + run | `bash packaging/linux/deb-libvt.sh --verify` (exit 0) | **PASS.** x86-64 `debian:bookworm` (12.15, glibc 2.36) under `docker run --platform linux/amd64`: `dpkg -i` exit 0 → `Status: install ok installed`; `dpkg -V` no modified/missing files; `ldconfig -p` resolves `libghostty-vt.so.0`; `example/c-vt-formatter` compiles against the installed headers and `.so` and passes 4/4 VT assertions; `dpkg -r` exit 0 |
-| Windows toolchain | `bash packaging/windows/installer.sh --probe` | exit 0; `status: blocked`, `ISCC.exe: MISSING` |
+| Windows installer | `bash packaging/windows/installer.sh --probe`; `ISCC.exe khostty.iss` on Windows | **PASS 2026-09-19.** Compiled the staged `khostty.iss` with Inno Setup 6.7.1 → `Khostty-0.1.0-windows-x86_64-setup.exe` (`4070e89e…095546`); silent install → payload hashes MATCH; installed exe runs; silent uninstall → 0 residual files |
 | WASM tarball integrity | `cd dist-release/wasm && shasum -a 256 -c khostty-libghostty-vt-wasm-0.1.0.tar.gz.sha256` | `khostty-libghostty-vt-wasm-0.1.0.tar.gz: OK`, exit 0 |
 | WASM tarball consumer test | extract to scratch, `node smoke.mjs --json` | 13/13 checks, 0 failed, exit 0 |
 | WASM direct import | `import { openTerminal } from "./js/api.js"`, then `write` + `text()` | `text() = "hello"`, exit 0 |
