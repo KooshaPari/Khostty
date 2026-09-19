@@ -167,13 +167,31 @@ CHGEOF
 
 # DEBIAN control file
 SIZE_KB=$(du -sk "$DEB_DIR" | cut -f1)
+
+# Derive the real glibc floor from the built binary instead of hard-coding it.
+# The native build inherits the build host's glibc symbol versions (e.g. a
+# Fedora 44 host with glibc 2.43 pulls in GLIBC_2.43 acosf/atan2f and the
+# GLIBC_2.38 __isoc23_* strto* family), so a stale floor like "libc6 >= 2.17"
+# lets dpkg -i succeed on older distros and the binary then fails at load time
+# ("version `GLIBC_2.43' not found"). readelf reports the highest GLIBC_x.y
+# referenced by any object in the link; that exact value is the floor.
+GLIBC_FLOOR=""
+if command -v readelf &>/dev/null; then
+    GLIBC_FLOOR="$(readelf -V "$BINARY" 2>/dev/null \
+        | grep -oE 'GLIBC_2\.[0-9]+' | sort -uV | tail -1 | cut -d_ -f2 || true)"
+fi
+if [[ -z "$GLIBC_FLOOR" ]]; then
+    die "Cannot derive glibc floor from $BINARY (readelf missing or no versioned symbols)"
+fi
+echo "==> Derived glibc floor: libc6 >= $GLIBC_FLOOR"
+
 cat > "$DEB_DIR/DEBIAN/control" << CTRLEOF
 Package: $PACKAGE
 Version: $VERSION
 Section: utils
 Priority: optional
 Architecture: $ARCH
-Depends: libc6 (>= 2.17), libgcc-s1 (>= 4.2)
+Depends: libc6 (>= $GLIBC_FLOOR)
 Installed-Size: $SIZE_KB
 Maintainer: KooshaPari <noreply@github.com>
 Homepage: https://github.com/KooshaPari/khostty
