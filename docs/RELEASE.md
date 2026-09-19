@@ -197,7 +197,7 @@ The machine-readable copy lives at `dist-release/CHECKSUMS.txt`; it is reproduce
 inline here because `dist-release/` is gitignored (`.gitignore` line 42: `/dist-release/`),
 so the file itself is not versioned.
 
-### 6.1 Manifest — recomputed 2026-09-18; GTK .deb row added 2026-09-19
+### 6.1 Manifest — recomputed 2026-09-18; GTK .deb row added 2026-09-19, superseded by the install-verified rebuild same day
 
 ```
 94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb  dist-release/macos/Khostty-0.1.0-macos.zip
@@ -206,12 +206,14 @@ so the file itself is not versioned.
 df0b4c8772ad5de8c65078cf0ade6645ad16601b1b4ca37097e314abf028d03e  zig-out/bin/ghostty.exe
 b4cff87e6ee95dd97e0872fdaf752122aceb4f7536662f6ceadf3905eae6654f  zig-out/bin/ghostty-vt.dll
 08ac8ed881ffdae68b9f96f9afa6c834e57ba7ea49280d220e882938508e5bf6  dist-release/wasm/verify/khostty-libghostty-vt-wasm-0.1.0/khostty-vt.wasm
-209ba5ed10abfe4e1a0caf4fb5da9bd16e7fc375b49254c46149d523652d713a  dist-release/khostty_0.1.0_amd64.deb
+63d4e6159d65e97db685b9eedbe19c37765f5f838279e9d5b0326ab5a7b80de0  dist-release/khostty_0.1.0_amd64.deb
 ```
 
 The last row was computed in WSL Fedora 44 on `kooshapari-desk` (`sha256sum`, exit
 0), staged beside a sidecar `.sha256`, and copied here; it is the GTK application
-`.deb` built 2026-09-19 (see §6.2 row 7).
+`.deb` built 2026-09-19 (see §6.2 row 7). It supersedes the first same-day build
+(`209ba5ed…713a`), whose stale `libc6 (>= 2.17)` dependency let `dpkg -i` install
+onto glibc 2.36 with the binary then failing at load.
 
 ### 6.2 Per-artifact status, with executed checks
 
@@ -223,7 +225,7 @@ The last row was computed in WSL Fedora 44 on `kooshapari-desk` (`sha256sum`, ex
 | 4 | `zig-out/bin/ghostty.exe` | 43,470,336 | 2026-09-18 01:23 | **EXECUTED 2026-09-19** | `shasum -a 256` → `df0b4c87…8d03e`; re-verified byte-identical on the Windows host. Identical to the staged copy at `dist-release/stage/windows/Khostty-0.1.0-win64/payload/ghostty.exe`. `file` → `PE32+ executable (GUI) x86-64`. **Run** on `kooshapari-desk` (Windows NT 10.0.28120, AMD64): `+version` → exit 0, `app runtime: .windows`, `font engine: .freetype_windows`, `libxev: iocp`, build mode `.Debug`. CLI action only — no GUI window launched. |
 | 5 | `zig-out/bin/ghostty-vt.dll` | 7,545,344 | 2026-09-18 01:22 | **EXECUTED 2026-09-19** | `shasum -a 256` → `b4cff87e…5e6654f`; same hash as the staged copy. `file` → `PE32+ executable (DLL)`; ABI shape checked statically (198 exports, 0 undeclared). **Loaded and driven live** on `kooshapari-desk`: `ghostty_terminal_new` rc 0, `get COLS/ROWS` 80/24, `resize(100,40)` → 100/40, `vt_write` + OSC-0 → `CURSOR_Y` 1 / `TITLE` `Khostty-Win`, `VT_GROUND` 1, `terminal_free` clean; `ghostty_build_info(SIMD)` rc 0. 0 failures. |
 | 6 | `khostty-vt.wasm` (inside the WASM dist) | 813,670 | 2026-09-16 (binary; packaged 2026-09-18) | **MATCH** | Hash matches `khostty-vt.wasm.sha256` inside the extracted package. |
-| 7 | `dist-release/khostty_0.1.0_amd64.deb` (GTK application, staged copy) | 18,143,936 | 2026-09-19 (WSL Fedora 44) | **HASHED, RUN (CLI)** | Built natively in WSL after two blocker fixes (`9daf736e8` conditional target, `45e6d086b` hicolor icons + `Icon=@APPID@`); `sha256sum` in WSL → `209ba5ed…713a`, staged beside a sidecar. **Run there (not inferred):** `zig-out/bin/ghostty +version` → exit 0, `app runtime: .gtk`, `font engine: .fontconfig_freetype`, `libxev: io_uring` (`/usr/bin/time -v`: 11.2 s wall, 34 MB max RSS — first-run cost). Package contents verified by `dpkg-deb -x`: 6 size-matched hicolor PNGs, `Icon=com.khostty.Khostty`. Evidence `sessions/20260916-fork-assessment/evidence/gtk_deb_build_2026-09-19.txt`. No `dpkg -i` on a desktop and no GUI window launched — the install-verify half is open. |
+| 7 | `dist-release/khostty_0.1.0_amd64.deb` (GTK application, staged copy) | 18,143,964 | 2026-09-19 (WSL Fedora 44) | **INSTALL-VERIFIED (host)** | Built natively in WSL after three blocker fixes (`9daf736e8` conditional target, `45e6d086b` hicolor icons + `Icon=@APPID@`, `65de471df` glibc floor derived from the binary: `libc6 (>= 2.43)`). **Installed on the WSL host (glibc 2.43, dpkg db via `--force-depends`):** `dpkg -s` → `install ok installed`; `dpkg -V` clean; `dpkg -L` lists the binary, `.desktop`, metainfo, 6 hicolor PNGs; `ldd` all resolved; `desktop-file-validate` OK; metainfo well-formed; installed `/usr/bin/khostty +version` → exit 0; `gio info` readable; `dpkg --purge` clean, 0 residuals. **Negative control (bookworm glibc 2.36 container):** unpack ok, configure REFUSED on the 2.43 floor. CLI build check: `+version` → exit 0, `app runtime: .gtk`, `fontconfig_freetype`, `io_uring`. Evidence `sessions/20260916-fork-assessment/evidence/gtk_deb_install_2026-09-19.txt` (250 lines). GUI launch not attempted (no desktop session on the WSL host) — that half is open. |
 
 **Result: all recomputed hashes match the values expected for this build. No
 discrepancy was found.** Five of the six rows are build-product or packaging checks;
@@ -233,9 +235,10 @@ now have a runtime check too (2026-09-19):** both were executed on the Windows r
 through its live terminal ABI (0 failures). Raw log:
 `sessions/20260916-fork-assessment/evidence/windows_runtime_verify_2026-09-19.txt`. Caveat: the `ghostty.exe`
 run was the CLI `+version` action, so no GUI window was launched. **Row 7 (added
-2026-09-19) carries both a build-product check and a CLI runtime check on WSL Fedora
-44** (`+version` exit 0, `app runtime: .gtk`); its install-verify half (desktop
-`dpkg -i`, GUI launch) is open.
+2026-09-19) carries build-product, CLI runtime, and full dpkg install-verify
+checks:** the install-verify ran on the WSL Fedora 44 host (glibc 2.43) and its
+negative control refused on Debian 12 (glibc 2.36); the GUI-launch half is open
+(no desktop session on the WSL host).
 
 ### 6.3 Manifest metadata
 

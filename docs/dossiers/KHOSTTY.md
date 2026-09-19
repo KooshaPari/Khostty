@@ -83,7 +83,7 @@ capability and fork-verified capability are different claims.
 | Platform | VT library | Terminal app | Agent IPC | FFI | Renderer | Verified in this fork |
 |---|---|---|---|---|---|---|
 | **macOS** arm64/x86_64 | **VERIFIED** (`-Demit-lib-vt`, ReleaseSafe) | Upstream AppKit (Xcode-driven) | v1 modules; no server constructed | C, Rust, WASM | Metal, else **OpenGL fallback** (`9d32ffc4c`) | **YES** — 2026-09-16/17 |
-| **Linux** x86_64/arm64 | Upstream supported | Upstream GTK4 (`zig build run`) | same | C, Rust | OpenGL | **BUILT 2026-09-19** — GTK app runtime + `.deb` built in WSL Fedora 44 on `kooshapari-desk`; no GUI launch, no arm64 |
+| **Linux** x86_64/arm64 | Upstream supported | Upstream GTK4 (`zig build run`) | same | C, Rust | OpenGL | **BUILT + INSTALL-VERIFIED 2026-09-19** — GTK app runtime + `.deb` built in WSL Fedora 44 on `kooshapari-desk`; `.deb` installed on the host (glibc 2.43, dpkg -s installed, +version exit 0, purge clean) with a bookworm negative control refusing on the derived 2.43 floor; no GUI launch, no arm64 |
 | **Windows** x86_64 | Cross-build **PASS** | **SCAFFOLD only** | Named-pipe stub (`error.Unimplemented`) | C, Rust (Go cgo untested) | OpenGL (unproven) | **PARTIAL** — cross-compile only, never executed |
 | **WASM** `wasm32-freestanding` | **VERIFIED** artifact | n/a (headless) | n/a | JS/TS | n/a | **YES** — Node tests; no browser run |
 | **iOS** | xcframework slice present | Not supported | n/a | C | Metal | Artifact only, never built/run |
@@ -233,8 +233,10 @@ nothing created that path. Full command log, exit codes and durability caveat:
    `fake_host.zig`, but no runtime constructs the server, and `app_host.zig` is not
    wired into the build graph as a live host.
 5. **Linux is partly verified.** The GTK application runtime and `.deb` were built in
-   WSL Fedora 44 on 2026-09-19 (x86_64 only), but no GUI launch or install-verify is
-   recorded, and no CI job builds or tests Linux (the Ubuntu job runs `zig fmt --check`
+   WSL Fedora 44 on 2026-09-19 (x86_64 only), and the `.deb` is install-verified on
+   the host (dpkg -s installed, +version exit 0, purge clean; bookworm negative
+   control refuses on the derived libc6 2.43 floor); no GUI launch is recorded, and
+   no CI job builds or tests Linux (the Ubuntu job runs `zig fmt --check`
    only). arm64 Linux is untouched.
 6. **No usable *absolute* benchmark comparison.** The `bench/` harness exists and two
    paired Khostty/upstream passes were captured on 2026-09-17
@@ -244,10 +246,11 @@ nothing created that path. Full command log, exit codes and durability caveat:
    supported.**
 7. **No release.** G10 IN PROGRESS: no tag, no published crates/PyPI/npm packages.
    G9 packaging is now complete as builds (7 of 7 artifacts built: Linux GTK-app
-   `.deb` built 2026-09-19 in WSL; library `.deb` install-and-run-verified on Debian
-   12; macOS `.app`, Windows installer built + install/uninstall-verified, install
-   docs). Install-verify halves remain open for the macOS `.app` (no GUI launch) and
-   the GTK `.deb` (no install/GUI launch).
+   `.deb` built 2026-09-19 in WSL and install-verified on the host; library `.deb`
+   install-and-run-verified on Debian 12; macOS `.app`, Windows installer built +
+   install/uninstall-verified, install docs). Install-verify halves remain open for
+   the macOS `.app` (no GUI launch); the GTK `.deb` GUI-launch half is open too
+   (no desktop session on the WSL host).
 8. **C ABI is explicitly unstable.** `include/ghostty/vt.h` states the API is
    incomplete and "definitely going to change". Consumers must pin a revision.
 9. **Shared-library load caveat.** Nothing is defended by default: no OS sandbox,

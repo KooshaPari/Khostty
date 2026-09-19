@@ -38,7 +38,7 @@ Status vocabulary used throughout:
 | 1 | `khostty-libghostty-vt-wasm-0.1.0.tar.gz` | any — Node ≥ 20 / browser | VERIFIED | Tarball `sha256 55cfc675…` matches the sidecar `.sha256` written beside it, verified with `shasum -a 256 -c` (exit 0). Freshly extracted to a scratch directory and `node smoke.mjs --json` returned 13/13 checks, 0 failed, exit 0. A direct `import` of the extracted `js/api.js` opened a terminal and echoed text back. Repository WASM suite re-run the same day: 54 tests, 54 pass, 0 fail. |
 | 2 | `libghostty-vt.0.1.0.dylib` + `include/ghostty/` headers | macOS arm64 | VERIFIED | `zig build -Demit-lib-vt -Doptimize=ReleaseSafe --prefix <scratch>` installed a prefix (exit 0); a C program including the **installed** headers and linking the **installed** dylib compiled, ran, and printed `RESULT: PASS` with the library reporting `0.1.0-dev` (see §3.2). Conformance harness against the built library: 84/84 passed, 0 failed. |
 | 3 | `Khostty-0.1.0-macos.zip` — the `Ghostty.app` bundle | macOS | VERIFIED (build) / LAUNCH NOT EXECUTED | Built, signed, verified and hashed on this host 2026-09-18: `bash packaging/macos-app.sh` exited **0**, producing `dist-release/macos/Khostty-0.1.0-macos.zip` (35,953,098 B, `sha256 94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb`, `shasum -c` OK). `codesign --verify --deep --strict` → *valid on disk* / *satisfies its Designated Requirement*. The bundled binary was executed non-interactively: `Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0. **This row was `BLOCKED` until 2026-09-18; the previous reason was wrong** — see §3.3. Not notarized (no `notarytool` credentials), and no GUI launch was attempted, so the WBS "installs and runs" clause is only half-met. |
-| 4 | `khostty_0.1.0_amd64.deb` — the GTK **application** | Debian / Ubuntu x86-64 | BUILT (2026-09-19) / install-verify OPEN | **Built 2026-09-19 in WSL Fedora 44 on `kooshapari-desk`** (native x86_64 Linux with `gtk4-devel`, `libadwaita-devel`, `gtk4-layer-shell-devel`): `dist/khostty_0.1.0_amd64.deb`, **18,143,936 B**, `sha256 209ba5ed10abfe4e1a0caf4fb5da9bd16e7fc375b49254c46149d523652d713a`. Two blockers fixed (§3.4.1): the unconditional `-Dtarget=x86_64-linux-gnu` that made Zig refuse system shared libraries on a native host (now conditional, `9daf736e8`), and the icon set / desktop `Icon=` ref (now size-matched hicolor PNGs 16–512 + `Icon=com.khostty.Khostty`, `45e6d086b`; both verified by extracting the built package). Cross-building **from macOS is still not viable** (Homebrew's `gtk4` cannot supply a Linux sysroot). Not yet installed on a Linux desktop — no `dpkg -i`, no GUI launch; that is the remaining half. |
+| 4 | `khostty_0.1.0_amd64.deb` — the GTK **application** | Debian / Ubuntu x86-64 | BUILT + INSTALL-VERIFIED (2026-09-19) / GUI launch OPEN | **Built 2026-09-19 in WSL Fedora 44 on `kooshapari-desk`** (native x86_64 Linux with `gtk4-devel`, `libadwaita-devel`, `gtk4-layer-shell-devel`): `dist/khostty_0.1.0_amd64.deb`, **18,143,964 B**, `sha256 63d4e6159d65e97db685b9eedbe19c37765f5f838279e9d5b0326ab5a7b80de0` (supersedes `209ba5ed…713a`). Three blockers fixed (§3.4.1): the unconditional `-Dtarget=x86_64-linux-gnu` that made Zig refuse system shared libraries on a native host (now conditional, `9daf736e8`), the icon set / desktop `Icon=` ref (now size-matched hicolor PNGs 16–512 + `Icon=com.khostty.Khostty`, `45e6d086b`), and the stale `libc6 (>= 2.17)` floor that let `dpkg -i` install onto glibc 2.36 with the binary failing at load (now derived from the binary with readelf: `libc6 (>= 2.43)`, `65de471df`). **Install-verified on the WSL host (glibc 2.43, dpkg db via `--force-depends`):** `dpkg -s` → `install ok installed`, `dpkg -V` clean, `dpkg -L` lists the binary + `.desktop` + metainfo + 6 hicolor PNGs, `ldd` all resolved, `desktop-file-validate` OK, metainfo well-formed, installed `khostty +version` → exit 0, `gio info` readable, `dpkg --purge` clean. **Negative control (bookworm glibc 2.36):** unpack ok, configure REFUSED on `libc6 (>= 2.43)`. Evidence `sessions/20260916-fork-assessment/evidence/gtk_deb_install_2026-09-19.txt`. No GUI launch attempted (no desktop session on the WSL host); that half is open. Cross-building **from macOS is still not viable** (Homebrew's `gtk4` cannot supply a Linux sysroot). |
 | 5 | `khostty-vt_0.1.0_amd64.deb` — the libghostty-vt **library** | Debian / Ubuntu x86-64 | VERIFIED | `packaging/linux/deb-libvt.sh` cross-compiles libghostty-vt for `x86_64-linux-gnu` and packages it. `sha256 3c080d13a74d6bf6dca9d28dc2c685f6b4350ec3130f3f3fafa5cb4d77d834cf`, 2,320,612 bytes; `ar t` → `debian-binary`, `control.tar.xz`, `data.tar.xz`; `dpkg-deb --info` and `--contents` (54 entries) both succeed. **Installed and run, not inferred:** in an x86-64 Debian 12 (bookworm, glibc 2.36) container, `dpkg -i` exited 0 with `Status: install ok installed`; `dpkg -V` found no modified or missing files; `ldconfig -p` resolved the SONAME; the shipped `example/c-vt-formatter` compiled against the **installed** headers and **installed** `.so` and passed 4/4 VT assertions; `dpkg -r` removed it cleanly. This is the library payload, not the GTK application. See §3.4.2. |
 | 6 | `Khostty-0.1.0-windows-x86_64-setup.exe` | Windows x86-64 | BUILT + VERIFIED | **Built 2026-09-19.** Inno Setup 6.7.1 was installed on the Windows runner `kooshapari-desk`; `ISCC.exe khostty.iss` → *Successful compile (11.891 s)*, producing **19,766,307 B**, `sha256 4070e89e8f693c44abda13da1b718dca4e53d73279f3d945854431d76f095546`, `VersionInfo.FileVersion 0.1.0.0`. **Installed, run and uninstalled, not inferred:** silent install to a scratch dir (exit 0) produced `ghostty.exe` + `ghostty-vt.dll` + `ghostty.ico` + `LICENSE` + `unins000.exe`; the two payload files **hash-match the staged originals**; the installed `ghostty.exe +version` ran (`app runtime: .windows`); silent uninstall left **0 residual files**. Evidence `sessions/20260916-fork-assessment/evidence/windows_installer_e2e_2026-09-19.txt`. |
 | 7 | `ghostty.exe` + `ghostty-vt.dll` (row 6's payload) | Windows x86-64 | BUILT + EXECUTED | Both are real PE32+ files built 2026-09-18 (43.5 MB and 7.5 MB), staged and hashed 2026-09-18T03:33 local. `file` confirms `PE32+ executable (GUI) x86-64` and `PE32+ executable (DLL)`. **Executed 2026-09-19 on `kooshapari-desk` (Windows NT 10.0.28120, AMD64)**, copied there byte-identically (sha256 re-verified): `ghostty.exe +version` → exit 0, reporting `app runtime: .windows`, `font engine: .freetype_windows`, `libxev: iocp`, `Zig 0.16.0`, build mode `.Debug`; `ghostty-vt.dll` loads via `LoadLibraryW` and its ABI runs live — `terminal_new(80,24)` rc 0, `get COLS/ROWS` 80/24, `resize(100,40)` → 100/40, `vt_write` + OSC-0 → `CURSOR_Y` 1 / `TITLE` `Khostty-Win`, `terminal_free` clean — **0 failures**. Evidence `sessions/20260916-fork-assessment/evidence/windows_runtime_verify_2026-09-19.txt`. Caveat: CLI `+version` only; no GUI window was launched. |
@@ -64,7 +64,8 @@ is half-met rather than met (§3.3). The Linux `.deb` criterion **is** satisfied
 both payloads **as builds**: the GTK *application* `.deb` was built 2026-09-19 in
 WSL Fedora 44 (§3.4.1), and the libghostty-vt library `.deb` is built AND
 install-and-run-verified on x86-64 Debian 12 (§3.4.2). The GTK payload's
-install-verify (install, `desktop-file-validate`, GUI launch) is still open (§3.4.1).
+install-verify (install, `desktop-file-validate`) is now met on the WSL glibc 2.43
+host (§3.4.1); the GUI-launch half is open (no desktop session there).
 §5 lists, per artifact, the exact requirement that is missing and
 where it can be met. The
 fourth criterion — the WASM dist being consumable via npm/ESM — **is** satisfied,
@@ -392,10 +393,12 @@ Two different `.deb`s belong to this section and they have different status.
 §3.4.1 is the GTK application package; §3.4.2 is the libghostty-vt library
 package, which is the one that has actually been installed and run.
 
-#### 3.4.1 `khostty_0.1.0_amd64.deb` — GTK application — BUILT (2026-09-19)
+#### 3.4.1 `khostty_0.1.0_amd64.deb` — GTK application — BUILT + INSTALL-VERIFIED (2026-09-19)
 
-**Artifact:** `dist/khostty_0.1.0_amd64.deb` — 18,143,936 bytes,
-`sha256 209ba5ed10abfe4e1a0caf4fb5da9bd16e7fc375b49254c46149d523652d713a`.
+**Artifact:** `dist/khostty_0.1.0_amd64.deb` — 18,143,964 bytes,
+`sha256 63d4e6159d65e97db685b9eedbe19c37765f5f838279e9d5b0326ab5a7b80de0`
+(supersedes `209ba5ed10abfe4e1a0caf4fb5da9bd16e7fc375b49254c46149d523652d713a`,
+which had the stale glibc floor, see blocker 3).
 **Produced by:** `packaging/linux/deb.sh`
 **Built on:** WSL Fedora 44 on `kooshapari-desk` (native x86_64 Linux; has
 `gtk4-devel`, `libadwaita-devel`, `gtk4-layer-shell-devel`, `ImageMagick`, zig
@@ -412,8 +415,11 @@ bash packaging/linux/deb.sh --probe
 Install:
 
 ```bash
+# Requires glibc >= 2.43 (Debian trixie is 2.41, Ubuntu 25.10 is 2.42, Fedora 42+ ok).
+# dpkg -i leaves the package unpacked-but-unconfigured on older distros instead of
+# shipping a binary that cannot load; apt resolves the libc6 floor and refuses cleanly.
 sudo dpkg -i dist/khostty_0.1.0_amd64.deb
-# or, letting the package manager resolve libc6 / libgcc-s1:
+# or, letting the package manager resolve libc6:
 sudo apt install ./dist/khostty_0.1.0_amd64.deb
 ```
 
@@ -461,11 +467,28 @@ artifact above. Two earlier blockers are fixed:
    (`com.khostty.Khostty`), matching the installed icon names and the
    `.metainfo` id — confirmed by extracting the built package.
 
-**Still open (install-verify).** The package **has not been installed** on a
-Linux desktop: no `dpkg -i`, no `desktop-file-validate`, no `khostty +version`
-against the installed binary, and no GUI launch. The verify commands above are
-the checklist to run on the next Linux desktop session; treat install-verify as
-the remaining half of this artifact's status.
+**Install-verify (executed 2026-09-19).** The package **was installed and driven
+on the WSL Fedora 44 host** (glibc 2.43) after the glibc-floor fix
+(`65de471df`): `dpkg -i` (with `--force-depends`, needed only because the host's
+dpkg database has no `libc6` entry even though it runs glibc 2.43 binaries) →
+`Status: install ok installed`; `dpkg -V` clean; `dpkg -L` lists
+`/usr/bin/khostty`, the `.desktop`, the metainfo, and the 6 hicolor PNGs;
+`ldd` on the installed binary resolves everything; `desktop-file-validate` OK;
+metainfo XML well-formed; the installed `/usr/bin/khostty +version` → exit 0
+(`Ghostty 1.3.2-main-+65de471df`); `gio info` reads the desktop entry;
+`dpkg --purge` leaves no residual files.
+
+**Negative control (Debian 12 bookworm, glibc 2.36, container on the WSL
+host).** `dpkg -i` unpacks the package (`install ok unpacked`) but
+`dpkg --configure -a` **refuses**: `khostty depends on libc6 (>= 2.43);
+however: Version of libc6:amd64 on system is 2.36-9+deb12u14`. With the
+superseded build (`209ba5ed…713a`, floor `libc6 (>= 2.17)`) the same container
+installed and *configured* cleanly and the binary then failed at load
+(`version 'GLIBC_2.43' not found`) — the exact defect the floor fix removes.
+
+**Still open (GUI launch).** No GUI session exists on the WSL host, so the app
+has not been launched as a windowed GTK application. Raw log:
+`sessions/20260916-fork-assessment/evidence/gtk_deb_install_2026-09-19.txt` (250 lines).
 
 #### 3.4.2 `khostty-vt_0.1.0_amd64.deb` — libghostty-vt library — VERIFIED
 

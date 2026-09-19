@@ -1,0 +1,250 @@
+==> GTK application .deb install-verify in x86_64 Debian 12 (bookworm) container
+--- artifact ---
+209ba5ed10abfe4e1a0caf4fb5da9bd16e7fc375b49254c46149d523652d713a  dist-release/khostty_0.1.0_amd64.deb
+18143936 bytes
+--- image ---
+a1dd2f4ae2a9f34d85cfa5a568df5382d7c71b22dfc29493b5205d1c4729b9f5
+podman_pull_exit=0
+--- container info ---
+PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
+NAME="Debian GNU/Linux"
+x86_64
+ldd (Debian GLIBC 2.36-9+deb12u14) 2.36
+--- dpkg -i ---
+Selecting previously unselected package khostty.
+(Reading database ... 6096 files and directories currently installed.)
+Preparing to unpack /pkg/khostty_0.1.0_amd64.deb ...
+Unpacking khostty (0.1.0) ...
+Setting up khostty (0.1.0) ...
+dpkg_exit=0
+--- dpkg -s (status) ---
+Status: install ok installed
+Installed-Size: 32648
+Architecture: amd64
+Version: 0.1.0
+=== dpkg -V (integrity) ===
+dpkg_V_clean
+=== dpkg -L (installed files of interest) ===
+/usr/bin/khostty
+/usr/share/applications/com.khostty.Khostty.desktop
+/usr/share/icons/hicolor/16x16/apps/com.khostty.Khostty.png
+/usr/share/icons/hicolor/24x24/apps/com.khostty.Khostty.png
+/usr/share/icons/hicolor/256x256/apps/com.khostty.Khostty.png
+/usr/share/icons/hicolor/32x32/apps/com.khostty.Khostty.png
+/usr/share/icons/hicolor/48x48/apps/com.khostty.Khostty.png
+/usr/share/icons/hicolor/512x512/apps/com.khostty.Khostty.png
+/usr/share/metainfo/com.khostty.Khostty.metainfo.xml
+=== ldd not found ===
+/usr/bin/khostty: /lib/x86_64-linux-gnu/libm.so.6: version `GLIBC_2.43' not found (required by /usr/bin/khostty)
+/usr/bin/khostty: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38' not found (required by /usr/bin/khostty)
+	libEGL.so.1 => not found
+	libX11.so.6 => not found
+	libgtk4-layer-shell.so.0 => not found
+	libwayland-client.so.0 => not found
+	libadwaita-1.so.0 => not found
+	libgtk-4.so.1 => not found
+	libgio-2.0.so.0 => not found
+	libgobject-2.0.so.0 => not found
+	libglib-2.0.so.0 => not found
+=== desktop-file-validate ===
+bash: line 12: desktop-file-validate: command not found
+desktop_file_validate_FAIL_rc=127
+=== metainfo xml well-formed ===
+bash: line 14: python3: command not found
+metainfo_parse_FAIL
+=== installed binary +version (headless, no GUI) ===
+/usr/bin/khostty: error while loading shared libraries: libEGL.so.1: cannot open shared object file: No such file or directory
+plusversion_exit=127
+=== dpkg -r (remove) ===
+(Reading database ... 6124 files and directories currently installed.)
+Removing khostty (0.1.0) ...
+remove_exit=0
+=== residual files after remove ===
+ls: cannot access '/usr/bin/khostty': No such file or directory
+ls: cannot access '/usr/share/applications/com.khostty.Khostty.desktop': No such file or directory
+no_residuals
+ALL CONTAINER CHECKS DONE
+===================================================================
+==> REBUILD VERIFY (63d4e615...de0, Depends libc6 >= 2.43) 2026-09-19
+===================================================================
+--- artifact ---
+209ba5ed10abfe4e1a0caf4fb5da9bd16e7fc375b49254c46149d523652d713a  dist-release/khostty_0.1.0_amd64.deb
+18143936 bytes
+--- negative control: dpkg -i must REFUSE on bookworm (glibc 2.36 < 2.43) ---
+Preparing to unpack /pkg/khostty_0.1.0_amd64.deb ...
+Unpacking khostty (0.1.0) ...
+Setting up khostty (0.1.0) ...
+dpkg_refusal_pipeline_rc=0
+Status: install ok installed
+refusal_check_done
+--- positive: dpkg -i on trixie (glibc 2.41) should also refuse; ubuntu 25.10 (2.42) refuse ---
+sed: -e expression #1, char 16: unknown option to `s'
+sed: -e expression #1, char 16: unknown option to `s'
+ALL NEGATIVE CONTROLS DONE
+--- negative control detail: bookworm dpkg -i raw output ---
+raw_exit=0
+Selecting previously unselected package khostty.
+(Reading database ... 6096 files and directories currently installed.)
+Preparing to unpack /pkg/khostty_0.1.0_amd64.deb ...
+Unpacking khostty (0.1.0) ...
+Setting up khostty (0.1.0) ...
+dpkg_-s_exit=0
+Package: khostty
+Status: install ok installed
+Priority: optional
+Section: utils
+Installed-Size: 32648
+===================================================================
+==> CONFIG-STATE VERIFY (63d4e615...de0, Depends libc6 >= 2.43) 2026-09-19
+===================================================================
+--- bookworm (glibc 2.36 < 2.43): dpkg -i unpacks but CANNOT configure ---
+dpkg_i_exit=0
+Setting up khostty (0.1.0) ...
+--- dpkg -s state ---
+Status: install ok installed
+Depends: libc6 (>= 2.17), libgcc-s1 (>= 4.2)
+--- apt-get -f check reports the broken dep (expected) ---
+Building dependency tree...
+--- binary load attempt (expected to fail with GLIBC_2.43) ---
+/usr/bin/khostty: error while loading shared libraries: libEGL.so.1: cannot open shared object file: No such file or directory
+load_rc=127
+--- cleanup: dpkg -r / dpkg --purge ---
+purge_exit=0
+dpkg-query: package 'khostty' is not installed and no information is available
+bookworm_check_done
+ALL CONFIG-STATE CHECKS DONE
+===================================================================
+==> NEW-DEB CONFIG-STATE VERIFY (63d4e615...de0, libc6 >= 2.43) 2026-09-19
+===================================================================
+--- bookworm (glibc 2.36): unpack ok, configure FAILS on Depends (expected) ---
+dpkg_i_exit=0
+--- dpkg -s state after -i ---
+Status: install ok installed
+Depends: libc6 (>= 2.17), libgcc-s1 (>= 4.2)
+--- configure attempt (explicit) ---
+dpkg: error processing package khostty (--configure):
+ package khostty is already installed and configured
+Errors were encountered while processing:
+ khostty
+configure_rc=0
+--- dpkg -s state after configure attempt ---
+Status: install ok installed
+--- cleanup ---
+purge_exit=0
+bookworm_new_check_done
+NEW-DEB CHECKS DONE
+===================================================================
+==> CONFIG-STATE VERIFY: NEW DEB (63d4e615...de0, libc6 >= 2.43)
+===================================================================
+--- artifact ---
+63d4e6159d65e97db685b9eedbe19c37765f5f838279e9d5b0326ab5a7b80de0  dist-release/khostty_0.1.0_amd64.deb
+--- bookworm (glibc 2.36 < 2.43): unpack, then configure MUST FAIL on Depends ---
+dpkg_i_exit=1
+--- dpkg -s state after -i ---
+Status: install ok unpacked
+Depends: libc6 (>= 2.43)
+--- unpacked state ok? configure attempt ---
+dpkg: dependency problems prevent configuration of khostty:
+ khostty depends on libc6 (>= 2.43); however:
+  Version of libc6:amd64 on system is 2.36-9+deb12u14.
+
+dpkg: error processing package khostty (--configure):
+ dependency problems - leaving unconfigured
+configure_all_rc=0
+Status: install ok unpacked
+--- cleanup ---
+purge_exit=0
+bookworm_new_check_done
+NEW-DEB CHECKS DONE
+===================================================================
+==> POSITIVE CONTROL: install on glibc >= 2.43 host (fedora:latest container)
+===================================================================
+ldd (GNU libc) 2.43
+--- dnf install of the deb (dpkg not present on fedora) ---
+dnf_install_exit=1
+Failed to resolve the transaction:
+No match for argument: /pkg/khostty_0.1.0_amd64.deb
+You can try to add to command line:
+  --skip-unavailable to skip unavailable packages
+--- binary present + version ---
+ls: cannot access '/usr/bin/khostty': No such file or directory
+bash: line 9: /usr/bin/khostty: No such file or directory
+plusversion_rc=127
+--- remove ---
+remove_exit=0
+POSITIVE CONTROL DONE
+===================================================================
+==> POSITIVE CONTROL v2: dpkg inside a glibc 2.43 environment (debian:trixie + glibc upgrade is not feasible; use WSL host itself as the positive)
+===================================================================
+--- WSL host is glibc 2.43: install the NEW deb directly with dpkg on the host, then purge ---
+dpkg_i_exit=1
+dpkg: error processing package khostty (--install):
+ dependency problems - leaving unconfigured
+Errors were encountered while processing:
+ khostty
+--- dpkg -s ---
+Status: install ok unpacked
+Version: 0.1.0
+Depends: libc6 (>= 2.43)
+--- integrity ---
+dpkg_V_clean
+--- files of interest ---
+/usr/bin/khostty
+/usr/share/applications/com.khostty.Khostty.desktop
+/usr/share/icons/hicolor/16x16/apps/com.khostty.Khostty.png
+/usr/share/icons/hicolor/24x24/apps/com.khostty.Khostty.png
+/usr/share/icons/hicolor/256x256/apps/com.khostty.Khostty.png
+/usr/share/icons/hicolor/32x32/apps/com.khostty.Khostty.png
+/usr/share/icons/hicolor/48x48/apps/com.khostty.Khostty.png
+/usr/share/icons/hicolor/512x512/apps/com.khostty.Khostty.png
+/usr/share/metainfo/com.khostty.Khostty.metainfo.xml
+--- ldconfig/ldd of installed binary ---
+ldd_clean_all_resolved
+--- desktop-file-validate (install if needed) ---
+desktop_file_validate_OK
+--- metainfo well-formed ---
+metainfo_wellformed
+--- installed +version (headless) ---
+Ghostty 1.3.2-main-+65de471df
+
+Version
+  - version: 1.3.2-main-+65de471df
+plusversion_rc=0
+--- gio desktop entry readable ---
+desktop_entry_readable
+--- purge ---
+purge_exit=0
+ls: cannot access '/usr/bin/khostty': No such file or directory
+no_residuals
+===================================================================
+==> POSITIVE CONTROL v3: dpkg -i with libc6 present in dpkg db
+    (WSL host runs glibc 2.43 binaries but dpkg db has no libc6 entry;
+     register the host libc6 into dpkg db first, then dpkg -i khostty)
+===================================================================
+--- host libc version ---
+ldd (GNU libc) 2.43
+-rwxr-xr-x 1 root root 2482096 Aug  3 17:00 /lib64/libc.so.6
+--- install khostty with dependency check satisfied manually ---
+first_pass_rc=0 (expected dependency problems: dpkg db has no libc6)
+--- force-depends install to complete configure (db cannot resolve libc6 without apt) ---
+force_depends_rc=0
+ khostty depends on libc6 (>= 2.43); however:
+  Package libc6 is not installed.
+
+Setting up khostty (0.1.0)…
+--- dpkg -s ---
+Status: install ok installed
+Version: 0.1.0
+Depends: libc6 (>= 2.43)
+--- integrity + files + ldd + validate + version ---
+dpkg_V_clean
+10
+ldd_clean
+desktop_file_validate_OK
+Ghostty 1.3.2-main-+65de471df
+
+plusversion_rc=0
+--- purge ---
+purge_exit=0
+ls: cannot access '/usr/bin/khostty': No such file or directory
+no_residuals

@@ -11,7 +11,7 @@ Khostty-verified support are different columns, because they are different claim
 | Platform | VT library | Terminal app | Agent IPC | FFI | Renderer | Verified in this fork? |
 |---|---|---|---|---|---|---|
 | **macOS** (arm64/x86_64) | **VERIFIED** | Upstream AppKit; Metal toolchain caveat | 3 actions | C, Rust, WASM | Metal / OpenGL | **YES** — 2026-09-16/17 |
-| **Linux** (x86_64/arm64) | Upstream supported | Upstream GTK4 | 3 actions | C, Rust, WASM | OpenGL | **BUILT 2026-09-19** (x86_64, WSL Fedora 44; no GTK launch, no arm64) |
+| **Linux** (x86_64/arm64) | Upstream supported | Upstream GTK4 | 3 actions | C, Rust, WASM | OpenGL | **BUILT + INSTALL-VERIFIED 2026-09-19** (x86_64, WSL Fedora 44; `.deb` installed on the host, +version exit 0, bookworm negative control refuses on the derived libc6 2.43 floor; no GTK GUI launch, no arm64) |
 | **Windows** (x86_64) | Upstream builds; **no app runtime** | **SCAFFOLD only** | Named-pipe stub | C, Rust, Go | OpenGL (unproven) | **NO** — G3 IN PROGRESS |
 | **WASM** (`wasm32-freestanding`) | **VERIFIED** | n/a (headless) | n/a | JS/TS | WebGL (n/a for VT-only) | **YES** — artifact verified |
 | **iOS** | Library only (xcframework slice) | Not supported | n/a | C | Metal | Artifact present, app not attempted |
@@ -122,14 +122,15 @@ CI reflects this: `.github/workflows/ci.yml` (the fork's own workflow) runs
 `zig fmt --check src/ build.zig` on Ubuntu and
 `zig build -Doptimize=ReleaseSafe -Demit-macos-app=false` on a macOS runner.
 
-Why Linux is still unverified here: the Ubuntu job is **formatting only**, and
+Why the CI record is still thin here: the Ubuntu job is **formatting only**, and
 upstream's heavier suites are not effective in this fork. `test.yml` gates every
 job on `github.repository == 'ghostty-org/ghostty'`, so it is inert here;
 `nix.yml`, `flatpak.yml`, and `update-colorschemes.yml` carry the same guard.
 `nix.yml` additionally targets `namespace-profile-ghostty-*` runners that do not
 exist for this repository. 12 of the 16 workflow files have no repository guard
-at all and would attempt to run. Neither a Linux build nor a Linux test is
-executed by any workflow that can actually succeed in this fork. See
+at all and would attempt to run. No CI workflow that can succeed in this fork
+builds or tests Linux. The Linux x86_64 build and `.deb` install-verify that do
+exist were run on the WSL Fedora 44 host (§4), not CI. See
 [CONTRIBUTING.md](CONTRIBUTING.md#9-continuous-integration).
 
 **Honest statement:** Khostty's macOS *library* path is verified. Khostty's macOS
@@ -140,7 +141,8 @@ Xcode component), not a code defect.
 
 ## 4. Linux
 
-**Status: upstream-supported, NOT verified in this fork.**
+**Status: BUILT + INSTALL-VERIFIED (x86_64, 2026-09-19, WSL Fedora 44 on
+`kooshapari-desk`); GUI launch and arm64 not verified.**
 
 Upstream provides a full GTK4 application runtime (`src/apprt/gtk.zig` plus
 `src/apprt/gtk/`, ~8000+ lines) that is the default for Linux and FreeBSD.
@@ -151,14 +153,24 @@ Upstream provides a full GTK4 application runtime (`src/apprt/gtk.zig` plus
 | Renderer | `opengl` |
 | Fonts | `fontconfig_freetype` |
 | Display backends | x11 and/or wayland (`-Dgtk-wayland`, `-Dgtk-x11`) |
-| Packaging | `flatpak/`, `snap/`, `dist/linux/` |
+| Packaging | `flatpak/`, `snap/`, `dist/linux/`; the GTK app `.deb` built + install-verified |
 
-Why it is unverified here: G1 validated the macOS host build only. No Linux build
-or run has been recorded in `docs/sessions/`. Treat Linux as "should work,
-untested by us".
+What was verified here (2026-09-19): the GTK application `.deb`
+(`khostty_0.1.0_amd64.deb`, sha256 `63d4e615…de0`) was built natively in WSL
+Fedora 44 (commits `9daf736e8`, `45e6d086b`, `65de471df`), then installed on that
+host with `dpkg -i --force-depends` (the dpkg db there has no libc6 entry even
+though the host runs glibc 2.43 binaries): `dpkg -s` → `install ok installed`,
+`dpkg -V` clean, `dpkg -L` lists the binary + `.desktop` + metainfo + 6 hicolor
+PNGs, `ldd` resolves everything, `desktop-file-validate` passes, the installed
+`khostty +version` exits 0, and `dpkg --purge` leaves no residuals. The negative
+control holds: in an x86-64 Debian 12 container (glibc 2.36) `dpkg -i` leaves the
+package unpacked but unconfigured, refusing on the derived `libc6 (>= 2.43)`
+floor. Evidence: `sessions/20260916-fork-assessment/evidence/gtk_deb_install_2026-09-19.txt`.
 
-CI runs only `zig fmt --check` on Ubuntu (lint); it does not build or test on
-Linux. That is a gap worth closing before claiming Linux support.
+What is still open: a windowed GTK GUI launch (the WSL host has no desktop
+session) and arm64 Linux. No CI job builds or tests on Linux; the Ubuntu job
+runs only `zig fmt --check`. That remains a gap worth closing before broader
+Linux-support claims.
 
 ---
 
