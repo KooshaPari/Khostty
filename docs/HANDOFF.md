@@ -302,14 +302,22 @@ test 13/13, exit 0; sidecar `shasum -a 256 -c` → OK. The artifact is now attri
 to a clean commit. Hash updated in [RELEASE.md §6](RELEASE.md), `docs/INSTALL.md`, the
 changelog, and `dist-release/CHECKSUMS.txt`.
 
-**New next bounded task: close the Windows runtime gap on a Windows host (or a host with
-a working x86_64 Windows emulation layer).** It is the only remaining artifact whose
-*runtime* behaviour is unverified. Acceptance: `ghostty.exe` launches on Windows and
-`ghostty-vt.dll` loads, with the 198 exported symbols callable. This host cannot do it: no Windows host, no `wine` (all Homebrew casks Gatekeeper-disabled
-since 2026-09-01), no Rosetta for x86_64 emulation — and Docker `--platform linux/amd64`
-emulation runs `wine-11.0` but fails to create a Wine prefix (`wineboot` will not start),
-so the PE still cannot be loaded. The ABI *shape* is already verified statically
-(see [RELEASE.md §6](RELEASE.md)), so only runtime behaviour is outstanding.
+**Windows runtime gap: CLOSED 2026-09-19.** Earlier text here said this host could not
+do it (no Windows host, no `wine`, no working x86_64 emulation). That was wrong about
+availability: `kooshapari-desk` (Tailscale `100.96.135.160`, Windows NT 10.0.28120,
+AMD64) is online and is a designated compute-mesh runner. Both artifacts were copied
+there byte-identically (sha256 re-verified) and **executed**. Acceptance met:
+`ghostty.exe +version` → exit 0, reporting `app runtime: .windows`,
+`font engine: .freetype_windows`, `libxev: iocp`; `ghostty-vt.dll` loads and the
+exported ABI runs live (`terminal_new`/`get`/`resize`/`vt_write`/`free` all behave,
+TITLE readback correct, 0 failures). Raw log:
+`sessions/20260916-fork-assessment/evidence/windows_runtime_verify_2026-09-19.txt`; harness
+`sessions/20260916-fork-assessment/evidence/windows_verify.ps1`.
+
+**What is still open on Windows:** the run used the CLI `+version` action only, so no
+GUI window was launched and windowed interaction is unverified; the artifact is a
+`.Debug` build; and the Inno Setup installer
+(`Khostty-0.1.0-windows-x86_64-setup.exe`) is still uncompiled (needs `ISCC.exe`).
 
 **Blocked on authorization (not on capability):** WBS 10.5 (publish FFI packages),
 10.6 (create the GitHub release), 10.8 (announce), and creating the `v0.1.0` tag.

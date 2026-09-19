@@ -190,11 +190,31 @@ a reader could mistake a finished gate for an unstarted one):
 
 ---
 
-## G3: Windows App Runtime (cross-build PASS; host test BLOCKED — no Windows host) — HIGH PRIORITY
+## G3: Windows App Runtime (cross-build PASS; host test PASS on a real Windows runner 2026-09-19) — HIGH PRIORITY
 
 **Gate objective**: Upstream has NO Windows app runtime. Only `embedded.zig` (macOS) and
 `gtk.zig` (Linux) exist. Khostty fills this gap by creating `src/apprt/windows/` — a
 native Win32/DirectWrite terminal application using `libghostty-vt`.
+
+**Status 2026-09-19 — the host test is DONE.** The "no Windows host" blocker was
+false: `kooshapari-desk` (Tailscale `100.96.135.160`, Windows NT 10.0.28120, AMD64) is
+online and designated a home compute-mesh runner. Both artifacts were copied there
+(sha256 re-verified byte-identical on the Windows side) and **actually executed**:
+
+- `ghostty.exe +version` → exit 0, reporting `app runtime: .windows`,
+  `font engine: .freetype_windows`, `libxev: iocp`, `Zig version: 0.16.0`,
+  build mode `.Debug`. The Windows apprt is real and is the runtime that gets selected.
+- `ghostty-vt.dll` was loaded via `LoadLibraryW` and its ABI driven live:
+  `ghostty_terminal_new(NULL,&t,80,24)` → rc 0; `get COLS/ROWS` → `80/24`;
+  `resize(100,40)` → rc 0 → `COLS/ROWS` `100/40` (state genuinely changed);
+  `vt_write` of text + SGR + OSC-0 → `CURSOR_Y` `1`, `TITLE` `Khostty-Win`;
+  `VT_GROUND` `1`; `terminal_free` no crash. `ghostty_build_info(SIMD)` → rc 0.
+
+**0 failures.** Raw log `evidence/windows_runtime_verify_2026-09-19.txt`,
+harness `evidence/windows_verify.ps1`. Remaining caveats, stated plainly:
+the artifact is a `.Debug` build; `ghostty.exe` was run only for the CLI `+version`
+action, so **no GUI window was launched** and windowed interaction is still unverified;
+and the Inno Setup installer (WBS 10.2 supplier) is still uncompiled.
 
 **Depends on**: G1 (DONE), G2 (conformance must pass before new platform work)
 **Blocks**: G4 (agent surface needs a working runtime), G10 (release needs Windows)
@@ -928,7 +948,7 @@ consumable packages, hand off to ecosystem. Define the 0.1.0 release.
 |----|------|-----|---------|-------|
 | 10.1 | Define release version scheme + git tag | 10m | G8/G9 | **DONE** (`89df76054`, `docs/RELEASE.md`). Scheme `<major>.<minor>.<patch>[-pre][+ghostty.<base>.<sha7>]` documented from `packaging/version.sh`; derived from the single source of truth `build.zig` `lib_version` (`0.1.0-dev` → `0.1.0`), which is also the ABI soname `libghostty-vt.0.1.0`; `0.x` means the agent surfaces (IPC v1, polyglot bindings) are not frozen. Tag `v0.1.0` documented and **NOT created** — `git rev-parse --verify v0.1.0` fails, `git tag -l 'v0.1.0'` is empty. |
 | 10.2 | Build final artifacts for all platforms | 10m | G9.11-9.14 | macOS .app, Linux .deb, Windows .exe, WASM |
-| 10.3 | Verify artifacts (checksums, run smoke tests) | 10m | 10.2 | **DONE** (`89df76054`). Every hash recomputed 2026-09-18 with `shasum -a 256`: macOS zip `94abd2a7…4317cb` **MATCH**, WASM tarball `55cfc675…8604dc` **MATCH** (rebuilt from a clean tree 2026-09-18; supersedes the dirty-tree `ce5d1f1d…` artifact — sidecar `shasum -c` → OK, exit 0), `khostty-vt_0.1.0_amd64.deb` `3c080d13…d834cf` **MATCH**, `ghostty.exe` `df0b4c87…8d03e` / `ghostty-vt.dll` `b4cff87e…5e6654f` **hashed, not executed** (no Windows host). **0 discrepancies.** Manifest written to `dist-release/CHECKSUMS.txt` (gitignored) and reproduced inline in `docs/RELEASE.md` §6 so it is versioned; self-check `shasum -a 256 -c` → 8/8 OK, exit 0, no warnings. |
+| 10.3 | Verify artifacts (checksums, run smoke tests) | 10m | 10.2 | **DONE** (`89df76054`). Every hash recomputed 2026-09-18 with `shasum -a 256`: macOS zip `94abd2a7…4317cb` **MATCH**, WASM tarball `55cfc675…8604dc` **MATCH** (rebuilt from a clean tree 2026-09-18; supersedes the dirty-tree `ce5d1f1d…` artifact — sidecar `shasum -c` → OK, exit 0), `khostty-vt_0.1.0_amd64.deb` `3c080d13…d834cf` **MATCH**, `ghostty.exe` `df0b4c87…8d03e` / `ghostty-vt.dll` `b4cff87e…5e6654f` — hashed, then **EXECUTED on the Windows runner 2026-09-19** (was "hashed, not executed"). `+version` exit 0 (`app runtime: .windows`); DLL loads and the terminal ABI runs end to end, 0 failures. See `evidence/windows_runtime_verify_2026-09-19.txt` and G3's status note. **0 discrepancies.** Manifest written to `dist-release/CHECKSUMS.txt` (gitignored) and reproduced inline in `docs/RELEASE.md` §6 so it is versioned; self-check `shasum -a 256 -c` → 8/8 OK, exit 0, no warnings. |
 | 10.4 | Write release notes (`docs/changelog/0.1.0.md`) | 10m | 10.2 | **DONE** (`54d071dad`). Four deltas + gate evidence from this WBS; known issues include the three required ones (Windows built and ABI-checked but never executed on Windows; macOS `.app` verified by codesign + `--version` with no GUI session observed and not notarized; GTK Linux app does not cross-compile from macOS). Re-verified while writing: IPC 458/458 across 7 modules, `cargo test` 199/199. **[Independently re-executed 2026-09-18]** `zig test` per module reproduces the figure exactly: protocol 30, state 35, events 43, auth 12, pane 83, handler 121, server 134 = **458, all pass**, so the "458/458" and its per-module breakdown are both correct. `cargo test` likewise re-run at 199/199 (see G5). New discrepancy reported not fixed: `go test ./...` fails at link on this host — **classified as a host-wide toolchain defect**, not a Khostty regression: a trivial unrelated cgo hello-world fails identically (CLT SDK `MacOSX27.0.sdk` vs clang/tapi 17.0.0 from Xcode 26.0). G6's recorded result stands; it is simply unreproducible on this host today (see the G6 caveat above). |
 | 10.5 | Publish FFI crates/packages (crates.io, PyPI, Go, npm) | 10m | G5/G6/G7 | **NOT STARTED — requires publish authorization.** Nothing is on any registry. **Publish-readiness pre-flight executed 2026-09-18 (local only, nothing uploaded):** Rust — `cargo publish --dry-run` in `khostty-vt/` exits **0**, packages 45 files / 503.0 KiB (113.7 KiB compressed) and verifies; it ends with `aborting upload due to dry run`, so no upload occurred. Python — pre-built `khostty_vt-0.1.0-py3-none-any.whl` (26 files) and `.tar.gz` are valid; wheel METADATA reads `Name: khostty-vt`, `Version: 0.1.0`, `License-Expression: MIT`, `Requires-Python: >=3.8`. npm — `npm pack --dry-run` on the staged dist emits `khostty-libghostty-vt-wasm-0.1.0.tgz` (27 files, shasum `2754b0a4…`, sha512 integrity computed). Go — source module only, no registry publish needed. **Consumer caveat surfaced by the dry run:** the Rust crate looks for a prebuilt native library at `GHOSTTY_VT_LIB_DIR` or `../zig-out/lib`, `../build/lib`, `../dist/lib`; absent that it typechecks but **does not link**, so crates.io consumers must supply `libghostty-vt` separately. |
 | 10.6 | Create GitHub release with artifacts | 10m | 10.3-10.4 | **NOT STARTED — requires publish authorization.** No GitHub release exists and no asset has been uploaded. |
@@ -969,7 +989,7 @@ G0 Fork Hygiene (DONE) → G1 Native Build (DONE) → G2 Conformance Evidence
 | G0 Fork Hygiene | 4 | 40 | ✅ DONE |
 | G1 Native Build | 3 | 30 | ✅ DONE |
 | G2 Conformance Evidence | 12 | 120 | ✅ DONE (84/84 pass) |
-| G3 Windows App Runtime | 15 | 150 | ✅ DONE (cross-build PASS; isolated apprt run 25/25) |
+| G3 Windows App Runtime | 15 | 150 | ✅ DONE (cross-build PASS; isolated apprt run 25/25; **real Windows runner 2026-09-19: `+version` exit 0, DLL ABI 0 failures**) |
 | G4 Agent/IPC | 14 | 140 | ✅ DONE |
 | G5 Rust FFI | 10 | 100 | ✅ DONE (199/199 tests) |
 | G6 Go+Python FFI | 10 | 100 | ✅ DONE (207 tests) |

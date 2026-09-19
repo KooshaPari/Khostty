@@ -215,14 +215,18 @@ b4cff87e6ee95dd97e0872fdaf752122aceb4f7536662f6ceadf3905eae6654f  zig-out/bin/gh
 | 1 | `dist-release/macos/Khostty-0.1.0-macos.zip` | 35,953,098 | 2026-09-18 05:13 | **MATCH** | `shasum -a 256` → `94abd2a7…4317cb`. Matches the sidecar `.sha256` written beside it, matches the value recorded in `dist-release/macos/EVIDENCE.txt`, and matches `docs/INSTALL.md`. `codesign --verify --deep --strict` → *valid on disk*; bundled binary `--version` → exit 0. **Not notarized** (no `notarytool` credentials) and **no GUI session was observed**. |
 | 2 | `dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz` | 680,598 | 2026-09-18 06:12 | **MATCH** | `shasum -a 256` → `55cfc675…8604dc`; sidecar verified with `shasum -a 256 -c` → `OK`, exit 0. Inner `khostty-vt.wasm` hash matches its own sidecar. (This row previously read `2026-09-17 07:19`, the superseded dirty-tree build; the tarball was repacked 2026-09-18 as recorded in §6.3.) |
 | 3 | `dist/khostty-vt_0.1.0_amd64.deb` | 2,320,612 | 2026-09-18 05:07 | **MATCH** | `shasum -a 256` → `3c080d13…d834cf`, matching the value recorded in `docs/INSTALL.md` and the WBS G9.12 evidence row. Installed-and-run evidence lives in `dist-release/evidence/deb-libvt-verify.log` (`deb-full-build.log` is the *GTK application* build attempt, which fails on missing headers). |
-| 4 | `zig-out/bin/ghostty.exe` | 43,470,336 | 2026-09-18 01:23 | **HASHED, NOT EXECUTED** | `shasum -a 256` → `df0b4c87…8d03e`. Identical to the staged copy at `dist-release/stage/windows/Khostty-0.1.0-win64/payload/ghostty.exe`. `file` → `PE32+ executable (GUI) x86-64`. **Never run**: macOS cannot execute PE binaries, `wine` is absent, and every Homebrew wine cask is disabled by Gatekeeper. |
-| 5 | `zig-out/bin/ghostty-vt.dll` | 7,545,344 | 2026-09-18 01:22 | **HASHED, NOT EXECUTED** | `shasum -a 256` → `b4cff87e…5e6654f`. Same hash as the staged copy. `file` → `PE32+ executable (DLL)`; ABI shape checked statically (198 exports, 0 undeclared). **Never run.** |
+| 4 | `zig-out/bin/ghostty.exe` | 43,470,336 | 2026-09-18 01:23 | **EXECUTED 2026-09-19** | `shasum -a 256` → `df0b4c87…8d03e`; re-verified byte-identical on the Windows host. Identical to the staged copy at `dist-release/stage/windows/Khostty-0.1.0-win64/payload/ghostty.exe`. `file` → `PE32+ executable (GUI) x86-64`. **Run** on `kooshapari-desk` (Windows NT 10.0.28120, AMD64): `+version` → exit 0, `app runtime: .windows`, `font engine: .freetype_windows`, `libxev: iocp`, build mode `.Debug`. CLI action only — no GUI window launched. |
+| 5 | `zig-out/bin/ghostty-vt.dll` | 7,545,344 | 2026-09-18 01:22 | **EXECUTED 2026-09-19** | `shasum -a 256` → `b4cff87e…5e6654f`; same hash as the staged copy. `file` → `PE32+ executable (DLL)`; ABI shape checked statically (198 exports, 0 undeclared). **Loaded and driven live** on `kooshapari-desk`: `ghostty_terminal_new` rc 0, `get COLS/ROWS` 80/24, `resize(100,40)` → 100/40, `vt_write` + OSC-0 → `CURSOR_Y` 1 / `TITLE` `Khostty-Win`, `VT_GROUND` 1, `terminal_free` clean; `ghostty_build_info(SIMD)` rc 0. 0 failures. |
 | 6 | `khostty-vt.wasm` (inside the WASM dist) | 813,670 | 2026-09-16 (binary; packaged 2026-09-18) | **MATCH** | Hash matches `khostty-vt.wasm.sha256` inside the extracted package. |
 
 **Result: all recomputed hashes match the values expected for this build. No
 discrepancy was found.** Five of the six rows are build-product or packaging checks;
-row 1's signature check and rows 2/6's smoke evidence are runtime checks. Rows 4 and 5
-have no runtime check anywhere in this repository's evidence.
+row 1's signature check and rows 2/6's smoke evidence are runtime checks. **Rows 4 and 5
+now have a runtime check too (2026-09-19):** both were executed on the Windows runner
+`kooshapari-desk`, with `ghostty.exe +version` exiting 0 and `ghostty-vt.dll` driven
+through its live terminal ABI (0 failures). Raw log:
+`sessions/20260916-fork-assessment/evidence/windows_runtime_verify_2026-09-19.txt`. Caveat: the `ghostty.exe`
+run was the CLI `+version` action, so no GUI window was launched.
 
 ### 6.3 Manifest metadata
 

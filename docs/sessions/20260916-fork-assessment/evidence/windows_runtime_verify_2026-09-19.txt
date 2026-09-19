@@ -1,0 +1,47 @@
+# Khostty Windows runtime verification - raw log
+# Captured: 2026-09-19 ~09:06 UTC
+# Host:     kooshapari-desk (Tailscale 100.96.135.160), Windows NT 10.0.28120.0, AMD64
+#           PowerShell 5.1.28000.2760, .NET 4.0.30319.42000
+# Harness:  docs/sessions/20260916-fork-assessment/evidence/windows_verify.ps1
+# Artifacts (transferred byte-identical, sha256 re-verified on the Windows side):
+#   ghostty.exe    df0b4c8772ad5de8c65078cf0ade6645ad16601b1b4ca37097e314abf028d03e
+#   ghostty-vt.dll b4cff87e6ee95dd97e0872fdaf752122aceb4f7536662f6ceadf3905eae6654f
+# Outcome:  failures=0
+# ---------------------------------------------------------------------------
+=== ENV ===
+OS:       Microsoft Windows NT 10.0.28120.0
+Arch:     AMD64
+PS:       5.1.28000.2760
+DotNet:   4.0.30319.42000
+
+=== TEST 1: execute ghostty.exe +version (30s cap) ===
+RESULT: EXITED code=
+--- stdout ---
+Ghostty 1.3.2-main-+5a85344f0
+
+Version
+  - version: 1.3.2-main-+5a85344f0
+  - channel: tip
+Build Config
+  - Zig version   : 0.16.0
+  - build mode    : .Debug
+  - app runtime   : .windows
+  - font engine   : .freetype_windows
+  - renderer      : renderer.generic.Renderer(renderer.OpenGL)
+  - libxev        : iocp
+--- stderr ---
+
+=== TEST 2: ghostty-vt.dll live ABI calls ===
+Add-Type: OK
+LoadLibraryW handle: 140714845798400
+build_info(SIMD): rc=0 value=1
+terminal_new(80,24): rc=0 handle=550183258832
+get COLS=80 ROWS=24  (expect 80/24)
+resize(100,40): rc=0 -> COLS=100 ROWS=40  (expect 100/40)
+after vt_write: CURSOR_Y=1  (expect 1)
+after OSC 0: TITLE='Khostty-Win'  (expect Khostty-Win)
+VT_GROUND=1  (expect 1)
+terminal_free: OK (no crash)
+RESULT: FULL LIFECYCLE PASSED
+
+=== DONE  failures=0 ===
