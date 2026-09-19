@@ -1,0 +1,94 @@
+# GTK application .deb build evidence — 2026-09-19
+
+Task: WBS 9.12 (Package Linux .deb) — the GTK application payload.
+Host: `kooshapari-desk` -> WSL Fedora 44, native x86_64 Linux, run as root.
+Toolchain in WSL: zig 0.16.0 at `/opt/zig`, `gtk4-devel`, `libadwaita-devel`,
+`gtk4-layer-shell-devel`, `ImageMagick` (installed this session), `dpkg-deb`.
+
+## Result
+
+BUILD: PASS — `packaging/linux/deb.sh` exit 0.
+INSTALL-VERIFY: NOT PERFORMED — no `dpkg -i`, no `desktop-file-validate`,
+no GUI launch. The verify checklist lives in `docs/INSTALL.md` §3.4.1.
+
+## Artifact
+
+```
+dist/khostty_0.1.0_amd64.deb
+  size:    18,143,936 bytes
+  sha256:  209ba5ed10abfe4e1a0caf4fb5da9bd16e7fc375b49254c46149d523652d713a
+  format:  Debian binary package (format 2.0), control.tar.xz, data.tar.xz
+```
+
+## Blockers fixed this session
+
+### 1. Cross-compile mis-target — commit `9daf736e8`
+
+`deb.sh` passed `-Dtarget=x86_64-linux-gnu` unconditionally. On a native x86_64
+Linux host that makes Zig treat the build as a cross-compile, so it refuses to
+link the system shared libraries:
+
+```
+error: unable to find dynamic system library 'gobject-2.0'
+       using strategy 'paths_first'. searched paths: none
+```
+
+Fix: the target is now conditional on the host (`uname -s`/`uname -m`); on
+native x86_64 Linux no `-Dtarget` is passed and the system GTK4/libadwaita
+link normally. Cross-building from macOS or another arch still passes the
+explicit target.
+
+### 2. Icon set and desktop Icon ref — commit `45e6d086b`
+
+Two packaging defects observed by extracting the first build:
+
+- The icon block converted `dist/windows/ghostty.ico` into a single
+  `512x512/apps/*.png`. Without a 512px source frame, ImageMagick instead wrote
+  numbered frames (`-0`..`-4`, 16..256 px) into that one directory, and no
+  size-matched hicolor entries existed.
+- `dist/linux/app.desktop.in` hard-coded `Icon=com.mitchellh.ghostty`, which
+  resolves to the upstream icon (or nothing) on a Khostty install.
+
+Fix: the icon block extracts the largest embedded frame (`ls -S` over
+`icon-*.png`) and resizes it into size-matched hicolor paths
+(16/24/32/48/256/512); the desktop template uses `Icon=@APPID@`
+(`com.khostty.Khostty`), matching the installed icon names and the
+`.metainfo` id.
+
+## Package contents verified (dpkg-deb extraction)
+
+```
+./usr/share/icons/hicolor/16x16/apps/com.khostty.Khostty.png     1,304 B
+./usr/share/icons/hicolor/24x24/apps/com.khostty.Khostty.png     1,561 B
+./usr/share/icons/hicolor/32x32/apps/com.khostty.Khostty.png     2,090 B
+./usr/share/icons/hicolor/48x48/apps/com.khostty.Khostty.png     3,322 B
+./usr/share/icons/hicolor/256x256/apps/com.khostty.Khostty.png  68,627 B
+./usr/share/icons/hicolor/512x512/apps/com.khostty.Khostty.png 186,599 B
+Icon=com.khostty.Khostty   (desktop entry, extracted)
+```
+
+No numbered (`-0`..`-4`) icon files remain. The 512x512 frame is a real
+upscale of the largest 256px embedded frame, not a mis-captured set.
+
+## Build log
+
+```
+==> Building Linux binary...
+==> Assembling .deb tree...
+==> Building .deb...
+dpkg-deb: building package 'khostty' in '/root/khostty/dist/khostty_0.1.0_amd64.deb'.
+==> Done: /root/khostty/dist/khostty_0.1.0_amd64.deb
+```
+
+No icon warning (fixed); the `convert` deprecation warning from IMv7 appeared
+only on the intermediate build and is silenced by using `magick` directly.
+
+## Scope of this evidence
+
+- The build ran in WSL Fedora 44 userspace on the Windows host; it is native
+  x86_64 Linux, not a desktop session, so this does NOT evidence a GUI launch.
+- The library payload `.deb` (`khostty-vt_0.1.0_amd64.deb`,
+  `sha256 3c080d13…d834cf`) is separately install-and-run-verified on x86-64
+  Debian 12 (see `docs/INSTALL.md` §3.4.2).
+- Cross-building the GTK payload from macOS remains not viable (Homebrew's
+  `gtk4` cannot supply a Linux sysroot).
