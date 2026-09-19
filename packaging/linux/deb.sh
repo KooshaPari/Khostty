@@ -35,8 +35,20 @@ fi
 # --- build Linux binary ---------------------------------------------------
 echo "==> Building Linux binary..."
 cd "$REPO_ROOT"
+
+# Only pass an explicit -Dtarget when we are NOT already on native x86_64 Linux.
+# Passing -Dtarget=x86_64-linux-gnu on that host makes Zig treat the build as a
+# cross-compile and refuse to link the system's shared libraries
+# ("unable to find dynamic system library 'gobject-2.0' ... searched paths:
+# none"), which is the exact failure mode this avoids. Cross-building from
+# macOS or another architecture still needs the explicit target.
+BUILD_TARGET_ARGS=()
+if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
+    BUILD_TARGET_ARGS+=("-Dtarget=x86_64-linux-gnu")
+fi
+
 zig build \
-    -Dtarget=x86_64-linux-gnu \
+    "${BUILD_TARGET_ARGS[@]}" \
     -Dapp-runtime=gtk \
     -Demit-macos-app=false \
     -Doptimize=ReleaseFast
