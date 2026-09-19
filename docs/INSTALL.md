@@ -395,6 +395,11 @@ package, which is the one that has actually been installed and run.
 
 #### 3.4.1 `khostty_0.1.0_amd64.deb` — GTK application — BUILT + INSTALL-VERIFIED (2026-09-19)
 
+The build enables both Wayland and X11 display backends (the default
+`gtk_targets` on Linux) plus `gtk4-layer-shell`, which only has an effect on the
+Wayland backend (window positioning/anchoring). Neither backend can be exercised
+without a desktop session, so both remain unverified at runtime on this host.
+
 **Artifact:** `dist/khostty_0.1.0_amd64.deb` — 18,143,964 bytes,
 `sha256 63d4e6159d65e97db685b9eedbe19c37765f5f838279e9d5b0326ab5a7b80de0`
 (supersedes `209ba5ed10abfe4e1a0caf4fb5da9bd16e7fc375b49254c46149d523652d713a`,
