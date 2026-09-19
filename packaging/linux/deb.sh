@@ -77,12 +77,27 @@ sed -e "s/@NAME@/Khostty/g" \
     "$REPO_ROOT/dist/linux/app.desktop.in" \
     > "$DEB_DIR/usr/share/applications/com.khostty.Khostty.desktop"
 
-# Icon (use upstream ico as placeholder; convert if possible)
-if command -v convert &>/dev/null && [[ -f "$REPO_ROOT/dist/windows/ghostty.ico" ]]; then
-    convert "$REPO_ROOT/dist/windows/ghostty.ico" \
-        "$DEB_DIR/usr/share/icons/hicolor/512x512/apps/com.khostty.Khostty.png"
+# Icon: install size-matched hicolor PNGs extracted from the upstream .ico.
+ICO="$REPO_ROOT/dist/windows/ghostty.ico"
+PNG_DIR="$DEB_DIR/usr/share/icons/hicolor"
+if command -v magick &>/dev/null && [[ -f "$ICO" ]]; then
+    EXTRACT_DIR="$(mktemp -d)"
+    # The .ico embeds several sizes (16..256). ImageMagick writes them as
+    # icon-0.png, icon-1.png, ...; pick the largest frame as the master.
+    magick "$ICO" -background none "$EXTRACT_DIR/icon.png"
+    MASTER="$(ls -S "$EXTRACT_DIR"/icon-*.png 2>/dev/null | head -1)"
+    if [[ -z "$MASTER" ]]; then
+        MASTER="$EXTRACT_DIR/icon.png"
+    fi
+    for size in 16 24 32 48 256 512; do
+        dir="$PNG_DIR/${size}x${size}/apps"
+        mkdir -p "$dir"
+        magick "$MASTER" -resize "${size}x${size}" -background none \
+            "$dir/com.khostty.Khostty.png"
+    done
+    rm -rf "$EXTRACT_DIR"
 else
-    echo "  Warning: no icon converted (install imagemagick for icon support)"
+    echo "  Warning: no icon installed (install imagemagick for icon support)"
 fi
 
 # Metainfo
