@@ -1,0 +1,16 @@
+info: ghostty version=1.3.2-main-+65de471df
+info: ghostty build optimize=ReleaseFast
+info: runtime=.gtk
+info: font_backend=.fontconfig_freetype
+info: dependency harfbuzz=11.0.0
+info: dependency fontconfig=21803
+info: renderer=renderer.generic.Renderer(renderer.OpenGL)
+info: libxev default backend=io_uring
+info(os_locale): setlocale from env result=en_US.UTF-8
+info(gtk): GTK version build=4.22.5 runtime=4.22.5
+info(gtk): libadwaita version build=1.9.4 runtime=1.9.4
+info(config): creating template config file: path=/root/.config/ghostty/config.ghostty
+info(config): default shell src=passwd value=/bin/bash
+info(config): default working directory src=passwd value=/root
+warning(gtk_ghostty_application): setting GDK_DEBUG=
+warning(gtk_ghostty_application): setting GDK_DISABLE=

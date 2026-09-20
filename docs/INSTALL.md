@@ -65,7 +65,8 @@ both payloads **as builds**: the GTK *application* `.deb` was built 2026-09-19 i
 WSL Fedora 44 (§3.4.1), and the libghostty-vt library `.deb` is built AND
 install-and-run-verified on x86-64 Debian 12 (§3.4.2). The GTK payload's
 install-verify (install, `desktop-file-validate`) is now met on the WSL glibc 2.43
-host (§3.4.1); the GUI-launch half is open (no desktop session there).
+host (§3.4.1); the GUI-launch half is now verified headless (Xvfb, APP_ALIVE,
+zero-error GTK init; §3.4.1).
 §5 lists, per artifact, the exact requirement that is missing and
 where it can be met. The
 fourth criterion — the WASM dist being consumable via npm/ESM — **is** satisfied,
@@ -491,9 +492,21 @@ superseded build (`209ba5ed…713a`, floor `libc6 (>= 2.17)`) the same container
 installed and *configured* cleanly and the binary then failed at load
 (`version 'GLIBC_2.43' not found`) — the exact defect the floor fix removes.
 
-**Still open (GUI launch).** No GUI session exists on the WSL host, so the app
-has not been launched as a windowed GTK application. Raw log:
-`sessions/20260916-fork-assessment/evidence/gtk_deb_install_2026-09-19.txt` (250 lines).
+**GUI launch (headless Xvfb, 2026-09-19).** With no desktop session on the WSL
+host, the installed app (`dpkg -i --force-depends`, 0.1.0, artifact sha256
+`63d4e615…de0`) was launched headless: `Xvfb :99 -screen 0 1280x800x24 -nolisten
+tcp`, then `dbus-run-session -- bash -c 'DISPLAY=:99 GSK_RENDERER=cairo
+/usr/bin/khostty …'`. The process stayed alive (`APP_ALIVE`) and the stderr log
+shows the full GTK init chain with zero errors: ghostty 1.3.2-main-+65de471df,
+`runtime=.gtk`, GTK 4.22.5 runtime, libadwaita 1.9.4 runtime,
+fontconfig/freetype, io_uring, and the template config file created at
+`/root/.config/ghostty/config.ghostty`. **Scope limits:** xwininfo/xwd are not
+installable on Fedora 44 (xorg-x11-utils and xorg-x11-apps do not provide them),
+so window-tree enumeration and a screenshot capture were not possible; window
+presence is evidenced by process aliveness plus a successful GTK/GDK init under
+a real X server connection, not by a captured window image. The app was purged
+afterward (`PURGED_OK`, 0 residuals). Raw log:
+`sessions/20260916-fork-assessment/evidence/khostty_gui_launch_xvfb_2026-09-19.log`.
 
 #### 3.4.2 `khostty-vt_0.1.0_amd64.deb` — libghostty-vt library — VERIFIED
 

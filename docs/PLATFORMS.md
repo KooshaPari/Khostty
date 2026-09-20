@@ -11,7 +11,7 @@ Khostty-verified support are different columns, because they are different claim
 | Platform | VT library | Terminal app | Agent IPC | FFI | Renderer | Verified in this fork? |
 |---|---|---|---|---|---|---|
 | **macOS** (arm64/x86_64) | **VERIFIED** | Upstream AppKit; Metal toolchain caveat | 3 actions | C, Rust, WASM | Metal / OpenGL | **YES** — 2026-09-16/17 |
-| **Linux** (x86_64/arm64) | Upstream supported | Upstream GTK4 | 3 actions | C, Rust, WASM | OpenGL | **BUILT + INSTALL-VERIFIED 2026-09-19** (x86_64, WSL Fedora 44; `.deb` installed on the host, +version exit 0, bookworm negative control refuses on the derived libc6 2.43 floor; no GTK GUI launch, no arm64) |
+| **Linux** (x86_64/arm64) | Upstream supported | Upstream GTK4 | 3 actions | C, Rust, WASM | OpenGL | **BUILT + INSTALL-VERIFIED + GUI-LAUNCH-VERIFIED 2026-09-19** (x86_64, WSL Fedora 44; `.deb` installed on the host, +version exit 0, bookworm negative control refuses on the derived libc6 2.43 floor; headless GTK launch under Xvfb + dbus-run-session: APP_ALIVE, zero-error GTK init, then purged; xwininfo/xwd unavailable on Fedora 44 so no window-tree/screenshot evidence; no arm64) |
 | **Windows** (x86_64) | Upstream builds; **no app runtime** | **SCAFFOLD only** | Named-pipe stub | C, Rust, Go | OpenGL (unproven) | **NO** — G3 IN PROGRESS |
 | **WASM** (`wasm32-freestanding`) | **VERIFIED** | n/a (headless) | n/a | JS/TS | WebGL (n/a for VT-only) | **YES** — artifact verified |
 | **iOS** | Library only (xcframework slice) | Not supported | n/a | C | Metal | Artifact present, app not attempted |
