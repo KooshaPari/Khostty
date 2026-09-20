@@ -124,7 +124,7 @@ The fork's value is NOT rebuilding what upstream has. It is:
 | G6 | Polyglot FFI — Go + Python | 10 | 100m | DONE (207 tests) | MEDIUM |
 | G7 | WASM Cross-Compilation | 10 | 100m | DONE (54/54 tests) | HIGH |
 | G8 | Khostty-Specific Improvements | 13 | 130m | DONE (measured) | MEDIUM |
-| G9 | Documentation + Packaging | 15 | 150m | DONE (15/15; macOS .app builds+signs+verifies and its binary executes (GUI launch NOT performed; see 9.11); **GTK .deb BUILT + INSTALL-VERIFIED 2026-09-19 in WSL** (see 9.12); Linux library .deb installs+runs on Debian 12; Windows exe executed) | MEDIUM |
+| G9 | Documentation + Packaging | 15 | 150m | DONE (15/15; macOS .app builds+signs+verifies and its binary executes (GUI launch NOT performed; see 9.11); **GTK .deb BUILT + INSTALL-VERIFIED + GUI-LAUNCH-VERIFIED (headless Xvfb) 2026-09-19 in WSL** (see 9.12); Linux library .deb installs+runs on Debian 12; Windows exe executed) | MEDIUM |
 | G10 | Release Artifacts | 9 | 90m | IN PROGRESS (4 of 9; 10.5/10.6/10.8 blocked on publish authorization) | MEDIUM |
 
 ---
@@ -1001,8 +1001,8 @@ G0 Fork Hygiene (DONE) → G1 Native Build (DONE) → G2 Conformance Evidence
 | G6 Go+Python FFI | 10 | 100 | ✅ DONE (207 tests) |
 | G7 WASM | 10 | 100 | ✅ DONE (54/54 tests) |
 | G8 Improvements+Bench | 13 | 130 | ✅ DONE (measured) |
-| G9 Docs+Packaging | 15 | 150 | ✅ 15/15 rows present; 9.11 build+sign+binary-exec verified, **GUI launch NOT performed**; 9.13 Windows installer **compiled + install/uninstall-verified 2026-09-19**; **9.12 GTK .deb BUILT + INSTALL-VERIFIED 2026-09-19 in WSL** (hicolor icons + Icon=@APPID@ + derived glibc floor 2.43, negative control refused on Debian 12) |
-| G10 Release | 9 | 90 | 🔶 IN PROGRESS — 4/9 DONE (10.1, 10.3, 10.4, 10.7) + 10.2 **mostly** DONE (Windows installer + GTK app `.deb` both built and verified; macOS GUI launch not performed); 10.5/10.6/10.8 blocked on publish authorization |
+| G9 Docs+Packaging | 15 | 150 | ✅ 15/15 rows present; 9.11 build+sign+binary-exec verified (macOS GUI launch not performed — non-interactive liveness only); 9.13 Windows installer **compiled + install/uninstall-verified 2026-09-19**; **9.12 GTK .deb BUILT + INSTALL-VERIFIED + GUI-LAUNCH-VERIFIED 2026-09-19 in WSL** (hicolor icons + Icon=@APPID@ + derived glibc floor 2.43, negative control refused on Debian 12; headless Xvfb APP_ALIVE, zero-error GTK init) |
+| G10 Release | 9 | 90 | 🔶 IN PROGRESS — 4/9 DONE (10.1, 10.3, 10.4, 10.7) + 10.2 **mostly** DONE (Windows installer + GTK app `.deb` both built and verified incl. headless GUI launch); 10.5/10.6/10.8 blocked on publish authorization |
 | **TOTAL** | **115** | **~1150m (19.2h)** | **110 DONE / 5 PENDING** |
 
 > **Count reconciliation (2026-09-19).** Task rows were counted directly from each gate's
