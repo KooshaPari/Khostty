@@ -32,42 +32,44 @@ Khostty does not rebuild that engine or maintain a separate terminal user experi
 
 | Value area | Upstream Ghostty | Khostty direction | Status |
 |---|---|---|---|
-| Embedding | `libghostty-vt` C ABI and examples | Prove the embedding path end to end with Khostty-specific tooling | Roadmap; validation continues in G1/G2 |
-| Windows | Native macOS AppKit and Linux/BSD GTK runtimes; no Windows app runtime | Native Win32 and DirectWrite application in `src/apprt/windows/` | **NOT STARTED, G3** |
-| Agent/IPC | `ipc.zig` supports `new_window`, `new_tab`, and `toggle_quick_terminal` | JSON command and event protocol for panes, state, and automation | **NOT STARTED, G4** |
-| Polyglot FFI | C and Zig APIs, with examples for other languages | Safe Rust, Go, Python, and hardened WASM wrappers | **NOT STARTED, G5-G7** |
+| Embedding | `libghostty-vt` C ABI and examples | Prove the embedding path end to end with Khostty-specific tooling | **DONE (G1/G2)** — native builds + 84/84 conformance, 2026-09-16/17 |
+| Windows | Native macOS AppKit and Linux/BSD GTK runtimes; no Windows app runtime | Native Win32 and DirectWrite application in `src/apprt/windows/` | **DONE (build/exec) — G3**: exe + DLL built 2026-09-18, executed on real Windows 2026-09-19 (`+version`, DLL ABI 0 failures), installer install/uninstall-verified; GUI window still open |
+| Agent/IPC | `ipc.zig` supports `new_window`, `new_tab`, and `toggle_quick_terminal` | JSON command and event protocol for panes, state, and automation | **DONE (G4)** — 458/458 protocol tests across 7 modules |
+| Polyglot FFI | C and Zig APIs, with examples for other languages | Safe Rust, Go, Python, and hardened WASM wrappers | **DONE (G5–G7)** — Rust 199/199, Go+Python 207, WASM 54/54; `khostty-vt` published on crates.io |
 | Phenotype integration | General-purpose terminal and embeddable VT engine | Reusable terminal surfaces in the Phenotype Fabric graph | Planned |
 
 If you want a finished desktop terminal today, use upstream Ghostty. Khostty is the integration and extension path for embedding a terminal, driving it from an agent, or bringing the upstream engine to Windows and additional language ecosystems.
 
 ## Status
 
-The authoritative task decomposition is [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md). The assessment records G0 and G1 as complete. The remaining Khostty capability gates are not started.
+> **v0.1.0 released 2026-09-24.** Tag `v0.1.0` cut at `202aad543`; `khostty-vt 0.1.0` is live on [crates.io](https://crates.io/crates/khostty-vt). GitHub release assets and the PyPI/npm packages are tracked in WBS G10 — see the table below and [docs/RELEASE.md](docs/RELEASE.md).
+
+The authoritative task decomposition is [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md). The table below follows that WBS (115 tasks, 10m each).
 
 | Gate | Scope | Tasks | Estimate | Status |
 |---|---|---:|---:|---|
 | **G0** | Fork Hygiene | 4 | 40m | **DONE** |
 | **G1** | Native Build Validation | 3 | 30m | **DONE** |
-| **G2** | Conformance Evidence | 12 | 120m | **NOT STARTED** |
-| **G3** | Windows App Runtime | 15 | 150m | **NOT STARTED** |
-| **G4** | Agent/IPC Surface Expansion | 14 | 140m | **NOT STARTED** |
-| **G5** | Polyglot FFI — Rust | 10 | 100m | **NOT STARTED** |
-| **G6** | Polyglot FFI: Go and Python | 8 | 80m | **NOT STARTED** |
-| **G7** | WASM Cross-Compilation | 10 | 100m | **NOT STARTED** |
-| **G8** | Khostty-Specific Improvements | 10 | 100m | **NOT STARTED** |
-| **G9** | Documentation and Packaging | 8 | 80m | **NOT STARTED** |
-| **G10** | Release Artifacts | 6 | 60m | **NOT STARTED** |
+| **G2** | Conformance Evidence | 12 | 120m | **DONE** (84/84) |
+| **G3** | Windows App Runtime | 15 | 150m | **DONE** (cross-build + real Windows runner: `+version` exit 0, DLL ABI 0 failures) |
+| **G4** | Agent/IPC Surface Expansion | 14 | 140m | **DONE** |
+| **G5** | Polyglot FFI — Rust | 10 | 100m | **DONE** (199/199) |
+| **G6** | Polyglot FFI: Go and Python | 10 | 100m | **DONE** (207 tests) |
+| **G7** | WASM Cross-Compilation | 10 | 100m | **DONE** (54/54) |
+| **G8** | Khostty-Specific Improvements | 13 | 130m | **DONE** (measured) |
+| **G9** | Documentation and Packaging | 15 | 150m | **DONE** (all artifacts built + verified; macOS/GTK GUI launches observed) |
+| **G10** | Release Artifacts | 9 | 90m | **IN PROGRESS** — tag `v0.1.0` cut, crates.io published; release assets/PyPI/npm in flight |
 
-The WBS records 100 tasks and approximately 16.7 hours of planned work, with 70 minutes completed at the assessment snapshot. Status labels in this README follow that WBS and are not claims of shipped functionality.
+The WBS records 115 tasks and approximately 19.2 hours of planned work. Status labels in this README follow that WBS and are not claims of shipped functionality.
 
 ## Platform Support
 
 | Platform | Status | Runtime or artifact |
 |---|---|---|
-| **macOS** | **DONE** | Upstream Swift/AppKit application runtime; G1 build validation |
-| **Linux/BSD** | **DONE** | Upstream GTK application runtime; G1 build validation |
-| **Windows** | **NOT STARTED** | Planned Win32/DirectWrite runtime in `src/apprt/windows/` under G3 |
-| **WASM** | **NOT STARTED** | Planned hardened WASM build and polyglot export under G7 |
+| **macOS** | **DONE** | Upstream Swift/AppKit application runtime; G1 build validation; GUI launch verified 2026-09-20 (interactive keystroke round-trip) |
+| **Linux/BSD** | **DONE** | Upstream GTK application runtime; G1 build validation; `.deb` install + headless GUI launch verified 2026-09-19 |
+| **Windows** | **DONE** | Khostty's `src/apprt/windows/` runtime: `+version` executed on a real Windows host 2026-09-19, installer built + install/uninstall-verified |
+| **WASM** | **DONE** | Hardened `ghostty-vt.wasm` cross-compile; typed JS/TS package staged for npm under G7 |
 
 G1 separately verified a 795KB `ghostty-vt.wasm` cross-compile artifact with 40+ function signatures. That evidence is not a claim that the Khostty-hardened WASM product, typed JavaScript API, or package distribution is complete.
 
@@ -112,7 +114,7 @@ The repository exposes `libghostty-vt` through the Zig build system. Use the bui
 zig build --help
 ```
 
-Do not treat a library artifact as a completed Khostty binding. The Rust, Go, Python, and hardened WASM packages remain **NOT STARTED**.
+Do not treat a library artifact as a completed Khostty binding. The Rust, Go, Python, and hardened WASM packages are all built and tested (G5–G7: Rust 199/199, Go+Python 207, WASM 54/54) — `khostty-vt 0.1.0` is published on crates.io; the PyPI and npm publishes are credential-blocked (see [docs/RELEASE.md](docs/RELEASE.md) §7).
 
 ## Architecture
 
@@ -153,7 +155,7 @@ The planned minimal fork surface is `src/apprt/khostty/` and `src/apprt/windows/
 
 ## Agent/IPC Surface
 
-> **Status: NOT STARTED, G4.** The protocol below is a draft from the Deep WBS. It is a usage preview, not an implemented API.
+> **Status: DONE, G4** — implemented and tested (458/458 tests across 7 modules: protocol, state, events, auth, pane, handler, server; re-executed 2026-09-18). The Windows named-pipe transport remains scaffold (see [docs/PLATFORMS.md](docs/PLATFORMS.md) §5); the protocol below documents the implemented Unix-socket API.
 
 The planned IPC layer expands upstream's three commands into a versioned JSON command, response, and event protocol. The architecture calls for a Unix domain socket on Unix-like platforms and a Windows named pipe on Windows, with token-based authentication.
 
@@ -198,24 +200,24 @@ The planned command set includes:
 | `surface.list` and `window.list` | Enumerate surfaces and windows |
 | `title_change`, `pane_exit`, `resize`, `bell`, `osc_*` | Asynchronous events |
 
-G4 acceptance requires authenticated commands, pane lifecycle operations, state and scrollback queries, concurrent operation safety, protocol documentation, and examples. None of those acceptance criteria are complete yet.
+G4 acceptance requires authenticated commands, pane lifecycle operations, state and scrollback queries, concurrent operation safety, protocol documentation, and examples. **G4 is accepted**: 14/14 tasks DONE, with 458/458 tests re-executed and reproduced 2026-09-18 (per-module breakdown in [docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md](docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md)).
 
 ## Polyglot FFI
 
-> **Status: NOT STARTED, G5-G7.** The following table distinguishes the upstream ABI and examples from Khostty packages that still need to be built.
+> **Status: DONE, G5–G7.** All four packages are built and tested; the Rust crate is published on crates.io as [`khostty-vt`](https://crates.io/crates/khostty-vt) (2026-09-20). The PyPI and npm publishes are blocked on credentials, tracked in [docs/RELEASE.md](docs/RELEASE.md) §7.
 
-| Language | Status | Planned package | Purpose |
+| Language | Status | Package | Purpose |
 |---|---|---|---|
-| **Rust** | **NOT STARTED, G5** | `khostty-vt` | Safe Rust wrapper with RAII handles, typed errors, and integration tests |
-| **Go** | **NOT STARTED, G6** | `khostty/vt` | cgo-based idiomatic Go wrapper with context and error handling |
-| **Python** | **NOT STARTED, G6** | `khostty` | cffi-based Python package for terminal automation and scripting |
-| **WASM** | **NOT STARTED, G7** | Hardened WASM package and typed JavaScript API | Browser and sandbox consumption of the VT engine |
+| **Rust** | **DONE (G5) — PUBLISHED** | `khostty-vt` | Safe Rust wrapper with RAII handles, typed errors, and 199/199 integration tests |
+| **Go** | **DONE (G6)** | `khostty/vt` | cgo-based idiomatic Go wrapper with context and error handling |
+| **Python** | **DONE (G6)** | `khostty-vt` | cffi-based Python package for terminal automation and scripting (wheel + sdist built) |
+| **WASM** | **DONE (G7)** | Hardened WASM package and typed JavaScript API | Browser and sandbox consumption of the VT engine (54/54 tests, tarball staged) |
 
 The upstream C ABI and existing examples remain the baseline that these packages wrap. The Rust design calls for raw bindings isolated behind a documented unsafe boundary, safe `Terminal`, `Snapshot`, `RenderState`, `Search`, `KeyEncoder`, and `MouseEncoder` types, and an explicit `GhosttyError` result type. Go and Python follow the same wrap-over-handroll rule.
 
 ## Conformance
 
-> **Status: NOT STARTED, G2.** This is the critical gate before Windows, IPC, FFI, and feature work.
+> **Status: DONE, G2** — 84/84 conformance checks pass (2026-09-16; recomputed 2026-09-18). This was the critical gate before Windows, IPC, FFI, and feature work.
 
 G2 must prove that Khostty has no unacceptable terminal correctness regression. Build success is not enough. The gate covers the upstream Zig tests, the fuzz corpus, and the complete set of upstream examples.
 

@@ -50,11 +50,12 @@ host with Xcode and the Metal Toolchain component.
   Requirement*.
 - The bundled binary runs non-interactively:
   `Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0.
+- **GUI launch verified 2026-09-20:** opened from `zig-out/Ghostty.app` (PID 30796),
+  two windows enumerated, and an interactive keystroke round-trip (`echo
+  SHELL_ECHO_TEST` → typed line + shell's echoed response read back from the
+  AXTextArea) proves keyboard input executes in a live shell.
 
 **Unverified:**
-- **No GUI session was ever observed.** No window has been seen opening; the bundle was
-  never copied outside the source tree and launched. The bundle's own evidence file
-  records `launch_verified: NO`.
 - **Not notarized.** A Developer ID Application identity signed the bundle, but no
   `notarytool` credentials are available, so it was never submitted to Apple. On
   another machine Gatekeeper will warn or block until overridden.
@@ -86,13 +87,11 @@ the **installed** headers and **installed** `.so` and passed 4/4 VT assertions, 
 - The container is emulated x86-64 userspace, not bare metal.
 - No desktop session was involved, so this says nothing about GUI behaviour.
 - No `apt`-repository install path was exercised; this is a local `dpkg -i`.
-- **No GTK application package exists.** `bash packaging/linux/deb.sh` exits 1 on
-  `'adwaita.h' not found` / `'gtk/gtk.h' not found` — GTK4/libadwaita development
-  headers for `x86_64-linux-gnu` are absent, and Homebrew's `gtk4` is a macOS-native
-  build that cannot supply a Linux sysroot.
 
-**Consumer advice:** usable as a C library by way of a local `.deb`. Not usable as a
-Linux terminal application from this release.
+**Consumer advice:** usable as a C library by way of a local `.deb`. The GTK
+terminal **application** `.deb` is a separate artifact (row 4 of
+[INSTALL.md](INSTALL.md)); it was built 2026-09-19 in WSL Fedora 44, install-verified,
+and GUI-launched headless (Xvfb, APP_ALIVE) the same day.
 
 ## 4. WASM / npm-style package
 
@@ -266,13 +265,14 @@ Trust today:
 
 Do not trust today:
 
-- **Anything Windows as a running program.**
+- **Anything Windows as a GUI running program.** The CLI payload executes
+  (`ghostty.exe +version` → `Ghostty 1.3.2-main-+41b24baad`, 2026-09-19), but no
+  Windows GUI window was launched.
 - **The macOS `.app` on a pristine machine** — it does launch here (verified: exit 0,
-  one window, stable over 30 s), so "builds and runs" is supported. What is **not**
+  one window, stable over 30 s; plus a keystroke round-trip 2026-09-20), so "builds and runs" is supported. What is **not**
   verified is first-launch on someone else's machine: it is **not notarized** (a
   Developer ID Application identity signed it; `notarytool` credentials are absent), so
   Gatekeeper may warn or block until overridden. That path was not tested.
-- **The GTK Linux application** — it does not exist for this release.
 - **Any absolute performance claim** — a paired Khostty/upstream baseline now exists
   under `bench/results/`, but every pass ran at load 548-674 on a dirty tree, so only
   the within-pass directional readings are defensible. See

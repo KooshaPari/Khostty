@@ -37,8 +37,8 @@ Status vocabulary used throughout:
 |---|---|---|---|---|
 | 1 | `khostty-libghostty-vt-wasm-0.1.0.tar.gz` | any — Node ≥ 20 / browser | VERIFIED | Tarball `sha256 55cfc675…` matches the sidecar `.sha256` written beside it, verified with `shasum -a 256 -c` (exit 0). Freshly extracted to a scratch directory and `node smoke.mjs --json` returned 13/13 checks, 0 failed, exit 0. A direct `import` of the extracted `js/api.js` opened a terminal and echoed text back. Repository WASM suite re-run the same day: 54 tests, 54 pass, 0 fail. |
 | 2 | `libghostty-vt.0.1.0.dylib` + `include/ghostty/` headers | macOS arm64 | VERIFIED | `zig build -Demit-lib-vt -Doptimize=ReleaseSafe --prefix <scratch>` installed a prefix (exit 0); a C program including the **installed** headers and linking the **installed** dylib compiled, ran, and printed `RESULT: PASS` with the library reporting `0.1.0-dev` (see §3.2). Conformance harness against the built library: 84/84 passed, 0 failed. |
-| 3 | `Khostty-0.1.0-macos.zip` — the `Ghostty.app` bundle | macOS | VERIFIED (build) / LAUNCH NOT EXECUTED | Built, signed, verified and hashed on this host 2026-09-18: `bash packaging/macos-app.sh` exited **0**, producing `dist-release/macos/Khostty-0.1.0-macos.zip` (35,953,098 B, `sha256 94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb`, `shasum -c` OK). `codesign --verify --deep --strict` → *valid on disk* / *satisfies its Designated Requirement*. The bundled binary was executed non-interactively: `Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0. **This row was `BLOCKED` until 2026-09-18; the previous reason was wrong** — see §3.3. Not notarized (no `notarytool` credentials), and no GUI launch was attempted, so the WBS "installs and runs" clause is only half-met. |
-| 4 | `khostty_0.1.0_amd64.deb` — the GTK **application** | Debian / Ubuntu x86-64 | BUILT + INSTALL-VERIFIED (2026-09-19) / GUI launch OPEN | **Built 2026-09-19 in WSL Fedora 44 on `kooshapari-desk`** (native x86_64 Linux with `gtk4-devel`, `libadwaita-devel`, `gtk4-layer-shell-devel`): `dist/khostty_0.1.0_amd64.deb`, **18,143,964 B**, `sha256 63d4e6159d65e97db685b9eedbe19c37765f5f838279e9d5b0326ab5a7b80de0` (supersedes `209ba5ed…713a`). Three blockers fixed (§3.4.1): the unconditional `-Dtarget=x86_64-linux-gnu` that made Zig refuse system shared libraries on a native host (now conditional, `9daf736e8`), the icon set / desktop `Icon=` ref (now size-matched hicolor PNGs 16–512 + `Icon=com.khostty.Khostty`, `45e6d086b`), and the stale `libc6 (>= 2.17)` floor that let `dpkg -i` install onto glibc 2.36 with the binary failing at load (now derived from the binary with readelf: `libc6 (>= 2.43)`, `65de471df`). **Install-verified on the WSL host (glibc 2.43, dpkg db via `--force-depends`):** `dpkg -s` → `install ok installed`, `dpkg -V` clean, `dpkg -L` lists the binary + `.desktop` + metainfo + 6 hicolor PNGs, `ldd` all resolved, `desktop-file-validate` OK, metainfo well-formed, installed `khostty +version` → exit 0, `gio info` readable, `dpkg --purge` clean. **Negative control (bookworm glibc 2.36):** unpack ok, configure REFUSED on `libc6 (>= 2.43)`. Evidence `sessions/20260916-fork-assessment/evidence/gtk_deb_install_2026-09-19.txt`. No GUI launch attempted (no desktop session on the WSL host); that half is open. Cross-building **from macOS is still not viable** (Homebrew's `gtk4` cannot supply a Linux sysroot). |
+| 3 | `Khostty-0.1.0-macos.zip` — the `Ghostty.app` bundle | macOS | VERIFIED + GUI-LAUNCH-VERIFIED (2026-09-20) | Built, signed, verified and hashed on this host 2026-09-18: `bash packaging/macos-app.sh` exited **0**, producing `dist-release/macos/Khostty-0.1.0-macos.zip` (35,953,098 B, `sha256 94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb`, `shasum -c` OK). `codesign --verify --deep --strict` → *valid on disk* / *satisfies its Designated Requirement*. The bundled binary was executed non-interactively: `Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0. **GUI launch verified 2026-09-20**: opened from `zig-out/Ghostty.app` (PID 30796, bundle `com.mitchellh.ghostty`), 2 windows enumerated, AXTextArea read live content, and a keystroke round-trip (`echo SHELL_ECHO_TEST` → typed line + echoed response observed in the buffer) proves interactive keyboard input executes in a live shell. Not notarized (no `notarytool` credentials): first launch on a pristine machine may require a Gatekeeper override (untested). |
+| 4 | `khostty_0.1.0_amd64.deb` — the GTK **application** | Debian / Ubuntu x86-64 | BUILT + INSTALL-VERIFIED + GUI-LAUNCH-VERIFIED (2026-09-19) | **Built 2026-09-19 in WSL Fedora 44 on `kooshapari-desk`** (native x86_64 Linux with `gtk4-devel`, `libadwaita-devel`, `gtk4-layer-shell-devel`): `dist/khostty_0.1.0_amd64.deb`, **18,143,964 B**, `sha256 63d4e6159d65e97db685b9eedbe19c37765f5f838279e9d5b0326ab5a7b80de0` (supersedes `209ba5ed…713a`). Three blockers fixed (§3.4.1): the unconditional `-Dtarget=x86_64-linux-gnu` that made Zig refuse system shared libraries on a native host (now conditional, `9daf736e8`), the icon set / desktop `Icon=` ref (now size-matched hicolor PNGs 16–512 + `Icon=com.khostty.Khostty`, `45e6d086b`), and the stale `libc6 (>= 2.17)` floor that let `dpkg -i` install onto glibc 2.36 with the binary failing at load (now derived from the binary with readelf: `libc6 (>= 2.43)`, `65de471df`). **Install-verified on the WSL host (glibc 2.43, dpkg db via `--force-depends`):** `dpkg -s` → `install ok installed`, `dpkg -V` clean, `dpkg -L` lists the binary + `.desktop` + metainfo + 6 hicolor PNGs, `ldd` all resolved, `desktop-file-validate` OK, metainfo well-formed, installed `khostty +version` → exit 0, `gio info` readable, `dpkg --purge` clean. **Negative control (bookworm glibc 2.36):** unpack ok, configure REFUSED on `libc6 (>= 2.43)`. Evidence `sessions/20260916-fork-assessment/evidence/gtk_deb_install_2026-09-19.txt`. **GUI-launch half verified headless 2026-09-19** (Xvfb :99 + dbus-run-session + `GSK_RENDERER=cairo`: APP_ALIVE, zero-error GTK init, then `dpkg --purge` clean; xwininfo/xwd unavailable on Fedora 44 so no window-tree/screenshot evidence — see `evidence/khostty_gui_launch_xvfb_2026-09-19.log`). Cross-building **from macOS is still not viable** (Homebrew's `gtk4` cannot supply a Linux sysroot). |
 | 5 | `khostty-vt_0.1.0_amd64.deb` — the libghostty-vt **library** | Debian / Ubuntu x86-64 | VERIFIED | `packaging/linux/deb-libvt.sh` cross-compiles libghostty-vt for `x86_64-linux-gnu` and packages it. `sha256 3c080d13a74d6bf6dca9d28dc2c685f6b4350ec3130f3f3fafa5cb4d77d834cf`, 2,320,612 bytes; `ar t` → `debian-binary`, `control.tar.xz`, `data.tar.xz`; `dpkg-deb --info` and `--contents` (54 entries) both succeed. **Installed and run, not inferred:** in an x86-64 Debian 12 (bookworm, glibc 2.36) container, `dpkg -i` exited 0 with `Status: install ok installed`; `dpkg -V` found no modified or missing files; `ldconfig -p` resolved the SONAME; the shipped `example/c-vt-formatter` compiled against the **installed** headers and **installed** `.so` and passed 4/4 VT assertions; `dpkg -r` removed it cleanly. This is the library payload, not the GTK application. See §3.4.2. |
 | 6 | `Khostty-0.1.0-windows-x86_64-setup.exe` | Windows x86-64 | BUILT + VERIFIED | **Built 2026-09-19.** Inno Setup 6.7.1 was installed on the Windows runner `kooshapari-desk`; `ISCC.exe khostty.iss` → *Successful compile (11.891 s)*, producing **19,766,307 B**, `sha256 4070e89e8f693c44abda13da1b718dca4e53d73279f3d945854431d76f095546`, `VersionInfo.FileVersion 0.1.0.0`. **Installed, run and uninstalled, not inferred:** silent install to a scratch dir (exit 0) produced `ghostty.exe` + `ghostty-vt.dll` + `ghostty.ico` + `LICENSE` + `unins000.exe`; the two payload files **hash-match the staged originals**; the installed `ghostty.exe +version` ran (`app runtime: .windows`); silent uninstall left **0 residual files**. Evidence `sessions/20260916-fork-assessment/evidence/windows_installer_e2e_2026-09-19.txt`. |
 | 7 | `ghostty.exe` + `ghostty-vt.dll` (row 6's payload) | Windows x86-64 | BUILT + EXECUTED | Both are real PE32+ files built 2026-09-18 (43.5 MB and 7.5 MB), staged and hashed 2026-09-18T03:33 local. `file` confirms `PE32+ executable (GUI) x86-64` and `PE32+ executable (DLL)`. **Executed 2026-09-19 on `kooshapari-desk` (Windows NT 10.0.28120, AMD64)**, copied there byte-identically (sha256 re-verified): `ghostty.exe +version` → exit 0, reporting `app runtime: .windows`, `font engine: .freetype_windows`, `libxev: iocp`, `Zig 0.16.0`, build mode `.Debug`; `ghostty-vt.dll` loads via `LoadLibraryW` and its ABI runs live — `terminal_new(80,24)` rc 0, `get COLS/ROWS` 80/24, `resize(100,40)` → 100/40, `vt_write` + OSC-0 → `CURSOR_Y` 1 / `TITLE` `Khostty-Win`, `terminal_free` clean — **0 failures**. Evidence `sessions/20260916-fork-assessment/evidence/windows_runtime_verify_2026-09-19.txt`. Caveat: CLI `+version` only; no GUI window was launched. |
@@ -56,17 +56,16 @@ demonstrated for the CLI/library surface but not for interactive windowing.
 
 [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](sessions/20260916-fork-assessment/02_DEEP_WBS.md)
 requires that the macOS `.app`, the Linux `.deb`, and the Windows `.exe` each
-"install and run". One of the three remains undemonstrable from this host: the
-Windows `.exe` needs Inno Setup plus a Windows host. The macOS `.app` **builds**,
-signs and verifies, and its binary executes (`--version`, exit 0), but it has not
-been installed outside the source tree or launched in a GUI session, so its clause
-is half-met rather than met (§3.3). The Linux `.deb` criterion **is** satisfied for
-both payloads **as builds**: the GTK *application* `.deb` was built 2026-09-19 in
-WSL Fedora 44 (§3.4.1), and the libghostty-vt library `.deb` is built AND
-install-and-run-verified on x86-64 Debian 12 (§3.4.2). The GTK payload's
-install-verify (install, `desktop-file-validate`) is now met on the WSL glibc 2.43
-host (§3.4.1); the GUI-launch half is now verified headless (Xvfb, APP_ALIVE,
-zero-error GTK init; §3.4.1).
+"install and run". All three clauses are now satisfied. Windows: Inno Setup 6.7.1
+on `kooshapari-desk`, install/uninstall-verified 2026-09-19, and the payload
+`ghostty.exe +version` executed on that Windows host (§3.5). macOS: the `.app`
+builds, signs, verifies, its binary executes, **and it was launched in a live GUI
+session with an interactive keystroke round-trip on 2026-09-20** (row 3; only
+notarization remains untested). The Linux `.deb` criterion **is** satisfied for
+both payloads: the GTK *application* `.deb` was built and install-verified 2026-09-19
+in WSL Fedora 44 (§3.4.1), its GUI-launch half verified headless (Xvfb, APP_ALIVE,
+zero-error GTK init; §3.4.1), and the libghostty-vt library `.deb` is built AND
+install-and-run-verified on x86-64 Debian 12 (§3.4.2).
 §5 lists, per artifact, the exact requirement that is missing and
 where it can be met. The
 fourth criterion — the WASM dist being consumable via npm/ESM — **is** satisfied,
@@ -373,20 +372,21 @@ Full command log with exit codes, the throwaway-tree experiments that located th
 point, and the alternatives that were tested and rejected:
 [`sessions/20260918-macos-app-unblock/01_RESEARCH.md`](sessions/20260918-macos-app-unblock/01_RESEARCH.md).
 
-**Two caveats keep the WBS clause open.** First, the fix is **not durable**: both symlinks
+**One caveat keeps part of the WBS clause open.** The fix is **not durable**: both symlinks
 resolve through a cryptex mount whose path carries a per-mount suffix, and neither is
-restored after a reboot or an Xcode upgrade. Second, the bundle has **not been launched** in
-a GUI session and is **not notarized**, so "install and run" is not demonstrated. What *is*
+restored after a reboot or an Xcode upgrade. **Notarization is also still absent.** What *is*
 demonstrated: the bundle builds (exit 0), signs, verifies
 (`codesign --verify --deep --strict` → *valid on disk*, *satisfies its Designated
-Requirement*), hashes to `94abd2a7…`, and its binary executes non-interactively
-(`Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0).
+Requirement*), hashes to `94abd2a7…`, its binary executes non-interactively
+(`Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0),
+**and it launched in a live GUI session on 2026-09-20**: `open` (PID 30796),
+two windows enumerated, and a keystroke round-trip (`echo SHELL_ECHO_TEST` → typed
+line + shell's echoed response in the AXTextArea) proved interactive input works.
+The earlier "not launched in a GUI session" caveat is withdrawn as of that date.
 
 Two further facts from the probe, unchanged: a Developer ID Application identity *is*
 present (1 of 3 valid identities), so the script signs with it rather than ad-hoc; and
 notarytool credentials are not configured, so notarization is impossible here regardless.
-An app launch is also meaningless outside a logged-in GUI session, which this host does not
-have.
 
 ### 3.4 Linux — `.deb`
 

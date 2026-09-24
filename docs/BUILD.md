@@ -445,12 +445,14 @@ found, both introduced by concurrent work on other gates.
 
 ### What this means
 
-**The committed revision does not build.** `zig build -Demit-lib-vt` fails at
-`src/apprt/ipc/mod.zig`, which commit `e1277bea2` renamed from
-`src/apprt/ipc.zig` without updating its relative imports. This is the top-priority
-defect in the repository right now: it blocks regenerating `libghostty-vt`,
-therefore blocks G2 re-verification, G3 cross-compilation, G6/G7 rebuilds, G9
-packaging, and G10 release. The fix is two import lines (§9).
+**RESOLVED.** As observed on 2026-09-17, the committed revision did not build:
+`zig build -Demit-lib-vt` failed at `src/apprt/ipc/mod.zig`, which commit
+`e1277bea2` renamed from `src/apprt/ipc.zig` without updating its relative imports.
+It was the top-priority defect of that day, blocking `libghostty-vt` regeneration
+and every downstream gate. **Fixed by `cd1ed5c60`** ("correct relative import
+depths after ipc.zig -> ipc/mod.zig"), after which the macOS `.app` rebuilt
+(`packaging/macos-app.sh` exit 0, 2026-09-18) and the Linux/Windows builds and
+release proceeded. The fix is the two import lines (§9), now in the tree.
 
 The working tree additionally fails earlier, at build-graph construction, because
 `Runtime.windows` was added without updating the exhaustive switch in

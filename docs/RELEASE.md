@@ -107,9 +107,9 @@ What is *not* claimed by `0.1.0`:
 - No general-availability claim for the Windows or Linux GTK applications. See
   [INSTALL.md](INSTALL.md) and §6 below for the per-artifact status.
 
-## 4. Tag naming — documented, not created
+## 4. Tag naming — created 2026-09-24
 
-The tag a maintainer **would** create for this version is:
+The tag for this version is:
 
 ```
 v0.1.0
@@ -120,24 +120,27 @@ prerelease (`-dev`) and the build metadata (`+ghostty.…`) are deliberately **n
 part of the tag name: the tag names the release, and the metadata is recorded in the
 release notes and the checksum manifest instead.
 
-**This tag does not exist.** Verified on 2026-09-18:
+**This tag now exists.** Created 2026-09-24 01:58 -0700 and pushed to origin:
 
 ```console
-$ git rev-parse --verify --quiet v0.1.0 && echo EXISTS || echo "v0.1.0 DOES NOT EXIST"
-v0.1.0 DOES NOT EXIST
-$ git tag -l 'v0.1.0'
-        # (no output)
+$ git for-each-ref refs/tags/v0.1.0 --format='%(taggerdate:iso8601) | %(objectname:short)'
+2026-09-24 01:58:06 -0700 | 7e1684f60
+$ git rev-list -n1 v0.1.0
+202aad5438c24ae0c76122e5b446d3bd774a61ca
 ```
+
+(A check on 2026-09-18 correctly found no tag; that observation is historical.)
 
 The existing `v*` tags in this repository (`v1.0.0` … `v1.3.x`) are inherited from
 upstream Ghostty and are unrelated to Khostty's own version line. Creating `v0.1.0`
-is a publishing action and is **not** part of this document's scope — see §7.
+is a publishing action; it was **executed on 2026-09-24 under the §7 authorization**.
 
 ## 5. Cutting a release — exact commands
 
 Every command below is the maintainer's sequence. Commands marked **DO NOT RUN
-YET** are listed for completeness because they publish; no step in this section was
-executed as part of writing this document.
+YET** are listed for completeness because they publish. **[Updated 2026-09-24]**
+Under the §7 authorization, the tag/push step and the crates.io leg of the package
+step have since been executed; §7 carries the per-step state.
 
 ```bash
 # 0. Resolve the version. If this is wrong, stop: everything downstream is wrong.
@@ -219,7 +222,7 @@ onto glibc 2.36 with the binary then failing at load.
 
 | # | Artifact | Bytes | Built | Status (2026-09-18) | Check executed here |
 |---|---|---|---|---|---|
-| 1 | `dist-release/macos/Khostty-0.1.0-macos.zip` | 35,953,098 | 2026-09-18 05:13 | **MATCH** | `shasum -a 256` → `94abd2a7…4317cb`. Matches the sidecar `.sha256` written beside it, matches the value recorded in `dist-release/macos/EVIDENCE.txt`, and matches `docs/INSTALL.md`. `codesign --verify --deep --strict` → *valid on disk*; bundled binary `--version` → exit 0. **Not notarized** (no `notarytool` credentials) and **no GUI session was observed**. |
+| 1 | `dist-release/macos/Khostty-0.1.0-macos.zip` | 35,953,098 | 2026-09-18 05:13 | **MATCH** | `shasum -a 256` → `94abd2a7…4317cb`. Matches the sidecar `.sha256` written beside it, matches the value recorded in `dist-release/macos/EVIDENCE.txt`, and matches `docs/INSTALL.md`. `codesign --verify --deep --strict` → *valid on disk*; bundled binary `--version` → exit 0. **Not notarized** (no `notarytool` credentials); GUI session + interactive keystroke round-trip verified 2026-09-20. |
 | 2 | `dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz` | 680,598 | 2026-09-18 06:12 | **MATCH** | `shasum -a 256` → `55cfc675…8604dc`; sidecar verified with `shasum -a 256 -c` → `OK`, exit 0. Inner `khostty-vt.wasm` hash matches its own sidecar. (This row previously read `2026-09-17 07:19`, the superseded dirty-tree build; the tarball was repacked 2026-09-18 as recorded in §6.3.) |
 | 3 | `dist/khostty-vt_0.1.0_amd64.deb` | 2,320,612 | 2026-09-18 05:07 | **MATCH** | `shasum -a 256` → `3c080d13…d834cf`, matching the value recorded in `docs/INSTALL.md` and the WBS G9.12 evidence row. Installed-and-run evidence lives in `dist-release/evidence/deb-libvt-verify.log` (`deb-full-build.log` is the *GTK application* build attempt, which fails on missing headers). |
 | 4 | `zig-out/bin/ghostty.exe` | 43,470,336 | 2026-09-18 01:23 | **EXECUTED 2026-09-19** | `shasum -a 256` → `df0b4c87…8d03e`; re-verified byte-identical on the Windows host. Identical to the staged copy at `dist-release/stage/windows/Khostty-0.1.0-win64/payload/ghostty.exe`. `file` → `PE32+ executable (GUI) x86-64`. **Run** on `kooshapari-desk` (Windows NT 10.0.28120, AMD64): `+version` → exit 0, `app runtime: .windows`, `font engine: .freetype_windows`, `libxev: iocp`, build mode `.Debug`. CLI action only — no GUI window launched. |
@@ -257,44 +260,50 @@ commit. `khostty-version.json` records `source_dirty: "no"`; the rebuild was ver
 a 54/54 repository suite run, a byte-identical repack, and a 13/13 extracted-tarball
 consumer check. The superseded hash `ce5d1f1d…` no longer appears in this document.
 
-## 7. What this document does not authorize
+## 7. Publish authorization and execution state
 
-This document defines the scheme and lists the commands. It performs **no** publishing
-action, and running it does not either:
+Authorization for the G10 publish path ("do it all") was granted by the operator.
+Execution state as of 2026-09-24:
 
-- **No git tag** is created. `v0.1.0` does not exist.
-- **No push**, to any remote, of any branch or tag.
-- **No GitHub release** and no asset upload.
-- **No package published** to crates.io, PyPI, the Go module proxy, or npm.
-- **No deployment** of any kind.
+| Step | State |
+|---|---|
+| Git tag `v0.1.0` | **DONE** — annotated tag at `202aad543`, pushed to origin (tag object `7e1684f6`) |
+| crates.io `khostty-vt` 0.1.0 | **PUBLISHED** 2026-09-20 — API-verified: `newest_version=0.1.0`, downloaded-crate checksum matches the local `.crate`, `published_by KooshaPari`; 199/199 tests passed first |
+| PyPI `khostty-vt` | **BLOCKED — no credential exists on this machine** (no `.pypirc`, keyring entry, env var, netrc, or OIDC trusted publishing). Wheel + sdist are prebuilt in `khostty-python/dist/`; `uv publish` runs as soon as an operator-provided token exists. Package name is free. |
+| npm `khostty-libghostty-vt-wasm` | **BLOCKED — stored token revoked** (401 on `whoami`; token creation also 401). Needs a fresh `/opt/homebrew/bin/npm login --auth-type=web` browser approval. Staged package verified (27 files, 324.6 kB, shum `2754b0a4`); name is free. |
+| Go module proxy | Not applicable to 0.1.0 (the Go module is scaffold only, G6.1) |
+| GitHub release + 6 assets | **PENDING OPERATOR APPROVAL** — `gh release create` was deferred to the phinbox gate (`request_id=hook-a683332d46ba9fff95e5a91b0f239118`) and must be approved there, then re-run as written in §7.1 |
+| Announce (10.8) | **DOCS UPDATED 2026-09-24** — README release banner + status tables, changelog §4.2 GUI-verification correction, INSTALL/HANDOFF/PLATFORMS stale-status fixes; commit + push follow in the same change |
 
-Those are the WBS G10 tasks **10.5** (publish FFI packages), **10.6** (create the
-GitHub release), and **10.8** (announce), and they remain **NOT STARTED** pending
-explicit publish authorization. The WBS rows record this.
+The one **security-relevant publish caveat** worth restating: `khostty-vt` documents,
+rather than vendors, its prebuilt `libghostty-vt` dependency — the crate README
+spells out `GHOSTTY_VT_LIB_DIR` / the `link` feature and warns that without a
+prebuilt library it typechecks but does not link. That is the resolution of open
+decision 1 below; it shipped with the 2026-09-20 publish.
 
-### 7.1 The runbook to execute once authorized
+### 7.1 The publish runbook (partially executed)
 
-Staged and rehearsed 2026-09-19; every command below was validated **up to the upload step**.
-Copy the block, or approve it verbally and it will be run as written.
+Staged and rehearsed 2026-09-19; **step 1 executed**, crates.io leg of step 2
+executed 2026-09-20. The remainder is ready to run once its blockers clear:
 
 ```bash
-# 0. Preconditions (all verified 2026-09-19)
-git status --porcelain          # only .probe_khostty.zig, a scratch probe, is untracked
-git tag -l 'v0.1.0'             # empty; the tag does not yet exist
+# 0. Preconditions (verified 2026-09-19; tag now exists)
+git tag -l 'v0.1.0'             # v0.1.0 — exists (DONE)
 
-# 1. Publish the commits and the tag
+# 1. Publish the commits and the tag                 [DONE]
 git push origin main
-git tag -a v0.1.0 -m "Khostty 0.1.0"
-git push origin v0.1.0
+git tag -a v0.1.0 -m "Khostty 0.1.0"                # already created
+git push origin v0.1.0                              # pushed, verified [new tag]
 
 # 2. Publish the packages  (ORDER MATTERS: run cargo test BEFORE any dry run)
 #    Each line leaves the shell in the directory it enters, so step 3 returns to
 #    the repository root explicitly before naming any relative path.
-cd khostty-vt      && cargo test && cargo publish
-cd ../khostty-python && uv publish dist/khostty_vt-0.1.0-py3-none-any.whl dist/khostty_vt-0.1.0.tar.gz
-cd ../dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0 && npm publish
+cd khostty-vt      && cargo test && cargo publish   # DONE 2026-09-20 (199/199, published)
+cd ../khostty-python && uv publish dist/khostty_vt-0.1.0-py3-none-any.whl dist/khostty_vt-0.1.0.tar.gz   # BLOCKED: needs PyPI token
+cd ../dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0 && npm publish   # BLOCKED: needs fresh npm login
 
-# 3. GitHub release with artifacts + checksums
+# 3. GitHub release with artifacts + checksums      # PENDING phinbox approval
+#    (6 assets; hook-a683332d46ba9fff95e5a91b0f239118)
 cd "$(git rev-parse --show-toplevel)"   # step 2 left the shell in the npm stage dir
 gh release create v0.1.0 \
   --title "Khostty 0.1.0" \
@@ -302,21 +311,23 @@ gh release create v0.1.0 \
   dist-release/macos/Khostty-0.1.0-macos.zip \
   dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz \
   dist/khostty-vt_0.1.0_amd64.deb \
+  dist/khostty_0.1.0_amd64.deb \
+  dist-release/stage/windows/Khostty-0.1.0-win64/output/Khostty-0.1.0-windows-x86_64-setup.exe \
   dist-release/CHECKSUMS.txt
 ```
 
-The two open decisions, and why they matter, are recorded in
-[HANDOFF.md §6](HANDOFF.md) and the WBS 10.5 row:
+Two open decisions, recorded in [HANDOFF.md §6](HANDOFF.md) and the WBS 10.5 row:
 
-1. **`khostty-vt` cannot link standalone** — it looks for a prebuilt `libghostty-vt` via
-   `GHOSTTY_VT_LIB_DIR` or `../zig-out/lib`, and otherwise warns *"will typecheck but not
-   link"*. Publishing ships a crate that fails to build on its own. Either add a prominent
-   README warning, vendor the library, or defer crates.io for 0.1.0.
-2. **The macOS `.app` is not notarized** — it was built, signed, hash-verified and its
-   binary executed non-interactively (see [HANDOFF.md](HANDOFF.md) §2), but it was **never
-   launched in a GUI session** and no `notarytool` credentials were available, so a first
-   launch on a pristine machine may require an explicit Gatekeeper override. Both of
-   those paths are untested.
+1. **`khostty-vt` cannot link standalone** — **RESOLVED for 0.1.0**: the crate ships
+   with a README that documents the prebuilt `libghostty-vt` requirement
+   (`GHOSTTY_VT_LIB_DIR`, the `link` feature, and the "typechecks but will not link"
+   warning); published on that basis 2026-09-20.
+2. **The macOS `.app` is not notarized** — **still open.** The bundle was built,
+   signed, hash-verified, its binary executed non-interactively, **and it was launched
+   in a live GUI session with an interactive keystroke round-trip on 2026-09-20**
+   ([HANDOFF.md](HANDOFF.md) §2). With no `notarytool` credentials available, a first
+   launch on a pristine machine may still require an explicit Gatekeeper override;
+   that path remains untested.
 
 ---
 

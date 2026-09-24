@@ -10,9 +10,9 @@ Khostty-verified support are different columns, because they are different claim
 
 | Platform | VT library | Terminal app | Agent IPC | FFI | Renderer | Verified in this fork? |
 |---|---|---|---|---|---|---|
-| **macOS** (arm64/x86_64) | **VERIFIED** | Upstream AppKit; Metal toolchain caveat | 3 actions | C, Rust, WASM | Metal / OpenGL | **YES** — 2026-09-16/17 |
+| **macOS** (arm64/x86_64) | **VERIFIED** | `.app` built, signed, GUI-launched, keystroke round-trip verified | 3 actions | C, Rust, WASM | Metal / OpenGL | **YES** — library 2026-09-16/17; `.app` build 2026-09-18 + GUI launch 2026-09-20 |
 | **Linux** (x86_64/arm64) | Upstream supported | Upstream GTK4 | 3 actions | C, Rust, WASM | OpenGL | **BUILT + INSTALL-VERIFIED + GUI-LAUNCH-VERIFIED 2026-09-19** (x86_64, WSL Fedora 44; `.deb` installed on the host, +version exit 0, bookworm negative control refuses on the derived libc6 2.43 floor; headless GTK launch under Xvfb + dbus-run-session: APP_ALIVE, zero-error GTK init, then purged; xwininfo/xwd unavailable on Fedora 44 so no window-tree/screenshot evidence; no arm64) |
-| **Windows** (x86_64) | Upstream builds; **no app runtime** | **SCAFFOLD only** | Named-pipe stub | C, Rust, Go | OpenGL (unproven) | **NO** — G3 IN PROGRESS |
+| **Windows** (x86_64) | Upstream builds; **no default app runtime** (opt-in `-Dapp-runtime=windows` scaffold) | **CLI verified; GUI window not launched** | Named-pipe stub | C, Rust, Go | OpenGL (unproven) | **PARTIAL** — exe + DLL + installer verified 2026-09-18/19; no GUI window |
 | **WASM** (`wasm32-freestanding`) | **VERIFIED** | n/a (headless) | n/a | JS/TS | WebGL (n/a for VT-only) | **YES** — artifact verified |
 | **iOS** | Library only (xcframework slice) | Not supported | n/a | C | Metal | Artifact present, app not attempted |
 | **FreeBSD** | Upstream supported | Upstream GTK4 | 3 actions | C, Rust | OpenGL | **NO** |
@@ -76,13 +76,16 @@ a future DirectWrite backend may replace `freetype_windows`.
 
 ## 3. macOS
 
-**Status: VERIFIED for the library; app blocked by toolchain.**
+**Status: VERIFIED for the library; `.app` built, signed, and GUI-launched with an
+interactive keystroke round-trip (2026-09-20). Notarization absent (untested path
+on a pristine machine).**
 
-> **Current build blocker (observed 2026-09-17).** `zig build -Demit-lib-vt` fails
-> for every platform: commit `e1277bea2` renamed `src/apprt/ipc.zig` to
-> `src/apprt/ipc/mod.zig` without updating its relative imports. The artifacts
-> below are real, but they cannot currently be regenerated from source. Diagnosis
-> and the two-line fix: [BUILD.md](BUILD.md#unable-to-load-mainzig-filenotfound--unable-to-load-quirkszig).
+> **Historical build blocker (observed 2026-09-17; FIXED by `cd1ed5c60`).** `zig
+> build -Demit-lib-vt` failed for every platform: commit `e1277bea2` renamed
+> `src/apprt/ipc.zig` to `src/apprt/ipc/mod.zig` without updating its relative
+> imports. The two-line import fix landed as `cd1ed5c60` ("correct relative import
+> depths"), after which the `.app` was rebuilt by `packaging/macos-app.sh` (exit 0,
+> 2026-09-18). Diagnosis archive: [BUILD.md](BUILD.md#unable-to-load-mainzig-filenotfound--unable-to-load-quirkszig).
 
 ### Verified artifacts (2026-09-16, still present)
 
@@ -133,9 +136,12 @@ builds or tests Linux. The Linux x86_64 build and `.deb` install-verify that do
 exist were run on the WSL Fedora 44 host (§4), not CI. See
 [CONTRIBUTING.md](CONTRIBUTING.md#9-continuous-integration).
 
-**Honest statement:** Khostty's macOS *library* path is verified. Khostty's macOS
-*application* is not verified in this fork; the blocker is external (a missing
-Xcode component), not a code defect.
+**Honest statement:** Khostty's macOS *library* and *application* paths are both
+verified in this fork — the `.app` builds (the 2026-09-17 ipc-import breakage was
+fixed by `cd1ed5c60`), signs, verifies, and launched in a live GUI session with an
+interactive keystroke round-trip (2026-09-20). What remains untested is
+first-launch Gatekeeper behavior on a pristine machine, because the bundle is not
+notarized (`notarytool` credentials absent).
 
 ---
 
@@ -176,7 +182,7 @@ Linux-support claims.
 
 ## 5. Windows
 
-**Status: NOT STARTED (G3), scaffold only.**
+**Status: PARTIAL (G3) — exe + DLL built 2026-09-18, executed on real Windows and install/uninstall-verified 2026-09-19; windowing still `error.Unimplemented`, so no GUI window.**
 
 This is the fork's headline delta: upstream has no Windows application runtime.
 `Runtime.default` returns `.none` for Windows, so upstream produces no executable.
@@ -195,15 +201,27 @@ This is the fork's headline delta: upstream has no Windows application runtime.
 | `win32api.zig` | Win32 type aliases and `user32`/`kernel32`/`dwmapi` declarations |
 | `ipc.zig` | Named-pipe transport; all operations return `error.Unimplemented` |
 
-### What does not exist
+### What now works (2026-09-18/19)
 
-- **No wiring.** `src/apprt.zig` selects `none`, `gtk`, `embedded`, or `browser`
-  only. `src/apprt/windows/` is not reachable from the runtime switch, so no
-  build currently compiles it as a runtime.
-- **No cross-compilation evidence.** `zig build -Dtarget=x86_64-windows` has not
-  been run and recorded here.
-- **No run evidence.** No Windows binary has been launched, natively or under
-  Wine.
+- **Wiring + opt-in runtime.** `src/apprt.zig` exports and selects `windows`
+  (`.windows => windows`); `build.zig` accepts `-Dtarget=x86_64-windows-gnu
+  -Dapp-runtime=windows` (documented as the opt-in scaffold, `build.zig:44`).
+- **Cross-build.** `ghostty.exe` (43.5 MB, `PE32+ executable (GUI) x86-64`) and
+  `ghostty-vt.dll` (7.5 MB) built 2026-09-18 and hashed.
+- **Native run evidence (CLI).** Executed 2026-09-19 on `kooshapari-desk`
+  (Windows NT 10.0.28120, AMD64): `ghostty.exe +version` → exit 0,
+  `app runtime: .windows`, `font engine: .freetype_windows`, `libxev: iocp`;
+  `ghostty-vt.dll` loads via `LoadLibraryW` and its ABI runs live
+  (`terminal_new`/`resize`/`vt_write`/OSC-0 title/`terminal_free`) — 0 failures.
+  Evidence `sessions/20260916-fork-assessment/evidence/windows_runtime_verify_2026-09-19.txt`.
+- **Installer.** Inno Setup 6.7.1 package install/uninstall-verified 2026-09-19
+  (`/VERYSILENT`, files landed, uninstall clean; see [INSTALL.md](INSTALL.md) §3.5).
+
+### What still does not exist
+
+- **No GUI window.** `App.zig` `init`/`registerWindowClass`/`run` still return
+  `error.Unimplemented` (re-checked 2026-09-24), so the run loop cannot open a
+  window; the 2026-09-19 execution is CLI `+version` only.
 - **No real Win32 calls.** `win32api.zig` declares function pointers; no code
   invokes them.
 
@@ -229,7 +247,7 @@ Details and the security implication: [SECURITY.md](SECURITY.md#4-windows-transp
 Cross-compile succeeds; the binary runs (native or Wine); keyboard and mouse
 input encode correctly via `ghostty_key_encoder_*` / `ghostty_mouse_encoder_*`;
 DirectWrite renders glyphs with font fallback; clipboard works with bracketed
-paste; the named pipe accepts agent commands. None are met.
+paste; the named pipe accepts agent commands. **Two are met**: cross-compile succeeds (2026-09-18) and the binary runs natively (`+version`, DLL ABI, 2026-09-19). **Open**: keyboard and mouse input encode checks, DirectWrite render with font fallback, clipboard bracketed paste, and named-pipe command acceptance — the windowing and IPC scaffolds still return `error.Unimplemented`.
 
 ---
 
@@ -308,9 +326,9 @@ behaviour; it does not mean a Khostty application runs there.
 
 | Row | Evidence needed to move it |
 |---|---|
-| macOS app | A successful full build with a Metal toolchain present, then a launch |
-| Linux | `zig build` on a Linux host (DONE 2026-09-19, WSL), `zig build test`, and a GTK launch |
-| Windows | `zig build -Dtarget=x86_64-windows` succeeding, then running the binary |
+| macOS app | DONE — full build with Metal toolchain (2026-09-18), codesign verify, and a live GUI launch with keystroke round-trip (2026-09-20); notarization still open |
+| Linux | DONE — `zig build` on a Linux host (2026-09-19, WSL), `.deb` install-verify, and a headless GTK launch (Xvfb, APP_ALIVE) |
+| Windows | PARTIAL — cross-built exe executed natively (`+version`, DLL ABI0 failures) and installer install/uninstall-verified (2026-09-19); still missing: a GUI window run, DirectWrite render check, input encode check, named-pipe command acceptance |
 | WASM in a browser | A headless-Chromium smoke run (current tests are Node, exercising the same code path) |
 | iOS | A build and run of a host app linking the xcframework slice |
 
