@@ -270,7 +270,7 @@ Execution state as of 2026-09-24:
 | Git tag `v0.1.0` | **DONE** — annotated tag at `202aad543`, pushed to origin (tag object `7e1684f6`) |
 | crates.io `khostty-vt` 0.1.0 | **PUBLISHED** 2026-09-20 — API-verified: `newest_version=0.1.0`, downloaded-crate checksum matches the local `.crate`, `published_by KooshaPari`; 199/199 tests passed first |
 | PyPI `khostty-vt` | **BLOCKED — no credential exists on this machine** (no `.pypirc`, keyring entry, env var, netrc, or OIDC trusted publishing). Wheel + sdist are prebuilt in `khostty-python/dist/`; `uv publish` runs as soon as an operator-provided token exists. Package name is free. |
-| npm `khostty-libghostty-vt-wasm` | **BLOCKED — stored token revoked** (401 on `whoami`; token creation also 401). Needs a fresh `/opt/homebrew/bin/npm login --auth-type=web` browser approval. Staged package verified (27 files, 324.6 kB, shum `2754b0a4`); name is free. |
+| npm `khostty-libghostty-vt-wasm` | **PUBLISHED 2026-09-24** — the stored token had been revoked; recovery was a fresh `/opt/homebrew/bin/npm login --auth-type=web` plus one browser 2FA approval, then `npm publish`. `npm view` returns `0.1.0` with `dist.shasum 2754b0a423ee035b421dc232ceb6f8fc6c85b57d` — byte-match to the staged package (27 files, 324.6 kB) — published 2026-09-24T10:47:28Z. |
 | Go module proxy | Not applicable to 0.1.0 (the Go module is scaffold only, G6.1) |
 | GitHub release + 6 assets | **PENDING OPERATOR APPROVAL** — `gh release create` was deferred to the phinbox gate (`request_id=hook-a683332d46ba9fff95e5a91b0f239118`) and must be approved there, then re-run as written in §7.1 |
 | Announce (10.8) | **DOCS UPDATED 2026-09-24** — README release banner + status tables, changelog §4.2 GUI-verification correction, INSTALL/HANDOFF/PLATFORMS stale-status fixes; commit + push follow in the same change |
@@ -300,7 +300,7 @@ git push origin v0.1.0                              # pushed, verified [new tag]
 #    the repository root explicitly before naming any relative path.
 cd khostty-vt      && cargo test && cargo publish   # DONE 2026-09-20 (199/199, published)
 cd ../khostty-python && uv publish dist/khostty_vt-0.1.0-py3-none-any.whl dist/khostty_vt-0.1.0.tar.gz   # BLOCKED: needs PyPI token
-cd ../dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0 && npm publish   # BLOCKED: needs fresh npm login
+cd ../dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0 && npm publish   # DONE 2026-09-24 (after web re-login + browser 2FA)
 
 # 3. GitHub release with artifacts + checksums      # PENDING phinbox approval
 #    (6 assets; hook-a683332d46ba9fff95e5a91b0f239118)

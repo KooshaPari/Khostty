@@ -114,7 +114,7 @@ The repository exposes `libghostty-vt` through the Zig build system. Use the bui
 zig build --help
 ```
 
-Do not treat a library artifact as a completed Khostty binding. The Rust, Go, Python, and hardened WASM packages are all built and tested (G5–G7: Rust 199/199, Go+Python 207, WASM 54/54) — `khostty-vt 0.1.0` is published on crates.io; the PyPI and npm publishes are credential-blocked (see [docs/RELEASE.md](docs/RELEASE.md) §7).
+Do not treat a library artifact as a completed Khostty binding. The Rust, Go, Python, and hardened WASM packages are all built and tested (G5–G7: Rust 199/199, Go+Python 207, WASM 54/54) — `khostty-vt 0.1.0` is published on crates.io and `khostty-libghostty-vt-wasm 0.1.0` on npm; the PyPI publish remains credential-blocked (see [docs/RELEASE.md](docs/RELEASE.md) §7).
 
 ## Architecture
 
@@ -204,14 +204,14 @@ G4 acceptance requires authenticated commands, pane lifecycle operations, state 
 
 ## Polyglot FFI
 
-> **Status: DONE, G5–G7.** All four packages are built and tested; the Rust crate is published on crates.io as [`khostty-vt`](https://crates.io/crates/khostty-vt) (2026-09-20). The PyPI and npm publishes are blocked on credentials, tracked in [docs/RELEASE.md](docs/RELEASE.md) §7.
+> **Status: DONE, G5–G7.** All four packages are built and tested; the Rust crate is published on crates.io as [`khostty-vt`](https://crates.io/crates/khostty-vt) (2026-09-20) and the WASM package on npm as [`khostty-libghostty-vt-wasm`](https://www.npmjs.com/package/khostty-libghostty-vt-wasm) (2026-09-24). Only the PyPI publish remains blocked on a credential, tracked in [docs/RELEASE.md](docs/RELEASE.md) §7.
 
 | Language | Status | Package | Purpose |
 |---|---|---|---|
 | **Rust** | **DONE (G5) — PUBLISHED** | `khostty-vt` | Safe Rust wrapper with RAII handles, typed errors, and 199/199 integration tests |
 | **Go** | **DONE (G6)** | `khostty/vt` | cgo-based idiomatic Go wrapper with context and error handling |
 | **Python** | **DONE (G6)** | `khostty-vt` | cffi-based Python package for terminal automation and scripting (wheel + sdist built) |
-| **WASM** | **DONE (G7)** | Hardened WASM package and typed JavaScript API | Browser and sandbox consumption of the VT engine (54/54 tests, tarball staged) |
+| **WASM** | **DONE (G7) — PUBLISHED** | [`khostty-libghostty-vt-wasm`](https://www.npmjs.com/package/khostty-libghostty-vt-wasm) | Hardened WASM package and typed JavaScript API; browser and sandbox consumption of the VT engine (54/54 tests; npm 0.1.0, 2026-09-24) |
 
 The upstream C ABI and existing examples remain the baseline that these packages wrap. The Rust design calls for raw bindings isolated behind a documented unsafe boundary, safe `Terminal`, `Snapshot`, `RenderState`, `Search`, `KeyEncoder`, and `MouseEncoder` types, and an explicit `GhosttyError` result type. Go and Python follow the same wrap-over-handroll rule.
 
