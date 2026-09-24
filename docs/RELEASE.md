@@ -311,7 +311,7 @@ gh release create v0.1.0 \
   dist-release/macos/Khostty-0.1.0-macos.zip \
   dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz \
   dist/khostty-vt_0.1.0_amd64.deb \
-  dist/khostty_0.1.0_amd64.deb \
+  dist-release/khostty_0.1.0_amd64.deb \
   dist-release/stage/windows/Khostty-0.1.0-win64/output/Khostty-0.1.0-windows-x86_64-setup.exe \
   dist-release/CHECKSUMS.txt
 ```
