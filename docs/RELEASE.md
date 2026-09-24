@@ -303,9 +303,12 @@ cd ../khostty-python && uv publish dist/khostty_vt-0.1.0-py3-none-any.whl dist/k
 cd ../dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0 && npm publish   # DONE 2026-09-24 (after web re-login + browser 2FA)
 
 # 3. GitHub release with artifacts + checksums      # PENDING phinbox approval
-#    (6 assets; hook-a683332d46ba9fff95e5a91b0f239118)
+#    (6 assets; hook-ea20989dca45c9e2c6c1c915ba817571 — supersedes expired
+#    hook-a683332d46ba9fff95e5a91b0f239118; --repo required: bare gh resolved
+#    upstream ghostty-org/ghostty and refused 2026-09-24)
 cd "$(git rev-parse --show-toplevel)"   # step 2 left the shell in the npm stage dir
 gh release create v0.1.0 \
+  --repo KooshaPari/Khostty \
   --title "Khostty 0.1.0" \
   --notes-file docs/changelog/0.1.0.md \
   dist-release/macos/Khostty-0.1.0-macos.zip \
