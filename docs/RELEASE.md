@@ -319,6 +319,24 @@ gh release create v0.1.0 \
   dist-release/CHECKSUMS.txt
 ```
 
+### 7.2 Post-approval verification (read-only)
+
+```bash
+# 4. Confirm the release URL and all 6 assets uploaded
+gh release view v0.1.0 --repo KooshaPari/Khostty \
+  --json url,assets \
+  -q '.url, (.assets[] | "  " + .name + "  " + (.size|tostring) + " B")'
+#   expect: one URL + exactly 6 asset lines
+#   (Khostty-0.1.0-macos.zip ≈ 35953098 B, …-wasm-0.1.0.tar.gz ≈ 680598 B,
+#    khostty-vt_0.1.0_amd64.deb ≈ 2320612 B, khostty_0.1.0_amd64.deb ≈ 18143964 B,
+#    …windows-x86_64-setup.exe ≈ 19766307 B, CHECKSUMS.txt ≈ 4273 B)
+
+# 5. Local artifacts still match the manifest
+shasum -a 256 -c dist-release/CHECKSUMS.txt   # expect 9/9 OK
+
+# 6. Reconcile this file (§1-§7 statuses) and push, then WSL-sync
+```
+
 Two open decisions, recorded in [HANDOFF.md §6](HANDOFF.md) and the WBS 10.5 row:
 
 1. **`khostty-vt` cannot link standalone** — **RESOLVED for 0.1.0**: the crate ships
