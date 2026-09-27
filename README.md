@@ -20,7 +20,7 @@
 
 ---
 
-[![AI slop inside](https://sladge.net/badge.svg)](https://sladge.net) [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/KooshaPari/ghostty/total)](https://github.com/KooshaPari/ghostty/releases)
+[![AI slop inside](https://sladge.net/badge.svg)](https://sladge.net) [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/KooshaPari/Khostty/total)](https://github.com/KooshaPari/Khostty/releases)
 
 ## What Khostty Is
 
@@ -42,7 +42,7 @@ If you want a finished desktop terminal today, use upstream Ghostty. Khostty is 
 
 ## Status
 
-> **v0.1.0 released 2026-09-24.** Tag `v0.1.0` cut at `202aad543`; `khostty-vt 0.1.0` is live on [crates.io](https://crates.io/crates/khostty-vt). GitHub release assets and the PyPI/npm packages are tracked in WBS G10 — see the table below and [docs/RELEASE.md](docs/RELEASE.md).
+> **v0.1.0 released — tag 2026-09-24, GitHub release 2026-09-27.** Tag `v0.1.0` cut at `202aad543`; `khostty-vt 0.1.0` live on [crates.io](https://crates.io/crates/khostty-vt); `khostty-libghostty-vt-wasm 0.1.0` live on [npm](https://www.npmjs.com/package/khostty-libghostty-vt-wasm); all 6 assets published at [releases/tag/v0.1.0](https://github.com/KooshaPari/Khostty/releases/tag/v0.1.0). The PyPI publish (WBS 10.5) remains credential-blocked — see the table below and [docs/RELEASE.md](docs/RELEASE.md) §7.
 
 The authoritative task decomposition is [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md). The table below follows that WBS (115 tasks, 10m each).
 
@@ -58,7 +58,7 @@ The authoritative task decomposition is [`docs/sessions/20260916-fork-assessment
 | **G7** | WASM Cross-Compilation | 10 | 100m | **DONE** (54/54) |
 | **G8** | Khostty-Specific Improvements | 13 | 130m | **DONE** (measured) |
 | **G9** | Documentation and Packaging | 15 | 150m | **DONE** (all artifacts built + verified; macOS/GTK GUI launches observed) |
-| **G10** | Release Artifacts | 9 | 90m | **IN PROGRESS** — tag `v0.1.0` cut, crates.io published; release assets/PyPI/npm in flight |
+| **G10** | Release Artifacts | 9 | 90m | **8/9 DONE** — tag `v0.1.0`, checksums (9/9), crates.io, npm, GitHub release (6 assets, 2026-09-27), announce docs done; PyPI (10.5) blocked on operator credential |
 
 The WBS records 115 tasks and approximately 19.2 hours of planned work. Status labels in this README follow that WBS and are not claims of shipped functionality.
 
