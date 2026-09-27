@@ -125,7 +125,7 @@ The fork's value is NOT rebuilding what upstream has. It is:
 | G7 | WASM Cross-Compilation | 10 | 100m | DONE (54/54 tests) | HIGH |
 | G8 | Khostty-Specific Improvements | 13 | 130m | DONE (measured) | MEDIUM |
 | G9 | Documentation + Packaging | 15 | 150m | DONE (15/15; macOS .app builds+signs+verifies, its binary executes, **and GUI-LAUNCH-VERIFIED with interactive keystroke round-trip 2026-09-20** (see 9.11); **GTK .deb BUILT + INSTALL-VERIFIED + GUI-LAUNCH-VERIFIED (headless Xvfb) 2026-09-19 in WSL** (see 9.12); Linux library .deb installs+runs on Debian 12; Windows exe executed) | MEDIUM |
-| G10 | Release Artifacts | 9 | 90m | IN PROGRESS (5 of 9 DONE: 10.1–10.4, 10.7; 10.5 PARTIAL — crates.io published 2026-09-20 + npm published 2026-09-24, PyPI blocked on credential; 10.6 PARTIAL — tag pushed, GitHub release pending phinbox approval; 10.8 docs updated 2026-09-24; 10.9 scheduled post-close) | MEDIUM |
+| G10 | Release Artifacts | 9 | 90m | IN PROGRESS (8 of 9 DONE: 10.1–10.4, 10.6–10.9 incl. GitHub release published 2026-09-27 with 6/6 assets verified + post-release re-verify 6/6 PASS 2026-09-27; 10.5 PARTIAL — crates.io published 2026-09-20 + npm published 2026-09-24, PyPI blocked on credential; 10.8 docs updated 2026-09-24) | MEDIUM |
 
 ---
 
@@ -935,7 +935,7 @@ deleted, so the working tree now carries no stray probe artifacts. Not a docs-cr
 
 ---
 
-## G10: Release Artifacts + Ecosystem (IN PROGRESS — 5 of 9 DONE) — MEDIUM PRIORITY
+## G10: Release Artifacts + Ecosystem (IN PROGRESS — 8 of 9 DONE; 10.5 partial: PyPI only) — MEDIUM PRIORITY
 
 **Status 2026-09-24**: 10.1–10.4 and 10.7 are DONE (the four non-publishing tasks
 plus 10.1, whose tag condition is now satisfied: annotated `v0.1.0` exists at
@@ -967,7 +967,7 @@ consumable packages, hand off to ecosystem. Define the 0.1.0 release.
 | 10.6 | Create GitHub release with artifacts | 10m | 10.3-10.4 | **DONE 2026-09-27** — https://github.com/KooshaPari/Khostty/releases/tag/v0.1.0 with all 6 assets (macOS zip 35,953,098 B; WASM tarball 680,598 B; library `.deb` 2,320,612 B; GTK `.deb` 18,143,964 B; Windows setup.exe 19,766,307 B; `CHECKSUMS.txt` 4,273 B) plus the `docs/changelog/0.1.0.md` notes. History: tag `v0.1.0` pushed (`7e1684f6` → `202aad543`); the 6-asset command was deferred to the phinbox gate three times — original `hook-a683332d…` expired; `hook-ea20989d…` lived 3 days and expired 2026-09-27 16:16 UTC; the duplicate `hook-f5416fcd…` expired sooner. The re-issued canonical §7.1 form (`cd …/khostty && gh release create … --repo KooshaPari/Khostty …`) was **executed by the gate 2026-09-27 16:18 UTC**. §7.2 verification passed: exactly 6 assets with expected byte sizes; local `shasum -a 256 -c dist-release/CHECKSUMS.txt` → 9/9 OK. The gate was never self-approved. |
 | 10.7 | Create ecosystem handoff doc (README for docs-3 reference) | 10m | 10.6 | **DONE** (`65315d553`, `docs/HANDOFF.md`) — written ahead of 10.6 because the task it depends on is blocked. Per-artifact pick-up path, build command, verified-vs-unverified status, and the next bounded task. **[Updated 2026-09-18]** The original next task (rebuild the WASM dist from a clean tree) was **completed**: `source_dirty: "no"` at `7cd94370e`, sha256 `55cfc675…8604dc`. `docs/HANDOFF.md` §10 now names the Windows runtime gap as the next bounded task. |
 | 10.8 | Announce release (Slack/README banner) | 10m | 10.7 | **DOCS DONE 2026-09-24; external announcement not applicable.** README release banner + Status/Platform tables updated; `docs/changelog/0.1.0.md` §4.2 corrected (GUI verification); INSTALL/HANDOFF/PLATFORMS stale-status rows reconciled; commit + push run with this change. No Slack/social post was made (no configured channel). |
-| 10.9 | Write post-release check (re-verify artifacts after 1 week) | 10m | 10.6 | **SCHEDULED** (`sched_983cf93b`) for **2026-10-01 10:00 PDT**: re-verify checksums, tag, crates.io/PyPI/npm state, gh release assets, and RELEASE.md §7 reconciliation; evidence → `docs/sessions/<date>-0.1.0-reverify/`. Outcome: confirm nothing rotted before archive. |
+| 10.9 | Write post-release check (re-verify artifacts after 1 week) | 10m | 10.6 | **DONE 2026-09-27 (executed early)** — ambient cycle ran the check ~16:07–17:16 UTC, all 6 criteria PASS (`15332d5e6`, `docs/sessions/20260927-0.1.0-reverify/README.md`); `sched_983cf93b` remains armed for the 2026-10-01 second pass (checksums, tag, crates.io/PyPI/npm, gh release assets, RELEASE.md §7 reconciliation). |
 
 **Acceptance criteria** (status 2026-09-24):
 - `v0.1.0` tagged with verified artifacts (checksums + smoke tests observed) — **MET**: annotated tag `7e1684f6` → `202aad543`, pushed to origin; artifacts verified and `docs/RELEASE.md` §6 records the manifest.
@@ -1009,8 +1009,8 @@ G0 Fork Hygiene (DONE) → G1 Native Build (DONE) → G2 Conformance Evidence
 | G7 WASM | 10 | 100 | ✅ DONE (54/54 tests) |
 | G8 Improvements+Bench | 13 | 130 | ✅ DONE (measured) |
 | G9 Docs+Packaging | 15 | 150 | ✅ 15/15 rows present; 9.11 build+sign+binary-exec + **GUI keystroke round-trip verified 2026-09-20**; 9.13 Windows installer **compiled + install/uninstall-verified 2026-09-19**; **9.12 GTK .deb BUILT + INSTALL-VERIFIED + GUI-LAUNCH-VERIFIED 2026-09-19 in WSL** (hicolor icons + Icon=@APPID@ + derived glibc floor 2.43, negative control refused on Debian 12; headless Xvfb APP_ALIVE, zero-error GTK init) |
-| G10 Release | 9 | 90 | 🔶 IN PROGRESS — 8/9 DONE (10.1–10.4, 10.6–10.8 incl. all artifacts built and verified: Windows installer, GTK app `.deb` incl. headless GUI launch, macOS `.app` GUI keystroke round-trip, tag pushed, **GitHub release published 2026-09-27 with 6/6 assets verified**, announce docs reconciled); 10.5 PARTIAL (crates.io + npm live; PyPI blocked on credential); 10.9 SCHEDULED 2026-10-01 10:00 PDT |
-| **TOTAL** | **115** | **~1150m (19.2h)** | **113 DONE / 1 OPEN (10.5 PyPI credential) + 10.9 SCHEDULED (2026-10-01 10:00 PDT)** |
+| G10 Release | 9 | 90 | 🔶 IN PROGRESS — 8/9 DONE (10.1–10.4, 10.6–10.9 incl. all artifacts built and verified: Windows installer, GTK app `.deb` incl. headless GUI launch, macOS `.app` GUI keystroke round-trip, tag pushed, **GitHub release published 2026-09-27 with 6/6 assets verified**, announce docs reconciled, **post-release re-verify executed 2026-09-27 with 6/6 criteria PASS**); 10.5 PARTIAL (crates.io + npm live; PyPI blocked on credential); 10-01 second re-verify pass armed (`sched_983cf93b`) |
+| **TOTAL** | **115** | **~1150m (19.2h)** | **114 DONE / 1 OPEN (10.5 PyPI credential) — 10-01 second re-verify pass armed (`sched_983cf93b`)** |
 
 > **Count reconciliation (2026-09-19).** Task rows were counted directly from each gate's
 > table (`^\| N.M \|`): G0=4, G1=3, G2=12, G3=15, G4=14, G5=10, G6=10, G7=10, G8=13,
