@@ -45,6 +45,7 @@ recorded it (commit `f0a5e405c`).
 - `docs/RELEASE.md` §7 table reconciled by `f0a5e405c`; this session doc is the only file added here.
 - Open blocker unchanged: **PyPI `khostty-vt` publish needs an operator token.**
 - Not attempted (out of success-criteria scope): WSL `/root/khostty` sync to `f0a5e405c` (§7.2 step 6 remainder) — recommend the owning session run it.
+  - **Owning-session follow-up, 2026-09-27 17:20 UTC:** five SSH attempts (16:25, 16:26, 16:41, 17:16, 17:20 UTC) all timed out to `desk`. Tailscale reports `kooshapari-desk` (100.96.135.160) **offline, last seen 2 days ago** — the box is powered off/asleep; no remote wake is possible. Stopped retrying per scheduled task `sched_839d2c8d` instructions. The WSL mirror remains at `5cca58661`; origin (then `2a615b53a`) is authoritative. **The 2026-10-01 re-verify should attempt the sync once** (`ssh desk "wsl -d FedoraLinux-44 -u root -- bash -s" < /Users/kooshapari/.jcode/scratch/wsl_sync.sh`) in case the box is back.
 
 ## 5. Commands used (reproducible)
 
