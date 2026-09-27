@@ -23,6 +23,45 @@ Three rules govern every claim below:
 
 ---
 
+## 0. Downloading the released artifacts (2026-09-27)
+
+All six 0.1.0 assets are published on the GitHub release page:
+**<https://github.com/KooshaPari/Khostty/releases/tag/v0.1.0>**
+
+| Asset | Bytes |
+|---|---|
+| `Khostty-0.1.0-macos.zip` | 35,953,098 |
+| `Khostty-0.1.0-windows-x86_64-setup.exe` | 19,766,307 |
+| `khostty_0.1.0_amd64.deb` (GTK application) | 18,143,964 |
+| `khostty-vt_0.1.0_amd64.deb` (library) | 2,320,612 |
+| `khostty-libghostty-vt-wasm-0.1.0.tar.gz` | 680,598 |
+| `CHECKSUMS.txt` | 4,273 |
+
+To verify a download, compare its digest with the `CHECKSUMS.txt` line whose
+path ends in the same basename (`CHECKSUMS.txt` entries carry build-host
+paths, so `shasum -c` only works inside the original build tree):
+
+```bash
+shasum -a 256 Khostty-0.1.0-macos.zip
+```
+
+Library packages published to registries: `khostty-vt 0.1.0` on
+[crates.io](https://crates.io/crates/khostty-vt) and
+`khostty-libghostty-vt-wasm 0.1.0` on
+[npm](https://www.npmjs.com/package/khostty-libghostty-vt-wasm).
+The PyPI publish is not yet made (credential-blocked; tracked in
+[RELEASE.md](RELEASE.md) §7).
+
+The per-platform sections below remain the install-and-verify authority; their
+`dist-release/...` paths are what the packaging scripts produce on a build
+host. On 2026-09-27 the recorded §1 hashes were re-checked against copies
+*downloaded from the release page*: all four hash-covered assets (macos.zip,
+wasm tarball, both `.deb`s) and `CHECKSUMS.txt` itself matched 5/5. The
+`setup.exe` is not listed in `CHECKSUMS.txt`; it matched by exact byte size
+only.
+
+---
+
 ## 1. Status at a glance (2026-09-18)
 
 Status vocabulary used throughout:
