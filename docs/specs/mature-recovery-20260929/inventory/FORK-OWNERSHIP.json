@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "product": "KooshaPari/Khostty",
+  "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
+  "merge_base": "d4c88d8069912b653d707191388ca98e24751f12",
+  "top_level": {
+    "identical": 43,
+    "added": 13,
+    "modified": 6,
+    "removed": 0
+  },
+  "high_priority": {
+    "windows": {
+      "current_blobs": 11,
+      "added": 11
+    },
+    "agent_ipc": {
+      "current_blobs": 11,
+      "new_agent_files": 10,
+      "legacy_moved_module": 1,
+      "legacy_module_semantics": "current mod.zig equals baseline ipc.zig after only relative-import normalization"
+    },
+    "terminal_c": {
+      "inspected_blobs": 36,
+      "identical": 36
+    },
+    "apprt_zig": {
+      "status": "MODIFIED",
+      "meaning": [
+        "legacy IPC path relocation",
+        "Windows runtime export/selection"
+      ]
+    }
+  },
+  "interpretation": "Git-object ownership only; not runtime acceptance or differentiation value."
+}
