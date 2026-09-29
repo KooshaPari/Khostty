@@ -61,3 +61,12 @@ A 2026 web research pass located `dzearing/ghoztty`, a Ghostty fork whose stated
 This does not prove Ghoztty meets Khostty's accepted needs or should be adopted. It changes the bootstrap burden. Before retaining custom Khostty agent IPC, compare exact required journeys, upstream divergence, platform coverage, identity/idempotency, child input, inspection/events, authorization, embedding and maintenance. If Khostty's accepted delta can be supplied by upstream Ghostty + Ghoztty-like thin changes, a broad parallel IPC architecture is not justified by uniqueness.
 
 Research source: https://github.com/dzearing/ghoztty (retrieved 2026-09-29). Treat README claims as external prior-art assertions until source/revision/license and runtime behavior are qualified.
+
+
+## K-F10 — fork delta is measurable and creates upstream-drift debt
+
+A GitHub compare of Khostty main against current `ghostty-org/ghostty:main` reports status `diverged`: Khostty is 207 commits ahead and 145 behind, with merge base `d4c88d8069912b653d707191388ca98e24751f12`. The file delta spans conformance/bench infrastructure, Windows runtime, agent IPC, polyglot wrappers, packaging/CI/docs and other fork work.
+
+This falsifies the simplifying model “Khostty is just an IPC patch.” It also makes upstream drift a first-class transition-debt dimension. The correct existence decision is per subsystem: valuable conformance/ABI/wrapper work may be separable from agent IPC; Windows hosting may justify a host/fork delta even if IPC does not. See `FORK-DELTA-DECISION-LEDGER.md`.
+
+Current upstream is a moving comparison target, so 207/145 is a dated research observation, not a permanent metric or the historical baseline for all changes.
