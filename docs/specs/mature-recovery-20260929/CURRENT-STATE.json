@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "program_id": "KR-20260929",
   "product": "KooshaPari/Khostty",
   "repository_id": 1322607630,
@@ -10,16 +10,31 @@
   "implementation_candidate": null,
   "status": "INCOMPLETE_BLOCKED",
   "contract_authority": "CANDIDATE_NOT_ACCEPTED",
-  "source_denominator": {"state": "OPEN", "total": null, "resolved": null, "fraction": null},
+  "source_denominator": {
+    "state": "OPEN",
+    "total": null,
+    "resolved": null,
+    "fraction": null
+  },
   "mature_completion": null,
   "specification_completion": null,
   "journey_closure": "NOT_INDEPENDENTLY_MEASURED",
   "native_tests_run_this_pass": false,
-  "blocking_findings": ["K-F01", "K-F02", "K-F03", "K-F07"],
-  "high_risk_unknowns": ["K-F04", "K-F06"],
-  "authority_gap": "Product-specific user-authored scope not recovered; repository accepted labels are imported assertions",
+  "blocking_findings": [
+    "K-F01",
+    "K-F02",
+    "K-F03",
+    "K-F07",
+    "K-F08"
+  ],
+  "high_risk_unknowns": [
+    "K-F04",
+    "K-F06"
+  ],
+  "authority_recovered": "User objective on 2026-09-16: identify actual owned terminal delta; test native correctness and intended integration. No originating fork rationale or accepted full mature surface recovered.",
+  "existence_gate": "OPEN_GENERIC_AUTOMATION_COMMODITIZED",
   "independent_fresh_review": "NOT_PERFORMED",
   "invalid_catalogs_eligible_for_grading": false,
   "pilot": "NOT_RUN_SEPARATE_POST_BUILD_GATE",
-  "progress_policy": "Report witnessed dimensions and blockers; missing/skipped/stale/wrong-candidate evidence is not green; no scalar average or document-count completion"
+  "progress_policy": "No scalar average. Platform/runtime/configuration-specific evidence; missing/skipped/stale/wrong-candidate evidence is not green."
 }
