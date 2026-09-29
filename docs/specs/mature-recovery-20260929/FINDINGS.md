@@ -70,3 +70,33 @@ A GitHub compare of Khostty main against current `ghostty-org/ghostty:main` repo
 This falsifies the simplifying model “Khostty is just an IPC patch.” It also makes upstream drift a first-class transition-debt dimension. The correct existence decision is per subsystem: valuable conformance/ABI/wrapper work may be separable from agent IPC; Windows hosting may justify a host/fork delta even if IPC does not. See `FORK-DELTA-DECISION-LEDGER.md`.
 
 Current upstream is a moving comparison target, so 207/145 is a dated research observation, not a permanent metric or the historical baseline for all changes.
+
+
+## K-F11 — public IPC import is inherited Ghostty IPC, not the new agent server (blocking reachability clarified)
+
+At the frozen source, `src/apprt.zig` exports `apprt.ipc` from `src/apprt/ipc/mod.zig`. The merge base instead exported `src/apprt/ipc.zig`. Those two modules have the same 253-line body after normalizing only the two relative-import paths changed by moving the file one directory deeper. In other words, the public `apprt.ipc` import is the inherited three-action Ghostty IPC relocated into a directory.
+
+The ten new agent-control files adjacent to it — including `app_host.zig`, `auth.zig`, `events.zig`, `handler.zig`, `pane.zig`, `protocol.zig`, `server.zig`, and support files — are fork-owned, but `mod.zig` does not become their application bootstrap merely by sharing a directory.
+
+This resolves an important naming trap in earlier architecture docs: **“IPC is imported” does not mean “the new JSON agent server is mounted.”**
+
+## K-F12 — native agent-server call graph remains disconnected at the application boundary
+
+The frozen normative protocol already states that the app-thread hop is not wired and the server is not started from the app. Pass 6 adds structural corroboration:
+- `AppHost` references are confined to its own implementation, protocol/WBS documentation, and subsystem context in current indexed source;
+- `Server.bind` is found in the server implementation and worked examples/docs, not an application startup path;
+- `publishTitleChange` has no caller outside `app_host.zig` in current indexed source;
+- `auth.setup` is represented as an example/protocol setup, not an app boot hook;
+- `src/apprt.zig` imports only inherited `ipc/mod.zig`, not `server.zig` or `app_host.zig`.
+
+The code-search corroboration is from the repository's current indexed default branch rather than an immutable-ref search, so it is supporting evidence, not the sole absence proof. The stronger frozen-snapshot facts are the exact module bodies and protocol §7 admission.
+
+Result: K-J-AUTOMATE is not merely “untested”; the product's new agent server is **not currently part of the normal application startup graph** at the analyzed snapshot.
+
+## K-F13 — fork ownership denominator is now substantially resolved without turning inherited bulk into requirements
+
+Pass 6 enumerated every top-level tree with untruncated Git-tree responses. Two exact inventory parts contain 2,138 non-fuzz blob rows. The unchanged `test/` tree is structurally identical to the merge base and contains a `fuzz-libghostty` family with 4,014 blobs, 4,002 of which are corpus seeds. Those seeds are one inherited verification family unless a particular seed carries a distinct obligation.
+
+Top-level Git-object comparison against merge base gives 43 identical entries, 13 added and 6 modified, with no top-level removals. Entire large trees proven identical include `macos/`, `test/`, `include/`, `example/`, `flatpak/`, `images/`, `nix/`, `pkg/`, `po/`, `snap/`, and `vendor/`.
+
+This sharply narrows the fork-owned architecture review to Windows, the ten-file agent stack and required hooks, wrappers/WASM/conformance/bench, plus modified build/CI/distribution surfaces. See `inventory/FORK-OWNERSHIP.{md,json}`.
