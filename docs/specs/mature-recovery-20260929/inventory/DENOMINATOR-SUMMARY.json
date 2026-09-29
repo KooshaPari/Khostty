@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "product": "KooshaPari/Khostty",
+  "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
+  "observed_on": "2026-09-29",
+  "inventory_parts": [
+    "inventory/TRACKED-TREE-A.json",
+    "inventory/TRACKED-TREE-B.json"
+  ],
+  "unique_tracked_product_relevant_blobs": 2055,
+  "duplicate_paths_between_parts": 62,
+  "duplicate_object_conflicts": 0,
+  "separately_quantified_bulk": {
+    "test_tree": {
+      "entries": 4030,
+      "blobs": 4020,
+      "disposition": "REFERENCE_VERIFICATION_BULK_NOT_PRODUCT_OBLIGATION_DENOMINATOR"
+    },
+    "vendor_tree": {
+      "entries": 16,
+      "blobs": 9,
+      "disposition": "VENDORED_DEPENDENCY_BULK_NOT_PRODUCT_OBLIGATION_DENOMINATOR"
+    }
+  },
+  "semantic_denominator_state": "OPEN",
+  "semantic_resolved_high_risk_spine_only": true,
+  "high_risk_ipc_windows_file_count": 22,
+  "caveats": [
+    "Inherited tests remain verification evidence and may reveal obligations; they are excluded only from product-obligation counting.",
+    "Vendor files are dependency evidence, not automatically normative product intent.",
+    "The 2055 count is a tracked source inventory, not a requirement count or completion score.",
+    "Git history/conversations/external standards remain separate source families."
+  ]
+}
