@@ -52,3 +52,12 @@ Therefore generic local JSON/CLI pane automation, child input and text inspectio
 Conversation archaeology recovered the September 16 user objective: identify Khostty's actual owned terminal delta and test native correctness and intended integration. It also recovered broader May intent for a headless agent plane that controls CLI/TUI processes and projects them into a user-facing interface. These constrain research but do not prove that Khostty itself must own that entire plane.
 
 Accordingly, the mature contract must not expand from WBS task inventory. First isolate the fork delta versus upstream Ghostty and realistic WezTerm/kitty/cmux alternatives; then accept only the obligations that serve the intended integration. This remains a blocking authority/existence question, not permission to start a third repo.
+
+
+## K-F09 — same-family prior art further falsifies Ghostty+agent-IPC differentiation
+
+A 2026 web research pass located `dzearing/ghoztty`, a Ghostty fork whose stated purpose is CLI-driven window management for AI coding agents. Its documented commands create/focus named windows, split relative to a target with cwd/command, close targets, and use Unix-socket IPC. This is unusually close prior art: the relevant alternative is no longer merely “another terminal with remote control,” but another Ghostty-derived implementation aimed at coding-agent pane orchestration.
+
+This does not prove Ghoztty meets Khostty's accepted needs or should be adopted. It changes the bootstrap burden. Before retaining custom Khostty agent IPC, compare exact required journeys, upstream divergence, platform coverage, identity/idempotency, child input, inspection/events, authorization, embedding and maintenance. If Khostty's accepted delta can be supplied by upstream Ghostty + Ghoztty-like thin changes, a broad parallel IPC architecture is not justified by uniqueness.
+
+Research source: https://github.com/dzearing/ghoztty (retrieved 2026-09-29). Treat README claims as external prior-art assertions until source/revision/license and runtime behavior are qualified.
