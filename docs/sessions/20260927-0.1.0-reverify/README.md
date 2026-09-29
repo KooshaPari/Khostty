@@ -110,3 +110,44 @@ python3 -c "import yaml; ..."   # job-graph validation: duplicates + dangling ne
 curl -s https://pypi.org/pypi/pytest/json   # confirms 8.4.2 is the last 8.x, 9.0.3 needs >=3.10
 unzip -p khostty-python/dist/khostty_vt-0.1.0-py3-none-any.whl '*/METADATA'   # pytest is test-extra only
 ```
+
+### 6.3 Follow-up: why CI never ran, and what the first run proved
+
+The approval gate for a re-verification dispatch (`hook-816c7152678acb11c00bc562b6e0a042`)
+expired unapproved, so a push-triggered path was tested instead. It did not fire either,
+which turned a routine re-check into a root-cause finding.
+
+**Push triggers do not run in this repository.** The Actions runs API filtered to
+`event=push` returns `total_count: 0` for the repository's entire history and for all 12
+registered workflows, despite the permissions endpoint reporting `enabled: true` and
+`ci.yml` declaring `push: branches: [main, master, develop]`. Three pushes to `main`
+after the trigger was added produced no run. A controlled test — pushing `main` to a
+temporary `develop` branch, a branch the filter already names — also produced nothing, and
+that branch was deleted afterwards. Cause: this repository is a **fork**, and GitHub
+disables Actions on forks by default; it takes an explicit **Settings → Actions →
+"Enable Actions"** toggle that cannot be set through the API or a workflow file.
+
+This closes the loop on the earlier "zero runs" observation: it was never a workflow
+defect, it was the fork setting. The structural defects found inside `ci.yml` (the
+duplicate `lint` job key and the dangling `needs.dependency-review` expression) were real
+and are fixed independently of this; they would have failed the first push-run regardless.
+Recorded in `docs/SECURITY.md` §8.
+
+**First run (`36584839303`, manually dispatched, head `a7bce476e`) — 2 of 12 jobs failed:**
+
+- `Zig Fmt` failed on **toolchain download**, not formatting: all six `mlugg/setup-zig`
+  community mirrors returned 404/502/503 and its official-builds fallback 404'd. The tree
+  itself is clean — local `zig fmt --check src/ build.zig` exits 0. Replaced with
+  `.github/actions/install-zig`, which downloads from the upstream release host and
+  verifies the official sha256 before extracting.
+- `Security Scan` (gitleaks) reported **7 `generic-api-key` findings**. All 7 were
+  inspected individually and all 7 are false positives: 4 are the `${{ secrets.* }}`
+  indirection in the two release workflows, 3 are long identifiers
+  (`GhosttyBindingAction`, one in `src/terminal/snapshot/terminal.zig`, one in vendored
+  `vendor/nerd-fonts/font-patcher.py`). No credential is present. Allowlisted narrowly
+  in `.gitleaks.toml` with the reasoning recorded inline.
+
+`ci / test`, `Python`, and `Detect Languages` passed. `Rust`, `Go`, `TS/JS`, and
+`Cargo Deny` were skipped because `detect` reported those ecosystems absent at the
+detection depth it uses — worth noting, since `khostty-vt` and `khostty-go` do exist in
+the tree, so that job's detection is shallower than it looks.

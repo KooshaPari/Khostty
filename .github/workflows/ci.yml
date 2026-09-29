@@ -76,10 +76,13 @@ jobs:
           echo "has_security=false" >> $GITHUB_OUTPUT
           echo "has_trunk=false" >> $GITHUB_OUTPUT
 
-          # Rust: needs Cargo.toml AND deny.toml
-          if [ -f "Cargo.toml" ] || [ -f "**/Cargo.toml" ]; then
+          # Rust: a Cargo.toml anywhere in the tree (khostty-vt/Cargo.toml).
+          # The previous `[ -f "**/Cargo.toml" ]` was a literal string test — `sh`
+          # does not glob-expand inside quotes — so it never matched and the Rust
+          # job was silently skipped on every run.
+          if find . -name Cargo.toml -not -path '*/node_modules/*' -type f 2>/dev/null | head -1 | grep -q .; then
             echo "has_rust=true" >> $GITHUB_OUTPUT
-            if [ -f "deny.toml" ]; then
+            if find . -name deny.toml -not -path '*/node_modules/*' -type f 2>/dev/null | head -1 | grep -q .; then
               echo "has_deny=true" >> $GITHUB_OUTPUT
             fi
           fi
@@ -89,13 +92,13 @@ jobs:
             echo "has_python=true" >> $GITHUB_OUTPUT
           fi
 
-          # Go: needs go.mod
-          if [ -f "go.mod" ]; then
+          # Go: a go.mod anywhere in the tree (khostty-go/go.mod).
+          if find . -name go.mod -not -path '*/node_modules/*' -type f 2>/dev/null | head -1 | grep -q .; then
             echo "has_go=true" >> $GITHUB_OUTPUT
           fi
 
-          # TypeScript / JS: needs package.json (with type=module or tsconfig or js files)
-          if [ -f "package.json" ]; then
+          # TypeScript / JS: a package.json anywhere in the tree (wasm/, khostty-vt-wasm).
+          if find . -name package.json -not -path '*/node_modules/*' -type f 2>/dev/null | head -1 | grep -q .; then
             echo "has_typescript=true" >> $GITHUB_OUTPUT
           fi
 
