@@ -1,43 +1,30 @@
-# Khostty fork-delta decision ledger — pass 1
+# Khostty fork-delta decision ledger — corrected in pass 5
 
-Observed 2026-09-29. Frozen Khostty source: `a29aa9c6553d9f42aa68e2919116c0f6d53f329d`. Upstream comparison executed against current `ghostty-org/ghostty:main` base commit `f9e82709360d97b2246718f774c544de0f16787b`; merge base `d4c88d8069912b653d707191388ca98e24751f12`. Khostty is 207 commits ahead and 145 behind that upstream ref. This comparison is a research snapshot, not a promise that current upstream is the correct compatibility baseline for every historical Khostty change.
+Observed 2026-09-29. Frozen product `a29aa9c6553d9f42aa68e2919116c0f6d53f329d`; earlier comparison target `f9e82709360d97b2246718f774c544de0f16787b`; merge base `d4c88d8069912b653d707191388ca98e24751f12`. The earlier 207-ahead/145-behind result remains a dated topology observation, NOT a count of product requirements or unique contributions. This pass did not rerun the whole compare.
 
-## Owned-delta decomposition
+## Correction: the ABI manifest is inherited
 
-The GitHub compare shows the fork delta is multi-subsystem. Treating the repository as “agent IPC” is false.
+The previous ledger called `ghostty_type_json` a potentially genuine fork contribution. Exact Git blob comparisons falsify that attribution. Both `include/ghostty/vt/types.h` (`059bc5c8fd5cf971eb02611ab1033f906963b42f`) and the implementation `src/terminal/c/types.zig` (`4184de8227ec74cbe1d5e4aad5978d206138de2b`) are identical in frozen Khostty and its upstream merge base. The implementation was also read through `ghostty-org/ghostty` at that base, not merely assumed to be upstream from its filename.
 
-| Delta family | Evidence in compare/current docs | Product role / status | Bootstrap decision |
-|---|---|---|---|
-| Terminal core/parser/render semantics | Fork policy says keep upstream core pristine; current official Ghostty exposes libghostty and GUI consumers | Commodity inherited core | USE/track upstream; reject custom rewrite |
-| Conformance harness | `conformance/` added; historical 84-case gate | Verification infrastructure, potentially reusable outside fork | KEEP concept; prove it catches relevant upstream/fork regressions and can run against pinned upstream without requiring a broad fork |
-| Windows application runtime | `src/apprt/windows/`, build/runtime work; current docs admit GUI App/windowing remains unimplemented despite CLI/DLL evidence | Candidate Khostty differentiation | EXPERIMENT before commitment. Compare current upstream/libghostty host path and maintenance burden; do not call Windows app complete |
-| Agent IPC | `src/apprt/ipc/`, protocol/server/host; protocol says not app-started | Candidate integration, currently unmounted | CONTESTED. Compare Ghoztty/WezTerm/kitty; retain only accepted missing semantics |
-| Rust/Go/Python/WASM wrappers | `khostty-vt/`, `khostty-go/`, `khostty-python/`, wasm/package work | Packaging/embedding candidate | Compare to upstream libghostty C API + generated bindings. Manifest-driven ABI idea may be transferable without terminal fork |
-| ABI/type manifest | Fork docs describe `ghostty_type_json` target ABI metadata | Potentially genuine reusable improvement | Isolate exact source delta and upstream equivalent; consider upstreamable/thin companion rather than fork-only feature |
-| Benchmarks | `bench/` and historical result artifacts | Verification, not product feature | KEEP only revision-pinned controlled runs; historical loaded/dirty runs are non-qualifying |
-| Packaging/release/docs/CI | Large fork-owned docs/workflows/installers | Operational burden and support surface | Evaluate per accepted distribution. Do not treat documentation volume as product differentiation |
-| Upstream lag | compare: 145 commits behind current upstream | Transition/maintenance debt | Must be measured continuously; each retained fork delta needs merge-conflict/semantic drift ownership |
+Wrappers using the manifest may be useful fork work. That does not make the underlying manifest generator a fork invention. No build-versus-buy decision may rely on the earlier attribution. See `pass5/EXPERIMENT-RECEIPT.json`.
 
-## Strongest alternative architectures
+| Subject | Evidence classification | Current bootstrap disposition |
+|---|---|---|
+| Terminal/ABI manifest primitives above | Proven inherited at the compared revisions | USE upstream; do not award fork differentiation |
+| Polyglot wrappers | Distinct wrapper code exists; complete ABI/ownership/runtime qualification remains open | Evaluate real consumer outcomes against upstream APIs/generated bindings |
+| Conformance harness | Fork-owned verification surface per earlier diff; historical receipts not rerun | Preserve and test mutation sensitivity; usefulness does not require owning the whole terminal |
+| Windows host | Selectable runtime, but byte-verified App init/register/run return Unimplemented | Genuine implementation gap, not merely absent GUI screenshot; native spike remains necessary |
+| Agent IPC | Protocol modules versus actual native mounting remain distinct; exported `apprt.ipc` is legacy mod | Compare thin integration and existing control surfaces; do not infer full app mounting from module tests |
+| Benchmarks, packaging, CI | Verification/support work, not automatic differentiation | Keep only where justified by accepted configurations and independently bound evidence |
 
-**A. Upstream Ghostty/libghostty + thin host/control adapter.** Official Ghostty describes libghostty as the cross-platform C-ABI core used by native GUIs, and Ghostling demonstrates a minimal terminal host. This is the default architecture to beat for embedding/new-host needs.
+## Comparator pinned, not adopted
 
-**B. Ghoztty-class thin Ghostty fork.** External prior art adds Unix-socket agent window/split/close control and idempotent named targets while otherwise staying a Ghostty fork. It directly contests the proposition that a broad fork is necessary for coding-agent pane orchestration.
+Ghoztty source `fd3838acfa834c29e99616cdc8500c0208a13a09` has a README describing `+new-window`, `+split`, `+close`, named targets, working directory/command arguments and idempotent behavior. Root LICENSE is MIT. Those are source-document facts; no runtime test, complete source-delta assessment or dependency license audit was performed. Importantly, silent success closing a nonexistent target may be valid idempotency, not a false green. Test unwanted effects and instance/name reuse rather than forcing identical return codes across competitors.
 
-**C. Existing programmable terminal.** WezTerm CLI already creates targeted splits with cwd/program, returns pane IDs, sends child input and retrieves screen/scrollback. If the accepted need is agent control rather than Ghostty-specific UX/core, this is the strongest “product absent” baseline.
+For an embedding outcome, compare upstream libghostty plus a thin host/binding. For an agent-control outcome, compare the strongest applicable existing terminal/control composition. Do not force desktop automation and library embedding into one averaged winner. Windows platform obligations remain separate from Unix/macOS control claims.
 
-## Existence decision is subsystem-specific
+## Decision witnesses
 
-The evidence does **not** justify either “delete Khostty” or “keep all of Khostty.” The defensible decision unit is each owned delta.
+A retained custom subsystem must identify accepted need, strongest realistic alternative, exact unmet behavior, current source delta, native/consumer experiment, security/lifetime constraints and ongoing merge cost. The terminal-child nonce journey must distinguish parser output injection from child input. The embedding journey must exercise allocation/thread/callback lifetimes, not just compile headers.
 
-A retained delta must name: accepted user journey; upstream/alternative gap; exact source ownership; platform/configuration; independent witness; maintenance/merge cost; reversibility. If conformance or ABI-manifest work is valuable independently, it can survive even if agent IPC moves to a thinner architecture. If Windows native hosting is the actual differentiator, it must be judged separately from IPC.
-
-## Required bake-off
-
-Run the same K-J-AUTOMATE fixture against Khostty and the strongest viable alternative: create targeted child with known cwd → nonce child input → independent child receipt → inspect screen → focus/target → controller replacement → stale target rejection → close. Record LOC/delta, platform availability, security/authorization, identity semantics, recovery, maintenance and exact candidate revisions.
-
-For embedding, run K-J-EMBED separately against Khostty wrapper and upstream libghostty/Ghostling-style host: create terminal → input/output → resize → snapshot/render/search as applicable → callback/thread ownership → free under sanitizer/instrumentation. Do not average desktop automation and embedding into one winner.
-
-## Current architectural recommendation status
-
-No architecture is frozen. The burden has shifted: **broad fork ownership is not the default assumption.** Preserve upstream core and prefer thin, composable deltas unless the Windows/embedding/ABI experiments demonstrate obligations that cannot be met cleanly otherwise.
+Full tree enumeration, useful history, capability reachability, native comparisons, project health and mature-scope authority remain OPEN. Neither delete-the-fork nor keep-everything has passed. Read `DEVELOPER-HANDOFF.md` for the bounded experiments ready now.
