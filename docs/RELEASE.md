@@ -168,7 +168,7 @@ shasum -a 256 zig-out/bin/ghostty.exe zig-out/bin/ghostty-vt.dll
 # 5. Write the release notes.
 #    docs/changelog/<version>.md   — e.g. docs/changelog/0.1.0.md
 
-# 6. Commit the docs, then tag.        # DO NOT RUN YET — publishing
+# 6. Commit the docs, then tag.        # EXECUTED 2026-09-24 — tag v0.1.0 is live
 # git tag -a v0.1.0 -m "Khostty 0.1.0"
 # git push origin v0.1.0
 ```
