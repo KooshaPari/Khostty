@@ -25,16 +25,25 @@
     "K-F02",
     "K-F03",
     "K-F07",
-    "K-F08"
+    "K-F08",
+    "K-F09",
+    "K-F10"
   ],
   "high_risk_unknowns": [
     "K-F04",
     "K-F06"
   ],
   "authority_recovered": "User objective on 2026-09-16: identify actual owned terminal delta; test native correctness and intended integration. No originating fork rationale or accepted full mature surface recovered.",
-  "existence_gate": "OPEN_GENERIC_AUTOMATION_COMMODITIZED",
+  "existence_gate": "OPEN_SUBSYSTEM_DECISION_REQUIRED",
   "independent_fresh_review": "NOT_PERFORMED",
   "invalid_catalogs_eligible_for_grading": false,
   "pilot": "NOT_RUN_SEPARATE_POST_BUILD_GATE",
-  "progress_policy": "No scalar average. Platform/runtime/configuration-specific evidence; missing/skipped/stale/wrong-candidate evidence is not green."
+  "progress_policy": "No scalar average. Platform/runtime/configuration-specific evidence; missing/skipped/stale/wrong-candidate evidence is not green.",
+  "fork_delta": {
+    "comparison_base": "ghostty-org/ghostty:main@f9e82709360d97b2246718f774c544de0f16787b",
+    "merge_base": "d4c88d8069912b653d707191388ca98e24751f12",
+    "ahead_by": 207,
+    "behind_by": 145,
+    "observed_on": "2026-09-29"
+  }
 }
