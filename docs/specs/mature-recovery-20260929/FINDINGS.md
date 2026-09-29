@@ -100,3 +100,12 @@ Pass 6 enumerated every top-level tree with untruncated Git-tree responses. Two 
 Top-level Git-object comparison against merge base gives 43 identical entries, 13 added and 6 modified, with no top-level removals. Entire large trees proven identical include `macos/`, `test/`, `include/`, `example/`, `flatpak/`, `images/`, `nix/`, `pkg/`, `po/`, `snap/`, and `vendor/`.
 
 This sharply narrows the fork-owned architecture review to Windows, the ten-file agent stack and required hooks, wrappers/WASM/conformance/bench, plus modified build/CI/distribution surfaces. See `inventory/FORK-OWNERSHIP.{md,json}`.
+
+
+## K-F11 — fork-aware caller graph corroborates that the new agent IPC is not mounted by application startup
+
+A fork-aware GitHub code-search pass at the frozen repository searched the concrete integration symbols rather than filenames alone. `AppHost` appears only in `src/apprt/ipc/app_host.zig`, `protocol.md`, and the historical WBS. `Server.bind` appears only in the protocol example, server implementation and WBS. `pane.Manager.init`, broker initialization and `setEventBroker` similarly remain inside IPC implementation/tests/docs. No application startup/runtime caller was returned.
+
+This does not prove mathematical absence from generated/reflection mechanisms, but combined with protocol §7's explicit statement that the server is not started from the app, it meets the reasonable falsification standard for the **current frozen source mounting question**: the new agent protocol is implemented as modules but not mounted into the running application.
+
+Consequence: K-E02 may treat “Khostty new agent IPC unavailable/Unsupported at baseline” as an expected truthful baseline rather than spending another archaeology pass trying to discover a hidden mount. Any experimental wiring must be a scoped, separately evidenced change and may not rewrite v1 display-feed semantics into child input.
