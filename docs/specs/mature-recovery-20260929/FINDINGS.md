@@ -1,41 +1,54 @@
-# Semantic findings — Khostty, pass 1
+# Semantic findings — Khostty, pass 2
 
-All source observations below bind to `a29aa9c6553d9f42aa68e2919116c0f6d53f329d`, inspected 2026-09-29. Source reconnaissance is not the final obligation-to-implementation map: the mature contract is not accepted yet.
+All source observations bind to `a29aa9c6553d9f42aa68e2919116c0f6d53f329d`; recovery work observed 2026-09-29. Repository gate labels are historical/imported assertions unless the exact acceptance witness is independently qualified.
 
-## K-F01 — module completion is not mounted agent control (blocking)
+## K-F01 — G4 DONE is contradicted by the normative protocol's native integration state (blocking)
 
-`src/apprt/ipc/protocol.md` (blob `d04ccbbd3d222b0c12602ea58df2647a48be371e`, lines 1–40) explicitly lists AppHost as not yet in the build graph. `app_host.zig` (blob `282d0df2b969ce46b401201fd6b408e8009c4820`, lines 1–280) says the app-thread mailbox and runtime event hooks remain integration work. Its actual windowed branch qualifies GTK only; focus and search implementations return Unsupported.
+The deep WBS marks **G4 Agent/IPC Surface DONE**. The same frozen tree's normative `src/apprt/ipc/protocol.md` §7 says the app-thread hop is not wired, the server is not yet started from the app, real-runtime `pane.focus` and `pane.search` return `host_unsupported`, shutdown does not force-close live connections, and pane creation relies on a bounded surface-list diff.
 
-Consequence: README G4 acceptance/test counts cannot establish the native create/focus/search/observe journey. A fork-inclusive indexed AppHost search found the implementation, protocol and deep WBS, not an application caller; this is bounded corroboration, not exhaustive proof of unreachability. Needed witness: actual build/import/caller graph plus running native app with non-fake Host, explicit supported capability matrix and adversarial fixture.
+This is not evidence that the IPC modules are fake: protocol/parser/auth/manager/server work may be real and tested. It is evidence that **module completion != mounted native agent journey**. G4 cannot qualify K-J-AUTOMATE until a non-fake app-started Host and supported-capability matrix are witnessed. FakeHost lifecycle tests are supporting evidence only.
 
-## K-F02 — VT output injection and child input are different obligations (blocking semantic boundary)
+## K-F02 — VT display feed and child input are distinct obligations
 
-`app_host.zig` lines 289–298 calls `core.io.terminal_stream.nextSlice(data)`. Protocol v1 explicitly excludes PTY input injection and reserves child typing for v2. Therefore the observed implementation is consistent with this narrow declared behavior. It is **not** justified to call this a v1 write-direction bug. A README example resembling a shell command is not proof of executing it.
+`app_host.zig` routes current `pane.write` to `terminal_stream.nextSlice`. Protocol v1 explicitly says it writes VT bytes into the parser and does **not** type into the child process. This is internally consistent narrow behavior, not a v1 direction bug.
 
-Needed mature decision: independently name display-feed and child-input capabilities. A child execution oracle must observe a nonce-bearing child-process effect, not merely rendered text or a successful byte count. Do not silently change v1 semantics while fixing a broader journey.
+Mature scope must name display-feed and child-input separately. A child-operation oracle requires a nonce-bearing child-process effect. Rendering command-looking text or returning a byte count cannot satisfy it. If child input is required, add/version a distinct contract rather than silently changing v1 semantics.
 
-## K-F03 — documented pane options and runtime semantics disagree (blocking reconciliation)
+## K-F03 — documented pane-create semantics exceed current real-host implementation
 
-Protocol pane.create documents cwd and focus=false effects and a focus mapping. The inspected `createWindowed` body uses parent/direction/title but does not use cwd/focus; direct focus is Unsupported. It identifies a new pane by before/after surface difference, not request-correlated creation identity. Concurrent human creation could invalidate attribution; that is a hypothesis requiring a runtime experiment, not a reproduced failure.
+Protocol `pane.create` documents cwd/focus behavior and focus targeting. The inspected real-host create body uses parent/direction/title but does not establish cwd/focus=false semantics; direct focus is Unsupported. Creation attribution is a before/after surface diff because upstream `new_split` returns no handle. A concurrent unrelated surface creation is therefore a concrete adversarial design case, though not reproduced in this pass.
 
-Needed: exact option support/rejection policy, causal creation handle, app-thread-safe completion and tests with two concurrent creators. Do not let ignored options report accepted behavior.
+Required closure: explicit supported/unsupported option policy, causal creation identity, app-thread-safe completion and concurrent creator fixture. Ignored required options may not be reported as accepted behavior.
 
-## K-F04 — server lifetime/resource unknowns (high-risk, unconfirmed)
+## K-F04 — Windows/native evidence is narrower than the WBS gate language
 
-`server.zig` blob `8f4fb7b7e5843db55a6294b2cfa6b43fced54b18`, lines 1–260: per-connection threads, frame-size allocation, detached workers, five-second connection drain, and socket replacement. The inspected extent does not establish an aggregate connection cap, ownership-safe socket replacement, or lifetime safety after a drain timeout.
+The deep WBS records a real Windows executable `+version` run and live `ghostty-vt.dll` ABI operations, which is stronger evidence than the earlier registry snapshot. The same evidence explicitly says no GUI window was launched in that Windows run. Elsewhere the WBS records a headless GTK Xvfb GUI launch and macOS interactive launch.
 
-Needed: complete body and caller teardown analysis, idle/malicious clients, shutdown/restart and concurrent socket-owner tests. This is not a security or memory-safety exploit confirmation.
+These are valuable, different witnesses: Windows executable selection/ABI, Linux headless GUI, macOS GUI. They are **not interchangeable**. A cross-platform native journey must bind evidence to platform/runtime/configuration rather than inherit a gate-wide green.
 
 ## K-F05 — source search and stale registry can understate real work
 
-Default wrapper searches returned empty for known Khostty source; fork-inclusive REST search returned actual frozen-revision matches. Repository metadata identifies parent/source as ghostty-org/ghostty; the README reference to 1jehuang/khostty is an alias/lineage lead, not proven parentage. Registry STATE sampled `79e27b63f96669b26f1346a1b9985c327311bd6e` on September 16 and expressly disclaims a full audit.
+Default wrapper search missed known fork files; fork-aware retrieval and direct file reads found them. GitHub metadata identifies `ghostty-org/ghostty` as parent/source. The README's `1jehuang/khostty` clone reference remains a lineage lead, not proven parentage. The September 16 registry STATE is historical and expressly bounded.
 
-Needed: fork-aware history/tree inventory and separate historical/current assertions. No claim that work did not happen because a search or old snapshot did not see it.
+The recovered September 16 user instruction is narrower and useful: identify the **actual owned terminal delta** and test native correctness and its intended integration. It does not establish that every WBS-added surface is accepted mature scope. Earlier user context includes Ghostty usage and a May headless-agent/TUI-projection idea, but no product-specific Khostty fork rationale was recovered.
 
-## K-F06 — historical CI false green was repaired, current matrix still unqualified
+## K-F06 — historical CI false greens were repaired; current commit status is still not a completion witness
 
-The analyzed source commit repairs ecosystem detection that silently skipped nested Rust, Go and TypeScript jobs. This is evidence of a historical guard defect and a current source-level repair, not proof that the defect still exists. Required follow-up is a candidate-bound expected-jobs versus actual-jobs receipt; a green workflow containing only a subset of required jobs must not qualify the product.
+The frozen source commit repairs ecosystem detection that silently skipped nested Rust, Go and TypeScript jobs; earlier commits repaired a duplicate job key. The connected combined-status query for the frozen SHA returned no legacy commit statuses. That absence is not a CI failure and not a green: checks may live in another API surface.
 
-## K-F07 — existence gate remains open
+Closure requires an expected-job manifest against the exact candidate and actual check-run/artifact receipts. A workflow with missing expected jobs, skipped collectors or wrong candidate cannot qualify.
 
-Official WezTerm, kitty and cmux documentation already describes programmatic pane/window control. A generic 'agent-controllable terminal' uniqueness hypothesis is falsified. Native cross-platform embedding, upstream semantics, integration cost or a specific workflow may still justify owned code, but these are unverified differentiation claims. See the independent PhenoRegistry SOTA dossier before freezing architecture.
+## K-F07 — existence gate: automation itself is commodity; Khostty must prove a narrower owned delta
+
+Current official documentation shows:
+- WezTerm `split-pane` returns the new pane ID, accepts cwd/program and can target a pane; `send-text` feeds pane input and `get-text` reads screen/scrollback.
+- kitty remote control can launch/focus windows, send text/keys and get text with scoped matching/authorization.
+- cmux exposes CLI + Unix-socket control, capabilities, explicit surface IDs, split-with-command, focus and input; its TUI also advertises a durable workspace/pane/tab tree across macOS/Linux/Windows.
+
+Therefore generic local JSON/CLI pane automation, child input and text inspection are **already commodity/contested**. Khostty's current v1 real-host gaps are in areas competitors already cover. Candidate differentiation must instead be demonstrated in an accepted owned-terminal/embedding/native-integration workflow, upstream semantic fidelity, or materially lower integration/maintenance burden. No superiority claim is accepted.
+
+## K-F08 — product authority remains deliberately open, but is no longer 'nothing recovered'
+
+Conversation archaeology recovered the September 16 user objective: identify Khostty's actual owned terminal delta and test native correctness and intended integration. It also recovered broader May intent for a headless agent plane that controls CLI/TUI processes and projects them into a user-facing interface. These constrain research but do not prove that Khostty itself must own that entire plane.
+
+Accordingly, the mature contract must not expand from WBS task inventory. First isolate the fork delta versus upstream Ghostty and realistic WezTerm/kitty/cmux alternatives; then accept only the obligations that serve the intended integration. This remains a blocking authority/existence question, not permission to start a third repo.
