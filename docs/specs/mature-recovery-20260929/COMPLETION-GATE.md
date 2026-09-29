@@ -7,9 +7,9 @@ Program KR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 | Source ledger fully resolved | OPEN denominator; enumerate meaningful members and complete six semantic resolution fields |
 | Alias/history archaeology reasonably exhausted | OPEN; recover product-specific user decision, fork-aware useful history and predecessor leads |
 | SOTA completed | PARTIAL first pass; standards, licenses, health, version pins, UX and architecture research incomplete |
-| Best realistic alternative defined | Candidate desktop and embedding stacks; qualify against accepted scope and run integration comparison |
+| Best realistic alternative defined | Candidate desktop/embedding stacks plus same-family Ghoztty prior art; qualify exact source/version/license and run identical-journey integration comparison |
 | Bootstrap/custom decisions recorded | Initial proposals only; every custom subsystem needs a tested unmet obligation |
-| Differentiation survives direct attack | Generic automation uniqueness falsified; remaining claims unverified |
+| Differentiation survives direct attack | Generic automation and Ghostty+agent-IPC uniqueness falsified; remaining owned-runtime/embedding claims unverified |
 | Ontology reviewed | Candidate product-derived projections; no independent review |
 | Every distinct accepted obligation represented | Not established; authority and source denominator open; no target count |
 | Applicable quality overlays represented | Candidate dimensions only; accepted targets/configuration rules not complete |
@@ -28,6 +28,6 @@ Program KR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 
 ## Next minimal work packages
 
-K-WP-INTENT: recover primary scope and fork/alias history; determine necessary native/embedding audiences. K-WP-COVERAGE: complete source inventory, classify sources and extract semantic obligations. K-WP-ALTERNATIVES: reproduce one identical user outcome on the strongest existing stack and the proposed integration. K-WP-NATIVE: design and execute real mounted capability/input/identity/recovery witnesses before broad command expansion. K-WP-CONTRACT: accepted mature graph, quality overlays, stage projections, bidirectional traces and complete oracle design. K-WP-ATTACK: independent review with alternative interpretations/configurations/failures and competing architectures.
+K-WP-INTENT: recover primary scope and fork/alias history; determine necessary native/embedding audiences. K-WP-COVERAGE: complete source inventory, classify sources and extract semantic obligations. K-WP-ALTERNATIVES: reproduce one identical user outcome on upstream Ghostty + strongest thin-control alternative (including Ghoztty where qualified) and Khostty; compare delta/maintenance. K-WP-NATIVE: design and execute real mounted capability/input/identity/recovery witnesses before broad command expansion. K-WP-CONTRACT: accepted mature graph, quality overlays, stage projections, bidirectional traces and complete oracle design. K-WP-ATTACK: independent review with alternative interpretations/configurations/failures and competing architectures.
 
 These are durable work packages, not completion claims. Do not begin another product. A later built-product comparison against best alternative and status quo is a separate pilot, measuring correctness, human intervention, costs, recovery, false greens and operating burden. It cannot substitute for this design gate.
