@@ -22,6 +22,14 @@ concurrency:
 
 jobs:
   setup:
+    # Inherited Ghostty automation, not a Khostty distribution path. This workflow
+    # triggers on any `v*.*.*` tag, so without a repository guard a future Khostty
+    # tag (e.g. v0.1.1) would start this pipeline. Its `namespace-profile-ghostty-*`
+    # runners are self-hosted labels that do not exist in this repository, so the
+    # run would fail on queueing rather than doing anything useful — or, if such a
+    # runner were ever registered, it would publish upstream Ghostty artifacts
+    # under Khostty's tag. Khostty releases are cut by hand per docs/RELEASE.md §7.1.
+    if: github.repository == 'ghostty-org/ghostty'
     runs-on: namespace-profile-ghostty-sm
     outputs:
       version: ${{ steps.extract_version.outputs.version }}
