@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "product": "KooshaPari/Khostty",
+  "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
+  "tracked_git_denominator": {
+    "state": "CLOSED",
+    "total_blobs": 6158,
+    "parts": [
+      "TRACKED-TREE-A.json",
+      "TRACKED-TREE-B.json",
+      "TRACKED-TREE-C-TEST.json"
+    ],
+    "untruncated": true
+  },
+  "family_counts": {
+    "runtime-core": 639,
+    "agent-ipc": 11,
+    "windows-runtime": 11,
+    "upstream-core": 365,
+    "documentation": 18,
+    "historical": 16,
+    "polyglot-wrapper": 117,
+    "verification": 36,
+    "wasm": 33,
+    "packaging": 8,
+    "ci": 30,
+    "agent-instructions": 2,
+    "distribution": 61,
+    "upstream-examples": 133,
+    "assets": 34,
+    "public-api": 37,
+    "upstream-macos-runtime": 270,
+    "build-support": 233,
+    "localization": 37,
+    "vendored-dependency": 9,
+    "root-contract-or-build": 38,
+    "inherited-or-mixed-test-corpus": 4020
+  },
+  "bulk_test_corpus_blobs": 4020,
+  "semantic_denominator": {
+    "state": "OPEN",
+    "resolved": null,
+    "total": null
+  },
+  "warning": "Bulk inherited/mixed test files are evidence sources, not product obligations; tracked blob count is not completion."
+}
