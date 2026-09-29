@@ -15,16 +15,11 @@
   "parallel_general_dev_handoff": false,
   "handoff_document": "DEVELOPER-HANDOFF.md",
   "ready_work_packages": [
-    "K-E01"
+    "K-E01",
+    "K-E02",
+    "K-E03"
   ],
-  "dependent_experimental_work_packages": {
-    "K-E02": [
-      "K-E01"
-    ],
-    "K-E03": [
-      "K-E01"
-    ]
-  },
+  "dependent_experimental_work_packages": {},
   "contract_authority": "CANDIDATE_NOT_ACCEPTED_PRIMARY_SOURCE_STILL_REQUIRED",
   "authority_correction": "Pass 5 retrieval returned prior assistant summaries rather than independent primary confirmation of earlier claimed user instructions.",
   "source_denominator": {
@@ -36,7 +31,7 @@
   },
   "mature_completion": null,
   "specification_completion": null,
-  "journey_closure": "AGENT_SERVER_NOT_IN_NORMAL_APP_STARTUP_GRAPH_AT_ANALYZED_SNAPSHOT; NATIVE JOURNEY_NOT_RUN",
+  "journey_closure": "AGENT_IPC_MOUNT_ABSENCE_REASONABLY_FALSIFIED_NATIVE_JOURNEYS_NOT_RUN",
   "native_tests_run_this_pass": false,
   "static_checks_executed": "TWO_FULL_SOURCE_BLOBS_VERIFIED_AND_RUNTIME_BODIES_CHECKED",
   "experiment_receipt": "pass5/EXPERIMENT-RECEIPT.json",
@@ -58,7 +53,7 @@
     "K-F06"
   ],
   "abi_manifest_disposition": "UPSTREAM_INHERITED_NOT_FORK_DIFFERENTIATION",
-  "windows_gui_state": "SELECTED_APP_INIT_AND_RUN_RETURN_UNIMPLEMENTED",
+  "windows_gui_state": "APP_RENDERER_SURFACE_AND_PIPE_TRANSPORT_IMPLEMENTATION_GAPS_CONFIRMED",
   "existence_gate": "OPEN_SUBSYSTEM_DECISION_REQUIRED",
   "independent_fresh_review": "NOT_PERFORMED",
   "invalid_catalogs_eligible_for_grading": false,
@@ -89,5 +84,12 @@
     "fork_ownership_high_priority": "SUBSTANTIALLY_RESOLVED",
     "agent_server_mount_graph": "DISCONNECTED_AT_APPLICATION_BOUNDARY",
     "remaining": "full semantic classification + modified build/CI/dist + useful history"
-  }
+  },
+  "tracked_product_relevant_inventory": {
+    "unique_blobs": 2055,
+    "semantic_state": "OPEN",
+    "bulk_test_blobs_excluded_from_obligation_count": 4020,
+    "vendor_blobs_excluded_from_obligation_count": 9
+  },
+  "mount_archaeology": "NEW_AGENT_IPC_NOT_MOUNTED_AT_FROZEN_SOURCE_REASONABLE_FALSIFICATION_STANDARD"
 }
