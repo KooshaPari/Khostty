@@ -23,9 +23,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: mlugg/setup-zig@v1
+      - uses: ./.github/actions/install-zig
         with:
-          version: 0.16.0
+          version: '0.16.0'
+          # Official sha256 for zig-x86_64-linux-0.16.0.tar.xz, from
+          # https://ziglang.org/download/index.json (read 2026-09-29).
+          shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
       - run: zig fmt --check src/ build.zig
 
   build:
@@ -35,9 +38,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: mlugg/setup-zig@v1
+      - uses: ./.github/actions/install-zig
         with:
-          version: 0.16.0
+          version: '0.16.0'
+          shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
       - name: Select Xcode
         run: |
           # Use latest available Xcode (macos-latest ships with the newest)

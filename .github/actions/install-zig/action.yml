@@ -1,0 +1,82 @@
+name: 'Install Zig (pinned + checksum-verified)'
+description: >-
+  Installs a pinned Zig release directly from ziglang.org and verifies its
+  SHA-256 before use. Exists because `mlugg/setup-zig` resolves through a chain
+  of community mirrors that returned 404/502/503 on 2026-09-29, failing the
+  `Zig Fmt` job in CI run 36584839303 even though the tree was already
+  `zig fmt`-clean. This path talks to ziglang.org only and refuses to proceed on
+  a hash mismatch, so a compromised or truncated download cannot be executed.
+
+inputs:
+  version:
+    description: 'Zig version to install, e.g. 0.16.0'
+    required: true
+  shasum:
+    description: 'Expected SHA-256 of the linux-x86_64 tarball, lowercase hex'
+    required: true
+
+outputs:
+  version:
+    description: 'The version that was installed'
+    value: ${{ steps.pin.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - id: pin
+      shell: bash
+      env:
+        ZIG_VERSION: ${{ inputs.version }}
+        ZIG_SHASUM: ${{ inputs.shasum }}
+      run: |
+        set -euo pipefail
+        # Accept only a strict semver-ish token, so the version can never be
+        # interpolated into a URL or path in an unexpected shape.
+        if [[ ! "$ZIG_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "::error::refusing non-semver zig version: $ZIG_VERSION" >&2
+          exit 1
+        fi
+        if [[ ! "$ZIG_SHASUM" =~ ^[0-9a-f]{64}$ ]]; then
+          echo "::error::shasum must be 64 lowercase hex characters" >&2
+          exit 1
+        fi
+        echo "version=$ZIG_VERSION" >> "$GITHUB_OUTPUT"
+
+    - name: Download Zig from ziglang.org
+      shell: bash
+      env:
+        ZIG_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        url="https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz"
+        echo "Downloading $url"
+        curl --fail --location --silent --show-error --retry 3 --retry-delay 5 \
+          --connect-timeout 30 --max-time 600 \
+          --output /tmp/zig.tar.xz "$url"
+
+    - name: Verify checksum
+      shell: bash
+      env:
+        ZIG_SHASUM: ${{ inputs.shasum }}
+      run: |
+        set -euo pipefail
+        actual="$(sha256sum /tmp/zig.tar.xz | cut -d' ' -f1)"
+        if [ "$actual" != "$ZIG_SHASUM" ]; then
+          echo "::error::zig tarball checksum mismatch"
+          echo "  expected $ZIG_SHASUM"
+          echo "  actual   $actual"
+          exit 1
+        fi
+        echo "Checksum verified: $actual"
+
+    - name: Install to runner tool cache and PATH
+      shell: bash
+      env:
+        ZIG_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        dest="${RUNNER_TOOL_CACHE}/zig/${ZIG_VERSION}/x64"
+        mkdir -p "$dest"
+        tar -xJf /tmp/zig.tar.xz -C "$dest" --strip-components=1
+        echo "$dest" >> "$GITHUB_PATH"
+        zig version
