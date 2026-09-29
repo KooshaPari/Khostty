@@ -6,9 +6,11 @@ Who this is for: anyone outside this repository who wants to *consume* a Khostty
 artifact — as a library, a package, a binary, or a service. It answers three questions
 per artifact: how do I get it, what has been verified, and what has **not**.
 
-**First, read this:** nothing in `0.1.0` is published. There is no git tag, no GitHub
-release, no crates.io / PyPI / npm / Go-module artifact. See
-[RELEASE.md §7](RELEASE.md) for the exact list of actions that have not been taken.
+**First, read this:** the 0.1.0 release **is published** — tag `v0.1.0`, the GitHub
+release with its six assets, the crates.io crate, and the npm package are all live.
+**PyPI is the one exception**: `khostty-vt` is not on PyPI, because no credential
+exists on this host. See [RELEASE.md §7](RELEASE.md) for the per-surface state,
+including what remains unverified.
 
 Practical consequence: `dist-release/` is gitignored (`.gitignore` line 42), so
 **a fresh clone of this repository contains none of the built artifacts.** A consumer
@@ -21,19 +23,19 @@ has a script that reproduces it.
 
 | Artifact | Path on this host | Published? | Build command | Reproducible? |
 |---|---|---|---|---|
-| macOS `.app` zip | `dist-release/macos/Khostty-0.1.0-macos.zip` | no | `bash packaging/macos-app.sh` | yes, on macOS |
-| Linux library `.deb` | `dist/khostty-vt_0.1.0_amd64.deb` | no | `bash packaging/linux/deb-libvt.sh` | yes, from macOS or Linux |
-| WASM npm-style tarball | `dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz` | no | `bash packaging/wasm-dist.sh` | yes, byte-identical from a cold cache |
-| Windows PE payload | `dist-release/stage/windows/Khostty-0.1.0-win64/payload/` (`.exe`, `.dll`) | no | cross-build via `packaging/windows/installer.sh` | yes, cross-compile |
-| Rust crate | `khostty-vt/` | no | `cd khostty-vt && cargo test` | source tree, in-repo |
-| Go module | `khostty-go/` | no | `cd khostty-go && go test ./...` | source tree, in-repo |
-| Python package | `khostty-python/` | no | `pip install -e khostty-python` | source tree, in-repo |
+| macOS `.app` zip | `dist-release/macos/Khostty-0.1.0-macos.zip` | **yes** — GitHub release asset | `bash packaging/macos-app.sh` | yes, on macOS |
+| Linux library `.deb` | `dist/khostty-vt_0.1.0_amd64.deb` | **yes** — GitHub release asset | `bash packaging/linux/deb-libvt.sh` | yes, from macOS or Linux |
+| WASM npm-style tarball | `dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz` | **yes** — GitHub release asset, and on npm as `khostty-libghostty-vt-wasm@0.1.0` | `bash packaging/wasm-dist.sh` | yes, byte-identical from a cold cache |
+| Windows PE payload | `dist-release/stage/windows/Khostty-0.1.0-win64/payload/` (`.exe`, `.dll`) | **yes** — bundled into the release's `Khostty-0.1.0-windows-x86_64-setup.exe` | cross-build via `packaging/windows/installer.sh` | yes, cross-compile |
+| Rust crate | `khostty-vt/` | **yes** — crates.io `khostty-vt@0.1.0` | `cd khostty-vt && cargo test` | source tree, in-repo |
+| Go module | `khostty-go/` | no — scaffold only, no registry publish applies to 0.1.0 | `cd khostty-go && go test ./...` | source tree, in-repo |
+| Python package | `khostty-python/` | **no — PyPI publish is blocked** on a missing operator credential; artifacts are prebuilt and `twine check`-clean | `pip install -e khostty-python` | source tree, in-repo |
 
 Checksums for every built artifact are in
 [RELEASE.md §6](RELEASE.md) and `dist-release/CHECKSUMS.txt`. Verify before consuming:
 
 ```bash
-shasum -a 256 -c dist-release/CHECKSUMS.txt     # 8/8 OK, exit 0, no warnings
+shasum -a 256 -c dist-release/CHECKSUMS.txt     # 9/9 OK, exit 0, no warnings
 ```
 
 ---
