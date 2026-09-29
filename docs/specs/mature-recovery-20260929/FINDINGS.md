@@ -109,3 +109,18 @@ A fork-aware GitHub code-search pass at the frozen repository searched the concr
 This does not prove mathematical absence from generated/reflection mechanisms, but combined with protocol §7's explicit statement that the server is not started from the app, it meets the reasonable falsification standard for the **current frozen source mounting question**: the new agent protocol is implemented as modules but not mounted into the running application.
 
 Consequence: K-E02 may treat “Khostty new agent IPC unavailable/Unsupported at baseline” as an expected truthful baseline rather than spending another archaeology pass trying to discover a hidden mount. Any experimental wiring must be a scoped, separately evidenced change and may not rewrite v1 display-feed semantics into child input.
+
+## K-F12 — same-family prior art already closes child-input, read/inspection, targeting and persistence primitives
+
+Pinned Ghoztty source `fd3838acfa834c29e99616cdc8500c0208a13a09` was inspected beyond README claims.
+
+Source-level observations:
+- `src/cli/send_keys.zig` explicitly writes text/keys to a named pane's **PTY as user input**, including bracketed-paste versus key segmentation and unknown-flag rejection.
+- `src/cli/read.zig` requests the last N lines of a named pane and emits plain text from the server response.
+- `src/apprt/ipc.zig` bakes both `GHOZTTY_IPC_SOCKET` and `GHOZTTY_PANE_ID` into pane environments, so commands can address the owning app and caller pane rather than relying only on current focus; explicit target flags override the implicit caller.
+- macOS `IPCServer.swift` owns a target registry with weak-reference liveness, prunes stale entries, dispatches list/read/send-keys/lifecycle/rearrangement actions, binds an AF_UNIX socket, marks its fd close-on-exec and `chmod(..., 0o600)`.
+- `docs/design/session-persistence.md` describes and reports E2E work for an agent-owned PTY/session layer that survives app update/crash, reattaches by session ID and distinguishes process survival from reboot relaunch. Its own document still marks some criteria unmeasured/unbuilt, so those claims remain source assertions rather than our reproduced measurements.
+
+Architecture consequence: Khostty cannot justify its custom agent IPC by the previously proposed needs “real child input,” “read terminal text,” “avoid wrong focus/instance,” or “survive controller replacement” in the abstract. Same-family prior art already implements substantial versions of each. Khostty's currently distinct IPC concepts—structured synchronous state/search, event subscription/drop semantics, explicit application token auth and intended cross-platform transport—must each prove an accepted unmet need and integration advantage. A token does not by itself justify a separate broad IPC stack because the alternative can compose an additional authorization layer.
+
+The K-E02 bake-off therefore treats Ghoztty as the primary same-family control baseline rather than a secondary comparison. Khostty baseline is allowed to report the truthful current state “new agent IPC not mounted.” The experiment must compare product effects and maintenance cost, not command-name parity.
