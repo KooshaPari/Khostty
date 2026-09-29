@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
+  zig-fmt:
     name: Zig Fmt
     runs-on: ubuntu-latest
     steps:
@@ -228,20 +228,21 @@ jobs:
   lint:
     name: ci / lint
     if: always()
-    needs: [detect, rust, cargo-deny, python, go, typescript, security, dep-review]
+    needs: [zig-fmt, detect, rust, cargo-deny, python, go, typescript, security, dep-review]
     runs-on: ubuntu-latest
     steps:
       - name: Aggregate lint gate
         run: |
           failed=0
           for pair in \
+            "zig-fmt:${{ needs.zig-fmt.result }}" \
             "rust:${{ needs.rust.result }}" \
             "cargo-deny:${{ needs.cargo-deny.result }}" \
             "python:${{ needs.python.result }}" \
             "go:${{ needs.go.result }}" \
             "typescript:${{ needs.typescript.result }}" \
             "security:${{ needs.security.result }}" \
-            "dep-review:${{ needs.dependency-review.result }}" \
+            "dep-review:${{ needs.dep-review.result }}" \
             ; do
             name="${pair%%:*}"
             result="${pair#*:}"
