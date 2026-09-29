@@ -4,7 +4,7 @@
   "product": "KooshaPari/Khostty",
   "repository_id": 1322607630,
   "observed_on": "2026-09-29",
-  "assessment_pass": 5,
+  "assessment_pass": 6,
   "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
@@ -14,19 +14,49 @@
   "general_dev_handoff": false,
   "parallel_general_dev_handoff": false,
   "handoff_document": "DEVELOPER-HANDOFF.md",
-  "ready_work_packages": ["K-E01"],
-  "dependent_experimental_work_packages": {"K-E02": ["K-E01"], "K-E03": ["K-E01"]},
+  "ready_work_packages": [
+    "K-E01"
+  ],
+  "dependent_experimental_work_packages": {
+    "K-E02": [
+      "K-E01"
+    ],
+    "K-E03": [
+      "K-E01"
+    ]
+  },
   "contract_authority": "CANDIDATE_NOT_ACCEPTED_PRIMARY_SOURCE_STILL_REQUIRED",
   "authority_correction": "Pass 5 retrieval returned prior assistant summaries rather than independent primary confirmation of earlier claimed user instructions.",
-  "source_denominator": {"state": "OPEN", "total": null, "resolved": null, "fraction": null},
+  "source_denominator": {
+    "state": "OPEN_SEMANTIC_RESOLUTION",
+    "tracked_tree_enumeration": "CLOSED",
+    "total_semantic_sources": null,
+    "resolved_semantic_sources": null,
+    "fraction": null
+  },
   "mature_completion": null,
   "specification_completion": null,
-  "journey_closure": "NOT_INDEPENDENTLY_MEASURED",
+  "journey_closure": "AGENT_SERVER_NOT_IN_NORMAL_APP_STARTUP_GRAPH_AT_ANALYZED_SNAPSHOT; NATIVE JOURNEY_NOT_RUN",
   "native_tests_run_this_pass": false,
   "static_checks_executed": "TWO_FULL_SOURCE_BLOBS_VERIFIED_AND_RUNTIME_BODIES_CHECKED",
   "experiment_receipt": "pass5/EXPERIMENT-RECEIPT.json",
-  "blocking_findings": ["K-F01", "K-F02", "K-F03", "K-F07", "K-F08", "K-F09", "K-F10", "inherited ABI differentiation correction"],
-  "high_risk_unknowns": ["K-F04", "K-F06"],
+  "blocking_findings": [
+    "K-F01",
+    "K-F02",
+    "K-F03",
+    "K-F07",
+    "K-F08",
+    "K-F09",
+    "K-F10",
+    "inherited ABI differentiation correction",
+    "K-F11",
+    "K-F12",
+    "K-F13"
+  ],
+  "high_risk_unknowns": [
+    "K-F04",
+    "K-F06"
+  ],
   "abi_manifest_disposition": "UPSTREAM_INHERITED_NOT_FORK_DIFFERENTIATION",
   "windows_gui_state": "SELECTED_APP_INIT_AND_RUN_RETURN_UNIMPLEMENTED",
   "existence_gate": "OPEN_SUBSYSTEM_DECISION_REQUIRED",
@@ -34,6 +64,30 @@
   "invalid_catalogs_eligible_for_grading": false,
   "existing_ci_enforcement_changed": false,
   "pilot": "NOT_RUN_SEPARATE_POST_BUILD_GATE",
-  "fork_delta": {"comparison_base": "f9e82709360d97b2246718f774c544de0f16787b", "merge_base": "d4c88d8069912b653d707191388ca98e24751f12", "ahead_by": 207, "behind_by": 145, "status": "EARLIER_DATED_OBSERVATION_NOT_RERUN_THIS_PASS"},
-  "progress_policy": "Static diagnostics, imported assertions, native observations and product acceptance are distinct. No scalar document-count or test-count completion."
+  "fork_delta": {
+    "comparison_base": "f9e82709360d97b2246718f774c544de0f16787b",
+    "merge_base": "d4c88d8069912b653d707191388ca98e24751f12",
+    "ahead_by": 207,
+    "behind_by": 145,
+    "status": "EARLIER_DATED_OBSERVATION_NOT_RERUN_THIS_PASS"
+  },
+  "progress_policy": "Static diagnostics, imported assertions, native observations and product acceptance are distinct. No scalar document-count or test-count completion.",
+  "tracked_tree_enumeration": {
+    "state": "CLOSED_AT_TOP_LEVEL_FAMILY_RESOLUTION",
+    "exact_non_fuzz_blob_rows": 2138,
+    "fuzz_family": {
+      "blobs": 4014,
+      "corpus_blobs": 4002,
+      "tree_identical_to_merge_base": true
+    },
+    "all_top_level_trees_covered": true,
+    "all_recursive_responses_untruncated": true,
+    "summary": "inventory/SUMMARY.json"
+  },
+  "K_E01_progress": {
+    "tracked_tree_inventory": "COMPLETE",
+    "fork_ownership_high_priority": "SUBSTANTIALLY_RESOLVED",
+    "agent_server_mount_graph": "DISCONNECTED_AT_APPLICATION_BOUNDARY",
+    "remaining": "full semantic classification + modified build/CI/dist + useful history"
+  }
 }
