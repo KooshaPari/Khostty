@@ -269,7 +269,7 @@ Execution state as of 2026-09-24:
 |---|---|
 | Git tag `v0.1.0` | **DONE** — annotated tag at `202aad543`, pushed to origin (tag object `7e1684f6`) |
 | crates.io `khostty-vt` 0.1.0 | **PUBLISHED** 2026-09-20 — API-verified: `newest_version=0.1.0`, downloaded-crate checksum matches the local `.crate`, `published_by KooshaPari`; 199/199 tests passed first |
-| PyPI `khostty-vt` | **BLOCKED — no credential exists on this machine** (no `.pypirc`, keyring entry, env var, netrc, or OIDC trusted publishing). Wheel + sdist are prebuilt in `khostty-python/dist/`; `uv publish` runs as soon as an operator-provided token exists. Package name is free. |
+| PyPI `khostty-vt` | **BLOCKED — no credential exists on this machine** (no `.pypirc`, keyring entry, env var, netrc, or OIDC trusted publishing). Preconditions re-verified 2026-09-29: `twine check` PASSED on both artifacts, `git log v0.1.0..HEAD -- khostty-python/` is empty (artifacts still match the tagged source), and the name is free (`GET /pypi/khostty-vt/json` → `404`). Upload runs the moment an operator-provided token exists. See `docs/sessions/khostty-0.1.0-release/01_RESEARCH_pypi-publication.md`. |
 | npm `khostty-libghostty-vt-wasm` | **PUBLISHED 2026-09-24** — the stored token had been revoked; recovery was a fresh `/opt/homebrew/bin/npm login --auth-type=web` plus one browser 2FA approval, then `npm publish`. `npm view` returns `0.1.0` with `dist.shasum 2754b0a423ee035b421dc232ceb6f8fc6c85b57d` — byte-match to the staged package (27 files, 324.6 kB) — published 2026-09-24T10:47:28Z. |
 | Go module proxy | Not applicable to 0.1.0 (the Go module is scaffold only, G6.1) |
 | GitHub release + 6 assets | **PUBLISHED 2026-09-27** — https://github.com/KooshaPari/Khostty/releases/tag/v0.1.0. The command was deferred twice (hook-a683332d… expired; hook-ea20989d… lived 3 days then expired 2026-09-27 16:16 UTC); the re-issued canonical §7.1 command was executed by the gate 2026-09-27 16:18 UTC and uploaded all 6 assets. §7.2 verified: exactly 6 assets with expected byte sizes (CHECKSUMS.txt 4,273 B, macos.zip 35,953,098 B, windows setup.exe 19,766,307 B, wasm tarball 680,598 B, lib `.deb` 2,320,612 B, GTK `.deb` 18,143,964 B); local `shasum -c` 9/9 OK |
@@ -301,6 +301,20 @@ git push origin v0.1.0                              # pushed, verified [new tag]
 cd khostty-vt      && cargo test && cargo publish   # DONE 2026-09-20 (199/199, published)
 cd ../khostty-python && uv publish dist/khostty_vt-0.1.0-py3-none-any.whl dist/khostty_vt-0.1.0.tar.gz   # BLOCKED: needs PyPI token
 cd ../dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0 && npm publish   # DONE 2026-09-24 (after web re-login + browser 2FA)
+
+#    NOTE (2026-09-29): PyPI's browser upload form was removed by Warehouse.
+#    `/manage/project/create/` now 404s, and PyPI documents "use twine to upload".
+#    The project is created implicitly by the first successful upload, so no
+#    separate create step is needed. Mint a project-scoped token at
+#    https://pypi.org/manage/account/#api-tokens (scope: khostty-vt) and run:
+#      read -rs PYPI_TOKEN && export PYPI_TOKEN
+#      ~/.local/bin/twine upload --repository pypi \
+#        khostty-python/dist/khostty_vt-0.1.0.tar.gz \
+#        khostty-python/dist/khostty_vt-0.1.0-py3-none-any.whl
+#      unset PYPI_TOKEN
+#    Never paste the token into chat, shell history, or a committed file.
+#    Durable follow-up: enable Actions in this fork, then configure PyPI Trusted
+#    Publishing (OIDC) so no token is needed for future releases.
 
 # 3. GitHub release with artifacts + checksums      # DONE 2026-09-27 (6/6 assets verified via §7.2)
 #    (6 assets; hook-ea20989dca45c9e2c6c1c915ba817571 — supersedes expired
