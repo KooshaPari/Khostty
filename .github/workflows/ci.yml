@@ -5,6 +5,10 @@ on:
     branches: [main, master, develop]
   pull_request:
     branches: [main, master, develop]
+  # Added 2026-09-29: this workflow had never produced a run, so there was no way
+  # to verify the pipeline on the released tree. A manual trigger makes it
+  # checkable without waiting for a push.
+  workflow_dispatch:
 
 permissions:
   contents: read
