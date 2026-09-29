@@ -62,3 +62,51 @@ gh release download v0.1.0 --repo KooshaPari/Khostty --pattern ... --clobber
 shasum -a 256 <downloaded assets>   # compare to dist-release/CHECKSUMS.txt
 curl -s http://127.0.0.1:7117/inbox/hook-<id>   # GET only, never answered
 ```
+
+## 6. Addendum — 2026-09-29 drift sweep and first CI run
+
+Re-probed every published surface and swept the shipped docs for claims that had
+drifted from reality. All registry/tag/asset checks re-confirmed unchanged
+(crates.io `0.1.0` not yanked, npm `latest=0.1.0`, `v0.1.0` tag `7e1684f6`,
+release not draft with the same 6 assets, PyPI still 404).
+
+Four real defects were found and fixed rather than merely reported:
+
+| # | Defect | Evidence | Fix |
+|---|---|---|---|
+| 1 | `docs/HANDOFF.md` §6 still said the Rust crate was "not published to crates.io" | contradicted the 2026-09-20 publish; crates.io API returns `newest_version=0.1.0` | `5d5f023b2` |
+| 2 | `docs/RELEASE.md` step 6 still labelled an already-executed tag step `DO NOT RUN YET` | tag has been live since 2026-09-24 | `44a1f892d` |
+| 3 | `.github/workflows/ci.yml` had **no runs in the repo's history** and no `workflow_dispatch`, so the released tree's pipeline was unverifiable | `actions/workflows/ci.yml/runs` → `total_count: 0`; dispatch returned HTTP 422 | `1cf505ebd` |
+| 4 | `ci.yml` declared the job key `lint` **twice** (line 21 `Zig Fmt`, line 228 aggregate gate). YAML last-wins silently collapsed the map, and GitHub rejected the file outright | dispatch after #3 returned `Line: 228: 'lint' is already defined` | `a7bce476e` |
+
+Defect 4 also carried a second bug: the aggregate gate read
+`needs.dependency-review.result`, which never matched the `dep-review` job id, so
+that row would have rendered empty. Both were corrected; the graph now validates as
+12 jobs with no dangling `needs` and no duplicate keys, and the Zig Fmt job is
+reachable again.
+
+### 6.1 Dependabot alert #1 — triaged, deliberately left open
+
+`CVE-2025-71176` / `GHSA-6w46-j5rx-g56g`, `pytest` "vulnerable tmpdir handling"
+(medium), manifest `khostty-python/uv.lock`.
+
+The advisory covers pytest **through 9.0.2**; the fix line is **9.0.3**, which
+requires **Python >=3.10**, and **no patched 8.x exists** (8.4.2 is the final 8.x).
+This package declares `Requires-Python: >=3.8`, so the vulnerable resolution cannot
+be removed without dropping 3.8/3.9 support. Scope is bounded: `pytest` is a `test`
+**extra**, not a runtime dependency — the wheel's `METADATA` carries only
+`Requires-Dist: cffi>=1.15` plus `pytest>=7; extra == "test"`, and no pytest file is
+present in the shipped artifact. The 3.10+ lane already resolves to the patched
+9.1.1, and CI runs Python 3.11, so the pipeline is unaffected. Recorded in
+`docs/SECURITY.md` §8 with re-triage conditions.
+
+### 6.2 Commands used for this addendum
+
+```bash
+gh api repos/KooshaPari/Khostty/dependabot/alerts --jq '.[] | {number, ...}'
+gh api repos/KooshaPari/Khostty/actions/workflows/ci.yml/runs?per_page=5 --jq '.total_count'
+gh workflow run ci.yml --repo KooshaPari/Khostty --ref main
+python3 -c "import yaml; ..."   # job-graph validation: duplicates + dangling needs
+curl -s https://pypi.org/pypi/pytest/json   # confirms 8.4.2 is the last 8.x, 9.0.3 needs >=3.10
+unzip -p khostty-python/dist/khostty_vt-0.1.0-py3-none-any.whl '*/METADATA'   # pytest is test-extra only
+```
