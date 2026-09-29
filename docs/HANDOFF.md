@@ -154,7 +154,8 @@ proves the *shape* of the API, not runtime behaviour.
 
 ## 6. Rust — `khostty-vt`
 
-In-repo crate, not published to crates.io.
+crates.io crate, **published 2026-09-20** at `0.1.0`. Re-verified 2026-09-29 against
+the crates.io API: `newest_version=0.1.0`, `yanked=false`.
 
 ```bash
 cd khostty-vt && cargo build && cargo test
@@ -165,10 +166,13 @@ cd khostty-vt && cargo build && cargo test
 verification of the Rust gate's recorded figure.
 
 **Unverified / caveats:**
-- Not on crates.io. A consumer must vendor the directory or use a path/git dependency.
+- **Published 2026-09-20** at `0.1.0`, so a consumer no longer needs to vendor the
+  directory. Re-verified 2026-09-29 against the crates.io API: `newest_version=0.1.0`,
+  `yanked=false`, 12 downloads. A path/git dependency still works and still points at
+  the same sources.
   **Publish-readiness checked 2026-09-18:** `cargo publish --dry-run` exits 0, packaging
-  45 files / 503.0 KiB and verifying, ending with `aborting upload due to dry run` — so the
-  crate *would* publish cleanly, but nothing was uploaded.
+  45 files / 503.0 KiB and verifying, ending with `aborting upload due to dry run` — the
+  dry run was the last gate before the real upload, which succeeded the same week.
   ⚠️ **Ordering hazard:** run the dry run *after* `cargo test`, not before. The dry run builds
   inside `target/package/khostty-vt-0.1.0/` where `../zig-out/lib` does not resolve, and cargo
   caches that build-script output, so a later plain `cargo test` fails at link with
