@@ -12,6 +12,10 @@
 # Gate: tags matching `khostty-v*` that belong to THIS repository. The inherited
 # Ghostty workflows in .github/workflows trigger on any `v*.*.*` tag; this
 # workflow must never publish a Ghostty artifact to the Khostty PyPI project.
+#
+# Build and publish are deliberately separate jobs. Per the action's documented
+# security model, the job that holds `id-token: write` must not also run build
+# machinery, so a poisoned build dependency cannot steal the publish identity.
 
 name: Publish PyPI
 
@@ -22,7 +26,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to publish (format: vX.Y.Z)"
+        description: "Tag to publish (format: khostty-vX.Y.Z)"
         required: true
 
 # PyPI forbids reusing a distribution filename, ever. Serialize uploads and
@@ -35,11 +39,10 @@ permissions:
   contents: read
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/project/khostty-vt/
+    outputs:
+      version: ${{ steps.version.outputs.value }}
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -47,11 +50,17 @@ jobs:
           ref: ${{ github.event.inputs.version || github.ref }}
 
       - name: Reject non-Khostty tags
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        env:
+          INPUT_TAG: ${{ github.event.inputs.version }}
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
+          tag="${INPUT_TAG:-${GITHUB_REF#refs/tags/}}"
           if [[ "$tag" != khostty-v* ]]; then
-            echo "Refusing to publish: '$tag' is not a khostty-v* tag."
+            echo "Refusing to build: '$tag' is not a khostty-v* tag."
+            exit 1
+          fi
+          if [ ! -f khostty-python/pyproject.toml ]; then
+            echo "Refusing to build: '$tag' has no khostty-python/pyproject.toml."
             exit 1
           fi
 
@@ -63,33 +72,71 @@ jobs:
       - name: Install build tooling
         run: python -m pip install --upgrade build twine
 
+      - name: Read package version
+        id: version
+        working-directory: khostty-python
+        run: |
+          version="$(python -c '
+          import tomllib, pathlib
+          print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])
+          ')"
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+          echo "pyproject version: $version"
+
+      - name: Check tag matches pyproject version
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        working-directory: khostty-python
+        env:
+          INPUT_TAG: ${{ github.event.inputs.version }}
+          PKG_VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          effective_tag="${INPUT_TAG:-${GITHUB_REF#refs/tags/}}"
+          tag_version="${effective_tag#khostty-v}"
+          echo "tag=$tag_version pyproject=$PKG_VERSION"
+          if [ "$tag_version" != "$PKG_VERSION" ]; then
+            echo "Refusing to publish: tag version does not match pyproject.toml."
+            exit 1
+          fi
+
       - name: Build distributions
         working-directory: khostty-python
         run: python -m build
 
       - name: Validate distributions
+        working-directory: khostty-python
         run: |
           python -m twine check dist/*
           ls -l dist/
 
-      - name: Check tag matches pyproject version
-        if: startsWith(github.ref, 'refs/tags/')
-        working-directory: khostty-python
-        run: |
-          tag_version="${GITHUB_REF#refs/tags/khostty-v}"
-          pkg_version="$(python -c '
-          try:
-              import tomllib
-          except ImportError:
-              import tomli as tomllib
-          import pathlib
-          print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])
-          ')"
-          echo "tag=$tag_version pyproject=$pkg_version"
-          if [ "$tag_version" != "$pkg_version" ]; then
-            echo "Refusing to publish: tag version does not match pyproject.toml."
-            exit 1
-          fi
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dists
+          path: khostty-python/dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/khostty-vt/
+    permissions:
+      # Mandatory for Trusted Publishing. Scoped to this job only: the build job
+      # above has no OIDC permission and cannot mint a PyPI token.
+      id-token: write
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: dists
+          path: dist/
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          # Attestations (PEP 740) are generated automatically under Trusted
+          # Publishing; leaving this unset is the recommended default.
+          print-hash: true
