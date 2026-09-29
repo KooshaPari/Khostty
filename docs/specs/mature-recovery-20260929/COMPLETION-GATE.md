@@ -4,7 +4,7 @@ Program KR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 
 | Required condition | Current status / closure witness |
 |---|---|
-| Source ledger fully resolved | OPEN denominator; enumerate meaningful members and complete six semantic resolution fields |
+| Source ledger fully resolved | TRACKED-TREE ENUMERATION CLOSED at family resolution (2,138 exact non-fuzz rows + inherited 4,014-blob fuzz family); semantic/history/conversation/external denominator still OPEN |
 | Alias/history archaeology reasonably exhausted | OPEN; recover product-specific user decision, fork-aware useful history and predecessor leads |
 | SOTA completed | PARTIAL first pass; standards, licenses, health, version pins, UX and architecture research incomplete |
 | Best realistic alternative defined | Candidate desktop/embedding stacks plus same-family Ghoztty prior art; qualify exact source/version/license and run identical-journey integration comparison |
@@ -16,13 +16,13 @@ Program KR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 | Journeys represented | Initial native/automation/embedding/service journeys, not exhaustive or measured |
 | Stage projections justified | Candidate projections; native-first versus embedding-first unresolved |
 | Acceptance/oracle design complete | Native slice and adversarial cases proposed; not complete across mature scope |
-| High-risk architecture unknowns experimentally closed | NOT MET; native mounting, app-thread dispatch, lifecycle and platform/ABI questions remain |
-| Current implementation mapping complete | NOT MET; bounded reconnaissance only; real callers/mounts/persistence not exhaustively traced |
+| High-risk architecture unknowns experimentally closed | NOT MET; source graph now proves agent server not in normal app startup and Windows App lifecycle unimplemented; native wiring/control and wrapper consumer experiments remain |
+| Current implementation mapping complete | NOT MET; high-priority ownership and IPC mount graph substantially resolved, but modified build/CI/dist, wrappers/WASM and native execution remain incomplete |
 | Traceability structurally valid | Schema/authority rules proposed; accepted graph and orphan validation not executed |
 | Registry and repo truth agree | Frozen source and incomplete state agree by design; final cross-link/readback receipt required |
 | Invalid/generated catalogs absent from grading | Excluded from this dossier; all existing grading entry points not yet inspected |
 | No unexplained orphan requirements/features/journeys | Not established; no complete accepted graph |
-| No unresolved contradictions | NOT MET: K-F01–K-F03 and authority scope |
+| No unresolved contradictions | NOT MET: K-F01–K-F03 plus historical G4-DONE vs unmounted agent server and unresolved product authority |
 | No blocking findings | NOT MET: see CURRENT-STATE.json |
 | Fresh independent review attacked completeness | NOT PERFORMED; author's own checks are not an independent review |
 
@@ -31,3 +31,8 @@ Program KR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 K-WP-INTENT: recover primary scope and fork/alias history; determine necessary native/embedding audiences. K-WP-COVERAGE: complete source inventory, classify sources and extract semantic obligations. K-WP-ALTERNATIVES: reproduce one identical user outcome on upstream Ghostty + strongest thin-control alternative (including Ghoztty where qualified) and Khostty; compare delta/maintenance. K-WP-NATIVE: design and execute real mounted capability/input/identity/recovery witnesses before broad command expansion. K-WP-CONTRACT: accepted mature graph, quality overlays, stage projections, bidirectional traces and complete oracle design. K-WP-ATTACK: independent review with alternative interpretations/configurations/failures and competing architectures.
 
 These are durable work packages, not completion claims. Do not begin another product. A later built-product comparison against best alternative and status quo is a separate pilot, measuring correctness, human intervention, costs, recovery, false greens and operating burden. It cannot substitute for this design gate.
+
+
+## Pass 6 gate movement
+
+Closed sub-gates: complete top-level tracked-tree enumeration and high-priority fork ownership boundary. New facts narrow rather than broaden implementation: the public IPC module is inherited Ghostty IPC relocated, while the ten-file JSON agent stack is adjacent and not in normal application startup; Windows App lifecycle remains explicitly Unimplemented. K-E01 is therefore materially advanced but not complete until modified build/CI/dist, wrapper/WASM ownership, useful history and semantic source dispositions close. K-E02/K-E03 remain experimental dependencies, not general development.
