@@ -124,3 +124,19 @@ Source-level observations:
 Architecture consequence: Khostty cannot justify its custom agent IPC by the previously proposed needs “real child input,” “read terminal text,” “avoid wrong focus/instance,” or “survive controller replacement” in the abstract. Same-family prior art already implements substantial versions of each. Khostty's currently distinct IPC concepts—structured synchronous state/search, event subscription/drop semantics, explicit application token auth and intended cross-platform transport—must each prove an accepted unmet need and integration advantage. A token does not by itself justify a separate broad IPC stack because the alternative can compose an additional authorization layer.
 
 The K-E02 bake-off therefore treats Ghoztty as the primary same-family control baseline rather than a secondary comparison. Khostty baseline is allowed to report the truthful current state “new agent IPC not mounted.” The experiment must compare product effects and maintenance cost, not command-name parity.
+
+## K-F13 — Windows hosting is now commodity/contested implementation, not unique differentiation
+
+Current upstream Ghostty `f9e82709360d97b2246718f774c544de0f16787b` still has only `none` and `gtk` application runtimes and no `src/apprt/windows` directory, so Windows remains an upstream product gap.
+
+However, pinned external fork `shiweis/ghostty-windows@119b9270c8585fa3ae6969c353767fab5a32e438` materially contests Khostty's Windows thesis:
+- actual `src/apprt/win32/App.zig`, `Window.zig`, and `Surface.zig` contain Win32 lifecycle, WGL rendering, ConPTY/core-surface integration, tabs/splits, input/IME/search and window-management code rather than scaffold stubs;
+- its repository is an MIT-licensed direct fork of `ghostty-org/ghostty`, created 2026-03-18 and pushed through 2026-09-02;
+- its own compare against current upstream is 241 commits ahead / 345 behind with merge base `20abdb50a6216c450d6d4d010c41c7edf5ab15b2`, so it demonstrates both substantial implementation and substantial drift burden;
+- its `Windows CI` workflow at blob `d01be34404fce382fe71cd568aa8151193bc2db9` runs on `windows-latest`, executes `zig build test -Dapp-runtime=win32 -Dtarget=x86_64-windows-gnu`, then builds the app; the pinned head `119b927…` has a completed SUCCESS run (`33633427282`) on 2026-09-02. This is stronger than README-only evidence, though it is still the external project's own test suite rather than our independent runtime bake-off.
+
+The related upstream Ghostty PR #12167 was closed unmerged. Maintainer comments identify review size, unresolved Windows toolkit direction, and especially lack of a long-term Windows maintainer as major blockers; they do not establish that the implementation approach is technically invalid. The original PR also had early user-reported AltGr and kitty-graphics problems, followed by subsequent fork development. Therefore upstream non-merge is a maintenance/convergence warning, not a reason to ignore the implementation.
+
+Architecture consequence: **building Khostty's Windows runtime from scratch is no longer the default.** K-E02 must compare at least (a) Khostty scaffold/current intended architecture, (b) adapting the pinned Win32 fork or its isolated runtime delta onto a current upstream base, and (c) a thin libghostty Windows host where applicable. Compare exact native journey behavior, upstream merge burden, patch surface, security/accessibility/IME/graphics completeness and ownership cost.
+
+Khostty's Windows-specific product differentiation is therefore falsified at the feature-existence level. A Khostty Windows implementation can still be justified if it proves materially better integration/maintainability or serves accepted requirements the mature Win32 fork does not, but novelty cannot justify it.
