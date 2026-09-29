@@ -1,0 +1,95 @@
+# Publish the Khostty Python distribution to PyPI.
+#
+# Scope: this repository publishes `khostty-vt` on PyPI. The Python package is a
+# thin ctypes binding over `libghostty-vt`; the Rust crate and the npm WASM
+# package are published by their own paths (cargo publish, npm publish).
+#
+# Auth: PyPI Trusted Publishing (OIDC) when `pypi` is configured as a trusted
+# publisher for `khostty-vt`. No long-lived API token is stored in this repo.
+# If Trusted Publishing is not configured, the upload step fails closed rather
+# than falling back to a secret.
+#
+# Gate: tags matching `khostty-v*` that belong to THIS repository. The inherited
+# Ghostty workflows in .github/workflows trigger on any `v*.*.*` tag; this
+# workflow must never publish a Ghostty artifact to the Khostty PyPI project.
+
+name: Publish PyPI
+
+on:
+  push:
+    tags:
+      - "khostty-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (format: vX.Y.Z)"
+        required: true
+
+# PyPI forbids reusing a distribution filename, ever. Serialize uploads and
+# never cancel an in-flight publish.
+concurrency:
+  group: pypi-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/khostty-vt/
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.version || github.ref }}
+
+      - name: Reject non-Khostty tags
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          if [[ "$tag" != khostty-v* ]]; then
+            echo "Refusing to publish: '$tag' is not a khostty-v* tag."
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade build twine
+
+      - name: Build distributions
+        working-directory: khostty-python
+        run: python -m build
+
+      - name: Validate distributions
+        run: |
+          python -m twine check dist/*
+          ls -l dist/
+
+      - name: Check tag matches pyproject version
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: khostty-python
+        run: |
+          tag_version="${GITHUB_REF#refs/tags/khostty-v}"
+          pkg_version="$(python -c '
+          try:
+              import tomllib
+          except ImportError:
+              import tomli as tomllib
+          import pathlib
+          print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])
+          ')"
+          echo "tag=$tag_version pyproject=$pkg_version"
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "Refusing to publish: tag version does not match pyproject.toml."
+            exit 1
+          fi
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
