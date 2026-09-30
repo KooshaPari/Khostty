@@ -127,3 +127,36 @@ The gate deliberately permits all of these:
 - retain the current architecture if experiments actually beat the thinner alternatives.
 
 No overall verdict is issued before K-E02/K-E03 evidence.
+
+
+## Pinned Ghoztty source evidence
+
+Comparator revision: `dzearing/ghoztty@fd3838acfa834c29e99616cdc8500c0208a13a09`.
+
+Inspected source, not only README:
+- `macos/Sources/Features/IPC/IPCServer.swift` blob `c73b9defec0d931dce0bd81c9a7c5e1559663d25`;
+- `IPCMessage.swift` blob `cf82f608c20182aa7912e0eb5164deb018edeb2d`;
+- CLI `send_keys.zig`, `read.zig`, `split.zig`, `close.zig`;
+- `docs/design/macos-ipc.md` blob `d62841d3c1e591662ea8b6ae98b7ac48791b0c04`.
+
+Observed architecture:
+- length-prefixed JSON over Unix-domain socket;
+- socket mode 0600 + FD_CLOEXEC;
+- app-owned absolute socket path is injected into pane environment so CLI inside a pane addresses the correct app instance;
+- target registry stores weak window/pane references and prunes dead targets;
+- list responses expose terminal ID/title/cwd/pid/tty/name/focused/exit-code;
+- read returns terminal text;
+- send-keys supplies actual terminal input;
+- close is deliberately idempotent for missing targets;
+- new-window/split target naming and cwd/command semantics exist;
+- the design document explicitly states window/split creation is **fire-and-forget**: UI work is dispatched to the main queue and the IPC response can be sent before mutation completes.
+
+Consequences for K-E02:
+
+1. Do not waste the bake-off proving Ghoztty lacks child input, readable state or instance targeting; source says it has them.
+2. Do not score idempotent missing-target close as a false green by definition. Test unintended side effects and stale identity instead.
+3. The primary Khostty control hypothesis is now **causal completion + durable/epoch-aware target identity + event/loss semantics + cross-platform/auth scope**, if accepted product use actually needs them.
+4. A Khostty design that also returns before native UI mutation completes would lose that differentiation.
+5. Ghoztty's macOS-only IPC is a real platform limitation; it does not answer Windows/Linux requirements.
+
+Source evidence narrows the experiment; it does not substitute for a native comparative run.
