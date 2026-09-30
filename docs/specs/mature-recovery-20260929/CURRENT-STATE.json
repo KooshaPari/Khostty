@@ -70,25 +70,21 @@
   },
   "progress_policy": "Static diagnostics, imported assertions, native observations and product acceptance are distinct. No scalar document-count or test-count completion.",
   "tracked_tree_enumeration": {
-    "state": "CLOSED",
-    "explicit_non_fuzz_blob_rows": 2055,
+    "state": "CLOSED_AT_TOP_LEVEL_FAMILY_BOUNDARY",
+    "exact_non_fuzz_blob_rows": 2138,
     "fuzz_family": {
       "blobs": 4014,
       "corpus_blobs": 4002
     },
     "all_top_level_trees_covered": true,
     "all_recursive_responses_untruncated": true,
-    "summary": "inventory/SUMMARY.json",
-    "raw_A_B_rows": 2117,
-    "overlap_paths": 62,
-    "object_id_conflicts": 0
+    "summary": "inventory/SUMMARY.json"
   },
   "K_E01_progress": {
     "tracked_tree_inventory": "COMPLETE",
-    "fork_ownership_map": "SUBSTANTIALLY_COMPLETE_FOR_HIGH_PRIORITY_SURFACES",
-    "agent_server_mount_trace": "UNMOUNTED_AT_FROZEN_SOURCE",
-    "source_inspection_prerequisite_for_K_E02_K_E03": "SATISFIED",
-    "full_semantic_family_resolution": "IN_PROGRESS"
+    "fork_ownership": "HIGH_PRIORITY_BOUNDARY_RESOLVED",
+    "agent_server_reachability": "UNMOUNTED_BY_CURRENT_SOURCE_EVIDENCE",
+    "remaining": "full semantic family/history resolution and native execution"
   },
   "tracked_product_relevant_inventory": {
     "unique_blobs": 2055,
@@ -158,5 +154,16 @@
       "merge_base": "20abdb50a6216c450d6d4d010c41c7edf5ab15b2"
     },
     "disposition": "QUALIFY_ADAPT_VS_CUSTOM_BEFORE_KHOSTTY_WINDOWS_IMPLEMENTATION"
-  }
+  },
+  "fork_ownership": {
+    "merge_base": "d4c88d8069912b653d707191388ca98e24751f12",
+    "top_level": {
+      "identical": 43,
+      "added": 13,
+      "modified": 6,
+      "removed": 0
+    },
+    "ownership_map": "inventory/FORK-OWNERSHIP.md"
+  },
+  "agent_ipc_mounting": "NOT_MOUNTED_BY_PUBLIC_APPRT_IPC; NEW_SERVER_CALLERS_NOT_FOUND_OUTSIDE_SUBSYSTEM_DOCS"
 }
