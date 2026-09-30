@@ -134,3 +134,17 @@ A direct Server.bind(... AppHost.host()) from GTK init that leaves connection th
 Current user intent confirms Khostty is intentionally a substantial Ghostty fork and programmable terminal precursor/infrastructure for HeliosLab. **Do not optimize K-E02 toward deleting the control plane or replacing Khostty with a thin external adapter.** Optimize the fork by minimizing unnecessary divergence while realizing the accepted capabilities: Windows, deeper Zsh/PowerShell/platform behavior, and a cmux-class socket/API control plane that removes AppleScript/UI automation for supported terminal operations.
 
 For K-E02, use external terminals as design priors. A mature resource graph should be able to represent at least instance/epoch → workspace → window/tab → pane → terminal/child, with stable targeting, capability discovery, explicit errors, events, controller replacement and stale-target rejection. Exact naming/API compatibility is not required. The experiment should mount the existing agent server through the real application lifecycle in a way that can grow toward that graph rather than hard-code one-off pane commands.
+
+
+## Pass 9 authority correction — product scope is no longer ambiguous
+
+Current user intent explicitly authorizes Khostty as a deliberate Ghostty fork and programmable terminal substrate for Helios/HeliosLab. Agents must **not** interpret prior alternatives research as an instruction to collapse Khostty into a thin external adapter. Use upstream/cmux/Ghoztty/WezTerm/kitty to bootstrap designs and falsify unnecessary custom work inside the accepted fork horizon.
+
+Add these first-class experiment/source families to K-E01/K-E02 planning:
+- Windows native runtime closure;
+- supported-shell matrix, with PowerShell as a concrete gap family and Zsh evaluated for Khostty-specific needs beyond upstream Ghostty;
+- deep topology/state API: create/list/target/focus/close panes/surfaces, child input, terminal observation/search, events, capabilities and concurrency;
+- socket/API access policy and stable identities suitable for Helios/agents;
+- elimination of AppleScript/UI automation for supported first-class operations.
+
+Do not embed Helios task scheduling into Khostty. Helios is a consumer of terminal primitives.
