@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 30
     env:
       SOURCE_SHA: a29aa9c6553d9f42aa68e2919116c0f6d53f329d
+      UPSTREAM_SHA: f9e82709360d97b2246718f774c544de0f16787b
       RECEIPTS: recovery-embed-receipts
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -103,6 +104,75 @@ jobs:
           grep -q "== search ==" "$RECEIPTS/agent-session-example.log"
           grep -q "== snapshot ==" "$RECEIPTS/agent-session-example.log"
           grep -q "== input ==" "$RECEIPTS/agent-session-example.log"
+
+      - name: Checkout pinned upstream Ghostty comparator
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ghostty-org/ghostty
+          ref: ${{ env.UPSTREAM_SHA }}
+          path: _upstream/ghostty
+          fetch-depth: 1
+
+      - name: Build pinned upstream libghostty-vt
+        working-directory: _upstream/ghostty
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee "$GITHUB_WORKSPACE/$RECEIPTS/upstream-head.txt"
+          test "$(git rev-parse HEAD)" = "$UPSTREAM_SHA"
+          zig build -Demit-lib-vt -Doptimize=ReleaseSafe \
+            2>&1 | tee "$GITHUB_WORKSPACE/$RECEIPTS/upstream-zig-lib-build.log"
+          find zig-out/lib -maxdepth 1 \( -type f -o -type l \) | sort \
+            | tee "$GITHUB_WORKSPACE/$RECEIPTS/upstream-library-files.txt"
+          sha256sum zig-out/lib/libghostty-vt* 2>/dev/null \
+            | tee "$GITHUB_WORKSPACE/$RECEIPTS/upstream-library-sha256.txt" || true
+
+      - name: Run the same Khostty wrapper against pinned upstream library
+        env:
+          GHOSTTY_VT_LIB_DIR: ${{ github.workspace }}/_upstream/ghostty/zig-out/lib
+          GHOSTTY_VT_INCLUDE_DIR: ${{ github.workspace }}/_upstream/ghostty/include
+          LD_LIBRARY_PATH: ${{ github.workspace }}/_upstream/ghostty/zig-out/lib
+          CARGO_TARGET_DIR: ${{ github.workspace }}/recovery-target-upstream
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path khostty-vt/Cargo.toml -- --list \
+            2>&1 | tee "$RECEIPTS/upstream-test-list.txt"
+          count="$(grep -c ': test        run: |
+          set -euo pipefail
+          git status --porcelain=v1 | tee "$RECEIPTS/status-after.txt"
+          if [ -n "$(git status --porcelain=v1 --untracked-files=no)" ]; then
+            git diff -- .
+            exit 1
+          fi
+          sha256sum \
+            "$RECEIPTS/test-list.txt" \
+            "$RECEIPTS/cargo-test.log" \
+            "$RECEIPTS/agent-session-example.log" \
+            "$RECEIPTS/upstream-test-list.txt" \
+            "$RECEIPTS/upstream-cargo-test.log" \
+            "$RECEIPTS/upstream-agent-session-example.log" \
+            > "$RECEIPTS/key-receipts.sha256"
+
+      - name: Upload K-E03 receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: khostty-k-e03-rust-wrapper-receipts
+          path: recovery-embed-receipts/
+          if-no-files-found: error
+          retention-days: 30
+ "$RECEIPTS/upstream-test-list.txt" || true)"
+          echo "$count" | tee "$RECEIPTS/upstream-test-count.txt"
+          test "$count" -gt 0 || {
+            echo "False green: upstream-linked integration denominator is empty" >&2
+            exit 1
+          }
+          cargo test --manifest-path khostty-vt/Cargo.toml --no-fail-fast \
+            2>&1 | tee "$RECEIPTS/upstream-cargo-test.log"
+          cargo run --manifest-path khostty-vt/Cargo.toml --example agent_session \
+            2>&1 | tee "$RECEIPTS/upstream-agent-session-example.log"
+          grep -q "== search ==" "$RECEIPTS/upstream-agent-session-example.log"
+          grep -q "== snapshot ==" "$RECEIPTS/upstream-agent-session-example.log"
+          grep -q "== input ==" "$RECEIPTS/upstream-agent-session-example.log"
 
       - name: Ensure tests did not mutate tracked candidate
         run: |
