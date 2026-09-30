@@ -121,3 +121,24 @@ test "cancelled work completes without executing" {
     try std.testing.expectEqual(@as(usize, 0), value);
     try std.testing.expect(completion.isDone());
 }
+
+
+test "tickets are monotonic correlation identities" {
+    var bridge = Bridge.init(std.testing.io);
+    var a: Completion = .{};
+    var b: Completion = .{};
+    var value: usize = 0;
+    const Ctx = struct {
+        fn run(ptr: *anyopaque) void {
+            const n: *usize = @ptrCast(@alignCast(ptr));
+            n.* += 1;
+        }
+    };
+    const ta = try bridge.submit(&value, Ctx.run, &a);
+    const tb = try bridge.submit(&value, Ctx.run, &b);
+    try std.testing.expect(tb > ta);
+    try std.testing.expectEqual(@as(usize, 2), bridge.drainOnAppThread());
+    try std.testing.expect(a.isDone());
+    try std.testing.expect(b.isDone());
+    try std.testing.expectEqual(@as(usize, 2), value);
+}
