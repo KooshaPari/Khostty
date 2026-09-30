@@ -25,7 +25,7 @@
     "K-E03_NATIVE_EXECUTION_AND_UPSTREAM_COMPARISON"
   ],
   "dependent_experimental_work_packages": {},
-  "contract_authority": "CURRENT_USER_INTENT_AUTHORITATIVE_20260930",
+  "contract_authority": "CURRENT_USER_INTENT_RESOLVED_2026_09_30",
   "authority_correction": "Prior framing that broad fork ownership was not the default assumption is superseded. Subsystem alternatives still optimize bootstrap/maintenance but do not challenge accepted substantial-fork product identity.",
   "source_denominator": {
     "state": "OPEN_SEMANTIC_RESOLUTION",
@@ -63,7 +63,7 @@
   ],
   "abi_manifest_disposition": "UPSTREAM_INHERITED_NOT_FORK_DIFFERENTIATION",
   "windows_gui_state": "APP_RENDERER_SURFACE_AND_PIPE_TRANSPORT_IMPLEMENTATION_GAPS_CONFIRMED",
-  "existence_gate": "OPEN_OPTIMIZE_PURPOSEFUL_FORK_NOT_THIN_ADAPTER_EXISTENCE",
+  "existence_gate": "FORK_EXISTENCE_ACCEPTED; SUBSYSTEM_BOOTSTRAP_AND_ARCHITECTURE_GATE_OPEN",
   "independent_fresh_review": "NOT_PERFORMED",
   "invalid_catalogs_eligible_for_grading": false,
   "existing_ci_enforcement_changed": false,
@@ -226,5 +226,11 @@
     "HeliosLab/agent integration",
     "lifecycle/recovery",
     "packaging/support"
-  ]
+  ],
+  "authoritative_product_intent": "AUTHORITATIVE-PRODUCT-INTENT.md",
+  "shell_contract": {
+    "zsh": "UPSTREAM_GHOSTTY_HAS_INTEGRATION_IDENTIFY_KHOSTTY_DELTA",
+    "powershell": "ACCEPTED_GAP_FAMILY_UPSTREAM_AUTOINJECTION_NOT_DOCUMENTED"
+  },
+  "control_plane_baseline": "CMUX_CLASS_DEEP_API_OUTCOME_ACCEPTED_AS_REFERENCE_NOT_REQUIRED_CLONE"
 }
