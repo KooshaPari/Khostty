@@ -41,13 +41,14 @@ jobs:
         run: |
           set -euo pipefail
           zig build -Demit-lib-vt
-          test -f zig-out/lib/libghostty-vt.a
-          sha256sum zig-out/lib/libghostty-vt.a | tee candidate-lib.sha256
+          test -f zig-out/lib/libghostty-vt.so
+          sha256sum zig-out/lib/libghostty-vt.so | tee candidate-lib.sha256
 
       - name: Run candidate wrapper/direct-C harness
+        continue-on-error: true
         run: |
           set -euo pipefail
-          python3 khostty-vt/tools/k_e03_compare.py             --crate-dir khostty-vt             --include-dir include             --lib zig-out/lib/libghostty-vt.a             --source-sha "$(git rev-parse HEAD)"             --library-source-sha "$(git rev-parse HEAD)"             --library-origin khostty             --out k-e03-candidate.json
+          python3 khostty-vt/tools/k_e03_compare.py             --crate-dir khostty-vt             --include-dir include             --lib zig-out/lib/libghostty-vt.so             --source-sha "$(git rev-parse HEAD)"             --library-source-sha "$(git rev-parse HEAD)"             --library-origin khostty             --out k-e03-candidate.json
 
       - name: Checkout exact upstream merge base
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -62,13 +63,32 @@ jobs:
         run: |
           set -euo pipefail
           zig build -Demit-lib-vt
-          test -f zig-out/lib/libghostty-vt.a
-          sha256sum zig-out/lib/libghostty-vt.a | tee ../upstream-lib.sha256
+          test -f zig-out/lib/libghostty-vt.so
+          sha256sum zig-out/lib/libghostty-vt.so | tee ../upstream-lib.sha256
 
       - name: Run wrapper/direct-C harness against upstream library
+        continue-on-error: true
         run: |
           set -euo pipefail
-          python3 khostty-vt/tools/k_e03_compare.py             --crate-dir khostty-vt             --include-dir upstream-ghostty/include             --lib upstream-ghostty/zig-out/lib/libghostty-vt.a             --source-sha "$(git rev-parse HEAD)"             --library-source-sha "$UPSTREAM_MERGE_BASE"             --library-origin ghostty-upstream-merge-base             --out k-e03-upstream.json
+          python3 khostty-vt/tools/k_e03_compare.py             --crate-dir khostty-vt             --include-dir upstream-ghostty/include             --lib upstream-ghostty/zig-out/lib/libghostty-vt.so             --source-sha "$(git rev-parse HEAD)"             --library-source-sha "$UPSTREAM_MERGE_BASE"             --library-origin ghostty-upstream-merge-base             --out k-e03-upstream.json
+
+      - name: Require both comparison receipts to pass
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, sys
+          failed=[]
+          for name in ("k-e03-candidate.json","k-e03-upstream.json"):
+              p=pathlib.Path(name)
+              if not p.is_file():
+                  failed.append(f"{name}: missing")
+                  continue
+              data=json.loads(p.read_text())
+              if data.get("verdict") != "PASS_EXPERIMENT":
+                  failed.append(f"{name}: {data.get('verdict')} {data.get('checks')}")
+          if failed:
+              print("\n".join(failed), file=sys.stderr)
+              raise SystemExit(1)
+          PY
 
       - name: Record immutable identities
         if: always()
