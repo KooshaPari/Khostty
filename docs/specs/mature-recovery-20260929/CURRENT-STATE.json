@@ -4,7 +4,7 @@
   "product": "KooshaPari/Khostty",
   "repository_id": 1322607630,
   "observed_on": "2026-09-30",
-  "assessment_pass": 10,
+  "assessment_pass": 9,
   "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
@@ -186,5 +186,17 @@
     "new_sha": "1edff1a00d6b68cbb297d97926e30030c8844b82",
     "new_run": 36744824103,
     "status": "QUEUED"
+  },
+  "K_E02_status": "READY_FOR_EXPERIMENTAL_IMPLEMENTATION_PHASED_APP_THREAD_BRIDGE_THEN_SERVER_MOUNT",
+  "K_E02_guard": "DIRECT_SERVER_BIND_WITH_CROSS_THREAD_APPHOST_ACCESS_IS_FAIL",
+  "K_E03_status": "ACTIVE_EXPERIMENT_RUN19_FAILED_COMPARISON_GATE; NEXT_RUN_PATCHES_LOADER_AND_UPSTREAM_ORIGIN",
+  "K_E03_partial_evidence": {
+    "candidate_native_build": "PASS",
+    "direct_c_consumer": "PASS",
+    "abi_ffi_tests": "PASS",
+    "missing_library_control": "PASS",
+    "rust_lifetime_control": "PASS",
+    "rust_wrapper_runtime": "FAIL_LOADER_PATH",
+    "upstream_comparison": "NOT_COMPLETED_DUE_ARGUMENT_ORIGIN_ERROR"
   }
 }
