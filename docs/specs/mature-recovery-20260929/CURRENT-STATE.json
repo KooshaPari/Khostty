@@ -33,8 +33,8 @@
   "parallel_general_dev_handoff": false,
   "handoff_document": "DEVELOPER-HANDOFF.md",
   "ready_work_packages": [
-    "K-E02",
-    "K-E03"
+    "K-E02_NATIVE_CONTROL",
+    "K-E03_NATIVE_EXECUTION_AND_UPSTREAM_COMPARISON"
   ],
   "dependent_experimental_work_packages": {},
   "contract_authority": "CANDIDATE_NOT_ACCEPTED_PRIMARY_SOURCE_STILL_REQUIRED",
@@ -171,5 +171,19 @@
   "wrapper_value_model": "FORK_OWNED_BINDINGS_OVER_INHERITED_LIBGHOSTTY_VT; EVALUATE SAFETY_ERGONOMICS_PACKAGING_NOT_VT_SEMANTICS",
   "K_E03_readiness": "HARNESS_CANDIDATE_EXISTS_EXECUTION_AND_COMPARATOR_REVISION_REQUIRED",
   "wrapper_evidence_policy": "TYPECHECK_IS_NOT_LINKED_EVIDENCE; REQUIRE_ACTUAL_LIB_IDENTITY_AND_CONSUMER_EXECUTION",
-  "wrapper_packaging": "STANDALONE_CONSUMPTION_UNPROVEN"
+  "wrapper_packaging": "STANDALONE_CONSUMPTION_UNPROVEN",
+  "K_E03_candidate": {
+    "branch": "experiment/mature-recovery-k-e03",
+    "pr": 9,
+    "head": "2321282191b30d0862a9864a2096009d0c9a7066",
+    "state": "BLOCKED_ON_NATIVE_AND_UPSTREAM_COMPARISON",
+    "prior_linked_workflow": {
+      "commit": "38ff7359eee093c960632fb626f9d868286a1bd9",
+      "run": 36706051964,
+      "result": "INFRA_FAILURE_BEFORE_ZIG_AVAILABLE",
+      "cause": "GITHUB_PATH_NOT_APPLIED_WITHIN_SAME_COMPOSITE_STEP"
+    },
+    "installer_fix": "ABSOLUTE_DEST_ZIG_VERSION_CHECK",
+    "current_workflow_run": 36719693538
+  }
 }
