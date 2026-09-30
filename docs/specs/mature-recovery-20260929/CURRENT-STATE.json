@@ -217,14 +217,25 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "e5f490e3d6e47d3db859d8834d8a5e37fa696e90",
+      "head": "1091294fdf428627224ec7b0f0a0ae03e102d4a2",
       "workflow_run": 36764779515,
-      "status": "QUEUED_EXACT_HEAD",
+      "status": "EXACT_HEAD_QUEUED",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
         "CoreApp.tick drains mailbox and experimental bridge",
         "Surface.queueIo is terminal-IO ownership path",
         "pane.write remains parser/display injection, not child input"
+      ],
+      "controls": [
+        "correlated heap-owned request",
+        "queued/executing/completed/canceled states",
+        "queued timeout cancellation",
+        "executing request cannot timeout context lifetime",
+        "shutdown cancellation",
+        "queued context cleanup",
+        "runtime wakeup on submit",
+        "CoreApp.tick execution owner",
+        "exact pane identity observation projection"
       ]
     },
     "next": "grade primitive; project one real pane operation through app thread; then K-E02b server lifecycle",
@@ -249,5 +260,28 @@
     "zsh": "UPSTREAM_GHOSTTY_HAS_INTEGRATION_IDENTIFY_KHOSTTY_DELTA",
     "powershell": "ACCEPTED_GAP_FAMILY_UPSTREAM_AUTOINJECTION_NOT_DOCUMENTED"
   },
-  "control_plane_baseline": "CMUX_CLASS_DEEP_API_OUTCOME_ACCEPTED_AS_REFERENCE_NOT_REQUIRED_CLONE"
+  "control_plane_baseline": "CMUX_CLASS_DEEP_API_OUTCOME_ACCEPTED_AS_REFERENCE_NOT_REQUIRED_CLONE",
+  "windows_bootstrap": {
+    "status": "COMPARATOR_SET_EXPANDED",
+    "decision": "ADAPT/PORT/COMPOSE before custom host",
+    "comparators": [
+      "shiweis/ghostty-windows",
+      "cullendotdev/winghostty",
+      "thin libghostty native host",
+      "custom residual"
+    ],
+    "qualification_required": [
+      "native build",
+      "ConPTY child nonce",
+      "exact pane identity",
+      "tabs/splits",
+      "PowerShell integration",
+      "IME",
+      "restart/session state",
+      "automation/control-plane",
+      "packaging",
+      "accessibility",
+      "upstream-sync burden"
+    ]
+  }
 }
