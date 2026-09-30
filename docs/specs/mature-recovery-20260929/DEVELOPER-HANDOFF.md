@@ -37,3 +37,8 @@ The package enables bounded experiments now. It does not authorize autonomous br
 ### CI evidence rule added in pass 6
 
 Do not cite the current aggregate `ci / test` context as proof that wrapper/native tests executed. A handoff receipt must list expected jobs and a sentinel count/output for the exact native test suite. `continue-on-error`, swallowed command failures, skipped native-library cfgs and the disabled macOS build are evidence gaps, not acceptable greens.
+
+
+## Pass 6 promotion receipt
+
+K-E01's source-inspection prerequisite is sufficiently closed for K-E02/K-E03: all top-level trees enumerated; fork-owned versus inherited high-priority surfaces identified; the new JSON agent server shown adjacent to inherited IPC and unmounted at frozen source; remaining semantic/history uncertainty explicitly retained. This does **not** close K-E01 for all future archaeology and does not permit general feature work. K-E02 and K-E03 are now safe bounded experimental handoffs.
