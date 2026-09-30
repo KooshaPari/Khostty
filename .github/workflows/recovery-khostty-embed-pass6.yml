@@ -49,6 +49,14 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      - name: Diagnose frozen CI evidence false-green mechanisms
+        run: |
+          set -euo pipefail
+          python docs/specs/mature-recovery-20260929/pass6/probe_ci_evidence.py \
+            --repo . --source "$SOURCE_SHA" \
+            --out "$RECEIPTS/ci-evidence-baseline.json" \
+            | tee "$RECEIPTS/ci-evidence-baseline.log"
+
       - name: Build real shared libghostty-vt
         run: |
           set -euo pipefail
