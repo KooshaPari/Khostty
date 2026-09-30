@@ -5,7 +5,7 @@ Program KR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 | Required condition | Current status / closure witness |
 |---|---|
 | Source ledger fully resolved | TRACKED-TREE ENUMERATION CLOSED at family resolution (2,138 exact non-fuzz rows + inherited 4,014-blob fuzz family); semantic/history/conversation/external denominator still OPEN |
-| Alias/history archaeology reasonably exhausted | OPEN; recover product-specific user decision, fork-aware useful history and predecessor leads |
+| Alias/history archaeology reasonably exhausted | OPEN; source ownership is substantially clearer, but primary product decision/useful commit causality/predecessor authority remain |
 | SOTA completed | PARTIAL first pass; standards, licenses, health, version pins, UX and architecture research incomplete |
 | Best realistic alternative defined | Candidate desktop/embedding stacks plus same-family Ghoztty prior art; qualify exact source/version/license and run identical-journey integration comparison |
 | Bootstrap/custom decisions recorded | Initial proposals only; every custom subsystem needs a tested unmet obligation |
@@ -23,7 +23,7 @@ Program KR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 | Invalid/generated catalogs absent from grading | Excluded from this dossier; all existing grading entry points not yet inspected |
 | No unexplained orphan requirements/features/journeys | Not established; no complete accepted graph |
 | No unresolved contradictions | NOT MET: K-F01–K-F03 plus historical G4-DONE vs unmounted agent server and unresolved product authority |
-| No blocking findings | NOT MET: see CURRENT-STATE.json |
+| No blocking findings | NOT MET: see CURRENT-STATE.json including K-F11–K-F13 |
 | Fresh independent review attacked completeness | NOT PERFORMED; author's own checks are not an independent review |
 
 ## Next minimal work packages
@@ -36,3 +36,8 @@ These are durable work packages, not completion claims. Do not begin another pro
 ## Pass 6 gate movement
 
 Closed sub-gates: complete top-level tracked-tree enumeration and high-priority fork ownership boundary. New facts narrow rather than broaden implementation: the public IPC module is inherited Ghostty IPC relocated, while the ten-file JSON agent stack is adjacent and not in normal application startup; Windows App lifecycle remains explicitly Unimplemented. K-E01 is therefore materially advanced but not complete until modified build/CI/dist, wrapper/WASM ownership, useful history and semantic source dispositions close. K-E02/K-E03 remain experimental dependencies, not general development.
+
+
+## Pass 6 gate movement
+
+Closed sub-gates: complete tracked-tree enumeration and top-level merge-base ownership boundary. The agent IPC mount question also moved from a broad unknown to a source-level conclusion: the exported IPC module is the inherited three-action implementation relocated into `ipc/mod.zig`; the ten-file JSON agent server is adjacent and not started by the application at the frozen source. These closures do not justify general implementation. K-E01 remains open for wrapper/CI/build/native-callgraph semantic resolution; K-E02/K-E03 remain dependent experimental work.
