@@ -16,6 +16,7 @@ const BlockingQueue = @import("datastruct/main.zig").BlockingQueue;
 const renderer = @import("renderer.zig");
 const font = @import("font/main.zig");
 const global = @import("global.zig");
+const AgentAppBridge = @import("apprt/ipc/app_thread_bridge.zig").Bridge;
 
 const log = std.log.scoped(.app);
 
@@ -49,6 +50,10 @@ focused_surface: ?*Surface = null,
 /// The mailbox that can be used to send this thread messages. Note
 /// this is a blocking queue so if it is full you will get errors (or block).
 mailbox: Mailbox.Queue,
+
+/// K-E02a correlated worker→app-thread bridge. The socket server is not mounted
+/// here; CoreApp.tick is the sole execution owner for submitted app work.
+agent_app_bridge: AgentAppBridge,
 
 /// The set of font GroupCache instances shared by surfaces with the
 /// same font configuration.
@@ -124,6 +129,7 @@ pub fn init(
         .alloc = alloc,
         .surfaces = .empty,
         .mailbox = .{},
+        .agent_app_bridge = AgentAppBridge.init(global.io()),
         .font_grid_set = font_grid_set,
         .config_conditional_state = .{},
     };
@@ -154,8 +160,9 @@ pub fn destroy(self: *App) void {
 /// events. This should be called by the application runtime on every loop
 /// tick.
 pub fn tick(self: *App, rt_app: *apprt.App) !void {
-    // Drain our mailbox
+    // Drain ordinary app messages, then K-E02a agent work on this same app thread.
     try self.drainMailbox(rt_app);
+    _ = self.agent_app_bridge.drainOnAppThread();
 }
 
 /// Update the configuration associated with the app. This can only be
