@@ -252,6 +252,17 @@ pub fn deleteSurface(self: *App, rt_surface: *apprt.Surface) void {
 
 /// The last focused surface. This is only valid while on the main thread
 /// before tick is called.
+/// Submit K-E02a work for execution by the next app-thread tick.
+/// The caller owns ctx/completion until completion is observed.
+pub fn submitAgentAppWork(
+    self: *App,
+    ctx: *anyopaque,
+    run: *const fn (*anyopaque) void,
+    completion: *@import("apprt/ipc/app_thread_bridge.zig").Completion,
+) @import("apprt/ipc/app_thread_bridge.zig").BridgeError!@import("apprt/ipc/app_thread_bridge.zig").Ticket {
+    return self.agent_app_bridge.submit(ctx, run, completion);
+}
+
 pub fn focusedSurface(self: *const App) ?*Surface {
     const surface = self.focused_surface orelse return null;
     if (!self.hasSurface(surface)) return null;
