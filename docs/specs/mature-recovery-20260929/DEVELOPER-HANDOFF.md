@@ -76,3 +76,8 @@ General product implementation remains blocked.
 ### Windows comparator added 2026-09-30
 
 Primary current Windows prior art is now `shiweis/ghostty-windows@119b9270c8585fa3ae6969c353767fab5a32e438`, not the older mattn prototype. It has a real Win32 App/Window/Surface implementation and a successful Windows GitHub Actions build+test run at the pinned head. Treat README feature-completeness as a claim, but treat source existence and CI result as concrete external evidence. Its current-upstream divergence (241 ahead / 362 behind) is part of the ownership-cost comparison. Khostty's Windows scaffold must not be implemented independently until this adapt/fork/thin-host comparison is returned.
+
+
+### K-E03 exact native-link witness
+
+Before any wrapper result is accepted, capture the build-script line `khostty-vt: linking <path> (<kind>)`, hash that exact library, and run a required sentinel test compiled under `ghostty_vt_linked`. The current build script intentionally returns successfully when no library is found, and `tests/terminal.rs` is entirely guarded by `#![cfg(ghostty_vt_linked)]`; therefore zero executed native integration tests is an expected developer convenience state, not evidence. Report test count and at least one runtime operation (create terminal, VT write, resize/query, callback, drop) from the exact linked candidate. Compare wrapper-only value—RAII/error mapping/package ergonomics—against direct inherited C API use; do not re-credit inherited terminal semantics as wrapper differentiation.
