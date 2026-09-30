@@ -93,3 +93,10 @@ Tracked-tree enumeration is structurally complete: 2,138 exact non-fuzz blob row
 ## Pass 6 K-E02 security scope
 
 Do not compare local IPC security by feature labels such as “token” versus “socket permissions.” Khostty's shared token authenticates possession within the user session; it does not inherently distinguish mutually untrusted same-user processes. K-E02 must state the intended adversary, record actual runtime/socket modes, token lifecycle, and test any claimed per-client/per-pane isolation. If same-account agent isolation is required, treat peer/process identity or delegated capability policy as a separate design problem rather than overclaiming the shared token.
+
+
+## Pass 7 delta — wrapper evaluation target
+
+K-E03 should not compare terminal semantics as though the wrappers implement a new VT. Rust, Go, Python and WASM wrapper code is fork-owned, but inspected surfaces call the inherited `libghostty-vt` C API. Their candidate value is safer/idiomatic ownership, lifetime/error/ABI validation, packaging and consumer ergonomics. Rust explicitly provides RAII and confines unsafe FFI; Go wraps opaque handles with Close/finalizers; Python uses cffi plus runtime manifest verification; WASM uses the inherited type manifest to drive memory/layout helpers.
+
+**K-E03 experiment:** for one language first (Rust preferred because its ownership contract is strongest), build the same consumer directly against upstream C/libghostty and through the wrapper. Exercise create → VT feed → resize → read/render → snapshot/restore → search → free, plus wrong-version/ABI and use-after-close/error controls. Compare application unsafe/FFI LOC, lifetime failure modes, generated-vs-handwritten binding drift, packaging friction and maintenance delta. Do not award points for inherited parser correctness. If the wrapper materially reduces unsafe/lifetime burden without owning a forked terminal, consider extracting/upstreaming it rather than using it to justify the whole fork.
