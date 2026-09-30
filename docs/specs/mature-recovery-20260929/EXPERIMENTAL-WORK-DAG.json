@@ -7,7 +7,7 @@
   "nodes": [
     {
       "id": "K-E02",
-      "state": "READY",
+      "state": "ACTIVE_K_E02A",
       "depends_on": [],
       "parallel_group": "K-P1",
       "purpose": "Native/control alternative bake-off",
@@ -28,11 +28,17 @@
         "controller replacement",
         "stale target behavior",
         "exact candidate/config evidence"
-      ]
+      ],
+      "candidate": {
+        "branch": "experiment/mature-recovery-k-e02a-app-bridge",
+        "pr": 11,
+        "head": "1091294fdf428627224ec7b0f0a0ae03e102d4a2",
+        "status": "EXACT_HEAD_QUEUED"
+      }
     },
     {
       "id": "K-E03",
-      "state": "READY",
+      "state": "EXPERIMENTALLY_ACCEPTED_SLICE",
       "depends_on": [],
       "parallel_group": "K-P1",
       "purpose": "Embedding consumer comparison + CI/native evidence qualification",
@@ -48,6 +54,17 @@
         "callback/thread lifetime",
         "comparison with direct upstream",
         "expected-job matrix distinguishes required/advisory/skipped/swallowed failure"
+      ],
+      "candidate": {
+        "branch": "experiment/mature-recovery-k-e03",
+        "pr": 9,
+        "head": "da1fa84d9552d1a747b75ee3ab4c627267aa6b7a",
+        "workflow_run": 36762466662,
+        "status": "PASS_EMBEDDING_SLICE"
+      },
+      "residual": [
+        "standalone packaging/loader burden",
+        "does not accept Khostty product/control plane/Windows"
       ]
     }
   ],
