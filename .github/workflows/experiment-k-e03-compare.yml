@@ -70,7 +70,7 @@ jobs:
         continue-on-error: true
         run: |
           set -euo pipefail
-          python3 khostty-vt/tools/k_e03_compare.py             --crate-dir khostty-vt             --include-dir upstream-ghostty/include             --lib upstream-ghostty/zig-out/lib/libghostty-vt.so             --source-sha "$(git rev-parse HEAD)"             --library-source-sha "$UPSTREAM_MERGE_BASE"             --library-origin ghostty-upstream-merge-base             --out k-e03-upstream.json
+          python3 khostty-vt/tools/k_e03_compare.py             --crate-dir khostty-vt             --include-dir upstream-ghostty/include             --lib upstream-ghostty/zig-out/lib/libghostty-vt.so             --source-sha "$(git rev-parse HEAD)"             --library-source-sha "$UPSTREAM_MERGE_BASE"             --library-origin upstream-ghostty             --out k-e03-upstream.json
 
       - name: Require both comparison receipts to pass
         run: |
