@@ -1,51 +1,109 @@
-# Khostty candidate mature contract and ontology
+# Khostty mature contract ontology and journeys — authority-anchored 2026-09-30
 
-Program KR-20260929. Source a29aa9c6553d9f42aa68e2919116c0f6d53f329d. Status: PROPOSAL, NOT ACCEPTED; evidence and authority gaps are in FINDINGS.md. This is an initial semantic model, not a complete requirements catalog.
+Authority: current explicit user clarification in `AUTHORITATIVE-INTENT-20260930.md`. This supersedes recovery framing that treated a thin upstream adapter as the default architecture. Khostty is intentionally a purposeful Ghostty fork; individual implementation choices remain subject to research and verification.
 
-## Horizon before stages
+## Product identity
 
-The repository suggests an owned terminal runtime preserving upstream semantics, exposed through native hosts and embedding interfaces, with explicit machine control. It does not yet establish whether the accepted product is primarily a library, desktop terminal, or both. Preserve these as independent projections over a possible shared core; do not silently choose full-fork maintenance or build a new agent platform inside a terminal.
+Khostty is a **Ghostty-derived programmable terminal/runtime** intended to make substantial platform, shell and control-plane improvements and serve as terminal infrastructure/precursor for HeliosLab and agent operation.
 
-Candidate mature outcome: a human, authorized automation client or embedding consumer can create/use/inspect/close terminal state through a documented supported configuration, distinguish display input from child-process input, and receive truthful scoped capability and failure results. Platform and ABI obligations must be recovered rather than invented. A mature supported configuration is more specific than an OS name: host/runtime, artifact, architecture, terminal engine revision, protocol/ABI version and relevant settings matter.
+The product should preserve the terminal quality/semantics inherited from Ghostty while adding capabilities including:
+- Windows support;
+- deeper Zsh/PowerShell/platform integration;
+- stable programmable control of windows/workspaces/tabs/panes/terminals/processes through APIs/sockets;
+- events/introspection needed by users, scripts and agents;
+- removal of AppleScript/UI-automation dependence for supported terminal operations.
 
-## Product-derived projections (not one uniform tree)
+The target control experience is conceptually in the class of cmux/other programmable multiplexed terminals, not necessarily API-compatible with them.
 
-| Projection | Entities / relations | Important non-equivalence |
-|---|---|---|
-| Terminal semantics | Terminal state, parser, display, input modes, screen/scrollback, configuration | Rendering command text is not running a command |
-| Native experience | Instance, window, tab, split topology, focus, child session | A DLL or CLI build is not a working GUI |
-| Embedding | Library artifact, ABI, owning consumer, allocation/thread lifetime, callbacks | A type or header is not an exercised consumer |
-| Machine control | Principal, capability, request, target pane, response, event subscription | Request acknowledged is not effect observed |
-| Lifecycle | Instance epoch, pane identity, child identity, closing/exited/unknown state | Reused numeric handle is not the same pane after restart |
-| Verification / provenance | Accepted criterion, candidate configuration, observation, verifier and raw artifact | Confidence in an inferred trace edge is not authority |
-| Delivery / operations | Build, package, installation, upgrade/rollback, support policy | Publishing an archive is not clean-host qualification |
+## Core ontology
 
-Pillars/capabilities/features may refine this graph asymmetrically. Generic security, accessibility and reliability constraints should attach as shared overlays to relevant subjects, not be cloned into rows for every command. Do not place optional UI/embedding projections on the critical path of an unrelated stage without accepted product intent.
+```
+Khostty Runtime
+  ├─ terminal emulation/render/process semantics (largely inherited Ghostty)
+  ├─ platform host
+  │    ├─ macOS
+  │    ├─ Linux
+  │    └─ Windows
+  ├─ shell integration
+  │    ├─ Zsh
+  │    ├─ PowerShell
+  │    └─ other accepted shells
+  ├─ control graph
+  │    ├─ Instance / epoch
+  │    ├─ Workspace
+  │    ├─ Window
+  │    ├─ Tab
+  │    ├─ Pane
+  │    └─ Terminal / child process
+  ├─ programmable interface
+  │    ├─ socket/session/principal
+  │    ├─ capability discovery
+  │    ├─ commands
+  │    ├─ queries/introspection
+  │    ├─ event subscriptions
+  │    └─ explicit errors/loss/recovery
+  ├─ human UI
+  ├─ HeliosLab / agent consumers
+  └─ optional retained embedding/wrapper projections
+```
 
-## Identity and state decisions to resolve
+A pane ID without instance/epoch/lifecycle semantics is insufficient for robust automation. Display-feed bytes and child-process input remain distinct operations.
 
-Pane identity should be scoped to its terminal instance/epoch; a logical workspace identity may persist, but its live process/handle must not be fabricated after termination. Creation needs causally attributable completion, not the first unrelated new surface. Unsupported operations should be discoverable and fail explicitly. Unknown exit status must remain unknown. Event loss needs explicit detection and a resynchronization strategy.
+## Product projections
 
-These are candidate obligations motivated by K-F01–K-F04 and the user's evidence doctrine. They need accepted rationale and concrete scope before entering a normative requirement set. Whether terminal sessions survive application restart is a product choice; this document does not promise it. At minimum recovery truth must distinguish surviving session, reconstructed configuration and terminated child.
+| Projection | Principal obligation |
+|---|---|
+| Ghostty fidelity | Preserve accepted upstream terminal/render/input/config behavior unless a Khostty decision explicitly changes it |
+| Windows/platform | Native usable host with process/PTY/render/input/window lifecycle, not just a DLL/CLI scaffold |
+| Shell behavior | First-class supported Zsh/PowerShell integration and observable shell/process semantics |
+| Workspace/pane model | Stable inspectable topology and lifecycle identities suitable for human and machine control |
+| Socket/API | Create/query/focus/split/close/input/read/control resources without UI automation |
+| Events | Subscribe to truthful lifecycle/output/focus/title/process/agent-relevant changes with loss/resync semantics |
+| Policy/security | Local/remote principal and capability boundaries appropriate to the control surface |
+| Agent/HeliosLab | Allow agents to operate terminal workspaces robustly and scriptably as infrastructure |
+| Human terminal | Remain a strong interactive terminal rather than becoming an agent-only daemon |
+| Packaging/operations | Install/update/diagnose supported platforms and preserve evidence of qualified builds |
 
-## Actor-to-outcome journeys and stage projections
+## Normative mature journeys
 
-- **K-J-OPERATE:** human installs a supported native artifact, starts a child, interacts with terminal semantics, creates/navigates panes, observes exit, closes and reopens with the documented state policy.
-- **K-J-AUTOMATE:** authorized client discovers capabilities, targets a real pane, performs a declared operation, verifies the intended effect, detects errors/loss and reconnects without affecting an unintended pane.
-- **K-J-EMBED:** consumer installs a versioned library/binding, creates and feeds terminal state, consumes outputs/callbacks and frees it safely under documented threading/ownership.
-- **K-J-SERVICE:** operator upgrades or rolls back, diagnoses a failure and identifies exactly which artifact/configuration was qualified.
+**K-J-HUMAN:** install Khostty on a supported platform, launch shell/processes, use tabs/panes/windows, preserve expected Ghostty-quality terminal behavior and supported shell integration.
 
-These are candidate journey identities, not a checklist proven implemented. Earliest usable projection (CVP) should close one approved audience journey on one supported configuration using the same identity and outcome model intended for maturity. MVP adds the required human/machine or embedding companion path, not merely more commands. Beta widens qualified platforms/consumers and recovery cases. GA requires the accepted install/support/security/accessibility/release obligations. Mature adds only recovered obligations and qualified configurations; it is not an arbitrary feature-count target.
+**K-J-WINDOWS:** install on Windows, launch a real native window/PTY/process, use PowerShell and other accepted shells, split/manage panes and close/recover cleanly. A DLL or `+version` run is not this journey.
 
-Selection between native-first and embedding-first is blocked on product-intent/existence evidence. FakeHost-only protocol success is a primitive, not an earlier usable product stage.
+**K-J-CONTROL:** authenticated/authorized client discovers topology/capabilities, creates a workspace/window/tab/pane, launches a known child with cwd/environment, sends child input, reads terminal state, focuses/resizes/moves/closes resources and receives causally bound results without AppleScript/UI automation.
 
-## Transition debt
+**K-J-EVENTS:** subscribe to resource/process/output/focus/title changes, detect event loss, resynchronize, reconnect after controller replacement and reject stale/wrong-instance targets.
 
-- Existing v1 pane.write semantics must remain explicitly display-feed; child input needs a distinct operation/version contract rather than a silent behavioral flip.
-- Current surface-diff creation and raw pane IDs may require a compatibility adapter around a causal/epoch-aware model. Evaluate migration, not an unplanned rewrite.
-- Windows scaffold cannot inherit GTK qualification. Keep native transport/UI/PTY obligations separately blocked until witnessed.
-- Keep upstream compatibility and custom fork delta independently traceable so upstream updates do not silently invalidate acceptance.
+**K-J-HELIOS:** HeliosLab/agent consumer creates and supervises multiple terminal workspaces/panes, maps them to agent/work identities, observes when attention/action is needed, reads/writes appropriate terminal/process state and survives controller replacement without losing terminal truth.
 
-## Requirement representation when the denominator closes
+**K-J-SHELL:** supported Zsh/PowerShell session exposes accepted prompt/cwd/process/command-boundary semantics needed by human and programmable workflows.
 
-Each distinct accepted obligation receives a stable ID, statement, rationale, authoritative source/decision, parent capability, dependencies, product role, stage/config applicability, journeys, positive and counterexample acceptance, applicable overlay references, implementation/work surfaces, verification strategy, required traces and growth disposition. Implementation states distinguish specified, present, mounted/reachable, persisted, tested and evidenced; stale/conflicting are separate states. None may be inferred from filenames or counts. Scope changes revise the baseline explicitly and do not improve engineering progress retroactively.
+**K-J-EMBED:** retained wrapper/embedding consumer uses the inherited terminal core safely where that projection remains useful. Wrapper ergonomics do not define the whole product.
+
+## Alternatives / bootstrap gate under corrected intent
+
+Comparisons to cmux, WezTerm, Ghoztty and upstream Ghostty remain mandatory, but the question is now:
+
+> Which proven resource models, protocol semantics, event/lifecycle patterns and implementations should Khostty integrate/adapt/learn from so its purposeful fork is better and maintainable?
+
+—not “does the existence of another programmable terminal mean Khostty should stop being one?”
+
+Current cmux documentation is particularly relevant because it exposes a public resource grammar around workspace/screen/pane/terminal, idempotency and socket control. WezTerm demonstrates mature pane IDs, workspace/domain topology, child input and screen introspection. These are design priors and comparison baselines.
+
+## Stage projections
+
+**CVP:** usable Ghostty-derived terminal on the first supported platform plus a truthful narrow programmable spine: enumerate topology, create/split one pane, launch/send child input/read output, close, and survive controller replacement. It must use the mature resource/lifecycle identity model.
+
+**MVP:** adds the required Windows and shell integration slice plus broader pane/window/workspace operations/events sufficient for a real HeliosLab agent workflow.
+
+**Beta:** widens platform/shell/API/event/security/recovery coverage and qualified HeliosLab integrations.
+
+**GA:** supported cross-platform human terminal + stable documented programmable API for accepted configurations, with release/install/upgrade/security/accessibility evidence.
+
+**Mature:** deep programmable terminal/workspace infrastructure with the accepted Windows/shell/control/HeliosLab contract and minimized unnecessary upstream divergence.
+
+## Current implementation consequences
+
+The new JSON agent-control subsystem being unmounted is a **core missing realization**, not evidence it should be deleted. K-E02 should bootstrap from proven cmux/WezTerm/Ghoztty patterns where useful, but its goal is to mount and mature Khostty's intended control plane.
+
+Fork ownership still matters: inherited Ghostty code is not Khostty differentiation, and upstreamable/common improvements should avoid unnecessary divergence. Maintainability is an optimization constraint on the purposeful fork.
