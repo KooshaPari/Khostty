@@ -4,7 +4,7 @@
   "product": "KooshaPari/Khostty",
   "repository_id": 1322607630,
   "observed_on": "2026-09-30",
-  "assessment_pass": 9,
+  "assessment_pass": 10,
   "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
@@ -13,7 +13,9 @@
     "draft_pr": 9,
     "head": "695d6f9e56d9e5869467f8ab44733ecbe8e5433b",
     "status": "UNVERIFIED_EXPERIMENTAL",
-    "baseline": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d"
+    "baseline": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
+    "current_main_drift_check": "TOUCHED build.rs AND screen_dump.rs BLOBS IDENTICAL BETWEEN FROZEN SOURCE AND CURRENT MAIN",
+    "ci": "PENDING; Nix skipped is non-green"
   },
   "status": "INCOMPLETE_BLOCKED",
   "handoff_status": "READY_FOR_PARALLEL_EXPERIMENTAL_IMPLEMENTATION",
