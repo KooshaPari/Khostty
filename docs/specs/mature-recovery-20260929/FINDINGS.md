@@ -217,3 +217,20 @@ Potential surviving Khostty differentiation is consequently narrower and testabl
 - **causally confirmed effects / stable result identity**, rather than asynchronous request acceptance.
 
 These are candidate gaps, not wins. K-E02 must reproduce the same child-effect/identity/reconnect journey and record whether the stronger semantics justify Khostty's extra protocol/maintenance surface.
+
+
+## K-F17 — Windows hosting is commodity/contested implementation, not unique differentiation
+
+Current upstream Ghostty still has no accepted Win32 application runtime, but substantial external implementations now directly contest Khostty's Windows thesis.
+
+Most important current comparator: `shiweis/ghostty-windows@119b9270c8585fa3ae6969c353767fab5a32e438`, pushed 2026-09-02. Its source contains a real `src/apprt/win32/App.zig` (blob `c0bbba29632fbf5f34c9d2310406d9159fd52c55`) with Win32 class registration, message-loop/app lifecycle, windows/tabs/splits, WGL rendering surfaces, ConPTY/core integration, input/IME/search/clipboard/notifications and other application actions. Root license is MIT. Its README claims feature-complete apprt coverage and daily usability; those broad quality claims remain external assertions until independently reproduced.
+
+Unlike the older April prototype, this fork has current native CI. Workflow `.github/workflows/windows-ci.yml` (blob `d01be34404fce382fe71cd568aa8151193bc2db9`) runs on `windows-latest`, executes `zig build test -Dapp-runtime=win32 -Dtarget=x86_64-windows-gnu`, then builds the app. Pinned head `119b927…` has completed SUCCESS run `33633427282` on 2026-09-02; both Build & Test and zig fmt jobs succeeded. This is stronger than README-only evidence, though still the external project's own suite rather than our independent native journey.
+
+Its current-upstream compare is diverged: 241 commits ahead / 362 behind with merge base `20abdb50a6216c450d6d4d010c41c7edf5ab15b2` and 96 changed files in the GitHub compare. This is material implementation and material maintenance debt.
+
+Historical upstream PR #12167 from mattn is also instructive but no longer the strongest implementation baseline. It was closed automatically because the author was not vouched; maintainer comments separately raised review size, unresolved Windows toolkit direction and especially lack of a long-term Windows maintainer. User testing then exposed AltGr and kitty-graphics issues in the early port. These facts are maintenance/convergence warnings, not evidence that Win32 hosting is technically invalid.
+
+**Architecture consequence:** building Khostty's Windows runtime from scratch is no longer the default. K-E02 must compare at least (a) Khostty's scaffold/intended host, (b) adapting the pinned current Win32 fork or isolating its runtime delta onto a current upstream base, and (c) a thinner libghostty-based Windows host where applicable. Compare exact native journey behavior, upstream merge burden, patch surface, security/accessibility/IME/graphics completeness and ownership cost.
+
+Khostty's Windows-specific differentiation is therefore falsified at the feature-existence level. It can still justify its own implementation only by demonstrating materially better integration/maintainability or accepted requirements the existing Win32 fork does not meet.
