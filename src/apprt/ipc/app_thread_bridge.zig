@@ -353,3 +353,33 @@ test "cancelled queued request runs cleanup exactly once" {
     try std.testing.expectEqual(@as(usize, 1), counters.cleaned);
     request.releaseCaller();
 }
+
+
+test "wrong request state cannot execute callback twice" {
+    var bridge = Bridge.init(std.testing.io);
+    var value: usize = 0;
+    const Ctx = struct { fn run(ptr:*anyopaque) void { const n:*usize=@ptrCast(@alignCast(ptr)); n.* += 1; } };
+    const request=try Request.create(std.testing.allocator,&value,Ctx.run);
+    _=try bridge.submit(request);
+    try std.testing.expectEqual(@as(usize,1),bridge.drainOnAppThread());
+    try std.testing.expectEqual(@as(usize,0),bridge.drainOnAppThread());
+    try std.testing.expectEqual(@as(usize,1),value);
+    try std.testing.expectEqual(State.completed,try request.wait(null));
+    request.releaseCaller();
+}
+
+test "queue-full publication cancels request without executing it" {
+    var bridge=Bridge.init(std.testing.io);
+    var values:[65]usize = [_]usize{0} ** 65;
+    const Ctx=struct { fn run(ptr:*anyopaque) void { const n:*usize=@ptrCast(@alignCast(ptr)); n.* += 1; } };
+    var requests:[65]*Request=undefined;
+    var i:usize=0;
+    while(i<64):(i+=1){ requests[i]=try Request.create(std.testing.allocator,&values[i],Ctx.run); _=try bridge.submit(requests[i]); }
+    requests[64]=try Request.create(std.testing.allocator,&values[64],Ctx.run);
+    try std.testing.expectError(error.QueueFull,bridge.submit(requests[64]));
+    try std.testing.expectEqual(State.canceled,try requests[64].wait(null));
+    requests[64].releaseCaller();
+    try std.testing.expectEqual(@as(usize,64),bridge.drainOnAppThread());
+    for(requests[0..64],0..) |req,idx| { try std.testing.expectEqual(State.completed,try req.wait(null)); try std.testing.expectEqual(@as(usize,1),values[idx]); req.releaseCaller(); }
+    try std.testing.expectEqual(@as(usize,0),values[64]);
+}
