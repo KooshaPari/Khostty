@@ -32,3 +32,19 @@ Do not intentionally dereference freed native state merely to manufacture a cras
 ## Disposition
 
 Keep experimental. A successful wrapper experiment can justify preserving/extracting the wrapper without justifying the Khostty terminal fork, Windows runtime, or agent IPC.
+
+
+## Independent audit delta — 2026-09-30
+
+The first native K-E03 run built `libghostty-vt.a` successfully and recorded SHA-256 `6b477a3844fc8767713a2ea43e6aa10bab5956d468bac683eb91da6860036f0d`, but the harness itself then failed with a Python syntax error caused by literal `\\n` text. This is a harness failure, not wrapper evidence, and no experimental credit is awarded from that run.
+
+The syntax defect is fixed. The harness now derives `GHOSTTY_VT_LINK_KIND=static` when the supplied artifact is `.a`; otherwise Rust could search for a dylib while the workflow had built a static archive. The receipt records link kind.
+
+The experiment workflow now:
+- validates harness syntax before the expensive native build;
+- builds and hashes the exact Khostty candidate static library;
+- executes wrapper + direct-C comparison against it;
+- separately checks out Ghostty at merge base `d4c88d8069912b653d707191388ca98e24751f12`, builds that native library, and runs the **same current wrapper/direct-C harness** against upstream headers/library;
+- pins checkout/toolchain/artifact actions and records tool versions.
+
+Use the exact **push** workflow run as candidate evidence. PR-event runs can incorporate the moving PR base and are not equivalent to branch-head execution because Khostty main has advanced beyond the frozen recovery source.
