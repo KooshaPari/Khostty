@@ -64,7 +64,7 @@ Non-goals (v1):
 | Concurrency | One connection may pipeline requests; responses arrive in request order |
 | Encoding | JSON. Binary payloads are base64 **not** used in v1: `pane.write.data` is a UTF-8 string and `\u0000`-style escapes carry control bytes |
 
-`pane.write` carries terminal input as a JSON string, so an agent writes
+`pane.send_input` is reserved for real child/PTY input and currently returns `host_unsupported`; reserving a distinct wire identity prevents later implementation from silently changing `pane.write` compatibility semantics.\n\n`pane.write` carries terminal input as a JSON string, so an agent writes
 `"data": "\u001b[31mred\u001b[0m"` or `"data": "ls -la\n"`. Escapes are decoded by
 the JSON parser before the bytes reach the terminal parser.
 
