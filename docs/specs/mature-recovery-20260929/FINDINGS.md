@@ -167,3 +167,17 @@ Initial exact-row projection shows large inherited/common families (runtime core
 At the top-level Git-object boundary against the merge base, 43 current entries are identical, 13 are added and 6 modified, with no top-level removal. Entire large trees proven identical include `macos/`, `test/`, `include/`, `example/`, `flatpak/`, `images/`, `nix/`, `pkg/`, `po/`, `snap/`, and `vendor/`.
 
 The meaningful fork candidates are consequently narrower: Windows host/runtime, the ten new agent-server files plus necessary hooks, wrapper packages, WASM distribution, conformance/bench infrastructure and fork-specific build/CI/distribution changes. The earlier 207-ahead/145-behind count is a topology/maintenance observation, not a count of differentiated capabilities.
+
+## K-F14 — current CI can manufacture green aggregate gates from advisory failures (blocking evidence trust)
+
+The fork-owned `.github/workflows/ci.yml` detects nested languages correctly now, but most substantive jobs are configured `continue-on-error: true`, and Rust/Python/Go/TypeScript commands frequently append `|| echo "::warning::..."`, converting tool/test failure into a successful step. The macOS build job is explicitly disabled with `if: ${{ false }}`.
+
+The aggregate `ci / lint` gate treats downstream job result `success` or `skipped` as acceptable. `ci / test` depends only on `lint` and performs no tests; it prints `All test stages passed (gated via ci / lint)`. Therefore a required branch context named `ci / test` can be green without any independent test stage, while failed advisory tests can be swallowed upstream.
+
+This is not merely a historical skipped-language bug. It is current workflow semantics at the frozen source. A product acceptance grader must maintain an expected-job matrix and distinguish advisory telemetry from required qualification. Skipped macOS/native work and swallowed test failures are non-green for configurations that require them.
+
+## K-F15 — Rust wrapper integration tests can disappear when the native library is absent
+
+`khostty-vt/build.rs` deliberately allows the crate to typecheck when no prebuilt `libghostty-vt` is found and only sets `ghostty_vt_linked` after locating a real library. `khostty-vt/tests/terminal.rs` begins with `#![cfg(ghostty_vt_linked)]`, so its native integration tests compile to nothing when the library is absent.
+
+That behavior is reasonable for developer ergonomics but unsafe as acceptance evidence unless the expected configuration requires `ghostty_vt_linked` and records the exact native library artifact. A plain successful `cargo test` is therefore not sufficient proof that Rust↔native integration ran. K-E03 must require a linked native candidate and a positive sentinel proving at least one integration test executed.
