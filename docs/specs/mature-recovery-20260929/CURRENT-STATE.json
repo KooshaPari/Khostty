@@ -4,7 +4,7 @@
   "product": "KooshaPari/Khostty",
   "repository_id": 1322607630,
   "observed_on": "2026-09-30",
-  "assessment_pass": 10,
+  "assessment_pass": 9,
   "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
@@ -25,8 +25,8 @@
     "K-E03_NATIVE_EXECUTION_AND_UPSTREAM_COMPARISON"
   ],
   "dependent_experimental_work_packages": {},
-  "contract_authority": "CANDIDATE_NOT_ACCEPTED_PRIMARY_SOURCE_STILL_REQUIRED",
-  "authority_correction": "Pass 5 retrieval returned prior assistant summaries rather than independent primary confirmation of earlier claimed user instructions.",
+  "contract_authority": "CURRENT_USER_INTENT_AUTHORITATIVE_20260930",
+  "authority_correction": "Prior framing that broad fork ownership was not the default assumption is superseded. Subsystem alternatives still optimize bootstrap/maintenance but do not challenge accepted substantial-fork product identity.",
   "source_denominator": {
     "state": "OPEN_SEMANTIC_RESOLUTION",
     "tracked_tree_enumeration": "CLOSED",
@@ -63,7 +63,7 @@
   ],
   "abi_manifest_disposition": "UPSTREAM_INHERITED_NOT_FORK_DIFFERENTIATION",
   "windows_gui_state": "APP_RENDERER_SURFACE_AND_PIPE_TRANSPORT_IMPLEMENTATION_GAPS_CONFIRMED",
-  "existence_gate": "OPEN_SUBSYSTEM_DECISION_REQUIRED",
+  "existence_gate": "OPEN_OPTIMIZE_PURPOSEFUL_FORK_NOT_THIN_ADAPTER_EXISTENCE",
   "independent_fresh_review": "NOT_PERFORMED",
   "invalid_catalogs_eligible_for_grading": false,
   "existing_ci_enforcement_changed": false,
@@ -212,5 +212,19 @@
     "compile_workflow": "QUEUED",
     "critical_blocker": "DETACHED_CONNECTION_THREADS_CAN_OUTLIVE_SERVER_DEPENDENCIES_AND_NATIVE_APP",
     "acceptance": false
-  }
+  },
+  "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
+  "product_horizon": "PURPOSEFUL_GHOSTTY_FORK_FOR_WINDOWS_SHELL_PLATFORM_IMPROVEMENTS_AND_CMUX_CLASS_PROGRAMMABLE_TERMINAL_CONTROL_AS_HELIOSLAB_INFRASTRUCTURE",
+  "core_spine": [
+    "Ghostty terminal semantics",
+    "Windows/platform runtime",
+    "Zsh/PowerShell integration",
+    "windows/tabs/panes/workspaces identities",
+    "socket/API control and events",
+    "authorization/policy",
+    "human terminal UX",
+    "HeliosLab/agent integration",
+    "lifecycle/recovery",
+    "packaging/support"
+  ]
 }
