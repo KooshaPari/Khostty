@@ -77,6 +77,24 @@ def main():
         env["CARGO_TARGET_DIR"] = str(root / "target-linked")
         rust_run = run(["cargo", "run", "--quiet"], cwd=rust, env=env)
 
+        # Compile-fail ownership control: a Search borrows terminal identity through
+        # its API contract; Rust must not allow the terminal to be moved/dropped
+        # while a later search operation still needs it. This is safer evidence
+        # than deliberately dereferencing a freed native handle.
+        lifetime = root / "rust-lifetime"; lifetime.mkdir(); (lifetime / "src").mkdir()
+        (lifetime / "Cargo.toml").write_text(
+            '[package]\nname="k_e03_lifetime"\nversion="0.0.0"\nedition="2021"\n'
+            f'\n[dependencies]\nkhostty-vt={{path="{crate_toml}"}}\n'
+        )
+        (lifetime / "src/main.rs").write_text(
+            'use khostty_vt::{Search, Terminal};\n'
+            'fn main() -> Result<(), khostty_vt::GhosttyError> {\n'
+            ' let t = Terminal::new(20,4)?; let mut s = Search::new(&t)?;\n'
+            ' drop(t); s.set_needle(&t, "x")?; Ok(()) }\n'
+        )
+        lifetime_env = env.copy(); lifetime_env["CARGO_TARGET_DIR"] = str(root / "target-lifetime")
+        lifetime_compile = run(["cargo", "check", "--quiet"], cwd=lifetime, env=lifetime_env)
+
         # Prove the fail-closed control separately with a fresh target dir.
         bad = env.copy()
         bad["GHOSTTY_VT_LIB"] = str(root / "definitely-missing-libghostty-vt.so")
@@ -115,7 +133,7 @@ def main():
         }
         checks = {
             "rust_linked_consumer_executed": rust_run["returncode"] == 0 and "linked-ok resize-render-search-snapshot" in rust_run["stdout"],
-            "missing_library_fails_closed": rust_missing["returncode"] != 0,
+            "missing_library_fails_closed": rust_missing["returncode"] != 0,\n            "rust_lifetime_misuse_rejected": lifetime_compile["returncode"] != 0,
             "direct_c_consumer_executed": crun["returncode"] == 0 and "linked-ok" in crun["stdout"],
         }
         receipt = {
@@ -132,7 +150,7 @@ def main():
             "checks": checks,
             "metrics": metrics,
             "rust_linked": rust_run,
-            "rust_missing_library_control": rust_missing,
+            "rust_missing_library_control": rust_missing,\n            "rust_lifetime_compile_fail_control": lifetime_compile,
             "direct_c_build": cbuild,
             "direct_c_run": crun,
             "verdict": "PASS_EXPERIMENT" if all(checks.values()) else "FAIL_EXPERIMENT",
