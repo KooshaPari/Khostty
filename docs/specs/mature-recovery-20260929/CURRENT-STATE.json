@@ -15,9 +15,7 @@
   "parallel_general_dev_handoff": false,
   "handoff_document": "DEVELOPER-HANDOFF.md",
   "ready_work_packages": [
-    "K-E01-EMBED",
-    "K-E02",
-    "K-E03"
+    "K-E01"
   ],
   "dependent_experimental_work_packages": {},
   "contract_authority": "CANDIDATE_NOT_ACCEPTED_PRIMARY_SOURCE_STILL_REQUIRED",
@@ -31,7 +29,7 @@
   },
   "mature_completion": null,
   "specification_completion": null,
-  "journey_closure": "AGENT_SERVER_ADJACENT_UNMOUNTED_BY_SOURCE_AND_SEARCH; NO_NATIVE_K_E02_RUN",
+  "journey_closure": "AGENT_JSON_SERVER_SOURCE_PROVEN_ADJACENT_TO_INHERITED_IPC_AND_UNMOUNTED_BY_SOURCE_TRACE; NO_NATIVE_RUN",
   "native_tests_run_this_pass": false,
   "static_checks_executed": "TWO_FULL_SOURCE_BLOBS_VERIFIED_AND_RUNTIME_BODIES_CHECKED",
   "experiment_receipt": "pass5/EXPERIMENT-RECEIPT.json",
@@ -71,25 +69,20 @@
   "progress_policy": "Static diagnostics, imported assertions, native observations and product acceptance are distinct. No scalar document-count or test-count completion.",
   "tracked_tree_enumeration": {
     "state": "CLOSED",
-    "exact_non_fuzz_blob_rows": 2138,
-    "all_top_level_trees_covered": true,
-    "all_recursive_responses_untruncated": true,
+    "explicit_non_fuzz_blob_rows": 2138,
     "fuzz_family": {
       "blobs": 4014,
       "corpus_blobs": 4002
     },
+    "all_top_level_trees_covered": true,
+    "all_recursive_responses_untruncated": true,
     "summary": "inventory/SUMMARY.json"
   },
   "K_E01_progress": {
     "tracked_tree_inventory": "COMPLETE",
-    "top_level_ownership": "COMPLETE_AT_TREE_OBJECT_BOUNDARY",
-    "agent_ipc_mount_trace": "CLOSED_UNMOUNTED",
-    "semantic_family_resolution": "IN_PROGRESS",
-    "full_native_callgraph": "PARTIAL",
-    "control_path_prerequisite": "CLOSED_FOR_K_E02",
-    "embedding_wrapper_and_native_consumer": "OPEN",
-    "ci_evidence_semantics": "CURRENT_FALSE_GREEN_MECHANISMS_IDENTIFIED",
-    "embedding_experiment_prerequisite": "SUFFICIENTLY_CLOSED_FOR_K_E03_BUT_SEMANTIC_CLEANUP_CONTINUES"
+    "fork_ownership_map": "SUBSTANTIALLY_COMPLETE_FOR_HIGH_PRIORITY_SURFACES",
+    "agent_server_mount_trace": "UNMOUNTED_AT_FROZEN_SOURCE",
+    "full_semantic_family_resolution": "IN_PROGRESS"
   },
   "tracked_product_relevant_inventory": {
     "unique_blobs": 2055,
