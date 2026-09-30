@@ -268,3 +268,18 @@ Its scope must still be described accurately: a token file intentionally readabl
 K-E02 must therefore state the intended threat model and record runtime-directory/socket modes, token lifecycle, and whether per-client/per-pane policy is required. If mature scope needs isolation among agents under one account, the design needs an additional identity/policy mechanism; possession of the shared user token alone is insufficient.
 
 Do not award differentiation merely because Khostty uses a bearer token while another terminal uses an owner-only local socket. Compare the accepted trust boundary and observed behavior.
+
+
+## K-F13 — Rust wrapper can typecheck without linking libghostty-vt; compile green is not consumer evidence
+
+The fork-owned Rust wrapper's default feature includes `link`, but `build.rs` deliberately treats a missing prebuilt `libghostty-vt` as non-fatal: it prints a warning and emits no linker directive so `cargo check` continues to work. Only when a library is actually found does it emit `cargo:rustc-cfg=ghostty_vt_linked`, linker search/library/rpath arguments, and allow the native examples/integration path to qualify.
+
+Therefore `cargo check` success can coexist with **no linked terminal library**. Docs/no-run examples and pure Rust unit tests cannot establish wrapper integration. K-E03 acceptance must bind to the actual native library revision/path and execute a linked consumer.
+
+This is intentional developer ergonomics, not itself a bug. It becomes a false green only if build/check status is promoted to wrapper/product acceptance.
+
+## K-F14 — wrapper packaging is checkout-relative in Go/Rust and discovery-based in Python; standalone distribution is not yet established
+
+Rust searches repository-relative `zig-out/lib`, `build/lib`, and `dist/lib` unless overridden. Go's default cgo directives point one directory above the module to the checkout's `include` and `zig-out/lib`, with a custom build tag required for external placement. Python accepts explicit path/dir and system-loader discovery but still requires an already-built shared library. WASM builds its module through the repository Zig build.
+
+Thus “polyglot bindings exist” and “independently consumable packages exist” are different claims. K-E03 must measure install/build from outside the Khostty checkout, not only in-tree tests. If standalone packaging is accepted product scope, current checkout-relative defaults are transition debt.
