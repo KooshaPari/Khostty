@@ -127,3 +127,10 @@ Therefore K-E02 must be split:
 3. **K-E02c native oracle:** real pane identity, nonce effect appropriate to the operation, concurrent unrelated pane creation, wrong/stale target, controller replacement, event loss/resync, and shutdown with an idle client.
 
 A direct Server.bind(... AppHost.host()) from GTK init that leaves connection threads touching app state is an automatic FAIL even if protocol tests pass. Windows remains out of this slice because its App lifecycle is unimplemented at the frozen source.
+
+
+## Pass 9 authoritative product constraint
+
+Current user intent confirms Khostty is intentionally a substantial Ghostty fork and programmable terminal precursor/infrastructure for HeliosLab. **Do not optimize K-E02 toward deleting the control plane or replacing Khostty with a thin external adapter.** Optimize the fork by minimizing unnecessary divergence while realizing the accepted capabilities: Windows, deeper Zsh/PowerShell/platform behavior, and a cmux-class socket/API control plane that removes AppleScript/UI automation for supported terminal operations.
+
+For K-E02, use external terminals as design priors. A mature resource graph should be able to represent at least instance/epoch → workspace → window/tab → pane → terminal/child, with stable targeting, capability discovery, explicit errors, events, controller replacement and stale-target rejection. Exact naming/API compatibility is not required. The experiment should mount the existing agent server through the real application lifecycle in a way that can grow toward that graph rather than hard-code one-off pane commands.
