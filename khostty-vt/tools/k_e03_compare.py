@@ -155,7 +155,8 @@ def main():
             "direct_c_nonblank_lines": sum(
                 1 for line in direct_text.splitlines() if line.strip()
             ),
-            "runtime_loader_path_required": lib.suffix != ".a",\n                "out_of_tree_rust_manifest_lines": sum(
+            "runtime_loader_path_required": lib.suffix != ".a",
+            "out_of_tree_rust_manifest_lines": sum(
                 1 for line in (rust / "Cargo.toml").read_text().splitlines() if line.strip()
             ),
             "install_steps": [
