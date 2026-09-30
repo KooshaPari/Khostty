@@ -7,8 +7,8 @@ Frozen product source: `a29aa9c6553d9f42aa68e2919116c0f6d53f329d`.
 Every top-level Git tree at the frozen revision was enumerated with untruncated Git-tree responses.
 
 - `TRACKED-TREE-A.json`: 1,283 exact blob rows across runtime/docs/wrappers/conformance/WASM/packaging/CI/bench.
-- `TRACKED-TREE-B.json`: 855 exact blob rows across macOS/public API/examples/distribution/localization/vendor/support plus root files.
-- **Explicit non-fuzz blob rows: 2,138.**
+- `TRACKED-TREE-B.json`: 834 exact blob rows across macOS/public API/examples/distribution/localization/vendor/support plus root files.
+- **Raw A+B rows: 2,117; 62 overlapping paths; unique non-fuzz paths: 2,055; object-ID conflicts: 0.**
 - Test tree separately resolved structurally: `fuzz-libghostty` = 4,014 blobs, including **4,002 corpus blobs**; Windows test subtree = 3 blobs; test root also contains 3 files.
 - No top-level tree remains structurally uncovered.
 
