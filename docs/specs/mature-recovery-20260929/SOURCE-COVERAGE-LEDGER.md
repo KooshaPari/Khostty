@@ -2,7 +2,7 @@
 
 Baseline: Khostty `a29aa9c6553d9f42aa68e2919116c0f6d53f329d`; registry `85d7cd00cf59c379c05b740e8130a85b0d5bd31b`. Date: 2026-09-29.
 
-**SEMANTIC DENOMINATOR OPEN; TRACKED-TREE ENUMERATION CLOSED.** Pass 6 enumerated every top-level Git tree at the frozen source with untruncated responses. `inventory/TRACKED-TREE-{A,B}.json` preserve 2,138 exact non-fuzz blob rows; the unchanged test tree separately contains 4,014 fuzz-family blobs (4,002 corpus seeds) plus Windows/root test files. This closes structural tracked-file coverage only. Meaningful semantic-source total/resolved/fraction remain unknown; inherited corpus/file counts cannot become requirement counts.
+**SEMANTIC DENOMINATOR OPEN; TRACKED-TREE ENUMERATION CLOSED.** Pass 6 enumerated every top-level Git tree at the frozen source with untruncated responses. `inventory/TRACKED-TREE-{A,B}.json` preserve 2,117 raw A+B rows with 62 exact-path overlaps, yielding 2,055 unique non-fuzz paths and zero object-ID conflicts; the unchanged test tree separately contains 4,014 fuzz-family blobs (4,002 corpus seeds) plus Windows/root test files. This closes structural tracked-file coverage only. Meaningful semantic-source total/resolved/fraction remain unknown; inherited corpus/file counts cannot become requirement counts.
 
 Resolution requires all six: meaning understood; contradictions disposed; obligations extracted or explicitly non-normative; actual relevant surfaces identified; stage/journey consequences considered; verification consequences designed. A family also needs a justified finite member inventory. Split sources where authority differs; do not count mirrored documents twice. Retain negative searches as search receipts, not absence proofs.
 
