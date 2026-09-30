@@ -56,3 +56,30 @@ This is direct architectural prior art for K-E02a:
 - distinguish PTY child input from parser/display feed.
 
 It does not establish Ghoztty as the product choice: the inspected implementation is macOS/Swift-specific, has a different protocol and feature scope, and has not been runtime-qualified here. But it materially raises the custom-build burden: Khostty cannot claim the app-thread bridge or stable caller-pane targeting concept as novel, and should adapt/learn from this pattern rather than invent an unsafe direct mount.
+
+## Pass 10 Windows comparator expansion — do not collapse onto one fork
+
+Fresh source inspection on 2026-09-30 materially expands the Windows bootstrap set.
+
+### shiweis/ghostty-windows
+
+Current README claims a native Win32 runtime with WGL/OpenGL, ConPTY, DirectWrite discovery, IME, tabs/splits, PowerShell integration and 66/66 apprt action coverage. Its documented build target is Zig 0.16 with `-Dapp-runtime=win32 -Dtarget=x86_64-windows-gnu`; it also documents 25+ Windows/WSL-driven tests. Packaging is explicitly still incomplete. Treat feature claims as source assertions until Khostty's held-out build/runtime harness reproduces them.
+
+### cullendotdev/winghostty
+
+The current status/capability documents describe another substantial Win32 host: Windows 10/11 x64+ARM64, native windows/tabs/splits, IME, session-state restore, shell profiles including PowerShell, WGL terminal rendering plus separate D3D11/DirectComposition chrome, partial UI Automation, local automation through JSON/list + allowlisted perform-action IPC, and packaged WinGet/Scoop distribution. Its own docs call accessibility partial and Win32 extraction incomplete. This is a distinct architecture and therefore a useful contradiction to any assumption that one Win32 host shape is uniquely correct.
+
+### upstream ecosystem signal
+
+The upstream Windows discussion in 2026 contains multiple active approaches, including a WinUI 3 + DirectX/libghostty prototype and a separate Rust-shell Windows port. Upstream discussion also continues to treat frontend/framework choice as unsettled. Therefore Khostty must not equate "Windows support" with blindly transplanting one existing fork.
+
+### Revised experimental comparison
+
+Before custom Windows host implementation, compare at least these viable families on the same Khostty obligations:
+
+1. adapt the substantial Zig/Win32 apprt delta;
+2. adapt the winghostty Win32 host and its automation/session-state ideas;
+3. thin libghostty host using a native Windows UI stack where that lowers merge debt;
+4. custom Khostty host only for obligations still unserved after the above.
+
+The comparison must exercise native build, ConPTY child nonce input/output, exact pane identity, tabs/splits, PowerShell cwd/title/prompt integration, IME, restart/session semantics, automation/control-plane mounting, packaging, accessibility, and measured upstream-sync conflict burden. README capability counts are not acceptance evidence.
