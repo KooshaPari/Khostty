@@ -188,7 +188,7 @@
     "new_run": 36744824103,
     "status": "QUEUED"
   },
-  "K_E02_status": "DIRECT_MOUNT_NEGATIVE_BASELINE_REJECTED; K-E02A_APP_THREAD_BRIDGE_NEXT",
+  "K_E02_status": "K-E02A_APP_THREAD_BRIDGE_CANDIDATE_ACTIVE",
   "K_E02_guard": "DIRECT_SERVER_BIND_WITH_CROSS_THREAD_APPHOST_ACCESS_IS_FAIL",
   "K_E03_status": "EXPERIMENTALLY_ACCEPTED_EMBEDDING_SLICE_ONLY; PACKAGING_BURDEN_REMAINS; DOES_NOT_ACCEPT_FORK_OR_CONTROL_PLANE",
   "K_E03_partial_evidence": {
@@ -213,9 +213,15 @@
   },
   "K_E02": {
     "negative_baseline_pr": 10,
-    "negative_baseline_head": "1d456d6de0442b09f2a34caa65a96a5fffb92e11",
     "direct_mount": "REJECTED_THREADING_AND_LIFECYCLE_SHAPE",
-    "next": "K-E02a correlated/cancellable app-thread bridge; then server lifecycle; then native oracle",
+    "app_thread_bridge": {
+      "branch": "experiment/mature-recovery-k-e02a-app-bridge",
+      "pr": 11,
+      "head": "17a24ab58a34c7e33217b8298c4e5de2daf9b3c5",
+      "workflow_run": 36764384261,
+      "status": "QUEUED"
+    },
+    "next": "grade primitive; project one real pane operation through app thread; then K-E02b server lifecycle",
     "acceptance": false
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
