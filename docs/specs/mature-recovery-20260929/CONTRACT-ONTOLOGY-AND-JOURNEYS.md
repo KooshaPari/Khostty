@@ -107,3 +107,21 @@ Current cmux documentation is particularly relevant because it exposes a public 
 The new JSON agent-control subsystem being unmounted is a **core missing realization**, not evidence it should be deleted. K-E02 should bootstrap from proven cmux/WezTerm/Ghoztty patterns where useful, but its goal is to mount and mature Khostty's intended control plane.
 
 Fork ownership still matters: inherited Ghostty code is not Khostty differentiation, and upstreamable/common improvements should avoid unnecessary divergence. Maintainability is an optimization constraint on the purposeful fork.
+
+
+## Authoritative horizon correction — 2026-09-30
+
+Current user intent resolves the product as a deliberate Ghostty fork and programmable terminal substrate for Helios/HeliosLab. The mature contract must therefore include, as accepted capability families rather than speculative breadth:
+
+- cross-platform native runtime with Windows as a real supported target;
+- shell-aware behavior with explicit supported-shell matrix, including Zsh and PowerShell needs;
+- deep programmable topology/state control over windows/workspaces/tabs/panes/surfaces as the chosen Khostty ontology evolves;
+- first-class child input, terminal observation/search, focus/targeting, lifecycle and event subscriptions;
+- socket/API capability discovery and access policy;
+- stable enough interfaces for Helios/agents to build on without AppleScript/UI automation.
+
+Upstream Ghostty currently documents automatic shell integration for bash/elvish/fish/nushell/zsh, but not PowerShell. PowerShell therefore enters the gap ledger as a concrete accepted research/build family, while Zsh work should begin by identifying Khostty-specific unmet behavior beyond upstream rather than duplicating it.
+
+cmux provides a useful API baseline for explicit workspace/surface identity, JSON socket request IDs, capabilities, targeted send/focus and access modes. Khostty need not clone cmux's ontology, but equivalent product obligations cannot be dismissed as optional if Helios requires them.
+
+The terminal remains a substrate, not Helios itself: durable agent task scheduling and product-development truth remain outside Khostty.
