@@ -1,0 +1,28 @@
+name: Experiment - K-E02a app-thread bridge
+
+on:
+  push:
+    branches: [experiment/mature-recovery-k-e02a-app-bridge]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/App.zig"
+      - "src/apprt/ipc/app_thread_bridge.zig"
+      - ".github/workflows/experiment-k-e02a-app-bridge.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/install-zig
+      - name: Format gate
+        run: zig fmt --check src/App.zig src/apprt/ipc/app_thread_bridge.zig
+      - name: Bridge unit controls
+        run: zig test src/apprt/ipc/app_thread_bridge.zig
+      - name: Compile core path
+        run: zig build -Dapp-runtime=gtk -Doptimize=Debug
