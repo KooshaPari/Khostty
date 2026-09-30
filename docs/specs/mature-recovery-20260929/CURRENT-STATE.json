@@ -16,13 +16,10 @@
   "handoff_document": "DEVELOPER-HANDOFF.md",
   "ready_work_packages": [
     "K-E01-EMBED",
-    "K-E02"
+    "K-E02",
+    "K-E03"
   ],
-  "dependent_experimental_work_packages": {
-    "K-E03": [
-      "K-E01-EMBED"
-    ]
-  },
+  "dependent_experimental_work_packages": {},
   "contract_authority": "CANDIDATE_NOT_ACCEPTED_PRIMARY_SOURCE_STILL_REQUIRED",
   "authority_correction": "Pass 5 retrieval returned prior assistant summaries rather than independent primary confirmation of earlier claimed user instructions.",
   "source_denominator": {
@@ -91,7 +88,8 @@
     "full_native_callgraph": "PARTIAL",
     "control_path_prerequisite": "CLOSED_FOR_K_E02",
     "embedding_wrapper_and_native_consumer": "OPEN",
-    "ci_evidence_semantics": "CURRENT_FALSE_GREEN_MECHANISMS_IDENTIFIED"
+    "ci_evidence_semantics": "CURRENT_FALSE_GREEN_MECHANISMS_IDENTIFIED",
+    "embedding_experiment_prerequisite": "SUFFICIENTLY_CLOSED_FOR_K_E03_BUT_SEMANTIC_CLEANUP_CONTINUES"
   },
   "tracked_product_relevant_inventory": {
     "unique_blobs": 2055,
