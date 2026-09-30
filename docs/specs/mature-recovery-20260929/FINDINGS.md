@@ -257,3 +257,14 @@ Exact top-level Git-object comparison against the merge base yields 43 identical
 High-priority recursive comparison further shows all 36 inspected `src/terminal/c/` public-ABI blobs identical, while all 11 Windows runtime blobs are added. The product's existence/differentiation gate must therefore evaluate the small fork-owned surfaces—Windows host, agent server integration, wrappers/WASM/conformance/build integration—not the inherited terminal as though it were Khostty-authored value.
 
 This does not make inherited behavior irrelevant to product acceptance; it changes ownership, maintenance and alternative-stack reasoning.
+
+
+## K-F18 — IPC token is a user-session control, not per-process identity
+
+The agent IPC auth is fail-closed for non-ping requests and uses a generated token file with mode 0600. That is useful request authentication.
+
+Its scope must still be described accurately: a token file intentionally readable by the current OS user does not distinguish mutually untrusted processes running as that same user. The inspected Unix server also does not explicitly set the socket mode after listen; supported-platform filesystem modes should be measured rather than inferred from defaults.
+
+K-E02 must therefore state the intended threat model and record runtime-directory/socket modes, token lifecycle, and whether per-client/per-pane policy is required. If mature scope needs isolation among agents under one account, the design needs an additional identity/policy mechanism; possession of the shared user token alone is insufficient.
+
+Do not award differentiation merely because Khostty uses a bearer token while another terminal uses an owner-only local socket. Compare the accepted trust boundary and observed behavior.
