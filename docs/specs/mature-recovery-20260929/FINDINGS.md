@@ -102,7 +102,7 @@ Top-level Git-object comparison against merge base gives 43 identical entries, 1
 This sharply narrows the fork-owned architecture review to Windows, the ten-file agent stack and required hooks, wrappers/WASM/conformance/bench, plus modified build/CI/distribution surfaces. See `inventory/FORK-OWNERSHIP.{md,json}`.
 
 
-## K-F11 — fork-aware caller graph corroborates that the new agent IPC is not mounted by application startup
+### Additional evidence for K-F12 — fork-aware caller graph corroboration
 
 A fork-aware GitHub code-search pass at the frozen repository searched the concrete integration symbols rather than filenames alone. `AppHost` appears only in `src/apprt/ipc/app_host.zig`, `protocol.md`, and the historical WBS. `Server.bind` appears only in the protocol example, server implementation and WBS. `pane.Manager.init`, broker initialization and `setEventBroker` similarly remain inside IPC implementation/tests/docs. No application startup/runtime caller was returned.
 
@@ -110,7 +110,7 @@ This does not prove mathematical absence from generated/reflection mechanisms, b
 
 Consequence: K-E02 may treat “Khostty new agent IPC unavailable/Unsupported at baseline” as an expected truthful baseline rather than spending another archaeology pass trying to discover a hidden mount. Any experimental wiring must be a scoped, separately evidenced change and may not rewrite v1 display-feed semantics into child input.
 
-## K-F12 — same-family prior art already closes child-input, read/inspection, targeting and persistence primitives
+## K-F16 — same-family prior art already closes child-input, read/inspection, targeting and persistence primitives
 
 Pinned Ghoztty source `fd3838acfa834c29e99616cdc8500c0208a13a09` was inspected beyond README claims.
 
@@ -125,7 +125,7 @@ Architecture consequence: Khostty cannot justify its custom agent IPC by the pre
 
 The K-E02 bake-off therefore treats Ghoztty as the primary same-family control baseline rather than a secondary comparison. Khostty baseline is allowed to report the truthful current state “new agent IPC not mounted.” The experiment must compare product effects and maintenance cost, not command-name parity.
 
-## K-F13 — Windows hosting is now commodity/contested implementation, not unique differentiation
+## K-F17 — Windows hosting is now commodity/contested implementation, not unique differentiation
 
 Current upstream Ghostty `f9e82709360d97b2246718f774c544de0f16787b` still has only `none` and `gtk` application runtimes and no `src/apprt/windows` directory, so Windows remains an upstream product gap.
 
@@ -142,7 +142,7 @@ Architecture consequence: **building Khostty's Windows runtime from scratch is n
 Khostty's Windows-specific product differentiation is therefore falsified at the feature-existence level. A Khostty Windows implementation can still be justified if it proves materially better integration/maintainability or serves accepted requirements the mature Win32 fork does not, but novelty cannot justify it.
 
 
-## K-F11 — exported IPC remains upstream three-action IPC; the new JSON agent server is adjacent and unmounted (blocking)
+### Additional evidence for K-F11 — exported IPC remains upstream while agent server is adjacent
 
 Pass 6 resolves the ownership/mount ambiguity more sharply. At merge base `d4c88d8069912b653d707191388ca98e24751f12`, upstream has `src/apprt/ipc.zig`. Frozen Khostty exposes `src/apprt/ipc/mod.zig` through `pub const ipc = @import("apprt/ipc/mod.zig")`.
 
@@ -154,7 +154,7 @@ Fork-aware code search at the current repository state finds `AppHost` only in i
 
 Consequence: Khostty currently has an inherited mounted IPC surface and a separate unmounted agent-protocol subsystem. Tests of the latter cannot qualify a running-terminal agent journey. K-E02 may repair this only as a bounded experiment after preserving the baseline failure.
 
-## K-F12 — tracked-tree enumeration is structurally closed, while semantic coverage remains open
+### Additional evidence for K-F13 — tracked-tree enumeration closure
 
 Every top-level tree at the frozen source has now been enumerated with untruncated Git-tree responses. Product-local inventories persist 2,138 exact non-fuzz blob rows. The test tree is additionally resolved structurally: `fuzz-libghostty` contains 4,014 blobs, of which 4,002 are corpus seeds; the Windows test subtree has three blobs.
 
@@ -162,7 +162,7 @@ The 4,002 seed files are not 4,002 product obligations. Treat them as a verifica
 
 Initial exact-row projection shows large inherited/common families (runtime core, upstream terminal core, upstream macOS runtime, examples/public API) alongside much smaller fork-candidate families (117 wrapper blobs, 33 WASM, 11 agent IPC, 11 Windows runtime, conformance/benchmark/CI/packaging). Ownership and user value must be resolved by semantic family, not raw file count.
 
-## K-F13 — fork ownership is narrower than the 207-ahead topology suggests
+### Additional evidence for K-F13 — fork ownership is narrower than topology
 
 At the top-level Git-object boundary against the merge base, 43 current entries are identical, 13 are added and 6 modified, with no top-level removal. Entire large trees proven identical include `macos/`, `test/`, `include/`, `example/`, `flatpak/`, `images/`, `nix/`, `pkg/`, `po/`, `snap/`, and `vendor/`.
 
@@ -183,7 +183,7 @@ This is not merely a historical skipped-language bug. It is current workflow sem
 That behavior is reasonable for developer ergonomics but unsafe as acceptance evidence unless the expected configuration requires `ghostty_vt_linked` and records the exact native library artifact. A plain successful `cargo test` is therefore not sufficient proof that Rust↔native integration ran. K-E03 must require a linked native candidate and a positive sentinel proving at least one integration test executed.
 
 
-## K-F11 — public `apprt.ipc` is inherited Ghostty IPC; the new JSON agent server is adjacent and unmounted (blocking)
+### Additional evidence for K-F11 — exact inherited IPC normalization
 
 Exact source comparison against merge base `d4c88d8069912b653d707191388ca98e24751f12` resolves a key ambiguity. Frozen Khostty `src/apprt/ipc/mod.zig` and upstream-baseline `src/apprt/ipc.zig` each have 253 lines and become **exactly identical after normalizing only the two relative import paths introduced by moving the file into a directory**. The public `src/apprt.zig` export points to this relocated inherited module.
 
@@ -193,7 +193,7 @@ Fork-aware code search corroborates the reachability boundary: `AppHost` appears
 
 Consequence: G4/module tests and inherited `performIpc` call sites are evidence for different systems. Do not use the working inherited three-action IPC to qualify the new agent API. K-J-AUTOMATE remains unmounted at the frozen source.
 
-## K-F12 — tracked-tree ownership is finite enough to stop treating inherited bulk as fork scope
+### Additional evidence for K-F13 — finite tracked-tree ownership
 
 Pass 6 recursively enumerated every top-level Git tree at the frozen revision with untruncated results. Two persisted inventory parts contain 2,138 exact non-fuzz blob rows. The separate inherited `test/fuzz-libghostty` subtree contains 4,014 blobs, including 4,002 corpus seeds. Treating each seed as a distinct obligation would manufacture scope.
 
@@ -202,7 +202,7 @@ Top-level Git-object comparison against the merge base yields 43 identical entri
 This closes tracked-tree enumeration and substantially narrows the ownership denominator; semantic source/history/authority/external denominators remain open.
 
 
-## K-F13 — Ghoztty comparator is stronger than its README, but exposes a causal-completion gap
+### Additional evidence for K-F16 — Ghoztty causal-completion gap
 
 Pinned Ghoztty source `fd3838acfa834c29e99616cdc8500c0208a13a09` contains a substantially broader control surface than the README's three-command summary. `IPCServer.dispatchAction` handles new-window, split, close, rename, rearrange, list, read, send-keys, set-state, set-banner, reload and new-remote-window. `+read` reads recent pane output; `+send-keys` explicitly writes text/keys to the target pane's PTY and supports bracketed-paste-aware delivery. Therefore Khostty cannot claim richer read/input vocabulary as differentiation without a behavioral comparison.
 
