@@ -19,54 +19,77 @@ jobs:
   compare:
     name: K-E03 linked wrapper/direct-C evidence
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     env:
       RECOVERY_BASELINE: a29aa9c6553d9f42aa68e2919116c0f6d53f329d
+      UPSTREAM_MERGE_BASE: d4c88d8069912b653d707191388ca98e24751f12
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0
       - uses: ./.github/actions/install-zig
         with:
           version: "0.16.0"
           shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87
+
       - name: Build exact candidate native VT library
         run: |
           set -euo pipefail
           zig build -Demit-lib-vt
           test -f zig-out/lib/libghostty-vt.a
           sha256sum zig-out/lib/libghostty-vt.a | tee candidate-lib.sha256
-      - name: Run fail-closed wrapper/direct-C harness
+
+      - name: Run candidate wrapper/direct-C harness
         run: |
           set -euo pipefail
-          python3 khostty-vt/tools/k_e03_compare.py \
-            --crate-dir khostty-vt \
-            --include-dir include \
-            --lib zig-out/lib/libghostty-vt.a \
-            --source-sha "$(git rev-parse HEAD)" \
-            --library-source-sha "$(git rev-parse HEAD)" \
-            --library-origin khostty \
-            --out k-e03-candidate.json
+          python3 khostty-vt/tools/k_e03_compare.py             --crate-dir khostty-vt             --include-dir include             --lib zig-out/lib/libghostty-vt.a             --source-sha "$(git rev-parse HEAD)"             --library-source-sha "$(git rev-parse HEAD)"             --library-origin khostty             --out k-e03-candidate.json
+
+      - name: Checkout exact upstream merge base
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: ghostty-org/ghostty
+          ref: ${{ env.UPSTREAM_MERGE_BASE }}
+          path: upstream-ghostty
+          fetch-depth: 1
+
+      - name: Build upstream merge-base native VT library
+        working-directory: upstream-ghostty
+        run: |
+          set -euo pipefail
+          zig build -Demit-lib-vt
+          test -f zig-out/lib/libghostty-vt.a
+          sha256sum zig-out/lib/libghostty-vt.a | tee ../upstream-lib.sha256
+
+      - name: Run wrapper/direct-C harness against upstream library
+        run: |
+          set -euo pipefail
+          python3 khostty-vt/tools/k_e03_compare.py             --crate-dir khostty-vt             --include-dir upstream-ghostty/include             --lib upstream-ghostty/zig-out/lib/libghostty-vt.a             --source-sha "$(git rev-parse HEAD)"             --library-source-sha "$UPSTREAM_MERGE_BASE"             --library-origin ghostty-upstream-merge-base             --out k-e03-upstream.json
+
       - name: Record immutable identities
         if: always()
         run: |
           git rev-parse HEAD > candidate-sha.txt
           git rev-parse "$RECOVERY_BASELINE" > recovery-baseline-sha.txt
+          git -C upstream-ghostty rev-parse HEAD > upstream-sha.txt || true
           rustc --version > rust-version.txt
           cargo --version > cargo-version.txt
           zig version > zig-version.txt
           cc --version > cc-version.txt
+
       - name: Upload evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: k-e03-current-candidate
+          name: k-e03-linked-comparison
           path: |
             candidate-lib.sha256
+            upstream-lib.sha256
             k-e03-candidate.json
+            k-e03-upstream.json
             candidate-sha.txt
             recovery-baseline-sha.txt
+            upstream-sha.txt
             rust-version.txt
             cargo-version.txt
             zig-version.txt
