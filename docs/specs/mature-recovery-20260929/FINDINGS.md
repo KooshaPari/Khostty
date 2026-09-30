@@ -200,3 +200,20 @@ Pass 6 recursively enumerated every top-level Git tree at the frozen revision wi
 Top-level Git-object comparison against the merge base yields 43 identical entries, 13 added, 6 modified, and none removed at that boundary. Large trees proven identical include `macos/`, `test/`, `include/`, `example/`, `flatpak/`, `images/`, `nix/`, `pkg/`, `po/`, `snap/`, and `vendor/`. Candidate fork-owned families are consequently much narrower: Windows runtime, new agent-server files/native hooks, wrappers/WASM distribution, conformance/bench, and fork build/CI/package changes.
 
 This closes tracked-tree enumeration and substantially narrows the ownership denominator; semantic source/history/authority/external denominators remain open.
+
+
+## K-F13 — Ghoztty comparator is stronger than its README, but exposes a causal-completion gap
+
+Pinned Ghoztty source `fd3838acfa834c29e99616cdc8500c0208a13a09` contains a substantially broader control surface than the README's three-command summary. `IPCServer.dispatchAction` handles new-window, split, close, rename, rearrange, list, read, send-keys, set-state, set-banner, reload and new-remote-window. `+read` reads recent pane output; `+send-keys` explicitly writes text/keys to the target pane's PTY and supports bracketed-paste-aware delivery. Therefore Khostty cannot claim richer read/input vocabulary as differentiation without a behavioral comparison.
+
+Ghoztty's macOS implementation also has concrete safety/identity measures: per-user/build Unix socket with optional pane-baked absolute instance socket; chmod 0600; FD_CLOEXEC; <1 MiB request frame limit; weak target references with stale pruning; caller-pane identity seeded into the child environment to reduce focus races.
+
+However, its own design and implementation expose a materially different acceptance model. New-window/split UI mutations are dispatched asynchronously to the main queue and the IPC handler returns `.ok`/sends the response before that mutation is necessarily complete. The design explicitly calls window/split creation fire-and-forget. Thus a successful response establishes request acceptance, not causally observed pane/window creation.
+
+Potential surviving Khostty differentiation is consequently narrower and testable:
+- Windows/cross-platform native host/control where Ghoztty's design declares Windows out of scope;
+- independently authenticated policy where required beyond same-user 0600 UDS;
+- event subscriptions and richer machine state/search, if actually mounted and useful;
+- **causally confirmed effects / stable result identity**, rather than asynchronous request acceptance.
+
+These are candidate gaps, not wins. K-E02 must reproduce the same child-effect/identity/reconnect journey and record whether the stronger semantics justify Khostty's extra protocol/maintenance surface.
