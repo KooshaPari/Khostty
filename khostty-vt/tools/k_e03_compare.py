@@ -76,7 +76,13 @@ def main():
         env["KHOSTTY_VT_LINK_KIND"] = "static" if lib.suffix == ".a" else "dylib"
         env["KHOSTTY_VT_REQUIRE_LINK"] = "1"
         env["CARGO_TARGET_DIR"] = str(root / "target-linked")
-        # Cargo dependency build-script rpath arguments do not reliably propagate\n        # to an out-of-tree downstream binary. Configure the native loader\n        # explicitly for the execution witness and record that deployment burden.\n        loader_var = "DYLD_LIBRARY_PATH" if platform.system() == "Darwin" else "LD_LIBRARY_PATH"\n        prior_loader = env.get(loader_var, "")\n        env[loader_var] = str(lib.parent) + (os.pathsep + prior_loader if prior_loader else "")\n        rust_run = run(["cargo", "run", "--quiet"], cwd=rust, env=env)
+        # Cargo dependency build-script rpath arguments do not reliably propagate
+        # to an out-of-tree downstream binary. Configure the native loader
+        # explicitly for the execution witness and record that deployment burden.
+        loader_var = "DYLD_LIBRARY_PATH" if platform.system() == "Darwin" else "LD_LIBRARY_PATH"
+        prior_loader = env.get(loader_var, "")
+        env[loader_var] = str(lib.parent) + (os.pathsep + prior_loader if prior_loader else "")
+        rust_run = run(["cargo", "run", "--quiet"], cwd=rust, env=env)
 
         # Compile-fail ownership control: a Search borrows terminal identity through
         # its API contract; Rust must not allow the terminal to be moved/dropped
