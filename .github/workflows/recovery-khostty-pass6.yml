@@ -21,6 +21,11 @@ jobs:
       MERGE_BASE_SHA: d4c88d8069912b653d707191388ca98e24751f12
       RECEIPTS: recovery-receipts
     steps:
+      - name: Checkout recovery branch with history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
       - name: Validate recovery metadata integrity
         run: |
           set -euo pipefail
@@ -29,10 +34,6 @@ jobs:
             --prefix K-F \
             --out "${RECEIPTS:-recovery-receipts}/recovery-metadata-integrity.json"
 
-      - name: Checkout recovery branch with history
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          fetch-depth: 0
 
       - name: Assert product implementation remains frozen
         run: |
