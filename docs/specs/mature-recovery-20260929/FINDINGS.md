@@ -294,3 +294,19 @@ This was tolerable only as an explicitly known standalone limitation while the s
 Existing lifecycle coverage does not falsify this case: the test closes the client first, explicitly drains connections, and only then stops the server. It does not hold an idle/stuck client open across application teardown.
 
 K-E02 therefore needs a bounded connection-ownership model: server shutdown must make connection reads return, join/confirm every connection worker, and only then release dependencies/native AppHost. A leak-until-process-exit or indefinite shutdown hang is not an accepted general solution. Add adversarial idle-client, half-frame, subscribed-event and concurrent-client teardown cases.
+
+
+## K-F15 — current user authority resolves product identity: deliberate programmable Ghostty fork for Helios/agents
+
+On 2026-09-30 the user directly clarified current authoritative intent: Khostty is deliberately a Ghostty fork spanning Windows support, deeper shell/platform behavior including Zsh/PowerShell needs, and a much richer API/socket control plane for panes/topology/state. It is intended as a programmable terminal substrate/precursor for Helios/HeliosLab so agents can operate through first-class terminal APIs instead of AppleScript/UI automation.
+
+This changes the alternatives/existence gate. Ghoztty/cmux/WezTerm/kitty and upstream Ghostty remain strong bootstrap/prior-art comparators, but their existence no longer places the **fork itself** under existential review. The live question is which required capabilities should be upstream-reused, integrated, adapted, upstreamed or retained as fork-owned deltas.
+
+Consequences:
+- K-F11 is a core blocker: the advanced agent server being unmounted means a central product capability is not yet a product journey.
+- Windows lifecycle Unimplemented is a core blocker, not optional platform breadth.
+- shell integration (PowerShell/Zsh and supported matrix) becomes a first-class source/contract family to inventory.
+- wrapper/conformance work can remain separable; it does not independently define the product.
+- Helios is a consumer boundary: expose stable terminal primitives/events; do not turn Khostty into the agent scheduler itself.
+
+See `AUTHORITATIVE-PRODUCT-INTENT.md`. Earlier uncertainty over the originating fork rationale no longer blocks current product identity.
