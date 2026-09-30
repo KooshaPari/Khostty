@@ -6,27 +6,6 @@
   "source": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
   "nodes": [
     {
-      "id": "K-E01-EMBED",
-      "state": "READY",
-      "depends_on": [],
-      "parallel_group": "K-P1",
-      "purpose": "Close wrapper/native-consumer and CI evidence semantics",
-      "write_scope": [
-        "wrapper experiment/tests",
-        "recovery receipts"
-      ],
-      "forbidden": [
-        "terminal core rewrite",
-        "claim current CI as acceptance"
-      ],
-      "exit": [
-        "native artifact identity",
-        "expected-job matrix",
-        "real linked test sentinel",
-        "wrapper delta disposition"
-      ]
-    },
-    {
       "id": "K-E02",
       "state": "READY",
       "depends_on": [],
@@ -56,15 +35,19 @@
       "state": "READY",
       "depends_on": [],
       "parallel_group": "K-P1",
-      "purpose": "Real embedding consumer comparison",
+      "purpose": "Embedding consumer comparison + CI/native evidence qualification",
       "write_scope": [
-        "one wrapper test/experiment surface"
+        "one wrapper test/experiment surface",
+        "recovery receipts",
+        "CI evidence policy/tests only"
       ],
       "exit": [
-        "real upstream library linked",
+        "real upstream/native library linked",
+        "positive native integration-test sentinel",
         "create/feed/resize/read/free",
         "callback/thread lifetime",
-        "comparison with direct upstream"
+        "comparison with direct upstream",
+        "expected-job matrix distinguishes required/advisory/skipped/swallowed failure"
       ]
     }
   ],
@@ -73,7 +56,7 @@
     "top-level merge-base ownership",
     "agent IPC mount trace: adjacent/unmounted",
     "Windows App lifecycle source state",
-    "embedding experiment may begin with explicit linked-native sentinel despite remaining semantic cleanup"
+    "embedding/CI qualification folded into K-E03; no redundant K-E01-EMBED node"
   ],
   "remaining_general_blockers": [
     "primary intent authority",
