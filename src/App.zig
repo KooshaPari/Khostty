@@ -137,6 +137,11 @@ pub fn init(
 }
 
 pub fn deinit(self: *App) void {
+    // K-E02a: pending worker requests must lose queued ownership before the
+    // CoreApp storage they target can be destroyed. No queued callback executes
+    // during shutdown.
+    _ = self.agent_app_bridge.cancelPendingOnAppThread();
+
     // Clean up all our surfaces
     for (self.surfaces.items) |surface| surface.deinit();
     self.surfaces.deinit(self.alloc);
@@ -254,14 +259,19 @@ pub fn deleteSurface(self: *App, rt_surface: *apprt.Surface) void {
 /// The last focused surface. This is only valid while on the main thread
 /// before tick is called.
 /// Submit K-E02a work for execution by the next app-thread tick.
-/// The caller owns ctx/completion until completion is observed.
+///
+/// The request owns its callback lifetime independently of the queue. The only
+/// cross-thread CoreApp access here is the bridge's synchronized queue; actual
+/// callback work executes from tick(). A successful publish explicitly wakes
+/// the runtime so an idle application does not strand the request.
 pub fn submitAgentAppWork(
     self: *App,
-    ctx: *anyopaque,
-    run: *const fn (*anyopaque) void,
-    completion: *agent_bridge.Completion,
+    rt_app: *apprt.App,
+    request: *agent_bridge.Request,
 ) agent_bridge.BridgeError!agent_bridge.Ticket {
-    return self.agent_app_bridge.submit(ctx, run, completion);
+    const ticket = try self.agent_app_bridge.submit(request);
+    rt_app.wakeup();
+    return ticket;
 }
 
 pub fn focusedSurface(self: *const App) ?*Surface {
