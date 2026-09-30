@@ -127,5 +127,24 @@
       "K-F06",
       "K-F17"
     ]
+  },
+  "current_main_observed": "882d6cd4aa7b5f9f9bffc5fb0a8b4d70460c90e6",
+  "source_drift_from_snapshot": {
+    "ahead_by": 2,
+    "files": [
+      ".github/workflows/publish-pypi.yml",
+      "docs/RELEASE.md",
+      "docs/sessions/khostty-0.1.0-release/01_RESEARCH_pypi-publication.md",
+      "docs/sessions/khostty-0.1.0-release/evidence/zig-checksum-verification.txt"
+    ],
+    "classification": "POST_SNAPSHOT_RELEASE_OPERATIONS_NOT_PRODUCT_RUNTIME"
+  },
+  "experimental_candidates": {
+    "K-E03": {
+      "branch": "experiment/khostty-embedding-pass6",
+      "pr": 8,
+      "base_branch": "recovery/frozen-a29aa9c-pass6",
+      "status": "CI_QUEUED_UNACCEPTED"
+    }
   }
 }
