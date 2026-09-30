@@ -166,7 +166,8 @@ def main():
         }
         checks = {
             "rust_linked_consumer_executed": rust_run["returncode"] == 0 and "linked-ok resize-render-search-snapshot" in rust_run["stdout"],
-            "missing_library_fails_closed": rust_missing["returncode"] != 0,\n            "rust_lifetime_misuse_rejected": lifetime_compile["returncode"] != 0,
+            "missing_library_fails_closed": rust_missing["returncode"] != 0,
+            "rust_lifetime_misuse_rejected": lifetime_compile["returncode"] != 0,
             "direct_c_consumer_executed": crun["returncode"] == 0 and "linked-ok resize-render-search-snapshot" in crun["stdout"],
             "abi_and_ffi_coverage_tests_pass": abi_verify["returncode"] == 0,
         }
@@ -184,7 +185,8 @@ def main():
             "checks": checks,
             "metrics": metrics,
             "rust_linked": rust_run,
-            "rust_missing_library_control": rust_missing,\n            "rust_lifetime_compile_fail_control": lifetime_compile,
+            "rust_missing_library_control": rust_missing,
+            "rust_lifetime_compile_fail_control": lifetime_compile,
             "direct_c_build": cbuild,
             "direct_c_run": crun,
             "abi_and_ffi_verification": abi_verify,
