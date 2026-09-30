@@ -140,3 +140,30 @@ The related upstream Ghostty PR #12167 was closed unmerged. Maintainer comments 
 Architecture consequence: **building Khostty's Windows runtime from scratch is no longer the default.** K-E02 must compare at least (a) Khostty scaffold/current intended architecture, (b) adapting the pinned Win32 fork or its isolated runtime delta onto a current upstream base, and (c) a thin libghostty Windows host where applicable. Compare exact native journey behavior, upstream merge burden, patch surface, security/accessibility/IME/graphics completeness and ownership cost.
 
 Khostty's Windows-specific product differentiation is therefore falsified at the feature-existence level. A Khostty Windows implementation can still be justified if it proves materially better integration/maintainability or serves accepted requirements the mature Win32 fork does not, but novelty cannot justify it.
+
+
+## K-F11 — exported IPC remains upstream three-action IPC; the new JSON agent server is adjacent and unmounted (blocking)
+
+Pass 6 resolves the ownership/mount ambiguity more sharply. At merge base `d4c88d8069912b653d707191388ca98e24751f12`, upstream has `src/apprt/ipc.zig`. Frozen Khostty exposes `src/apprt/ipc/mod.zig` through `pub const ipc = @import("apprt/ipc/mod.zig")`.
+
+After normalizing only the two relative import paths required by moving that file one directory deeper, current `ipc/mod.zig` is textually identical to the merge-base `ipc.zig`: same 253 lines and zero normalized differences. It still defines the inherited three actions `new_window`, `new_tab`, `toggle_quick_terminal`.
+
+The fork adds ten separate JSON-agent files beside that inherited module: `app_host.zig`, `auth.zig`, `events.zig`, `fake_host.zig`, `handler.zig`, `pane.zig`, `protocol.md`, `protocol.zig`, `server.zig`, and `state.zig`. `src/apprt.zig` does not export/start those server/host objects; it only redirects the inherited IPC import and adds/selects the Windows runtime.
+
+Fork-aware code search at the current repository state finds `AppHost` only in its implementation, protocol and WBS; `Server.bind` only in server/protocol/WBS; and no application caller of the new server stack. This corroborates, rather than replaces, the frozen protocol's explicit statement that the app-thread hop/server startup is not wired.
+
+Consequence: Khostty currently has an inherited mounted IPC surface and a separate unmounted agent-protocol subsystem. Tests of the latter cannot qualify a running-terminal agent journey. K-E02 may repair this only as a bounded experiment after preserving the baseline failure.
+
+## K-F12 — tracked-tree enumeration is structurally closed, while semantic coverage remains open
+
+Every top-level tree at the frozen source has now been enumerated with untruncated Git-tree responses. Product-local inventories persist 2,138 exact non-fuzz blob rows. The test tree is additionally resolved structurally: `fuzz-libghostty` contains 4,014 blobs, of which 4,002 are corpus seeds; the Windows test subtree has three blobs.
+
+The 4,002 seed files are not 4,002 product obligations. Treat them as a verification corpus source family unless a particular seed encodes a distinct accepted obligation. This closes the tracked-file enumeration sub-gate, not the semantic source denominator.
+
+Initial exact-row projection shows large inherited/common families (runtime core, upstream terminal core, upstream macOS runtime, examples/public API) alongside much smaller fork-candidate families (117 wrapper blobs, 33 WASM, 11 agent IPC, 11 Windows runtime, conformance/benchmark/CI/packaging). Ownership and user value must be resolved by semantic family, not raw file count.
+
+## K-F13 — fork ownership is narrower than the 207-ahead topology suggests
+
+At the top-level Git-object boundary against the merge base, 43 current entries are identical, 13 are added and 6 modified, with no top-level removal. Entire large trees proven identical include `macos/`, `test/`, `include/`, `example/`, `flatpak/`, `images/`, `nix/`, `pkg/`, `po/`, `snap/`, and `vendor/`.
+
+The meaningful fork candidates are consequently narrower: Windows host/runtime, the ten new agent-server files plus necessary hooks, wrapper packages, WASM distribution, conformance/bench infrastructure and fork-specific build/CI/distribution changes. The earlier 207-ahead/145-behind count is a topology/maintenance observation, not a count of differentiated capabilities.
