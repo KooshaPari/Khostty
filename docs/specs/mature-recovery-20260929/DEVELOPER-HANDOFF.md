@@ -1,7 +1,7 @@
 # Khostty developer-agent handoff
 
 **READY FOR PARALLEL EXPERIMENTAL IMPLEMENTATION. NOT READY FOR GENERAL DEV HANDOFF.**
-Updated 2026-09-29, pass 5. Product source: `a29aa9c6553d9f42aa68e2919116c0f6d53f329d`. Research/spec branch: `docs/mature-recovery-20260929`. Draft #7, registry draft #593. Only Khostty and Melosviz are product subjects.
+Updated 2026-09-30, pass 6. Product source: `a29aa9c6553d9f42aa68e2919116c0f6d53f329d`. Research/spec branch: `docs/mature-recovery-20260929`. Draft #7, registry draft #593. Only Khostty and Melosviz are product subjects.
 
 ## Executable evidence available
 
@@ -64,3 +64,10 @@ Return a capability matrix with PASS/FAIL/UNSUPPORTED/BLOCKED per exact candidat
 Draft #8 (`experiment/khostty-embedding-pass6`) is based against `recovery/frozen-a29aa9c-pass6`, not moving main. Its workflow forces a real `libghostty-vt.a` build, sets native-link discovery explicitly, requires named integration-test sentinels to appear in `cargo test -- --list`, then runs the linked terminal suite and full wrapper suite without advisory failure swallowing. Green qualifies only this linked consumer/configuration.
 
 Current main has moved two commits beyond the source snapshot, but only in PyPI/release documentation/workflow paths. Those commits are post-snapshot implementation/operations candidates and are not silently folded into the analyzed product source.
+
+
+## Pass 6 current assignment state
+
+**K-E02 and K-E03 are ready for parallel developer-agent execution now.** K-E01's tracked-tree, high-priority ownership and agent-server mount prerequisites are sufficiently closed; remaining K-E01 semantic/history work continues but is no longer a prerequisite for these bounded experiments. K-E02 must use Ghoztty `fd3838acfa834c29e99616cdc8500c0208a13a09` as the primary same-family control baseline and may report Khostty's truthful baseline as UNMOUNTED/UNSUPPORTED. K-E03 must prove a real linked native wrapper consumer with a sentinel; a successful build with cfg-disabled integration tests is non-evidence.
+
+General product implementation remains blocked.
