@@ -11,7 +11,7 @@
     },
     "B": {
       "file": "TRACKED-TREE-B.json",
-      "blob_rows": 855,
+      "blob_rows": 834,
       "scope": "remaining support/native/public API/examples/package families + root blobs"
     },
     "test": {
@@ -37,7 +37,11 @@
       }
     }
   },
-  "exact_blob_inventory_rows": 2138,
   "source_family_denominator": "OPEN_SEMANTIC_RESOLUTION",
-  "warning": "Tracked-tree enumeration is now structurally complete at top-level-family resolution, but 4002 fuzz seeds and other inherited/vendor assets are not 4002 semantic obligations. Deleted repos/history/conversations/external sources remain separate denominators."
+  "warning": "Every top-level tree is structurally accounted for. A/B contain 2,117 raw rows with 62 exact-path overlaps (packaging 8, .github 29, bench 25), yielding 2,055 unique non-fuzz paths and zero object-ID conflicts. Fuzz/vendor/inherited file counts are not requirement counts.",
+  "raw_inventory_rows": 2117,
+  "overlap_paths_between_parts": 62,
+  "overlap_extra_rows": 62,
+  "unique_inventory_paths": 2055,
+  "object_id_conflicts_across_overlap": 0
 }
