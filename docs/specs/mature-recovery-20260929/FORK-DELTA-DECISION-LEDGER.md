@@ -41,3 +41,18 @@ External Windows implementation changes the default decision:
 **Bootstrap order for Windows is now: ADAPT/PORT EXISTING WIN32 DELTA → thin libghostty host if sufficient → BUILD CUSTOM only for demonstrated missing accepted obligations.**
 
 The K-E02 comparison must include the external Win32 fork as the primary native implementation reference. Do not spend effort recreating tabs/splits/input/IME/ConPTY/windowing simply because Khostty already has scaffold files.
+
+
+## Pass 10 same-family source comparison — Ghoztty already demonstrates the app-thread bridge pattern
+
+Pinned Ghoztty source fd3838acfa834c29e99616cdc8500c0208a13a09 was inspected beyond its README. Its macOS IPCServer.swift receives framed JSON socket requests, but operations that touch terminal/window state dispatch onto DispatchQueue.main (and in some cases MainActor) and synchronize the response. handleSendKeys resolves a stable target, switches to the main queue, and writes PTY input through the surface model; handleRead likewise reads terminal text on the main queue. Layout mutation uses the same pattern.
+
+Ghoztty also bakes both its owning IPC socket path and pane identity into child environments (GHOZTTY_IPC_SOCKET, GHOZTTY_PANE_ID). CLI commands carry caller-pane identity as a default anchor so a later focus change cannot silently redirect an agent command. Explicit target/pane/from-focused flags override that default. Named creation is idempotent and stale registry entries are pruned.
+
+This is direct architectural prior art for K-E02a:
+- do not let connection threads directly touch app/terminal state;
+- cross into the runtime-owned thread and correlate completion;
+- preserve caller/instance/pane identity independently of current focus;
+- distinguish PTY child input from parser/display feed.
+
+It does not establish Ghoztty as the product choice: the inspected implementation is macOS/Swift-specific, has a different protocol and feature scope, and has not been runtime-qualified here. But it materially raises the custom-build burden: Khostty cannot claim the app-thread bridge or stable caller-pane targeting concept as novel, and should adapt/learn from this pattern rather than invent an unsafe direct mount.
