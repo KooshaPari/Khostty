@@ -31,7 +31,10 @@ jobs:
           shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
       - name: Format gate
         run: zig fmt --check src/App.zig src/apprt/ipc/app_thread_bridge.zig
-      - name: Bridge unit controls
-        run: zig test src/apprt/ipc/app_thread_bridge.zig
+      - name: Bridge + protocol + handler controls
+        run: |
+          zig test src/apprt/ipc/app_thread_bridge.zig
+          zig test src/apprt/ipc/protocol.zig
+          zig test src/apprt/ipc/handler.zig
       - name: Compile core path
         run: zig build -Dapp-runtime=gtk -Doptimize=Debug
