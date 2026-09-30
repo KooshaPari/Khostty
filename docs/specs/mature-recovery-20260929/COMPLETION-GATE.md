@@ -23,7 +23,7 @@ Program KR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 | Invalid/generated catalogs absent from grading | Excluded from this dossier; all existing grading entry points not yet inspected |
 | No unexplained orphan requirements/features/journeys | Not established; no complete accepted graph |
 | No unresolved contradictions | NOT MET: K-F01–K-F03 plus historical G4-DONE vs unmounted agent server and unresolved product authority |
-| No blocking findings | NOT MET: see CURRENT-STATE.json including K-F11–K-F13 |
+| No blocking findings | NOT MET: see CURRENT-STATE.json including K-F11–K-F15 |
 | Fresh independent review attacked completeness | NOT PERFORMED; author's own checks are not an independent review |
 
 ## Next minimal work packages
@@ -41,3 +41,8 @@ Closed sub-gates: complete top-level tracked-tree enumeration and high-priority 
 ## Pass 6 gate movement
 
 Closed sub-gates: complete tracked-tree enumeration and top-level merge-base ownership boundary. The agent IPC mount question also moved from a broad unknown to a source-level conclusion: the exported IPC module is the inherited three-action implementation relocated into `ipc/mod.zig`; the ten-file JSON agent server is adjacent and not started by the application at the frozen source. These closures do not justify general implementation. K-E01 remains open for wrapper/CI/build/native-callgraph semantic resolution; K-E02/K-E03 remain dependent experimental work.
+
+
+### Verification boundary added in pass 6
+
+Current fork CI cannot qualify product acceptance: substantive language jobs are advisory or swallow failures, the macOS build is disabled, and the aggregate `ci / test` stage performs no tests. Rust native integration tests are cfg-elided when no native library is found. This does not block K-E02 control experimentation, whose source ownership/mount prerequisite is now closed; it does block general handoff and K-E03 acceptance until explicit native-test evidence is available.
