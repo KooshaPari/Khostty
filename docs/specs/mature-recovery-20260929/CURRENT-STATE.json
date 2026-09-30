@@ -42,12 +42,12 @@
     "K-F08",
     "K-F09",
     "K-F10",
-    "inherited ABI differentiation correction",
     "K-F11",
     "K-F12",
     "K-F13",
     "K-F14",
-    "K-F15"
+    "K-F15",
+    "K-F16"
   ],
   "high_risk_unknowns": [
     "K-F04",
@@ -92,5 +92,34 @@
     "bulk_test_blobs_excluded_from_obligation_count": 4020,
     "vendor_blobs_excluded_from_obligation_count": 9
   },
-  "mount_archaeology": "NEW_AGENT_IPC_NOT_MOUNTED_AT_FROZEN_SOURCE_REASONABLE_FALSIFICATION_STANDARD"
+  "mount_archaeology": "NEW_AGENT_IPC_NOT_MOUNTED_AT_FROZEN_SOURCE_REASONABLE_FALSIFICATION_STANDARD",
+  "finding_namespace": {
+    "state": "CANONICAL_UNIQUE",
+    "ids": [
+      "K-F01",
+      "K-F02",
+      "K-F03",
+      "K-F04",
+      "K-F05",
+      "K-F06",
+      "K-F07",
+      "K-F08",
+      "K-F09",
+      "K-F10",
+      "K-F11",
+      "K-F12",
+      "K-F13",
+      "K-F14",
+      "K-F15",
+      "K-F16",
+      "K-F17"
+    ],
+    "duplicate_ids": false,
+    "nonblocking_context": [
+      "K-F04",
+      "K-F05",
+      "K-F06",
+      "K-F17"
+    ]
+  }
 }
