@@ -11,6 +11,7 @@ on:
       - khostty-vt/**
       - .github/actions/install-zig/action.yml
       - .github/workflows/experiment-k-e03-compare.yml
+      - docs/experiments/k-e03/**
 
 permissions:
   contents: read
