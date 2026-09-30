@@ -57,3 +57,10 @@ The bake-off must therefore test semantics Ghoztty does not already obviously pr
 8. **Platform scope:** Windows evidence is a separate sub-journey; Ghoztty's macOS design explicitly declares Windows out of scope, while Khostty's Windows App lifecycle is currently Unimplemented.
 
 Return a capability matrix with PASS/FAIL/UNSUPPORTED/BLOCKED per exact candidate/configuration. Do not collapse unsupported competitor features into an overall score or declare a winner; the goal is to identify which Khostty deltas survive.
+
+
+## Live K-E03 verification draft
+
+Draft #8 (`experiment/khostty-embedding-pass6`) is based against `recovery/frozen-a29aa9c-pass6`, not moving main. Its workflow forces a real `libghostty-vt.a` build, sets native-link discovery explicitly, requires named integration-test sentinels to appear in `cargo test -- --list`, then runs the linked terminal suite and full wrapper suite without advisory failure swallowing. Green qualifies only this linked consumer/configuration.
+
+Current main has moved two commits beyond the source snapshot, but only in PyPI/release documentation/workflow paths. Those commits are post-snapshot implementation/operations candidates and are not silently folded into the analyzed product source.
