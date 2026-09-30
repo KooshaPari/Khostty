@@ -234,3 +234,26 @@ Historical upstream PR #12167 from mattn is also instructive but no longer the s
 **Architecture consequence:** building Khostty's Windows runtime from scratch is no longer the default. K-E02 must compare at least (a) Khostty's scaffold/intended host, (b) adapting the pinned current Win32 fork or isolating its runtime delta onto a current upstream base, and (c) a thinner libghostty-based Windows host where applicable. Compare exact native journey behavior, upstream merge burden, patch surface, security/accessibility/IME/graphics completeness and ownership cost.
 
 Khostty's Windows-specific differentiation is therefore falsified at the feature-existence level. It can still justify its own implementation only by demonstrating materially better integration/maintainability or accepted requirements the existing Win32 fork does not meet.
+
+
+## K-F11 — new JSON agent-control subsystem is adjacent to, not mounted as, public `apprt.ipc` (blocking)
+
+Pass 6 resolves the earlier mounting ambiguity substantially.
+
+At merge base `d4c88d8069912b653d707191388ca98e24751f12`, Ghostty had a single `src/apprt/ipc.zig` blob `d5d860a73c2087e559b09924346a4b84214cafe2`. Frozen Khostty replaces the path with `src/apprt/ipc/mod.zig` blob `cf4cad94335a511f5fa3db14364c0cae03b9f47d`. Both have 253 lines; after normalizing only the two relative import paths required by moving the file one directory deeper, their executable/text content is identical. `src/apprt.zig` exports `pub const ipc = @import("apprt/ipc/mod.zig")`.
+
+Therefore the public `apprt.ipc` export is the inherited Ghostty IPC module, not the new JSON agent server.
+
+The same directory also contains ten genuinely new fork files: `app_host.zig`, `auth.zig`, `events.zig`, `fake_host.zig`, `handler.zig`, `pane.zig`, `protocol.md`, `protocol.zig`, `server.zig`, and `state.zig`. Code-search reachability corroborates isolation: `AppHost`, `Server.bind`, `publishTitleChange`, `pane.Manager`, and the event-broker APIs resolve only inside this subsystem and its documentation/recovery docs; no native app lifecycle caller was found. The frozen protocol documentation itself states startup wiring is not complete.
+
+This is stronger than “server code exists.” It means the agent-control architecture currently has implementation primitives and tests/docs but no demonstrated mounted application journey. Compile/import reachability of the legacy IPC module cannot qualify the new server.
+
+Closure requires one native lifecycle to construct the real host/pane manager, bind the server under explicit policy, publish real runtime events, and tear down safely. A test-only FakeHost or direct server unit test does not close the journey.
+
+## K-F12 — fork ownership denominator is far smaller than repository size
+
+Exact top-level Git-object comparison against the merge base yields 43 identical entries, 13 added, 6 modified, 0 removed. Entire large trees including `macos/`, `test/`, `include/`, `example/`, `flatpak/`, `images/`, `nix/`, `pkg/`, `po/`, `snap/`, and `vendor/` are byte/tree-identical at this boundary.
+
+High-priority recursive comparison further shows all 36 inspected `src/terminal/c/` public-ABI blobs identical, while all 11 Windows runtime blobs are added. The product's existence/differentiation gate must therefore evaluate the small fork-owned surfaces—Windows host, agent server integration, wrappers/WASM/conformance/build integration—not the inherited terminal as though it were Khostty-authored value.
+
+This does not make inherited behavior irrelevant to product acceptance; it changes ownership, maintenance and alternative-stack reasoning.
