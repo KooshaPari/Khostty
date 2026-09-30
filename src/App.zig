@@ -16,7 +16,8 @@ const BlockingQueue = @import("datastruct/main.zig").BlockingQueue;
 const renderer = @import("renderer.zig");
 const font = @import("font/main.zig");
 const global = @import("global.zig");
-const AgentAppBridge = @import("apprt/ipc/app_thread_bridge.zig").Bridge;
+const agent_bridge = @import("apprt/ipc/app_thread_bridge.zig");
+const AgentAppBridge = agent_bridge.Bridge;
 
 const log = std.log.scoped(.app);
 
@@ -258,8 +259,8 @@ pub fn submitAgentAppWork(
     self: *App,
     ctx: *anyopaque,
     run: *const fn (*anyopaque) void,
-    completion: *@import("apprt/ipc/app_thread_bridge.zig").Completion,
-) @import("apprt/ipc/app_thread_bridge.zig").BridgeError!@import("apprt/ipc/app_thread_bridge.zig").Ticket {
+    completion: *agent_bridge.Completion,
+) agent_bridge.BridgeError!agent_bridge.Ticket {
     return self.agent_app_bridge.submit(ctx, run, completion);
 }
 
