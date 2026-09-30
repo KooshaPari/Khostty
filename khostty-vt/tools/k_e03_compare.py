@@ -53,10 +53,21 @@ def main():
             f'\n[dependencies]\nkhostty-vt={{path="{crate_toml}"}}\n'
         )
         (rust / "src/main.rs").write_text(
+            'use khostty_vt::{RenderState, Search, SnapshotDecoder, Terminal, encode_snapshot};\n'
             'fn main() -> Result<(), khostty_vt::GhosttyError> {\n'
-            '  let mut t = khostty_vt::Terminal::new(20, 4)?;\n'
-            '  t.vt_write(b"K-E03\\r\\n");\n'
-            '  println!("linked-ok");\n'
+            '  let mut t = Terminal::new(20, 4)?;\n'
+            '  t.vt_write(b"K-E03\\r\\nneedle\\r\\n");\n'
+            '  t.resize(24, 6, 8, 16)?;\n'
+            '  if t.cols()? != 24 || t.rows()? != 6 { panic!("resize did not stick"); }\n'
+            '  let mut render = RenderState::new()?; render.update(&t)?;\n'
+            '  if render.cols()? != 24 || render.rows_count()? != 6 { panic!("render dimensions wrong"); }\n'
+            '  let mut search = Search::new(&t)?; search.set_needle(&t, "needle")?; search.run(&t)?;\n'
+            '  if search.total_matches()? < 1 { panic!("search did not find fixture"); }\n'
+            '  drop(search);\n'
+            '  let snapshot = encode_snapshot(&t)?;\n'
+            '  let restored = SnapshotDecoder::from_bytes(&snapshot)?.decode()?;\n'
+            '  if restored.cols()? != 24 || restored.rows()? != 6 { panic!("snapshot restore wrong"); }\n'
+            '  println!("linked-ok resize-render-search-snapshot");\n'
             '  Ok(())\n'
             '}\n'
         )
@@ -103,7 +114,7 @@ def main():
             ),
         }
         checks = {
-            "rust_linked_consumer_executed": rust_run["returncode"] == 0 and "linked-ok" in rust_run["stdout"],
+            "rust_linked_consumer_executed": rust_run["returncode"] == 0 and "linked-ok resize-render-search-snapshot" in rust_run["stdout"],
             "missing_library_fails_closed": rust_missing["returncode"] != 0,
             "direct_c_consumer_executed": crun["returncode"] == 0 and "linked-ok" in crun["stdout"],
         }
@@ -126,9 +137,9 @@ def main():
             "direct_c_run": crun,
             "verdict": "PASS_EXPERIMENT" if all(checks.values()) else "FAIL_EXPERIMENT",
             "limitations": [
-                "This proves a minimal linked consumer, not all wrapper APIs.",
+                "This proves linked create/write/resize/render/search/snapshot-restore only, not all wrapper APIs.",
                 "The LOC/unsafe counts are descriptive, not a quality score.",
-                "ABI drift, snapshot/search, use-after-close and packaging metrics require follow-up.",
+                "ABI drift, compile-time lifetime misuse, post-free C behavior and packaging metrics require follow-up.",
                 "The direct C comparator uses the same supplied native library artifact.",
                 "library_source_sha/library_origin are caller claims; a separate build receipt must authenticate them.",
                 "A true upstream-vs-Khostty comparison requires separate runs with independently built artifacts."
