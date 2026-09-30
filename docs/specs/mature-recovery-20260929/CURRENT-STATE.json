@@ -70,14 +70,17 @@
   "progress_policy": "Static diagnostics, imported assertions, native observations and product acceptance are distinct. No scalar document-count or test-count completion.",
   "tracked_tree_enumeration": {
     "state": "CLOSED",
-    "explicit_non_fuzz_blob_rows": 2138,
+    "explicit_non_fuzz_blob_rows": 2055,
     "fuzz_family": {
       "blobs": 4014,
       "corpus_blobs": 4002
     },
     "all_top_level_trees_covered": true,
     "all_recursive_responses_untruncated": true,
-    "summary": "inventory/SUMMARY.json"
+    "summary": "inventory/SUMMARY.json",
+    "raw_A_B_rows": 2117,
+    "overlap_paths": 62,
+    "object_id_conflicts": 0
   },
   "K_E01_progress": {
     "tracked_tree_inventory": "COMPLETE",
@@ -88,6 +91,9 @@
   },
   "tracked_product_relevant_inventory": {
     "unique_blobs": 2055,
+    "raw_rows": 2117,
+    "overlap_paths": 62,
+    "object_id_conflicts": 0,
     "semantic_state": "OPEN",
     "bulk_test_blobs_excluded_from_obligation_count": 4020,
     "vendor_blobs_excluded_from_obligation_count": 9
