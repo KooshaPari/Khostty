@@ -1,4 +1,4 @@
-name: Recovery baseline — K-E01
+name: Recovery source baseline — Khostty
 
 on:
   pull_request:
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   k-e01:
-    name: K-E01 frozen tree and caller graph
+    name: Frozen tree and caller graph evidence
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -38,7 +38,11 @@ jobs:
       - name: Assert product implementation remains frozen
         run: |
           set -euo pipefail
-          git diff --exit-code "$SOURCE_SHA" --             src include khostty-vt khostty-go khostty-python wasm conformance             packaging macos dist example bench .github             ':(exclude).github/workflows/recovery-khostty-pass6.yml'
+          git diff --exit-code "$SOURCE_SHA" -- \
+            src include khostty-vt khostty-go khostty-python wasm conformance \
+            packaging macos dist example bench .github \
+            ':(exclude).github/workflows/recovery-khostty-pass6.yml' \
+            ':(exclude).github/workflows/recovery-khostty-embed-pass6.yml'
           mkdir -p "$RECEIPTS"
           git ls-tree -r "$SOURCE_SHA" > "$RECEIPTS/source-tree.tsv"
           git ls-tree -r "$MERGE_BASE_SHA" > "$RECEIPTS/merge-base-tree.tsv"
