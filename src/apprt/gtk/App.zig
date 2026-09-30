@@ -39,6 +39,16 @@ pub fn init(
     const app: *Application = try .new(self, core_app);
     errdefer app.unref();
     self.* = .{ .app = app };
+
+    if (agentIpcEnabled()) {
+        self.agent_ipc = AgentIpcRuntime.create(self) catch |err| ipc_err: {
+            log.err("agent IPC requested but failed to start: {}", .{err});
+            break :ipc_err null;
+        };
+        if (self.agent_ipc) |ipc| {
+            log.info("agent IPC listening on {s}", .{ipc.socketPath()});
+        }
+    }
     return;
 }
 
@@ -47,6 +57,11 @@ pub fn run(self: *App) !void {
 }
 
 pub fn terminate(self: *App) void {
+    if (self.agent_ipc) |ipc| {
+        ipc.deinit();
+        self.agent_ipc = null;
+    }
+
     // We force deinitialize the app. We don't unref because other things
     // tend to have a reference at this point, so this just forces the
     // disposal now.
