@@ -51,3 +51,10 @@ Top-level merge-base comparison: 43 identical, 13 added, 6 modified, no removed 
 ## Pass 6 ownership/mount reconciliation
 
 Top-level comparison against merge base: 43 identical, 13 added, 6 modified, 0 removed. Critical ownership: 11 Windows runtime blobs added; 10 new agent-server/host files added; relocated `src/apprt/ipc/mod.zig` is semantically identical to baseline `src/apprt/ipc.zig` after import-path normalization; 36 inspected `src/terminal/c` blobs are identical. Fork-aware searches found no app lifecycle callers for AppHost/Server.bind/event hooks outside the subsystem/docs. This, plus protocol §7, establishes the agent JSON server as unmounted at frozen source.
+
+
+## Pass 6 tracked-tree and ownership receipt
+
+All top-level trees were enumerated with `truncated=false`. Exact A+B projection contains 2,138 non-fuzz blobs. The separate inherited fuzz tree contains 4,014 blobs, 4,002 of them corpus seeds; it is a semantic verification family, not a requirement multiplier.
+
+Top-level comparison to merge base: 43 entries identical, 13 added, 6 modified, 0 removed. Large identical trees include macOS, tests, public include, examples, package managers/localization/vendor. High-priority recursive ownership: Windows runtime 11/11 added; selected terminal C ABI 36/36 identical; new agent IPC files are fork-owned but the exported legacy IPC module is inherited. See `inventory/FORK-OWNERSHIP.{md,json}`.
