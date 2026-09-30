@@ -46,3 +46,8 @@ Closed sub-gates: complete tracked-tree enumeration and top-level merge-base own
 ### Verification boundary added in pass 6
 
 Current fork CI cannot qualify product acceptance: substantive language jobs are advisory or swallow failures, the macOS build is disabled, and the aggregate `ci / test` stage performs no tests. Rust native integration tests are cfg-elided when no native library is found. This does not block K-E02 control experimentation, whose source ownership/mount prerequisite is now closed; it does block general handoff and K-E03 acceptance until explicit native-test evidence is available.
+
+
+## Pass 6 gate movement
+
+Closed sub-gates: frozen tracked-tree enumeration and high-priority fork ownership boundary. The JSON agent server is source-traced as unmounted; this is a blocker, not progress toward a false green. K-E02/K-E03 can now run as bounded experiments because their prerequisite question—what exactly is custom versus inherited—is sufficiently defined for those subjects. General product handoff remains blocked.
