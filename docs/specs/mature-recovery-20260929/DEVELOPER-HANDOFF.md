@@ -42,3 +42,20 @@ Do not cite the current aggregate `ci / test` context as proof that wrapper/nati
 ## Pass 6 promotion receipt
 
 K-E01's source-inspection prerequisite is sufficiently closed for K-E02/K-E03: all top-level trees enumerated; fork-owned versus inherited high-priority surfaces identified; the new JSON agent server shown adjacent to inherited IPC and unmounted at frozen source; remaining semantic/history uncertainty explicitly retained. This does **not** close K-E01 for all future archaeology and does not permit general feature work. K-E02 and K-E03 are now safe bounded experimental handoffs.
+
+## Pass 6 K-E02 comparator contract
+
+Ghoztty `fd3838acfa834c29e99616cdc8500c0208a13a09` is the primary same-family comparator on macOS. Do not use only its README. Its current source supports create/split/close plus read, send-keys, list, rename, rearrange and state-like actions; `send-keys` targets PTY input and `read` returns recent pane output. Its macOS socket is chmod 0600, uses a per-instance/pane-baked socket path, caps requests, and tracks named targets with weak references.
+
+The bake-off must therefore test semantics Ghoztty does not already obviously provide:
+
+1. **Causal completion:** when create/split returns success, independently verify the intended pane/window actually exists and the response identity names that exact effect. Ghoztty source dispatches UI creation asynchronously and can return `.ok` before main-queue completion.
+2. **Wrong-instance resistance:** launch/identify two app instances/builds where practical; commands must not mutate the other instance.
+3. **Child effect:** send a nonce command to the actual child PTY and verify an external receipt; parser-only display injection is a negative control.
+4. **Read/state identity:** read output/state from the exact target, then close/recreate/restart and ensure stale identity cannot qualify the replacement.
+5. **Controller replacement/reconnect:** terminate only the CLI/controller and reconnect without inventing product continuity.
+6. **Event semantics:** if Khostty claims event-stream differentiation, exercise sequence gaps/drop reporting and causal pane-created/closed events. A source-defined broker that is not mounted earns no credit.
+7. **Authorization:** compare effective same-user socket permissions and token policy under the actual threat model; extra authentication complexity is not automatically a benefit.
+8. **Platform scope:** Windows evidence is a separate sub-journey; Ghoztty's macOS design explicitly declares Windows out of scope, while Khostty's Windows App lifecycle is currently Unimplemented.
+
+Return a capability matrix with PASS/FAIL/UNSUPPORTED/BLOCKED per exact candidate/configuration. Do not collapse unsupported competitor features into an overall score or declare a winner; the goal is to identify which Khostty deltas survive.
