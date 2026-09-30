@@ -53,11 +53,9 @@
     },
     {
       "id": "K-E03",
-      "state": "BLOCKED",
-      "depends_on": [
-        "K-E01-EMBED"
-      ],
-      "parallel_group": "K-P2",
+      "state": "READY",
+      "depends_on": [],
+      "parallel_group": "K-P1",
       "purpose": "Real embedding consumer comparison",
       "write_scope": [
         "one wrapper test/experiment surface"
@@ -74,7 +72,8 @@
     "tracked-tree enumeration",
     "top-level merge-base ownership",
     "agent IPC mount trace: adjacent/unmounted",
-    "Windows App lifecycle source state"
+    "Windows App lifecycle source state",
+    "embedding experiment may begin with explicit linked-native sentinel despite remaining semantic cleanup"
   ],
   "remaining_general_blockers": [
     "primary intent authority",
