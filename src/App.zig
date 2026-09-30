@@ -309,8 +309,12 @@ pub fn submitAgentPaneObservation(
             Ctx.run(p);
             p.app.alloc.destroy(p);
         }
+        fn cleanup(ptr: *anyopaque) void {
+            const p: *Pair = @ptrCast(@alignCast(ptr));
+            p.app.alloc.destroy(p);
+        }
     };
-    const request = try agent_bridge.Request.create(self.alloc, pair, Wrapped.run);
+    const request = try agent_bridge.Request.createWithCleanup(self.alloc, pair, Wrapped.run, Wrapped.cleanup);
     errdefer {
         _ = request.cancelQueued();
         request.releaseCaller();
