@@ -31,7 +31,7 @@
   },
   "mature_completion": null,
   "specification_completion": null,
-  "journey_closure": "AGENT_IPC_MOUNT_ABSENCE_REASONABLY_FALSIFIED_NATIVE_JOURNEYS_NOT_RUN",
+  "journey_closure": "AGENT_SERVER_ADJACENT_UNMOUNTED_BY_SOURCE_AND_SEARCH; NO_NATIVE_K_E02_RUN",
   "native_tests_run_this_pass": false,
   "static_checks_executed": "TWO_FULL_SOURCE_BLOBS_VERIFIED_AND_RUNTIME_BODIES_CHECKED",
   "experiment_receipt": "pass5/EXPERIMENT-RECEIPT.json",
@@ -68,22 +68,22 @@
   },
   "progress_policy": "Static diagnostics, imported assertions, native observations and product acceptance are distinct. No scalar document-count or test-count completion.",
   "tracked_tree_enumeration": {
-    "state": "CLOSED_AT_TOP_LEVEL_FAMILY_RESOLUTION",
+    "state": "CLOSED",
     "exact_non_fuzz_blob_rows": 2138,
-    "fuzz_family": {
-      "blobs": 4014,
-      "corpus_blobs": 4002,
-      "tree_identical_to_merge_base": true
-    },
     "all_top_level_trees_covered": true,
     "all_recursive_responses_untruncated": true,
+    "fuzz_family": {
+      "blobs": 4014,
+      "corpus_blobs": 4002
+    },
     "summary": "inventory/SUMMARY.json"
   },
   "K_E01_progress": {
     "tracked_tree_inventory": "COMPLETE",
-    "fork_ownership_high_priority": "SUBSTANTIALLY_RESOLVED",
-    "agent_server_mount_graph": "DISCONNECTED_AT_APPLICATION_BOUNDARY",
-    "remaining": "full semantic classification + modified build/CI/dist + useful history"
+    "top_level_ownership": "COMPLETE_AT_TREE_OBJECT_BOUNDARY",
+    "agent_ipc_mount_trace": "SOURCE_LEVEL_CLOSED_UNMOUNTED",
+    "semantic_family_resolution": "IN_PROGRESS",
+    "full_native_callgraph": "PARTIAL"
   },
   "tracked_product_relevant_inventory": {
     "unique_blobs": 2055,
