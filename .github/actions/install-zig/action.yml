@@ -79,4 +79,6 @@ runs:
         mkdir -p "$dest"
         tar -xJf /tmp/zig.tar.xz -C "$dest" --strip-components=1
         echo "$dest" >> "$GITHUB_PATH"
-        zig version
+        # GITHUB_PATH is applied to subsequent steps, not the current shell.
+        # Verify the exact installed binary directly here.
+        "$dest/zig" version
