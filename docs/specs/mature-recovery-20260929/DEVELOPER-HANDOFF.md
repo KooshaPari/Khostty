@@ -115,3 +115,15 @@ A wrapper experiment cannot qualify on `cargo check`, docs, or pure-language tes
 - measured application unsafe/FFI LOC, wrapper-specific LOC/dependencies, install steps and failure modes.
 
 Go/Python/WASM remain later projections unless Rust reveals a product-level obligation they uniquely test. Do not multiply four languages into four independent reasons for the terminal fork to exist.
+
+
+## Pass 9 K-E02 threading gate — do not mount Server directly
+
+Frozen AppHost explicitly states that server connection handlers run on separate threads while terminal/app state is owned by the app IO thread; the host mutex only serializes IPC callers and does not make concurrent app-thread access safe. Surface.queueIo is the existing IO-thread message path but is private to Surface.zig.
+
+Therefore K-E02 must be split:
+1. **K-E02a app-thread bridge:** add the smallest runtime-owned message/mailbox API needed for agent operations, with request correlation/completion and cancellation/shutdown semantics. Do not expose raw terminal pointers across threads. Parser/display feed and PTY child input remain separate operations.
+2. **K-E02b server lifecycle:** only after E02a tests, construct AppHost/manager/broker/server from a real windowed runtime lifecycle, bind/start under explicit local policy, and deinit before app-owned state is freed.
+3. **K-E02c native oracle:** real pane identity, nonce effect appropriate to the operation, concurrent unrelated pane creation, wrong/stale target, controller replacement, event loss/resync, and shutdown with an idle client.
+
+A direct Server.bind(... AppHost.host()) from GTK init that leaves connection threads touching app state is an automatic FAIL even if protocol tests pass. Windows remains out of this slice because its App lifecycle is unimplemented at the frozen source.
