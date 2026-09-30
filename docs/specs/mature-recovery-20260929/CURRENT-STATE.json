@@ -10,9 +10,10 @@
   "specification_branch": "docs/mature-recovery-20260929",
   "implementation_candidate": {
     "branch": "experiment/mature-recovery-k-e03",
-    "sha": "1edff1a00d6b68cbb297d97926e30030c8844b82",
-    "pr": 9,
-    "status": "EXPERIMENTAL_UNVERIFIED"
+    "head": "1e51ffcb222201d03eed2c28eb910d63d1d2903b",
+    "draft_pr": 9,
+    "status": "EXPERIMENTAL_BLOCKED_PENDING_EXACT_HEAD_EXECUTION",
+    "baseline": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d"
   },
   "status": "INCOMPLETE_BLOCKED",
   "handoff_status": "READY_FOR_PARALLEL_EXPERIMENTAL_IMPLEMENTATION",
@@ -198,5 +199,12 @@
     "rust_lifetime_control": "PASS",
     "rust_wrapper_runtime": "FAIL_LOADER_PATH",
     "upstream_comparison": "NOT_COMPLETED_DUE_ARGUMENT_ORIGIN_ERROR"
+  },
+  "K_E03": {
+    "previous_head": "aeede977b78ec65aba32dc7c372f6cd19ef515d3",
+    "previous_dedicated_workflow": "FAIL_HARNESS_SYNTAX_BEFORE_NATIVE_BUILD",
+    "syntax_fix": "1e51ffcb222201d03eed2c28eb910d63d1d2903b",
+    "exact_head_run": "QUEUED",
+    "general_acceptance": false
   }
 }
