@@ -10,22 +10,9 @@
   "specification_branch": "docs/mature-recovery-20260929",
   "implementation_candidate": {
     "branch": "experiment/mature-recovery-k-e03",
-    "head": "695d6f9e56d9e5869467f8ab44733ecbe8e5433b",
+    "sha": "3c749be20f5a5489dc963d74daf3b8690819577d",
     "pr": 9,
-    "status": "REVIEWED_BLOCKED",
-    "positive_changes": [
-      "fail-closed missing library evidence mode",
-      "out-of-tree Rust consumer",
-      "direct C comparator",
-      "artifact hash receipt"
-    ],
-    "blocking_review": [
-      "named artifact hash does not prove exact linked object",
-      "consumer coverage narrower than K-E03 contract",
-      "no upstream-artifact comparison",
-      "branch 2 commits behind current main",
-      "native CI/experiment pending"
-    ]
+    "status": "EXPERIMENTAL_UNVERIFIED"
   },
   "status": "INCOMPLETE_BLOCKED",
   "handoff_status": "READY_FOR_PARALLEL_EXPERIMENTAL_IMPLEMENTATION",
@@ -185,5 +172,16 @@
     },
     "installer_fix": "ABSOLUTE_DEST_ZIG_VERSION_CHECK",
     "current_workflow_run": 36719693538
+  },
+  "exact_candidate_ci": {
+    "run": 36741131134,
+    "status": "IN_PROGRESS",
+    "last_observed_step": "Build exact candidate native VT library",
+    "prior_steps": [
+      "checkout success",
+      "pinned Zig install success",
+      "Rust toolchain success",
+      "harness syntax success"
+    ]
   }
 }
