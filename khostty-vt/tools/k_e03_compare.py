@@ -76,7 +76,7 @@ def main():
         env["KHOSTTY_VT_LINK_KIND"] = "static" if lib.suffix == ".a" else "dylib"
         env["KHOSTTY_VT_REQUIRE_LINK"] = "1"
         env["CARGO_TARGET_DIR"] = str(root / "target-linked")
-        rust_run = run(["cargo", "run", "--quiet"], cwd=rust, env=env)
+        # Cargo dependency build-script rpath arguments do not reliably propagate\n        # to an out-of-tree downstream binary. Configure the native loader\n        # explicitly for the execution witness and record that deployment burden.\n        loader_var = "DYLD_LIBRARY_PATH" if platform.system() == "Darwin" else "LD_LIBRARY_PATH"\n        prior_loader = env.get(loader_var, "")\n        env[loader_var] = str(lib.parent) + (os.pathsep + prior_loader if prior_loader else "")\n        rust_run = run(["cargo", "run", "--quiet"], cwd=rust, env=env)
 
         # Compile-fail ownership control: a Search borrows terminal identity through
         # its API contract; Rust must not allow the terminal to be moved/dropped
@@ -155,7 +155,7 @@ def main():
             "direct_c_nonblank_lines": sum(
                 1 for line in direct_text.splitlines() if line.strip()
             ),
-            "out_of_tree_rust_manifest_lines": sum(
+            "runtime_loader_path_required": lib.suffix != ".a",\n                "out_of_tree_rust_manifest_lines": sum(
                 1 for line in (rust / "Cargo.toml").read_text().splitlines() if line.strip()
             ),
             "install_steps": [
