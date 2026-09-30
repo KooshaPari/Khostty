@@ -1,50 +1,34 @@
-# K-E03 grader review — 2026-09-30
+# Experimental grader review — pass 9 source re-grade
 
-Candidate: `experiment/mature-recovery-k-e03@1a146ee2e62d94e1ffa2308652365adc2060fe72`.
-Baseline: `a29aa9c6553d9f42aa68e2919116c0f6d53f329d`.
-Status: **PARTIAL / EXECUTION REQUIRED. No existence-gate decision.**
+Candidate branch: `experiment/mature-recovery-k-e03`. Baseline: `a29aa9c6553d9f42aa68e2919116c0f6d53f329d`.
 
-## Candidate strengths
+Status: **BLOCKED ON NATIVE EXECUTION / TWO-ARTIFACT COMPARISON. NO FORK ACCEPTANCE.**
 
-Only two files differ from baseline: `khostty-vt/build.rs` and `khostty-vt/tools/k_e03_compare.py`. The candidate:
-- adds fail-closed `KHOSTTY_VT_REQUIRE_LINK` evidence mode while preserving ordinary typecheck behavior;
-- requires an explicit native artifact when evidence mode names one;
-- builds an out-of-tree Rust consumer;
-- executes create/write/resize/render/search/snapshot-restore;
-- checks missing-library failure;
-- includes a Rust lifetime misuse compile-fail control;
-- builds and executes a direct C consumer against the same supplied native library;
-- hashes the native artifact and records commands/stdout/stderr;
-- explicitly labels source/origin claims unauthenticated and states that a true upstream-vs-Khostty comparison needs separately built artifacts.
+This supersedes the earlier source-level FAIL/REVISE review for the final branch tree.
 
-The harness does not claim its own preferred winner.
+## Source contract now addressed
 
-## Blocking evidence gaps
+- evidence mode can require a real native library and fail instead of silently cargo-checking unlinked;
+- explicit library/include paths support out-of-tree consumer setup;
+- Rust consumer executes create/write/resize/render/search/snapshot-restore;
+- direct C comparator now exercises the same behavior class rather than only create/write/free;
+- missing-library control is fail-closed;
+- Rust lifetime misuse is a compile-fail control;
+- existing `abi_layout` + `ffi_coverage` tests are invoked against the supplied configuration;
+- receipt records native artifact digest, claimed source/origin, commands/stdout/stderr, wrapper/direct LOC and explicit install steps.
 
-### G-KE03-01 — no authenticated native-library provenance
+## Still required before experimental PASS
 
-`--library-source-sha` and `--library-origin` are caller strings. Native artifact SHA-256 authenticates bytes, not their source revision/build configuration. This is correctly disclosed by the harness but prevents an upstream-vs-Khostty architectural conclusion.
+1. Execute the harness against an exact Khostty-built native library and preserve its build receipt.
+2. Execute it separately against an independently built upstream/merge-base or current-upstream library compatible with the comparison contract.
+3. Authenticate library-source provenance; the CLI source-SHA/origin fields remain caller claims.
+4. Record exact compiler/Rust/Zig/target/config and native artifact hashes.
+5. Confirm the ABI/FFI verification actually passes on both intended subjects or document incompatibility as a result.
+6. Compare package/install dependency footprint and failure modes from clean out-of-tree directories.
+7. Independent reviewer evaluates whether wrapper safety/ergonomics justify maintenance; no weighted winner is preselected.
 
-Closure: separate build receipt must bind source tree/commit, build command/toolchain/options, produced library hash and headers hash. Run at least once for frozen Khostty and once for the chosen upstream comparison revision.
-
-### G-KE03-02 — direct C comparator is not yet the same functional journey
-
-Rust exercises create/write/resize/render/search/snapshot-restore. Direct C only exercises create/write/free. Therefore current metrics cannot support a claim that the wrapper reduces application complexity for the same behavior.
-
-Closure: direct C consumer must implement the same selected journey, or the comparison must explicitly restrict itself to create/write/free and shrink the Rust side to match. Compare like with like.
-
-### G-KE03-03 — requested evidence dimensions are incomplete
-
-The harness records wrapper LOC and unsafe mentions but does not yet measure generated-vs-handwritten drift result, install steps, package dependency footprint, or a native ABI mismatch failure. The compile-fail lifetime control is valuable and safer than intentionally dereferencing freed C state, but it covers only one safety dimension.
-
-Closure: run the existing binding/ABI verification against the exact library/header pair; record install/build steps from a clean out-of-tree directory; add a deliberate header/library mismatch or other safe ABI/version incompatibility control.
-
-### G-KE03-04 — no execution receipt for this exact candidate
-
-Queried combined status exposes CodeRabbit only. No harness JSON receipt bound to `1a146ee…` was found. Source quality is not execution.
-
-Closure: execute the harness in a native-capable environment with exact artifact/build receipts. A PASS_EXPERIMENT is still not a fork existence-gate pass until both upstream and Khostty artifacts are compared.
+Do not intentionally dereference freed native state merely to manufacture a crash. Compile-time lifetime rejection plus safe invalid-handle/API controls are preferable.
 
 ## Disposition
 
-The candidate is a useful verifier/harness and is narrower than production wrapper changes. Keep experimental. Do not merge into main merely because the harness itself is sound.
+Keep experimental. A successful wrapper experiment can justify preserving/extracting the wrapper without justifying the Khostty terminal fork, Windows runtime, or agent IPC.
