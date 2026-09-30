@@ -4,7 +4,7 @@
   "product": "KooshaPari/Khostty",
   "repository_id": 1322607630,
   "observed_on": "2026-09-30",
-  "assessment_pass": 9,
+  "assessment_pass": 10,
   "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
@@ -122,9 +122,9 @@
   "experimental_candidates": {
     "K_E03": {
       "branch": "experiment/mature-recovery-k-e03",
-      "head": "1e51ffcb222201d03eed2c28eb910d63d1d2903b",
+      "head": "da1fa84d9552d1a747b75ee3ab4c627267aa6b7a",
       "pr": 9,
-      "status": "QUEUED_AFTER_HARNESS_SYNTAX_FIX"
+      "status": "EXPERIMENTALLY_ACCEPTED_EMBEDDING_SLICE_RUN_28"
     },
     "K_E02": {
       "branch": "experiment/mature-recovery-k-e02",
@@ -188,29 +188,34 @@
     "new_run": 36744824103,
     "status": "QUEUED"
   },
-  "K_E02_status": "READY_FOR_EXPERIMENTAL_IMPLEMENTATION_PHASED_APP_THREAD_BRIDGE_THEN_SERVER_MOUNT",
+  "K_E02_status": "DIRECT_MOUNT_NEGATIVE_BASELINE_REJECTED; K-E02A_APP_THREAD_BRIDGE_NEXT",
   "K_E02_guard": "DIRECT_SERVER_BIND_WITH_CROSS_THREAD_APPHOST_ACCESS_IS_FAIL",
-  "K_E03_status": "ACTIVE_EXPERIMENT_RUN19_FAILED_COMPARISON_GATE; NEXT_RUN_PATCHES_LOADER_AND_UPSTREAM_ORIGIN",
+  "K_E03_status": "EXPERIMENTALLY_ACCEPTED_EMBEDDING_SLICE_ONLY; PACKAGING_BURDEN_REMAINS; DOES_NOT_ACCEPT_FORK_OR_CONTROL_PLANE",
   "K_E03_partial_evidence": {
     "candidate_native_build": "PASS",
-    "direct_c_consumer": "PASS",
-    "abi_ffi_tests": "PASS",
+    "candidate_direct_c_consumer": "PASS",
+    "candidate_rust_wrapper_runtime": "PASS_WITH_EXPLICIT_PLATFORM_LOADER_PATH",
+    "candidate_abi_ffi_tests": "PASS",
     "missing_library_control": "PASS",
     "rust_lifetime_control": "PASS",
-    "rust_wrapper_runtime": "FAIL_LOADER_PATH",
-    "upstream_comparison": "NOT_COMPLETED_DUE_ARGUMENT_ORIGIN_ERROR"
+    "upstream_merge_base_native_build": "PASS",
+    "upstream_direct_c_and_wrapper_comparison": "PASS",
+    "exact_head": "da1fa84d9552d1a747b75ee3ab4c627267aa6b7a",
+    "dedicated_workflow_run": 36762466662,
+    "evidence_artifact_digest": "sha256:1f565ad49b63ee1c13959cd7b2680b9169a9bfd7e021f944a02092153b5c0b3d",
+    "packaging_caveat": "execution witness requires explicit platform loader path; standalone packaging remains unproven"
   },
   "K_E03": {
-    "previous_head": "aeede977b78ec65aba32dc7c372f6cd19ef515d3",
-    "previous_dedicated_workflow": "FAIL_HARNESS_SYNTAX_BEFORE_NATIVE_BUILD",
-    "syntax_fix": "1e51ffcb222201d03eed2c28eb910d63d1d2903b",
-    "exact_head_run": "QUEUED",
+    "exact_head": "da1fa84d9552d1a747b75ee3ab4c627267aa6b7a",
+    "dedicated_workflow_run": 36762466662,
+    "experiment_result": "PASS_EMBEDDING_SLICE",
     "general_acceptance": false
   },
   "K_E02": {
-    "mount_candidate": "OPT_IN_GTK_LIFECYCLE",
-    "compile_workflow": "QUEUED",
-    "critical_blocker": "DETACHED_CONNECTION_THREADS_CAN_OUTLIVE_SERVER_DEPENDENCIES_AND_NATIVE_APP",
+    "negative_baseline_pr": 10,
+    "negative_baseline_head": "1d456d6de0442b09f2a34caa65a96a5fffb92e11",
+    "direct_mount": "REJECTED_THREADING_AND_LIFECYCLE_SHAPE",
+    "next": "K-E02a correlated/cancellable app-thread bridge; then server lifecycle; then native oracle",
     "acceptance": false
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
