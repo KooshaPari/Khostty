@@ -4,13 +4,13 @@
   "product": "KooshaPari/Khostty",
   "repository_id": 1322607630,
   "observed_on": "2026-09-30",
-  "assessment_pass": 9,
+  "assessment_pass": 10,
   "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
   "implementation_candidate": {
     "branch": "experiment/mature-recovery-k-e03",
-    "sha": "3c749be20f5a5489dc963d74daf3b8690819577d",
+    "sha": "1edff1a00d6b68cbb297d97926e30030c8844b82",
     "pr": 9,
     "status": "EXPERIMENTAL_UNVERIFIED"
   },
@@ -174,14 +174,17 @@
     "current_workflow_run": 36719693538
   },
   "exact_candidate_ci": {
-    "run": 36741131134,
-    "status": "IN_PROGRESS",
-    "last_observed_step": "Build exact candidate native VT library",
-    "prior_steps": [
-      "checkout success",
-      "pinned Zig install success",
-      "Rust toolchain success",
-      "harness syntax success"
-    ]
+    "prior_sha": "3c749be20f5a5489dc963d74daf3b8690819577d",
+    "prior_run": 36741131134,
+    "result": "FAIL_HARNESS_RECEIPT_KEY_TYPO",
+    "native_build": {
+      "result": "PASS",
+      "artifact": "zig-out/lib/libghostty-vt.a",
+      "sha256": "baf8e58b30f60d12a705a613849e05d338618bdcdc22aaa3b2fda2a35e044250"
+    },
+    "failure": "receipt read GHOSTTY_VT_LINK_KIND while harness set KHOSTTY_VT_LINK_KIND; occurred after subprocess checks but before receipt write",
+    "new_sha": "1edff1a00d6b68cbb297d97926e30030c8844b82",
+    "new_run": 36744824103,
+    "status": "QUEUED"
   }
 }
