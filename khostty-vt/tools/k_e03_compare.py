@@ -29,6 +29,9 @@ def main():
     ap.add_argument("--include-dir", type=Path, required=True)
     ap.add_argument("--lib", type=Path, required=True)
     ap.add_argument("--source-sha", required=True)
+    ap.add_argument("--library-source-sha", required=True,
+                    help="source revision that produced --lib; evidence only, not cryptographically authenticated")
+    ap.add_argument("--library-origin", choices=("khostty", "upstream-ghostty"), required=True)
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args()
     crate = a.crate_dir.resolve()
@@ -86,6 +89,19 @@ def main():
             "cmd": [str(exe)], "returncode": None, "stdout": "", "stderr": "compile failed"
         }
 
+        wrapper_files = list((crate / "src").glob("*.rs"))
+        wrapper_text = "\n".join(p.read_text(errors="replace") for p in wrapper_files)
+        direct_text = csrc.read_text()
+        metrics = {
+            "wrapper_rust_source_files": len(wrapper_files),
+            "wrapper_rust_nonblank_lines": sum(
+                1 for line in wrapper_text.splitlines() if line.strip()
+            ),
+            "wrapper_unsafe_mentions": wrapper_text.count("unsafe"),
+            "direct_c_nonblank_lines": sum(
+                1 for line in direct_text.splitlines() if line.strip()
+            ),
+        }
         checks = {
             "rust_linked_consumer_executed": rust_run["returncode"] == 0 and "linked-ok" in rust_run["stdout"],
             "missing_library_fails_closed": rust_missing["returncode"] != 0,
@@ -95,12 +111,15 @@ def main():
             "schema_version": 1,
             "subject": "K-E03_WRAPPER_VS_DIRECT_C_EXPERIMENT",
             "source_sha": a.source_sha,
+            "library_source_sha_claim": a.library_source_sha,
+            "library_origin_claim": a.library_origin,
             "crate_dir": str(crate),
             "include_dir": str(include),
             "native_library": str(lib),
             "native_library_sha256": sha256(lib),
             "platform": platform.platform(),
             "checks": checks,
+            "metrics": metrics,
             "rust_linked": rust_run,
             "rust_missing_library_control": rust_missing,
             "direct_c_build": cbuild,
@@ -108,8 +127,11 @@ def main():
             "verdict": "PASS_EXPERIMENT" if all(checks.values()) else "FAIL_EXPERIMENT",
             "limitations": [
                 "This proves a minimal linked consumer, not all wrapper APIs.",
-                "Safety/unsafe LOC, ABI drift, snapshot/search and packaging metrics require follow-up.",
-                "The direct C comparator uses the same supplied native library artifact."
+                "The LOC/unsafe counts are descriptive, not a quality score.",
+                "ABI drift, snapshot/search, use-after-close and packaging metrics require follow-up.",
+                "The direct C comparator uses the same supplied native library artifact.",
+                "library_source_sha/library_origin are caller claims; a separate build receipt must authenticate them.",
+                "A true upstream-vs-Khostty comparison requires separate runs with independently built artifacts."
             ],
         }
         a.out.parent.mkdir(parents=True, exist_ok=True)
