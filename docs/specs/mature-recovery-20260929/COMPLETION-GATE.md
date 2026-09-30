@@ -56,3 +56,8 @@ Closed sub-gates: frozen tracked-tree enumeration and high-priority fork ownersh
 ## Finding-ID integrity
 
 Pass 6 detected duplicate Khostty finding IDs introduced by parallel recovery edits. Distinct issues now have one canonical ID K-F01..K-F17; repeated mount/tree evidence is retained as subordinate evidence under K-F11/K-F12/K-F13/K-F16 instead of minting duplicate stable IDs. Future trace generation must reject duplicate IDs.
+
+
+## Pass 6 gate movement
+
+Closed sub-gates: finite tracked-tree enumeration and high-priority fork ownership boundary. The new JSON agent-control subsystem is now source-traced as adjacent to rather than mounted through public `apprt.ipc`; its native application journey remains open. This narrows K-E02 to a concrete integration experiment rather than broad protocol development. No completion percentage is awarded for inherited corpus size or source enumeration.
