@@ -100,3 +100,18 @@ Do not compare local IPC security by feature labels such as “token” versus �
 K-E03 should not compare terminal semantics as though the wrappers implement a new VT. Rust, Go, Python and WASM wrapper code is fork-owned, but inspected surfaces call the inherited `libghostty-vt` C API. Their candidate value is safer/idiomatic ownership, lifetime/error/ABI validation, packaging and consumer ergonomics. Rust explicitly provides RAII and confines unsafe FFI; Go wraps opaque handles with Close/finalizers; Python uses cffi plus runtime manifest verification; WASM uses the inherited type manifest to drive memory/layout helpers.
 
 **K-E03 experiment:** for one language first (Rust preferred because its ownership contract is strongest), build the same consumer directly against upstream C/libghostty and through the wrapper. Exercise create → VT feed → resize → read/render → snapshot/restore → search → free, plus wrong-version/ABI and use-after-close/error controls. Compare application unsafe/FFI LOC, lifetime failure modes, generated-vs-handwritten binding drift, packaging friction and maintenance delta. Do not award points for inherited parser correctness. If the wrapper materially reduces unsafe/lifetime burden without owning a forked terminal, consider extracting/upstreaming it rather than using it to justify the whole fork.
+
+
+## Pass 8 K-E03 evidence contract
+
+A wrapper experiment cannot qualify on `cargo check`, docs, or pure-language tests. Rust `build.rs` intentionally warns and continues when no prebuilt libghostty-vt is found. Require:
+
+- exact Khostty/upstream library source SHA, built artifact SHA-256, target/config and path;
+- build output proving `ghostty_vt_linked`/linker path was active;
+- actual consumer process exit + screen/snapshot/search observations;
+- use-after-close/error control and ABI/binding drift control;
+- the same consumer written directly against upstream C/libghostty as comparator;
+- a clean out-of-tree consumer directory so checkout-relative linking is not mistaken for distributability;
+- measured application unsafe/FFI LOC, wrapper-specific LOC/dependencies, install steps and failure modes.
+
+Go/Python/WASM remain later projections unless Rust reveals a product-level obligation they uniquely test. Do not multiply four languages into four independent reasons for the terminal fork to exist.
