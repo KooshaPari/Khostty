@@ -283,3 +283,14 @@ This is intentional developer ergonomics, not itself a bug. It becomes a false g
 Rust searches repository-relative `zig-out/lib`, `build/lib`, and `dist/lib` unless overridden. Go's default cgo directives point one directory above the module to the checkout's `include` and `zig-out/lib`, with a custom build tag required for external placement. Python accepts explicit path/dir and system-loader discovery but still requires an already-built shared library. WASM builds its module through the repository Zig build.
 
 Thus “polyglot bindings exist” and “independently consumable packages exist” are different claims. K-E03 must measure install/build from outside the Khostty checkout, not only in-tree tests. If standalone packaging is accepted product scope, current checkout-relative defaults are transition debt.
+
+
+## K-F15 — mounting the server exposes unsafe shutdown ownership with live clients (blocking K-E02)
+
+The new server spawns one detached thread per accepted connection. `Server.deinit()` stops accepting and waits up to 5 seconds for `live_connections` to reach zero. If clients remain connected, it logs a warning and returns anyway. Connection threads still hold `*Server` and their handlers reference `Manager`, `Broker` and `Auth`; the real Manager's Host also points into `AppHost` and the native application.
+
+This was tolerable only as an explicitly known standalone limitation while the server was not mounted. In a real GTK lifecycle, returning from server deinit and then freeing Manager/Broker/Auth/Runtime or disposing the GTK App can invalidate state still reachable by detached connection threads.
+
+Existing lifecycle coverage does not falsify this case: the test closes the client first, explicitly drains connections, and only then stops the server. It does not hold an idle/stuck client open across application teardown.
+
+K-E02 therefore needs a bounded connection-ownership model: server shutdown must make connection reads return, join/confirm every connection worker, and only then release dependencies/native AppHost. A leak-until-process-exit or indefinite shutdown hang is not an accepted general solution. Add adversarial idle-client, half-frame, subscribed-event and concurrent-client teardown cases.
