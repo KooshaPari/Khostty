@@ -33,6 +33,9 @@ jobs:
           shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87
 
+      - name: Validate experiment harness syntax
+        run: python3 -m py_compile khostty-vt/tools/k_e03_compare.py
+
       - name: Build exact candidate native VT library
         run: |
           set -euo pipefail
