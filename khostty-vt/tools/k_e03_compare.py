@@ -182,7 +182,7 @@ def main():
             "include_dir": str(include),
             "native_library": str(lib),
             "native_library_sha256": sha256(lib),
-            "link_kind": env["GHOSTTY_VT_LINK_KIND"],
+            "link_kind": env["KHOSTTY_VT_LINK_KIND"],
             "platform": platform.platform(),
             "checks": checks,
             "metrics": metrics,
