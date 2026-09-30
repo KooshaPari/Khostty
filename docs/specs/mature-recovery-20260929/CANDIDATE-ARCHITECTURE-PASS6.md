@@ -2,11 +2,13 @@
 
 Status: **preferred architecture for falsification/experiments, not accepted mature contract.** Frozen source under recovery: `a29aa9c6553d9f42aa68e2919116c0f6d53f329d`.
 
+> **Authority correction — 2026-09-30.** Khostty's existence as a substantial Ghostty fork is current user intent and is no longer an architecture experiment. This document now uses alternatives to decide *subsystem ownership and bootstrap strategy*, not whether the product/fork should exist. Earlier wording below that treated “keep the fork” as conditional is superseded.
+
 ## Product hypothesis
 
-Khostty should not be a second independently evolving terminal engine. The surviving product hypothesis is a **supported Ghostty-derived integration/distribution layer** that minimizes owned delta while combining only experimentally justified capabilities: current upstream terminal semantics, a maintained Windows host, agent/operator control, safe language bindings and independent conformance/evidence.
+Khostty is a **substantial Ghostty fork and supported terminal/runtime substrate** for Windows/platform work, shell integration, rich programmatic control, embedding/automation and HeliosLab/agent use. It should track and reuse upstream Ghostty semantics aggressively where Khostty has no accepted reason to diverge, while owning the fork deltas needed for its product outcomes.
 
-Feature novelty is no longer the thesis. Integration quality, support horizon, cross-surface consistency and lower total ownership cost are.
+Feature novelty is not the thesis. The relevant optimization problem is where to **USE / INTEGRATE / FORK / ADAPT / COMPOSE / LEARN FROM / REJECT / BUILD** at each subsystem boundary while preserving one coherent Khostty product, support horizon, cross-surface consistency and manageable upstream merge cost.
 
 ## Layering
 
@@ -54,15 +56,15 @@ Each language package may version independently from the desktop distribution, b
 
 Conformance, wrapper ABI tests and native journey graders are outside product implementation authority. They bind exact upstream + Khostty delta + platform/configuration. No historical artifact/test count transfers automatically across an upstream rebase.
 
-## Repository strategy candidates
+## Repository / subsystem strategy candidates
 
-Preferred experiment order:
+The repository remains Khostty, a substantial Ghostty fork. The experiment order below chooses the implementation shape of individual capability families:
 
-1. **Minimal rebased fork/patch queue:** current upstream Ghostty plus explicitly enumerated Khostty patch families. Best fit if AppRT changes require source integration.
-2. **Upstream core + external Windows host/control companions:** preferable if libghostty exposes enough host functionality without core patching.
-3. Existing broad Khostty fork: retain only if 1/2 materially fail accepted journeys or impose higher maintenance cost.
+1. **Upstream-aligned core + explicit Khostty patch families:** keep terminal semantics close to current upstream and enumerate the Khostty-owned deltas that require source integration.
+2. **Adapted external implementations inside/alongside the fork:** for Windows host, control and similar capabilities, port or compose proven prior implementations when that is lower-risk than reimplementing them.
+3. **Custom Khostty implementation:** build where accepted Khostty journeys cannot be met cleanly by upstream APIs or adaptable prior art.
 
-Do not decide by LOC already written. Measure rebase conflict set, build/test burden, unsupported upstream interfaces and deployment complexity.
+Do not decide subsystem ownership by LOC already written. Measure rebase conflict set, native/runtime evidence, build/test burden, unsupported upstream interfaces, security/lifecycle constraints and deployment complexity.
 
 ## Stable boundaries
 
@@ -85,4 +87,4 @@ Do not decide by LOC already written. Measure rebase conflict set, build/test bu
 
 ## Architecture acceptance criterion
 
-Keep Khostty as a full supported fork only when the experimentally justified patch families collectively deliver a product outcome whose maintenance/integration cost beats composing existing upstream/prior implementations. Otherwise split/reduce the product and preserve only useful wrappers, conformance and distribution work.
+Khostty remains the accepted product/fork. Architecture acceptance requires each material custom subsystem or patch family to justify its ownership against the strongest practical upstream/prior implementation using native journey evidence, lifecycle/security constraints, integration cost and upstream merge burden. A subsystem may be reduced, replaced, adapted or composed without reopening the product-existence decision.
