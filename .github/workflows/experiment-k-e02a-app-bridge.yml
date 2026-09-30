@@ -17,9 +17,18 @@ jobs:
   bridge:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+      - name: Verify exact candidate checkout
+        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
       - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
       - name: Format gate
         run: zig fmt --check src/App.zig src/apprt/ipc/app_thread_bridge.zig
       - name: Bridge unit controls
