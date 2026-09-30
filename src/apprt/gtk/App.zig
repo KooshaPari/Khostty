@@ -14,7 +14,9 @@ const Application = @import("class/application.zig").Application;
 const Surface = @import("Surface.zig");
 const ipcNewWindow = @import("ipc/new_window.zig").newWindow;
 const ipcNewTab = @import("ipc/new_tab.zig").newTab;
-const ipcToggleQuickTerminal = @import("ipc/toggle_quick_terminal.zig").toggleQuickTerminal;\nconst AgentIpcRuntime = @import("../ipc/runtime.zig").Runtime;\nconst agentIpcEnabled = @import("../ipc/runtime.zig").enabled;
+const ipcToggleQuickTerminal = @import("ipc/toggle_quick_terminal.zig").toggleQuickTerminal;
+const AgentIpcRuntime = @import("../ipc/runtime.zig").Runtime;
+const agentIpcEnabled = @import("../ipc/runtime.zig").enabled;
 
 const log = std.log.scoped(.gtk);
 
@@ -25,7 +27,10 @@ pub const application_id = @import("build/info.zig").application_id;
 pub const object_path = @import("build/info.zig").object_path;
 
 /// The GObject Application instance
-app: *Application,\n\n/// Experimental K-E02 agent-control server. Separate from inherited apprt.ipc.\nagent_ipc: ?*AgentIpcRuntime = null,
+app: *Application,
+
+/// Experimental K-E02 agent-control server. Separate from inherited apprt.ipc.
+agent_ipc: ?*AgentIpcRuntime = null,
 
 pub fn init(
     self: *App,
