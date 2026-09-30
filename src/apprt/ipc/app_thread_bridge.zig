@@ -32,6 +32,7 @@ pub const Request = struct {
     gpa: Allocator,
     ctx: *anyopaque,
     run: *const fn (*anyopaque) void,
+    cleanup: ?*const fn (*anyopaque) void = null,
 
     /// Starts with caller ownership only. Bridge.submit temporarily retains
     /// queued ownership before publishing into the queue and releases it again
@@ -52,7 +53,19 @@ pub const Request = struct {
             .gpa = gpa,
             .ctx = ctx,
             .run = run,
+            .cleanup = null,
         };
+        return self;
+    }
+
+    pub fn createWithCleanup(
+        gpa: Allocator,
+        ctx: *anyopaque,
+        run: *const fn (*anyopaque) void,
+        cleanup: *const fn (*anyopaque) void,
+    ) Allocator.Error!*Request {
+        const self = try create(gpa, ctx, run);
+        self.cleanup = cleanup;
         return self;
     }
 
@@ -126,6 +139,7 @@ pub const Request = struct {
         self.mutex.lock();
         if (self.state == .canceled) {
             self.mutex.unlock();
+            if (self.cleanup) |cleanup| cleanup(self.ctx);
             self.release();
             return .canceled;
         }
@@ -154,6 +168,7 @@ pub const Request = struct {
         std.debug.assert(self.state == .canceled);
         self.condition.broadcast();
         self.mutex.unlock();
+        if (self.cleanup) |cleanup| cleanup(self.ctx);
         self.release();
     }
 
@@ -313,4 +328,28 @@ test "tickets are monotonic correlation identities" {
     try std.testing.expectEqual(State.completed, try b.wait(null));
     a.releaseCaller();
     b.releaseCaller();
+}
+
+
+test "cancelled queued request runs cleanup exactly once" {
+    var bridge = Bridge.init(std.testing.io);
+    const Counters = struct { ran: usize = 0, cleaned: usize = 0 };
+    var counters: Counters = .{};
+    const Ctx = struct {
+        fn run(ptr: *anyopaque) void {
+            const c: *Counters = @ptrCast(@alignCast(ptr));
+            c.ran += 1;
+        }
+        fn cleanup(ptr: *anyopaque) void {
+            const c: *Counters = @ptrCast(@alignCast(ptr));
+            c.cleaned += 1;
+        }
+    };
+    const request = try Request.createWithCleanup(std.testing.allocator, &counters, Ctx.run, Ctx.cleanup);
+    _ = try bridge.submit(request);
+    try std.testing.expect(request.cancelQueued());
+    try std.testing.expectEqual(@as(usize, 1), bridge.drainOnAppThread());
+    try std.testing.expectEqual(@as(usize, 0), counters.ran);
+    try std.testing.expectEqual(@as(usize, 1), counters.cleaned);
+    request.releaseCaller();
 }
