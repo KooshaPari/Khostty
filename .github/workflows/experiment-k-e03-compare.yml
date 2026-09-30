@@ -1,0 +1,75 @@
+name: Experiment - K-E03 wrapper vs direct C
+
+on:
+  push:
+    branches:
+      - experiment/mature-recovery-k-e03
+  pull_request:
+    branches:
+      - main
+    paths:
+      - khostty-vt/**
+      - .github/actions/install-zig/action.yml
+      - .github/workflows/experiment-k-e03-compare.yml
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: K-E03 linked wrapper/direct-C evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      RECOVERY_BASELINE: a29aa9c6553d9f42aa68e2919116c0f6d53f329d
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build exact candidate native VT library
+        run: |
+          set -euo pipefail
+          zig build -Demit-lib-vt
+          test -f zig-out/lib/libghostty-vt.a
+          sha256sum zig-out/lib/libghostty-vt.a | tee candidate-lib.sha256
+      - name: Run fail-closed wrapper/direct-C harness
+        run: |
+          set -euo pipefail
+          python3 khostty-vt/tools/k_e03_compare.py \
+            --crate-dir khostty-vt \
+            --include-dir include \
+            --lib zig-out/lib/libghostty-vt.a \
+            --source-sha "$(git rev-parse HEAD)" \
+            --library-source-sha "$(git rev-parse HEAD)" \
+            --library-origin khostty \
+            --out k-e03-candidate.json
+      - name: Record immutable identities
+        if: always()
+        run: |
+          git rev-parse HEAD > candidate-sha.txt
+          git rev-parse "$RECOVERY_BASELINE" > recovery-baseline-sha.txt
+          rustc --version > rust-version.txt
+          cargo --version > cargo-version.txt
+          zig version > zig-version.txt
+          cc --version > cc-version.txt
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k-e03-current-candidate
+          path: |
+            candidate-lib.sha256
+            k-e03-candidate.json
+            candidate-sha.txt
+            recovery-baseline-sha.txt
+            rust-version.txt
+            cargo-version.txt
+            zig-version.txt
+            cc-version.txt
+          if-no-files-found: warn
+          retention-days: 30
