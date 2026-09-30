@@ -1,0 +1,79 @@
+name: Experiment - Khostty linked Rust wrapper pass 6
+
+on:
+  push:
+    branches:
+      - experiment/khostty-embedding-pass6
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/experiment-khostty-embedding-pass6.yml
+
+permissions:
+  contents: read
+
+jobs:
+  linked-rust:
+    name: K-E03 linked native Rust consumer
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SOURCE_SHA: a29aa9c6553d9f42aa68e2919116c0f6d53f329d
+      GHOSTTY_VT_LIB_DIR: ${{ github.workspace }}/zig-out/lib
+      GHOSTTY_VT_INCLUDE_DIR: ${{ github.workspace }}/include
+      GHOSTTY_VT_LINK_KIND: static
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build exact native VT artifacts
+        run: |
+          set -e
+          zig build -Demit-lib-vt
+          test -f zig-out/lib/libghostty-vt.a
+          sha256sum zig-out/lib/libghostty-vt.a | tee libghostty-vt.sha256
+      - name: Prove integration tests are present
+        run: |
+          set -e
+          cargo test --manifest-path khostty-vt/Cargo.toml --test terminal -- --list | tee terminal-tests.list
+          grep -q "new_terminal_reports_its_geometry" terminal-tests.list
+          grep -q "write_pty_effect_receives_query_responses" terminal-tests.list
+      - name: Run linked integration suite
+        run: |
+          set -e
+          cargo test --manifest-path khostty-vt/Cargo.toml --test terminal -- --nocapture | tee terminal-tests.log
+      - name: Run full wrapper suite
+        run: |
+          set -e
+          cargo test --manifest-path khostty-vt/Cargo.toml --all-targets --no-fail-fast | tee wrapper-tests.log
+      - name: Record identities
+        if: always()
+        run: |
+          git rev-parse HEAD > candidate-sha.txt
+          git rev-parse "$SOURCE_SHA" > source-sha.txt
+          rustc --version > rust-version.txt
+          cargo --version > cargo-version.txt
+          zig version > zig-version.txt
+      - name: Upload K-E03 receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: khostty-k-e03-linked-rust
+          path: |
+            libghostty-vt.sha256
+            terminal-tests.list
+            terminal-tests.log
+            wrapper-tests.log
+            candidate-sha.txt
+            source-sha.txt
+            rust-version.txt
+            cargo-version.txt
+            zig-version.txt
+          if-no-files-found: error
+          retention-days: 30
