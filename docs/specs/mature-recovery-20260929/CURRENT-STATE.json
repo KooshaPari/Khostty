@@ -4,7 +4,7 @@
   "product": "KooshaPari/Khostty",
   "repository_id": 1322607630,
   "observed_on": "2026-09-30",
-  "assessment_pass": 9,
+  "assessment_pass": 10,
   "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
@@ -122,15 +122,15 @@
   "experimental_candidates": {
     "K_E03": {
       "branch": "experiment/mature-recovery-k-e03",
-      "worker_head_reviewed": "1a146ee2e62d94e1ffa2308652365adc2060fe72",
-      "grader_review_commit": "284cb52c79d23a5c4129f4996962f8dc3fedd923",
-      "verdict": "PARTIAL_EXECUTION_REQUIRED",
-      "blocking": [
-        "native artifact provenance unauthenticated",
-        "direct C journey not equivalent to Rust",
-        "ABI/package evidence incomplete",
-        "no candidate-bound execution receipt"
-      ]
+      "head": "1e51ffcb222201d03eed2c28eb910d63d1d2903b",
+      "pr": 9,
+      "status": "QUEUED_AFTER_HARNESS_SYNTAX_FIX"
+    },
+    "K_E02": {
+      "branch": "experiment/mature-recovery-k-e02",
+      "head": "a007160c333566a45b5a1572b7099ed57529203d",
+      "pr": 10,
+      "status": "BLOCKED_SAFE_SHUTDOWN_AND_NATIVE_EXECUTION"
     }
   },
   "windows_alternatives": {
@@ -206,5 +206,11 @@
     "syntax_fix": "1e51ffcb222201d03eed2c28eb910d63d1d2903b",
     "exact_head_run": "QUEUED",
     "general_acceptance": false
+  },
+  "K_E02": {
+    "mount_candidate": "OPT_IN_GTK_LIFECYCLE",
+    "compile_workflow": "QUEUED",
+    "critical_blocker": "DETACHED_CONNECTION_THREADS_CAN_OUTLIVE_SERVER_DEPENDENCIES_AND_NATIVE_APP",
+    "acceptance": false
   }
 }
