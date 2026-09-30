@@ -10,16 +10,19 @@
   "specification_branch": "docs/mature-recovery-20260929",
   "implementation_candidate": null,
   "status": "INCOMPLETE_BLOCKED",
-  "handoff_status": "READY_FOR_EXPERIMENTAL_IMPLEMENTATION",
+  "handoff_status": "READY_FOR_PARALLEL_EXPERIMENTAL_IMPLEMENTATION",
   "general_dev_handoff": false,
   "parallel_general_dev_handoff": false,
   "handoff_document": "DEVELOPER-HANDOFF.md",
   "ready_work_packages": [
-    "K-E01",
-    "K-E02",
-    "K-E03"
+    "K-E01-EMBED",
+    "K-E02"
   ],
-  "dependent_experimental_work_packages": {},
+  "dependent_experimental_work_packages": {
+    "K-E03": [
+      "K-E01-EMBED"
+    ]
+  },
   "contract_authority": "CANDIDATE_NOT_ACCEPTED_PRIMARY_SOURCE_STILL_REQUIRED",
   "authority_correction": "Pass 5 retrieval returned prior assistant summaries rather than independent primary confirmation of earlier claimed user instructions.",
   "source_denominator": {
@@ -46,7 +49,9 @@
     "inherited ABI differentiation correction",
     "K-F11",
     "K-F12",
-    "K-F13"
+    "K-F13",
+    "K-F14",
+    "K-F15"
   ],
   "high_risk_unknowns": [
     "K-F04",
@@ -81,9 +86,12 @@
   "K_E01_progress": {
     "tracked_tree_inventory": "COMPLETE",
     "top_level_ownership": "COMPLETE_AT_TREE_OBJECT_BOUNDARY",
-    "agent_ipc_mount_trace": "SOURCE_LEVEL_CLOSED_UNMOUNTED",
+    "agent_ipc_mount_trace": "CLOSED_UNMOUNTED",
     "semantic_family_resolution": "IN_PROGRESS",
-    "full_native_callgraph": "PARTIAL"
+    "full_native_callgraph": "PARTIAL",
+    "control_path_prerequisite": "CLOSED_FOR_K_E02",
+    "embedding_wrapper_and_native_consumer": "OPEN",
+    "ci_evidence_semantics": "CURRENT_FALSE_GREEN_MECHANISMS_IDENTIFIED"
   },
   "tracked_product_relevant_inventory": {
     "unique_blobs": 2055,
