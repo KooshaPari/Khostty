@@ -274,6 +274,51 @@ pub fn submitAgentAppWork(
     return ticket;
 }
 
+/// K-E02a app-thread-owned pane identity projection.
+/// This is intentionally read-only: it proves that a worker can request an
+/// exact runtime-owned pane observation without dereferencing CoreApp off-thread.
+pub const AgentPaneObservation = struct {
+    requested_id: u64,
+    found_id: ?u64 = null,
+    focused: ?bool = null,
+};
+
+pub fn submitAgentPaneObservation(
+    self: *App,
+    rt_app: *apprt.App,
+    observation: *AgentPaneObservation,
+    request_out: **agent_bridge.Request,
+) !agent_bridge.Ticket {
+    const Ctx = struct {
+        fn run(ptr: *anyopaque) void {
+            const pair: *struct { app: *App, observation: *AgentPaneObservation } = @ptrCast(@alignCast(ptr));
+            const surface = pair.app.findSurfaceByID(pair.observation.requested_id) orelse return;
+            pair.observation.found_id = surface.id;
+            pair.observation.focused = pair.app.focused_surface == surface;
+        }
+    };
+
+    const Pair = struct { app: *App, observation: *AgentPaneObservation };
+    const pair = try self.alloc.create(Pair);
+    pair.* = .{ .app = self, .observation = observation };
+    errdefer self.alloc.destroy(pair);
+
+    const Wrapped = struct {
+        fn run(ptr: *anyopaque) void {
+            const p: *Pair = @ptrCast(@alignCast(ptr));
+            Ctx.run(p);
+            p.app.alloc.destroy(p);
+        }
+    };
+    const request = try agent_bridge.Request.create(self.alloc, pair, Wrapped.run);
+    errdefer {
+        _ = request.cancelQueued();
+        request.releaseCaller();
+    }
+    request_out.* = request;
+    return self.submitAgentAppWork(rt_app, request);
+}
+
 pub fn focusedSurface(self: *const App) ?*Surface {
     const surface = self.focused_surface orelse return null;
     if (!self.hasSurface(surface)) return null;
