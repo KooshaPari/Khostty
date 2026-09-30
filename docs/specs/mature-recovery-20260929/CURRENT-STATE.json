@@ -132,28 +132,16 @@
     "classification": "POST_SNAPSHOT_RELEASE_OPERATIONS_NOT_PRODUCT_RUNTIME"
   },
   "experimental_candidates": {
-    "K-E03": {
-      "branch": "experiment/khostty-embedding-pass6",
-      "pr": 8,
-      "base_branch": "recovery/frozen-a29aa9c-pass6",
-      "status": "CI_QUEUED_UNACCEPTED"
-    },
     "K_E03": {
       "branch": "experiment/mature-recovery-k-e03",
-      "ahead_of_frozen_source": 4,
-      "review": "reviews/K-E03-CANDIDATE-REVIEW.md",
-      "grade": "PHASE1_HARNESS_NOT_COMPLETE_BAKEOFF",
-      "provisional_pass": [
-        "fail-closed require-link mode",
-        "out-of-tree path consumer design",
-        "native artifact digest",
-        "direct-C same-artifact comparator"
-      ],
+      "worker_head_reviewed": "1a146ee2e62d94e1ffa2308652365adc2060fe72",
+      "grader_review_commit": "284cb52c79d23a5c4129f4996962f8dc3fedd923",
+      "verdict": "PARTIAL_EXECUTION_REQUIRED",
       "blocking": [
-        "not executed here",
-        "ABI/use-after-close/search/snapshot controls missing",
-        "upstream-vs-Khostty independent artifact runs missing",
-        "source-origin claims unauthenticated"
+        "native artifact provenance unauthenticated",
+        "direct C journey not equivalent to Rust",
+        "ABI/package evidence incomplete",
+        "no candidate-bound execution receipt"
       ]
     }
   },
@@ -181,7 +169,7 @@
   "agent_ipc_mounting": "NOT_MOUNTED_BY_PUBLIC_APPRT_IPC; NEW_SERVER_CALLERS_NOT_FOUND_OUTSIDE_SUBSYSTEM_DOCS",
   "ipc_security_scope": "SHARED_USER_TOKEN_NOT_PER_PROCESS_IDENTITY; K-E02_THREAT_MODEL_REQUIRED",
   "wrapper_value_model": "FORK_OWNED_BINDINGS_OVER_INHERITED_LIBGHOSTTY_VT; EVALUATE SAFETY_ERGONOMICS_PACKAGING_NOT_VT_SEMANTICS",
-  "K_E03_readiness": "CANDIDATE_HARNESS_EXISTS_REQUIRES_NATIVE_EXECUTION_AND_EXTENSION",
+  "K_E03_readiness": "HARNESS_CANDIDATE_EXISTS_EXECUTION_AND_COMPARATOR_REVISION_REQUIRED",
   "wrapper_evidence_policy": "TYPECHECK_IS_NOT_LINKED_EVIDENCE; REQUIRE_ACTUAL_LIB_IDENTITY_AND_CONSUMER_EXECUTION",
   "wrapper_packaging": "STANDALONE_CONSUMPTION_UNPROVEN"
 }
