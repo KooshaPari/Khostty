@@ -95,7 +95,7 @@ Result: K-J-AUTOMATE is not merely “untested”; the product's new agent serve
 
 ## K-F13 — fork ownership denominator is now substantially resolved without turning inherited bulk into requirements
 
-Pass 6 enumerated every top-level tree with untruncated Git-tree responses. Two exact inventory parts contain 2,138 non-fuzz blob rows. The unchanged `test/` tree is structurally identical to the merge base and contains a `fuzz-libghostty` family with 4,014 blobs, 4,002 of which are corpus seeds. Those seeds are one inherited verification family unless a particular seed carries a distinct obligation.
+Pass 6 enumerated every top-level tree with untruncated Git-tree responses. Two exact inventory parts contain 2,117 raw A+B rows with 62 overlaps, yielding 2,055 unique non-fuzz paths. The unchanged `test/` tree is structurally identical to the merge base and contains a `fuzz-libghostty` family with 4,014 blobs, 4,002 of which are corpus seeds. Those seeds are one inherited verification family unless a particular seed carries a distinct obligation.
 
 Top-level Git-object comparison against merge base gives 43 identical entries, 13 added and 6 modified, with no top-level removals. Entire large trees proven identical include `macos/`, `test/`, `include/`, `example/`, `flatpak/`, `images/`, `nix/`, `pkg/`, `po/`, `snap/`, and `vendor/`.
 
@@ -156,7 +156,7 @@ Consequence: Khostty currently has an inherited mounted IPC surface and a separa
 
 ### Additional evidence for K-F13 — tracked-tree enumeration closure
 
-Every top-level tree at the frozen source has now been enumerated with untruncated Git-tree responses. Product-local inventories persist 2,138 exact non-fuzz blob rows. The test tree is additionally resolved structurally: `fuzz-libghostty` contains 4,014 blobs, of which 4,002 are corpus seeds; the Windows test subtree has three blobs.
+Every top-level tree at the frozen source has now been enumerated with untruncated Git-tree responses. Product-local inventories persist 2,117 raw A+B rows with 62 overlapping paths, yielding 2,055 unique non-fuzz paths. The test tree is additionally resolved structurally: `fuzz-libghostty` contains 4,014 blobs, of which 4,002 are corpus seeds; the Windows test subtree has three blobs.
 
 The 4,002 seed files are not 4,002 product obligations. Treat them as a verification corpus source family unless a particular seed encodes a distinct accepted obligation. This closes the tracked-file enumeration sub-gate, not the semantic source denominator.
 
@@ -195,7 +195,7 @@ Consequence: G4/module tests and inherited `performIpc` call sites are evidence 
 
 ### Additional evidence for K-F13 — finite tracked-tree ownership
 
-Pass 6 recursively enumerated every top-level Git tree at the frozen revision with untruncated results. Two persisted inventory parts contain 2,138 exact non-fuzz blob rows. The separate inherited `test/fuzz-libghostty` subtree contains 4,014 blobs, including 4,002 corpus seeds. Treating each seed as a distinct obligation would manufacture scope.
+Pass 6 recursively enumerated every top-level Git tree at the frozen revision with untruncated results. Two persisted inventory parts contain 2,117 raw A+B rows with 62 overlapping paths, yielding 2,055 unique non-fuzz paths. The separate inherited `test/fuzz-libghostty` subtree contains 4,014 blobs, including 4,002 corpus seeds. Treating each seed as a distinct obligation would manufacture scope.
 
 Top-level Git-object comparison against the merge base yields 43 identical entries, 13 added, 6 modified, and none removed at that boundary. Large trees proven identical include `macos/`, `test/`, `include/`, `example/`, `flatpak/`, `images/`, `nix/`, `pkg/`, `po/`, `snap/`, and `vendor/`. Candidate fork-owned families are consequently much narrower: Windows runtime, new agent-server files/native hooks, wrappers/WASM distribution, conformance/bench, and fork build/CI/package changes.
 
