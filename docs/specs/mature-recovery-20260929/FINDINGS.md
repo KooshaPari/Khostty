@@ -181,3 +181,22 @@ This is not merely a historical skipped-language bug. It is current workflow sem
 `khostty-vt/build.rs` deliberately allows the crate to typecheck when no prebuilt `libghostty-vt` is found and only sets `ghostty_vt_linked` after locating a real library. `khostty-vt/tests/terminal.rs` begins with `#![cfg(ghostty_vt_linked)]`, so its native integration tests compile to nothing when the library is absent.
 
 That behavior is reasonable for developer ergonomics but unsafe as acceptance evidence unless the expected configuration requires `ghostty_vt_linked` and records the exact native library artifact. A plain successful `cargo test` is therefore not sufficient proof that Rust↔native integration ran. K-E03 must require a linked native candidate and a positive sentinel proving at least one integration test executed.
+
+
+## K-F11 — public `apprt.ipc` is inherited Ghostty IPC; the new JSON agent server is adjacent and unmounted (blocking)
+
+Exact source comparison against merge base `d4c88d8069912b653d707191388ca98e24751f12` resolves a key ambiguity. Frozen Khostty `src/apprt/ipc/mod.zig` and upstream-baseline `src/apprt/ipc.zig` each have 253 lines and become **exactly identical after normalizing only the two relative import paths introduced by moving the file into a directory**. The public `src/apprt.zig` export points to this relocated inherited module.
+
+The fork-owned JSON agent-control stack lives in ten adjacent files: `app_host.zig`, `auth.zig`, `events.zig`, `fake_host.zig`, `handler.zig`, `pane.zig`, `protocol.{md,zig}`, `server.zig`, and `state.zig`. The fact that `apprt.ipc` exists therefore does not mount or export that server.
+
+Fork-aware code search corroborates the reachability boundary: `AppHost` appears only in its implementation, protocol, and WBS; `Server.bind` only in server/protocol/WBS; `publishTitleChange` only in `app_host.zig`. No application lifecycle caller was found for these hooks. Search is corroborating evidence rather than a proof of absence; the normative protocol already states app startup/app-thread integration is not wired.
+
+Consequence: G4/module tests and inherited `performIpc` call sites are evidence for different systems. Do not use the working inherited three-action IPC to qualify the new agent API. K-J-AUTOMATE remains unmounted at the frozen source.
+
+## K-F12 — tracked-tree ownership is finite enough to stop treating inherited bulk as fork scope
+
+Pass 6 recursively enumerated every top-level Git tree at the frozen revision with untruncated results. Two persisted inventory parts contain 2,138 exact non-fuzz blob rows. The separate inherited `test/fuzz-libghostty` subtree contains 4,014 blobs, including 4,002 corpus seeds. Treating each seed as a distinct obligation would manufacture scope.
+
+Top-level Git-object comparison against the merge base yields 43 identical entries, 13 added, 6 modified, and none removed at that boundary. Large trees proven identical include `macos/`, `test/`, `include/`, `example/`, `flatpak/`, `images/`, `nix/`, `pkg/`, `po/`, `snap/`, and `vendor/`. Candidate fork-owned families are consequently much narrower: Windows runtime, new agent-server files/native hooks, wrappers/WASM distribution, conformance/bench, and fork build/CI/package changes.
+
+This closes tracked-tree enumeration and substantially narrows the ownership denominator; semantic source/history/authority/external denominators remain open.
