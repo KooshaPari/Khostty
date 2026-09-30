@@ -47,7 +47,8 @@
     "K-F13",
     "K-F14",
     "K-F15",
-    "K-F16"
+    "K-F16",
+    "K-F17"
   ],
   "high_risk_unknowns": [
     "K-F04",
@@ -146,5 +147,16 @@
       "base_branch": "recovery/frozen-a29aa9c-pass6",
       "status": "CI_QUEUED_UNACCEPTED"
     }
+  },
+  "windows_alternatives": {
+    "primary": "shiweis/ghostty-windows@119b9270c8585fa3ae6969c353767fab5a32e438",
+    "external_ci_run": 33633427282,
+    "external_ci_conclusion": "success",
+    "current_upstream_divergence": {
+      "ahead_by": 241,
+      "behind_by": 362,
+      "merge_base": "20abdb50a6216c450d6d4d010c41c7edf5ab15b2"
+    },
+    "disposition": "QUALIFY_ADAPT_VS_CUSTOM_BEFORE_KHOSTTY_WINDOWS_IMPLEMENTATION"
   }
 }
