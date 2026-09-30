@@ -4,7 +4,7 @@
   "product": "KooshaPari/Khostty",
   "repository_id": 1322607630,
   "observed_on": "2026-09-30",
-  "assessment_pass": 7,
+  "assessment_pass": 8,
   "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
@@ -145,5 +145,7 @@
   "agent_ipc_mounting": "NOT_MOUNTED_BY_PUBLIC_APPRT_IPC; NEW_SERVER_CALLERS_NOT_FOUND_OUTSIDE_SUBSYSTEM_DOCS",
   "ipc_security_scope": "SHARED_USER_TOKEN_NOT_PER_PROCESS_IDENTITY; K-E02_THREAT_MODEL_REQUIRED",
   "wrapper_value_model": "FORK_OWNED_BINDINGS_OVER_INHERITED_LIBGHOSTTY_VT; EVALUATE SAFETY_ERGONOMICS_PACKAGING_NOT_VT_SEMANTICS",
-  "K_E03_readiness": "BOUNDED_RUST_FIRST_WRAPPER_VS_DIRECT_UPSTREAM_EXPERIMENT"
+  "K_E03_readiness": "BOUNDED_RUST_FIRST_WRAPPER_VS_DIRECT_UPSTREAM_EXPERIMENT",
+  "wrapper_evidence_policy": "TYPECHECK_IS_NOT_LINKED_EVIDENCE; REQUIRE_ACTUAL_LIB_IDENTITY_AND_CONSUMER_EXECUTION",
+  "wrapper_packaging": "STANDALONE_CONSUMPTION_UNPROVEN"
 }
