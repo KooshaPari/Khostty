@@ -15,7 +15,8 @@
   "parallel_general_dev_handoff": false,
   "handoff_document": "DEVELOPER-HANDOFF.md",
   "ready_work_packages": [
-    "K-E01"
+    "K-E02",
+    "K-E03"
   ],
   "dependent_experimental_work_packages": {},
   "contract_authority": "CANDIDATE_NOT_ACCEPTED_PRIMARY_SOURCE_STILL_REQUIRED",
@@ -82,6 +83,7 @@
     "tracked_tree_inventory": "COMPLETE",
     "fork_ownership_map": "SUBSTANTIALLY_COMPLETE_FOR_HIGH_PRIORITY_SURFACES",
     "agent_server_mount_trace": "UNMOUNTED_AT_FROZEN_SOURCE",
+    "source_inspection_prerequisite_for_K_E02_K_E03": "SATISFIED",
     "full_semantic_family_resolution": "IN_PROGRESS"
   },
   "tracked_product_relevant_inventory": {
