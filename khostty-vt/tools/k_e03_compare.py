@@ -73,6 +73,7 @@ def main():
         )
         env = os.environ.copy()
         env["GHOSTTY_VT_LIB"] = str(lib)
+        env["KHOSTTY_VT_LINK_KIND"] = "static" if lib.suffix == ".a" else "dylib"
         env["KHOSTTY_VT_REQUIRE_LINK"] = "1"
         env["CARGO_TARGET_DIR"] = str(root / "target-linked")
         rust_run = run(["cargo", "run", "--quiet"], cwd=rust, env=env)
