@@ -104,11 +104,26 @@ def main():
 
         csrc = root / "direct.c"
         csrc.write_text(
-            '#include <ghostty/vt.h>\n#include <stdint.h>\n#include <stdio.h>\n'
-            'int main(void) { GhosttyTerminal t = NULL; '
-            'if (ghostty_terminal_new(NULL, &t, 20, 4) != GHOSTTY_SUCCESS) return 2; '
-            'const uint8_t b[] = "K-E03\\r\\n"; ghostty_terminal_vt_write(t,b,sizeof(b)-1); '
-            'ghostty_terminal_free(t); puts("linked-ok"); return 0; }\n'
+            '#include <ghostty/vt.h>\n#include <stdint.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n'
+            '#define OK(x) do { if ((x) != GHOSTTY_SUCCESS) return __LINE__; } while (0)\n'
+            'int main(void) {\n'
+            ' GhosttyTerminal t = NULL; OK(ghostty_terminal_new(NULL, &t, 20, 4));\n'
+            ' const uint8_t input[] = "K-E03\\r\\nneedle\\r\\n"; ghostty_terminal_vt_write(t,input,sizeof(input)-1);\n'
+            ' OK(ghostty_terminal_resize(t,24,6,8,16)); uint16_t cols=0,rows=0;\n'
+            ' OK(ghostty_terminal_get(t,GHOSTTY_TERMINAL_DATA_COLS,&cols)); OK(ghostty_terminal_get(t,GHOSTTY_TERMINAL_DATA_ROWS,&rows));\n'
+            ' if (cols != 24 || rows != 6) return 30;\n'
+            ' GhosttyRenderState rs=NULL; OK(ghostty_render_state_new(NULL,&rs)); OK(ghostty_render_state_update(rs,t));\n'
+            ' uint16_t rcols=0,rrows=0; OK(ghostty_render_state_get(rs,GHOSTTY_RENDER_STATE_DATA_COLS,&rcols)); OK(ghostty_render_state_get(rs,GHOSTTY_RENDER_STATE_DATA_ROWS,&rrows));\n'
+            ' if (rcols != 24 || rrows != 6) return 31; ghostty_render_state_free(rs);\n'
+            ' GhosttySearch s=NULL; OK(ghostty_search_new(NULL,&s,t)); const uint8_t needle_bytes[]="needle"; GhosttyString needle={needle_bytes,sizeof(needle_bytes)-1};\n'
+            ' OK(ghostty_search_set(s,GHOSTTY_SEARCH_OPT_NEEDLE,&needle)); OK(ghostty_search_run(s)); size_t matches=0; OK(ghostty_search_get(s,GHOSTTY_SEARCH_DATA_TOTAL_MATCHES,&matches));\n'
+            ' if (matches < 1) return 32; ghostty_search_free(s);\n'
+            ' size_t snap_len=0; GhosttyResult sr=ghostty_snapshot_encode_buf(t,NULL,0,&snap_len); if (sr != GHOSTTY_OUT_OF_SPACE || snap_len == 0) return 33;\n'
+            ' uint8_t *snap=(uint8_t*)malloc(snap_len); if(!snap) return 34; OK(ghostty_snapshot_encode_buf(t,snap,snap_len,&snap_len));\n'
+            ' GhosttySnapshotDecoder dec=NULL; OK(ghostty_snapshot_decoder_new_buf(NULL,&dec,snap,snap_len)); GhosttyTerminal restored=NULL; OK(ghostty_snapshot_decoder_decode(dec,&restored));\n'
+            ' uint16_t restored_cols=0; OK(ghostty_terminal_get(restored,GHOSTTY_TERMINAL_DATA_COLS,&restored_cols)); if(restored_cols != 24) return 35;\n'
+            ' ghostty_snapshot_decoder_free(dec); ghostty_terminal_free(restored); free(snap); ghostty_terminal_free(t);\n'
+            ' puts("linked-ok resize-render-search-snapshot"); return 0; }\n'
         )
         exe = root / "direct"
         libdir = lib.parent
@@ -117,6 +132,15 @@ def main():
         crun = run([str(exe)]) if cbuild["returncode"] == 0 else {
             "cmd": [str(exe)], "returncode": None, "stdout": "", "stderr": "compile failed"
         }
+
+        # Existing ABI/coverage tests are part of the wrapper's safety claim.
+        verify_env = env.copy()
+        verify_env["GHOSTTY_VT_INCLUDE_DIR"] = str(include)
+        verify_env["CARGO_TARGET_DIR"] = str(root / "target-verify")
+        abi_verify = run(
+            ["cargo", "test", "--quiet", "--test", "abi_layout", "--test", "ffi_coverage"],
+            cwd=crate, env=verify_env,
+        )
 
         wrapper_files = list((crate / "src").glob("*.rs"))
         wrapper_text = "\n".join(p.read_text(errors="replace") for p in wrapper_files)
@@ -130,11 +154,21 @@ def main():
             "direct_c_nonblank_lines": sum(
                 1 for line in direct_text.splitlines() if line.strip()
             ),
+            "out_of_tree_rust_manifest_lines": sum(
+                1 for line in (rust / "Cargo.toml").read_text().splitlines() if line.strip()
+            ),
+            "install_steps": [
+                "provide exact native library artifact",
+                "provide matching include directory",
+                "set GHOSTTY_VT_LIB and KHOSTTY_VT_REQUIRE_LINK",
+                "cargo run from generated out-of-tree consumer",
+            ],
         }
         checks = {
             "rust_linked_consumer_executed": rust_run["returncode"] == 0 and "linked-ok resize-render-search-snapshot" in rust_run["stdout"],
             "missing_library_fails_closed": rust_missing["returncode"] != 0,\n            "rust_lifetime_misuse_rejected": lifetime_compile["returncode"] != 0,
-            "direct_c_consumer_executed": crun["returncode"] == 0 and "linked-ok" in crun["stdout"],
+            "direct_c_consumer_executed": crun["returncode"] == 0 and "linked-ok resize-render-search-snapshot" in crun["stdout"],
+            "abi_and_ffi_coverage_tests_pass": abi_verify["returncode"] == 0,
         }
         receipt = {
             "schema_version": 1,
@@ -153,11 +187,13 @@ def main():
             "rust_missing_library_control": rust_missing,\n            "rust_lifetime_compile_fail_control": lifetime_compile,
             "direct_c_build": cbuild,
             "direct_c_run": crun,
+            "abi_and_ffi_verification": abi_verify,
             "verdict": "PASS_EXPERIMENT" if all(checks.values()) else "FAIL_EXPERIMENT",
             "limitations": [
                 "This proves linked create/write/resize/render/search/snapshot-restore only, not all wrapper APIs.",
                 "The LOC/unsafe counts are descriptive, not a quality score.",
-                "ABI drift, compile-time lifetime misuse, post-free C behavior and packaging metrics require follow-up.",
+                "Compile-time lifetime misuse is checked; deliberately dereferencing freed native state is not performed.",
+                "The existing abi_layout/ffi_coverage tests must pass against the supplied include/library configuration.",
                 "The direct C comparator uses the same supplied native library artifact.",
                 "library_source_sha/library_origin are caller claims; a separate build receipt must authenticate them.",
                 "A true upstream-vs-Khostty comparison requires separate runs with independently built artifacts."
