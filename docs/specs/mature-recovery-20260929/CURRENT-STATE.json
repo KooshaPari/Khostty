@@ -217,8 +217,8 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "1091294fdf428627224ec7b0f0a0ae03e102d4a2",
-      "workflow_run": 36764779515,
+      "head": "1323e36fdd0cbce93aa3b94ac602ed4ae33cd387",
+      "workflow_run": 36770576989,
       "status": "EXACT_HEAD_QUEUED",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
@@ -235,7 +235,11 @@
         "queued context cleanup",
         "runtime wakeup on submit",
         "CoreApp.tick execution owner",
-        "exact pane identity observation projection"
+        "exact pane identity observation projection",
+        "queue-full fail-closed",
+        "no duplicate callback execution",
+        "pane.send_input distinct from pane.write",
+        "unqualified child input returns host_unsupported"
       ]
     },
     "next": "grade primitive; project one real pane operation through app thread; then K-E02b server lifecycle",
