@@ -23,7 +23,7 @@ Program KR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 | Invalid/generated catalogs absent from grading | Excluded from this dossier; all existing grading entry points not yet inspected |
 | No unexplained orphan requirements/features/journeys | Not established; no complete accepted graph |
 | No unresolved contradictions | NOT MET: K-F01–K-F03 plus historical G4-DONE vs unmounted agent server and unresolved product authority |
-| No blocking findings | NOT MET: see CURRENT-STATE.json including K-F11–K-F15 |
+| No blocking findings | NOT MET: see CURRENT-STATE blocking_findings; finding namespace canonicalized through K-F17 |
 | Fresh independent review attacked completeness | NOT PERFORMED; author's own checks are not an independent review |
 
 ## Next minimal work packages
@@ -51,3 +51,8 @@ Current fork CI cannot qualify product acceptance: substantive language jobs are
 ## Pass 6 gate movement
 
 Closed sub-gates: frozen tracked-tree enumeration and high-priority fork ownership boundary. The JSON agent server is source-traced as unmounted; this is a blocker, not progress toward a false green. K-E02/K-E03 can now run as bounded experiments because their prerequisite question—what exactly is custom versus inherited—is sufficiently defined for those subjects. General product handoff remains blocked.
+
+
+## Finding-ID integrity
+
+Pass 6 detected duplicate Khostty finding IDs introduced by parallel recovery edits. Distinct issues now have one canonical ID K-F01..K-F17; repeated mount/tree evidence is retained as subordinate evidence under K-F11/K-F12/K-F13/K-F16 instead of minting duplicate stable IDs. Future trace generation must reject duplicate IDs.
