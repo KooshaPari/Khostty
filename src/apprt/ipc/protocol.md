@@ -47,8 +47,7 @@ Non-goals (v1):
 
 - No remote/TCP transport. Local socket (Unix domain socket; Windows named pipe is
   a follow-up, see `src/apprt/windows/ipc.zig`).
-- No pty input injection (`pane.write` writes *VT bytes into the terminal parser*,
-  it does not type into the child process). Typing into the child is a v2 item.
+- `pane.write` is intentionally frozen as VT parser/display injection for v1 compatibility. It does **not** type into the child process. Child input is a separate mature-product obligation and must receive a distinct command/API rather than silently changing `pane.write` semantics.
 - No protocol negotiation beyond an integer version check.
 
 ## 2. Transport and framing
