@@ -46,3 +46,8 @@ Every top-level tree in the frozen Khostty source was enumerated with `truncated
 The test corpus is separately grouped: `fuzz-libghostty` has 4,014 blobs including 4,002 corpus seeds. It is a verification family, not 4,002 obligations.
 
 Top-level merge-base comparison: 43 identical, 13 added, 6 modified, no removed entries. Entire large trees such as `macos/`, `test/`, `include/`, `example/`, `pkg/` and `vendor/` are byte/tree-identical at that baseline.
+
+
+## Pass 6 ownership/mount reconciliation
+
+Top-level comparison against merge base: 43 identical, 13 added, 6 modified, 0 removed. Critical ownership: 11 Windows runtime blobs added; 10 new agent-server/host files added; relocated `src/apprt/ipc/mod.zig` is semantically identical to baseline `src/apprt/ipc.zig` after import-path normalization; 36 inspected `src/terminal/c` blobs are identical. Fork-aware searches found no app lifecycle callers for AppHost/Server.bind/event hooks outside the subsystem/docs. This, plus protocol §7, establishes the agent JSON server as unmounted at frozen source.
