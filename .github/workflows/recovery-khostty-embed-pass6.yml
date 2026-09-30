@@ -20,6 +20,14 @@ jobs:
       SOURCE_SHA: a29aa9c6553d9f42aa68e2919116c0f6d53f329d
       RECEIPTS: recovery-embed-receipts
     steps:
+      - name: Validate recovery metadata integrity
+        run: |
+          set -euo pipefail
+          mkdir -p "${RECEIPTS:-recovery-receipts}"
+          python docs/specs/mature-recovery-20260929/pass6/validate_recovery_state.py \
+            --prefix K-F \
+            --out "${RECEIPTS:-recovery-receipts}/recovery-metadata-integrity.json"
+
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
