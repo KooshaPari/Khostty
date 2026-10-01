@@ -79,6 +79,7 @@ jobs:
           path: |
             k-e02-bridge.txt
             k-e02-server.txt
+            k-e02-core-build.txt
           if-no-files-found: warn
           retention-days: 30
       - name: Require bridge and server controls
@@ -96,8 +97,15 @@ jobs:
           grep -q "force-disconnects idle clients" src/apprt/ipc/server.zig
           grep -q "IPC connection workers outlived server dependencies" src/apprt/ipc/server.zig
       - name: Compile core path
+        id: corebuild
         if: always()
-        run: zig build -Dapp-runtime=gtk -Doptimize=Debug
+        continue-on-error: true
+        run: zig build -Dapp-runtime=gtk -Doptimize=Debug 2>&1 | tee k-e02-core-build.txt
+      - name: Require core compile
+        if: always()
+        env:
+          CORE_OUTCOME: ${{ steps.corebuild.outcome }}
+        run: test "$CORE_OUTCOME" = success
       - name: Enforce format after semantic gates
         if: always()
         run: test "${FORMAT_DIRTY:-1}" = 0
