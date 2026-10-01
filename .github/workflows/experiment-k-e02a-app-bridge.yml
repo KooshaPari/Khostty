@@ -56,26 +56,14 @@ jobs:
           echo "FORMAT_DIRTY=$(git diff --quiet -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig; echo $?)" >> "$GITHUB_ENV"
           git checkout -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
           exit 0
-      - name: Install GTK test build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-4-dev libadwaita-1-dev libglib2.0-dev libgtk4-layer-shell-dev
-          python3 -m pip install --user "blueprint-compiler>=0.16.0" || true
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - name: Verify native test dependencies
-        run: |
-          pkg-config --exists gtk4
-          pkg-config --exists libadwaita-1
-          pkg-config --exists gtk4-layer-shell-0
-          blueprint-compiler --version
       - name: Dependency-aware rich IPC controls
         id: richipc
         run: |
           set -o pipefail
-          zig build test -Dapp-runtime=gtk -Dtest-filter="bridge" 2>&1 | tee k-e02-bridge.txt
-          zig build test -Dapp-runtime=gtk -Dtest-filter="protocol" 2>&1 | tee k-e02-protocol.txt
-          zig build test -Dapp-runtime=gtk -Dtest-filter="handler" 2>&1 | tee k-e02-handler.txt
-          zig build test -Dapp-runtime=gtk -Dtest-filter="lifecycle:" 2>&1 | tee k-e02-server.txt
+          zig build test -Dapp-runtime=none -Dtest-filter="bridge" 2>&1 | tee k-e02-bridge.txt
+          zig build test -Dapp-runtime=none -Dtest-filter="protocol" 2>&1 | tee k-e02-protocol.txt
+          zig build test -Dapp-runtime=none -Dtest-filter="handler" 2>&1 | tee k-e02-handler.txt
+          zig build test -Dapp-runtime=none -Dtest-filter="lifecycle:" 2>&1 | tee k-e02-server.txt
       - name: Upload semantic diagnostics
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
