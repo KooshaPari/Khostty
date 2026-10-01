@@ -56,24 +56,13 @@ jobs:
           echo "FORMAT_DIRTY=$(git diff --quiet -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig; echo $?)" >> "$GITHUB_ENV"
           git checkout -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
           exit 0
-      - name: Bridge controls
-        id: bridge
+      - name: Dependency-aware rich IPC controls
+        id: richipc
         run: |
           set -o pipefail
-          zig build test -Dapp-runtime=gtk -Dtest-filter="bridge " 2>&1 | tee k-e02-bridge.txt
-      - name: Protocol controls
-        id: protocol
-        if: always()
-        run: zig build test -Dapp-runtime=gtk -Dtest-filter="protocol"
-      - name: Handler controls
-        id: handler
-        if: always()
-        run: zig build test -Dapp-runtime=gtk -Dtest-filter="handler"
-      - name: Server lifecycle controls
-        id: server
-        if: always()
-        run: |
-          set -o pipefail
+          zig build test -Dapp-runtime=gtk -Dtest-filter="bridge" 2>&1 | tee k-e02-bridge.txt
+          zig build test -Dapp-runtime=gtk -Dtest-filter="protocol" 2>&1 | tee k-e02-protocol.txt
+          zig build test -Dapp-runtime=gtk -Dtest-filter="handler" 2>&1 | tee k-e02-handler.txt
           zig build test -Dapp-runtime=gtk -Dtest-filter="lifecycle:" 2>&1 | tee k-e02-server.txt
       - name: Upload semantic diagnostics
         if: always()
@@ -83,6 +72,8 @@ jobs:
           path: |
             k-e02-bridge.txt
             k-e02-server.txt
+            k-e02-protocol.txt
+            k-e02-handler.txt
             k-e02-core-build.txt
             k-e02-format.patch
           if-no-files-found: warn
