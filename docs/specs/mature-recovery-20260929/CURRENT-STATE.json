@@ -217,9 +217,9 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "14387d180430580eb654fb3cf21dd00ab7bd4a52",
+      "head": "3329559de550092b05fdd064931c8ef434df7a60",
       "workflow_run": 36821252873,
-      "status": "K_E02A_PLUS_K_E02B_EXACT_HEAD_QUEUED",
+      "status": "FORMAT_DIAGNOSTIC_PLUS_SEMANTIC_GATES_REQUEUED",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
         "CoreApp.tick drains mailbox and experimental bridge",
@@ -239,14 +239,15 @@
         "queue-full fail-closed",
         "no duplicate callback execution",
         "pane.send_input distinct from pane.write",
-        "unqualified child input returns host_unsupported"
+        "unqualified child input returns host_unsupported",
+        "worker-thread submission remains queued until app-thread drain"
       ],
       "prior_red": {
-        "head": "1323e36fdd0cbce93aa3b94ac602ed4ae33cd387",
-        "run": 36770576989,
-        "classification": "INFRASTRUCTURE_PRE_TEST",
-        "failed_step": "Install Zig",
-        "candidate_tests_executed": false
+        "head": "14387d180430580eb654fb3cf21dd00ab7bd4a52",
+        "run": 36821252873,
+        "classification": "SOURCE_FORMAT_GATE",
+        "install": "PASS",
+        "candidate_semantic_tests_executed": false
       },
       "latest_repair": "checksum-verified Zig primary plus fallback download; candidate test gates unchanged"
     },
