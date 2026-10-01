@@ -80,6 +80,14 @@ pub const Request = struct {
         self.release();
     }
 
+    /// Synchronized state observation for diagnostics/tests. This does not
+    /// transfer ownership and must never be used as a substitute for wait().
+    pub fn stateSnapshot(self: *Request) State {
+        self.mutex.lock();
+        defer self.mutex.unlock();
+        return self.state;
+    }
+
     /// Cancel only if execution has not started. A false result means the caller
     /// must keep its context alive and wait for the executing request to finish.
     pub fn cancelQueued(self: *Request) bool {
