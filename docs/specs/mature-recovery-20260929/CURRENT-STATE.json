@@ -217,9 +217,9 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "c4db8802fd0dbbeb09c385248556d43255cd5ddb",
-      "workflow_run": 36820758671,
-      "status": "INFRA_RED_REPAIRED_REQUEUED",
+      "head": "8d57a5cf54f9332248bdb4e4a1cb714823f3da5c",
+      "workflow_run": 36821152465,
+      "status": "K_E02A_PLUS_K_E02B_LIFECYCLE_CANDIDATE_QUEUED",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
         "CoreApp.tick drains mailbox and experimental bridge",
@@ -251,7 +251,19 @@
       "latest_repair": "checksum-verified Zig primary plus fallback download; candidate test gates unchanged"
     },
     "next": "grade primitive; project one real pane operation through app thread; then K-E02b server lifecycle",
-    "acceptance": false
+    "acceptance": false,
+    "server_lifecycle": {
+      "status": "EXPERIMENTAL_CANDIDATE",
+      "head": "8d57a5cf54f9332248bdb4e4a1cb714823f3da5c",
+      "controls": [
+        "track active connection streams for shutdown only",
+        "force-disconnect idle clients before dependency teardown",
+        "never close streams while lifecycle mutex held",
+        "require live worker count reach zero",
+        "idle-client-across-deinit adversarial test"
+      ],
+      "mounted": false
+    }
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
   "product_horizon": "PURPOSEFUL_GHOSTTY_FORK_FOR_WINDOWS_SHELL_PLATFORM_IMPROVEMENTS_AND_CMUX_CLASS_PROGRAMMABLE_TERMINAL_CONTROL_AS_HELIOSLAB_INFRASTRUCTURE",
@@ -294,6 +306,22 @@
       "packaging",
       "accessibility",
       "upstream-sync burden"
-    ]
+    ],
+    "layered_decision": {
+      "native_host": [
+        "shiweis/ghostty-windows",
+        "winghostty",
+        "thin libghostty host"
+      ],
+      "control_plane": [
+        "Khostty authenticated rich IPC",
+        "winghostty allowlist/structural-ID lessons"
+      ],
+      "evidence": [
+        "native black-box Windows harness",
+        "socket/in-process exact-pane oracle"
+      ],
+      "rule": "compose layers; no winner-take-all Windows score"
+    }
   }
 }
