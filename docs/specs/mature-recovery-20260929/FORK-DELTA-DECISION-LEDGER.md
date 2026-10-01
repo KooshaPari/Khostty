@@ -83,3 +83,20 @@ Before custom Windows host implementation, compare at least these viable familie
 4. custom Khostty host only for obligations still unserved after the above.
 
 The comparison must exercise native build, ConPTY child nonce input/output, exact pane identity, tabs/splits, PowerShell cwd/title/prompt integration, IME, restart/session semantics, automation/control-plane mounting, packaging, accessibility, and measured upstream-sync conflict burden. README capability counts are not acceptance evidence.
+
+
+## Pass 11 control-plane comparator refinement — Windows alternatives solve different layers
+
+Fresh source inspection shows the Windows comparators must not be scored as interchangeable “Windows support” implementations.
+
+**winghostty** exposes local single-instance IPC with `+list-windows` JSON and an allowlisted `+perform-action --surface-id`. Its own docs intentionally exclude terminal text, shell input, cwd/file paths from list output and reject terminal-input/file-helper actions from automation. This is useful precedent for stable structural IDs, allowlisting, and least-authority automation, but it does **not** satisfy Khostty's richer agent terminal-state/child-input contract by itself.
+
+**shiweis/ghostty-windows** has a broad WSL/PowerShell-driven black-box harness that launches the native exe and checks windows/tabs/splits/input/config/clipboard/search/etc. That is valuable native qualification infrastructure, but the harness is primarily external GUI/process automation; it is not a substitute for Khostty's in-process/socket exact-pane control plane.
+
+Therefore the likely composition is layered rather than winner-take-all:
+1. adapt a proven native Win32 host for window/input/IME/ConPTY/rendering;
+2. preserve/adapt Khostty's richer authenticated agent protocol and app-thread ownership bridge;
+3. borrow winghostty's allowlisting/structural automation and session-state ideas where they reduce custom policy work;
+4. use black-box Windows harnesses as held-out native product evidence, not as the control implementation.
+
+A Windows candidate only passes if the native host and control plane compose without bypassing app-thread/PTY ownership, and if held-out native tests prove exact-pane child nonce input/output rather than desktop-focus coincidence.
