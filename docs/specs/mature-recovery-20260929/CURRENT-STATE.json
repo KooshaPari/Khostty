@@ -217,8 +217,8 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "2dd4fd7c77104eb931c58d7ed38e43a3c7e56560",
-      "workflow_run": 36906989011,
+      "head": "79373c7cd74b015d4f045e156663dd1db49a2391",
+      "workflow_run": 36910495513,
       "status": "REPOSITORY_TEST_ROOT_AUTHORITY_QUEUED",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
@@ -277,7 +277,7 @@
       "format": "FAIL",
       "diagnostic_artifact_digest": "sha256:3eab46e077bc91670b9c3279a42f0cbe4545c6f3d593c16c4d4dfc5e0d89f8dc"
     },
-    "status": "DEPENDENCY_AWARE_SUBSYSTEM_HARNESS_QUEUED",
+    "status": "DEPENDENCY_AWARE_HARNESS_SOURCE_DEFECT_FIXED__NATIVE_DEPS_ADDED__REQUEUED",
     "prior_grader_correction": {
       "run": 36870710382,
       "issue": "standalone zig test output was piped through tee without pipefail and module-root semantics differed from repository build graph",
@@ -308,6 +308,18 @@
       "source": "src/apprt.zig test root imports rich IPC bridge/protocol/handler/server",
       "grade": "zig build test through normal repository module/dependency graph",
       "mount": "still blocked until exact-head harness + core compile + format green"
+    },
+    "harness_result": {
+      "prior_run": 36906989011,
+      "artifact_digest": "sha256:05cecbb6a7691fb3806f2c9ef163441fa1ec5c30975ef140095c8b7a945b4ef5",
+      "findings": [
+        "real malformed frame delimiter literal at server.zig:341",
+        "runner lacked GTK4/libadwaita development headers"
+      ],
+      "repairs": [
+        "valid newline delimiter literal",
+        "install libgtk-4-dev libadwaita-1-dev libglib2.0-dev blueprint-compiler"
+      ]
     }
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
