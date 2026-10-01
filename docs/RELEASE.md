@@ -327,8 +327,18 @@ cd ../dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0 && npm publish   
 #         404s; PyPI converts the pending publisher into a real project link
 #         on first upload. Once the project exists, the same four fields live
 #         at https://pypi.org/manage/project/khostty-vt/publishing/.)
-#      2. Trigger a run — either push the tag `khostty-v0.1.0`, or run the
-#         workflow from the Actions UI with input `version: khostty-v0.1.0`.
+#      2. Trigger a run — workflow_dispatch is the ONLY working trigger:
+#           gh workflow run publish-pypi.yml --ref main -f version=khostty-v0.1.0
+#         (YAML loads from main; checkout ref = the input, i.e. the tag tree.)
+#    TRIGGER REALITY (corrected 2026-10-01 after live test): pushing the
+#    `khostty-v0.1.0` tag does NOT run publish-pypi.yml. GitHub sources
+#    tag-push workflow files FROM THE TAGGED COMMIT, and this tag points at
+#    `202aad543` (2026-09-19), which predates publish-pypi.yml (~09-29).
+#    Observed on the live push: zero publish-pypi runs; instead old-ref
+#    phantom runs fired (ci.yml + scorecard on head 202aad543, instant
+#    failure, zero jobs, non-gating; Nix skipped; Test queued).
+#    Earlier 'side-effect audit' below was wrong for the same reason — it
+#    read workflow files at main, not at the tag. Do not re-derive it there.
 #    TAG CONVENTION: the workflow gates on `khostty-v*` tags only.
 #    The existing `v0.1.0` tag does NOT match and will never trigger it.
 #    `khostty-v0.1.0` should be placed on the same commit as `v0.1.0`
@@ -338,11 +348,11 @@ cd ../dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0 && npm publish   
 #    forbids reusing a distribution filename, so the publish job never cancels
 #    in-flight. Until step 1-2 happen, PyPI stays 404 and the token path above
 #    remains the fallback.
-#    Tag-push side effects were audited 2026-10-01: ci.yml triggers only on
-#    branch pushes/PRs/dispatch (no tag ref), and release-tag.yml,
-#    publish-tag.yml, clean-artifacts.yml are workflow_dispatch/cron only —
-#    so pushing khostty-v0.1.0 fires exactly ONE workflow (publish-pypi.yml)
-#    and cancels nothing (ci.yml's cancel-in-progress group is branch-scoped).
+#    Tag-push side effects were audited 2026-10-01 and are recorded above
+#    under step 2 (TRIGGER REALITY): the tag push does NOT invoke
+#    publish-pypi.yml at all — it fired old-ref phantom runs instead. The
+#    claim that previously stood here ('pushing khostty-v0.1.0 fires exactly
+#    ONE workflow') was derived from workflow files at main and is RETRACTED.
 
 # 3. GitHub release with artifacts + checksums      # DONE 2026-09-27 (6/6 assets verified via §7.2)
 #    (6 assets; hook-ea20989dca45c9e2c6c1c915ba817571 — supersedes expired
