@@ -217,9 +217,9 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "8d57a5cf54f9332248bdb4e4a1cb714823f3da5c",
-      "workflow_run": 36821152465,
-      "status": "K_E02A_PLUS_K_E02B_LIFECYCLE_CANDIDATE_QUEUED",
+      "head": "14387d180430580eb654fb3cf21dd00ab7bd4a52",
+      "workflow_run": 36821252873,
+      "status": "K_E02A_PLUS_K_E02B_EXACT_HEAD_QUEUED",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
         "CoreApp.tick drains mailbox and experimental bridge",
@@ -254,7 +254,7 @@
     "acceptance": false,
     "server_lifecycle": {
       "status": "EXPERIMENTAL_CANDIDATE",
-      "head": "8d57a5cf54f9332248bdb4e4a1cb714823f3da5c",
+      "head": "14387d180430580eb654fb3cf21dd00ab7bd4a52",
       "controls": [
         "track active connection streams for shutdown only",
         "force-disconnect idle clients before dependency teardown",
