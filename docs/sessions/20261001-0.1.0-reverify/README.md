@@ -60,6 +60,13 @@ gating failure; fixes above are all three root causes.
 1. **r2b / PyPI** — operator action (trusted publisher registration or token).
 2. **r4 / WSL mirror** — desk hardware offline 6d; sole backstop consumed; no
    further probes scheduled per rule. Origin authoritative.
+   *Final probe logged 2026-10-01 18:17Z (the `sched_5acd3225` "LAST desk
+   probe", delivered late by the scheduler): Tailscale reports
+   `kooshapari-desk` offline (last seen 6d) and
+   `ssh desk true` to 100.96.135.160:22 timed out (exit 255). Per the
+   probe's rule: offline, no reschedule, no further probes, r4 left pending.
+   The 2026-09-30 18:00Z slot was the final probe and the 17:00Z re-verify
+   was the sole remaining backstop — both are now consumed.
 3. **CI green run** — three fixes pushed 10-01; awaiting the post-push run to
    confirm Zig Fmt / Security Scan / TS/JS go green.
 
