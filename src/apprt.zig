@@ -60,4 +60,11 @@ test {
     _ = runtime;
     _ = action;
     _ = structs;
+    // Mature-recovery K-E02 dependency-aware harness roots. These imports make
+    // the rich IPC bridge/protocol/handler/server tests part of the repository
+    // test graph instead of invoking source files outside their module roots.
+    _ = @import("apprt/ipc/app_thread_bridge.zig");
+    _ = @import("apprt/ipc/protocol.zig");
+    _ = @import("apprt/ipc/handler.zig");
+    _ = @import("apprt/ipc/server.zig");
 }
