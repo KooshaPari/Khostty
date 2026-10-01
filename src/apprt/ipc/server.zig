@@ -146,7 +146,7 @@ pub const Server = struct {
     connections_accepted: std.atomic.Value(usize) = .init(0),
     /// Connections currently being served.
     live_connections: std.atomic.Value(usize) = .init(0),
-    /// Frames parsed and answered (observability + tests).
+    /// Active connection streams, owned by the server only for shutdown interruption.\n    connection_mutex: std.Thread.Mutex = .{},\n    active_streams: std.ArrayListUnmanaged(std.Io.net.Stream) = .empty,\n    /// Frames parsed and answered (observability + tests).
     frames_handled: std.atomic.Value(usize) = .init(0),
 
     /// Bind the socket and prepare to accept. Does not accept yet.
@@ -198,13 +198,18 @@ pub const Server = struct {
         // gone before those are torn down. Clients that already disconnected
         // drain immediately; a client that is still connected only ends the
         // wait after the timeout, and that case is logged rather than hidden.
-        if (!self.drainConnections(5_000)) {
-            log.warn(
-                "shutting down with {d} connection(s) still live; their frames " ++
-                    "will not be answered",
-                .{self.live_connections.load(.acquire)},
-            );
+        if (!self.drainConnections(250)) {
+            // Detached workers may be blocked in read. Force-close every stream
+            // while manager/broker/auth are still alive, then require workers
+            // to leave before dependency teardown.
+            self.connection_mutex.lock();
+            for (self.active_streams.items) |stream| stream.close(self.io);
+            self.connection_mutex.unlock();
+            if (!self.drainConnections(5_000)) {
+                @panic("IPC connection workers outlived server dependencies");
+            }
         }
+        self.active_streams.deinit(self.gpa);
         if (self.listener_open) {
             self.listener.deinit(self.io);
             self.listener_open = false;
@@ -246,6 +251,14 @@ pub const Server = struct {
 
             _ = self.connections_accepted.fetchAdd(1, .monotonic);
             _ = self.live_connections.fetchAdd(1, .monotonic);
+            self.connection_mutex.lock();
+            self.active_streams.append(self.gpa, stream) catch {
+                self.connection_mutex.unlock();
+                _ = self.live_connections.fetchSub(1, .monotonic);
+                stream.close(self.io);
+                continue;
+            };
+            self.connection_mutex.unlock();
 
             // One thread per connection: an agent that is slow, idle, or stuck
             // must not hold up another agent.
@@ -260,7 +273,18 @@ pub const Server = struct {
     }
 
     fn connMain(self: *Server, stream: std.Io.net.Stream) void {
-        defer _ = self.live_connections.fetchSub(1, .monotonic);
+        defer {
+            self.connection_mutex.lock();
+            var i: usize = 0;
+            while (i < self.active_streams.items.len) : (i += 1) {
+                if (std.meta.eql(self.active_streams.items[i], stream)) {
+                    _ = self.active_streams.swapRemove(i);
+                    break;
+                }
+            }
+            self.connection_mutex.unlock();
+            _ = self.live_connections.fetchSub(1, .monotonic);
+        }
         self.serveConnection(stream);
     }
 
