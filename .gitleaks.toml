@@ -1,33 +1,57 @@
 # Gitleaks configuration for Khostty
 #
-# The default ruleset reports seven `generic-api-key` findings on this tree
-# (observed 2026-09-29, CI run 36584839303). All seven were inspected and all
-# seven are false positives, not leaked credentials:
+# The default ruleset reports `generic-api-key` findings on this tree. Every
+# finding below was inspected and is a false positive, not a leaked credential:
 #
-#   .github/workflows/release-tip.yml  (3)  `${{ secrets.* }}` references
-#   .github/workflows/release-tag.yml  (1)  `${{ secrets.* }}` references
-#   src/input/Binding.zig              (1)  the literal "GhosttyBindingAction"
-#   src/terminal/snapshot/terminal.zig (1)  a snapshot/struct identifier
-#   vendor/nerd-fonts/font-patcher.py  (1)  a vendored upstream constant
+#   Observed 2026-09-29, CI run 36584839303 (7 findings):
+#     .github/workflows/release-tip.yml  (3)  `${{ secrets.* }}` references
+#     .github/workflows/release-tag.yml  (1)  `${{ secrets.* }}` references
+#     src/input/Binding.zig              (1)  the literal "GhosttyBindingAction"
+#     src/terminal/snapshot/terminal.zig (1)  a snapshot/struct identifier
+#     vendor/nerd-fonts/font-patcher.py  (1)  a vendored upstream constant
 #
-# The two source hits are long, high-entropy *identifiers*; the workflow hits are
-# the `${{ secrets.NAME }}` indirection itself, which the generic rule reads as a
+#   Re-observed 2026-10-01, CI run 36628566922 (2 findings, after the path
+#   allowlist above cleared the workflow/vendor hits). SARIF artifact
+#   11064598652 plus a local `gitleaks detect --no-git --config .gitleaks.toml`
+#   reproduction on the same tree both reported exactly:
+#     src/input/Binding.zig:4886              secret = chain=close_surface
+#       (a `\\keybind = chain=close_surface` test-string line, not a key)
+#     src/terminal/snapshot/terminal.zig:1035  secret = header.modify_other_keys_2
+#       (a terminal-flags identifier, not a key)
+#
+# The source hits are low-entropy *identifiers*; the workflow hits are the
+# `${{ secrets.NAME }}` indirection itself, which the generic rule reads as a
 # key because the surrounding text reads "token"/"auth". Upstream vendored code
 # must not be edited to satisfy a scanner, so it is path-allowlisted here instead.
 #
-# This allowlist is deliberately narrow: it pins exact paths plus a regex tied to
-# the specific identifiers, so a genuine secret added to one of these files later
-# still trips the scanner. It was last verified 2026-09-29.
+# This allowlist is deliberately narrow: it pins exact paths plus regexes tied
+# to the specific identifiers, so a genuine secret added to one of these files
+# later still trips the scanner. Widening requires re-running the scan and
+# re-reading the SARIF. Last verified 2026-10-01.
 
 [extend]
 useDefault = true
 
 [allowlist]
-description = "False positives only. Do not widen without re-running CI run 36584839303's scan."
+description = "False positives only. Do not widen without re-running the CI scan."
 paths = [
   '''vendor/nerd-fonts/''',
   '''\.github/workflows/release-(tip|tag)\.yml''',
 ]
 regexes = [
   '''GhosttyBindingAction''',
+  # Re-verified 2026-10-01 with gitleaks 8.30.0 against the exact files that
+  # still failed CI run 36628566922 (SARIF artifact 11064598652):
+  #   src/input/Binding.zig:4886    secret = chain=close_surface
+  #     -> a literal keybinding chord inside a test's expected output string
+  #   src/terminal/snapshot/terminal.zig:1035
+  #     secret = header.modify_other_keys_2 -> a struct field assignment,
+  #     not a credential. The preceding 09-29 comment mischaracterized these
+  #     two as "GhosttyBindingAction" / "snapshot identifier"; the actual
+  #     matched secrets are recorded here so the next reviewer can verify
+  #     them line-by-line instead of trusting prose.
+  # Regexes are written to match the detected SECRET (which is a substring of
+  # the full match), so they hold under either gitleaks match semantics.
+  '''chain=close_surface''',
+  '''header\.modify_other_keys_2''',
 ]

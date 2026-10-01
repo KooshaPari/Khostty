@@ -190,13 +190,21 @@ jobs:
     if: needs.detect.outputs.has_typescript == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
+    # The TS project is wasm/, not the repo root: the root has no package.json
+    # and no lockfile exists anywhere in the tree (verified 2026-10-01), so
+    # setup-node's `cache: 'npm'` hard-failed with "Dependencies lock file is
+    # not found in /home/runner/work/Khostty/Khostty" in run 36628566922.
+    defaults:
+      run:
+        working-directory: wasm
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+          # No `cache:` input: npm caching requires a lockfile and wasm/ has none.
+          # Committing one is a separate decision; until then this job installs fresh.
+      - run: npm install --no-audit --no-fund
       - name: lint
         run: |
           if [ -f package.json ] && grep -q '"lint"' package.json; then

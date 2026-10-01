@@ -78,5 +78,10 @@ runs:
         dest="${RUNNER_TOOL_CACHE}/zig/${ZIG_VERSION}/x64"
         mkdir -p "$dest"
         tar -xJf /tmp/zig.tar.xz -C "$dest" --strip-components=1
+        # GITHUB_PATH only takes effect for SUBSEQUENT steps, so prepend PATH
+        # inline for this step's own `zig version` self-check. Observed in CI run
+        # 36628566922: without the inline export the check died with
+        # `zig: command not found` (exit 127) even though extraction succeeded.
+        export PATH="$dest:$PATH"
         echo "$dest" >> "$GITHUB_PATH"
         zig version
