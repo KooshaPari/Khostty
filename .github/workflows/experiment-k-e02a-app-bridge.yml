@@ -49,7 +49,9 @@ jobs:
           tar -xJf /tmp/zig.tar.xz -C "$dest" --strip-components=1
           echo "$dest" >> "$GITHUB_PATH"
       - name: Format gate
-        run: zig fmt --check src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
+        run: |
+          zig fmt src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
+          git diff --exit-code -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
       - name: Bridge + protocol + handler controls
         run: |
           zig test src/apprt/ipc/app_thread_bridge.zig
