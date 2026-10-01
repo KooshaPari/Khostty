@@ -90,7 +90,7 @@ pub const Conn = struct {
         var buf: [1024]u8 = undefined;
         var w = self.stream.writer(io, &buf);
         try w.interface.writeAll(bytes);
-        try w.interface.writeByte('\\n');
+        try w.interface.writeByte('\n');
         try w.interface.flush();
     }
 
