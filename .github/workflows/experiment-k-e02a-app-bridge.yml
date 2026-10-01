@@ -52,7 +52,7 @@ jobs:
         run: |
           set +e
           zig fmt src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
-          git diff -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
+          git diff -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig | tee k-e02-format.patch
           echo "FORMAT_DIRTY=$(git diff --quiet -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig; echo $?)" >> "$GITHUB_ENV"
           git checkout -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
           exit 0
@@ -80,6 +80,7 @@ jobs:
             k-e02-bridge.txt
             k-e02-server.txt
             k-e02-core-build.txt
+            k-e02-format.patch
           if-no-files-found: warn
           retention-days: 30
       - name: Require bridge and server controls
