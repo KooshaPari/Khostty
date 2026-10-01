@@ -338,6 +338,11 @@ cd ../dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0 && npm publish   
 #    forbids reusing a distribution filename, so the publish job never cancels
 #    in-flight. Until step 1-2 happen, PyPI stays 404 and the token path above
 #    remains the fallback.
+#    Tag-push side effects were audited 2026-10-01: ci.yml triggers only on
+#    branch pushes/PRs/dispatch (no tag ref), and release-tag.yml,
+#    publish-tag.yml, clean-artifacts.yml are workflow_dispatch/cron only —
+#    so pushing khostty-v0.1.0 fires exactly ONE workflow (publish-pypi.yml)
+#    and cancels nothing (ci.yml's cancel-in-progress group is branch-scoped).
 
 # 3. GitHub release with artifacts + checksums      # DONE 2026-09-27 (6/6 assets verified via §7.2)
 #    (6 assets; hook-ea20989dca45c9e2c6c1c915ba817571 — supersedes expired
