@@ -59,7 +59,9 @@ jobs:
       - name: Bridge controls
         id: bridge
         continue-on-error: true
-        run: zig test src/apprt/ipc/app_thread_bridge.zig 2>&1 | tee k-e02-bridge.txt
+        run: |
+          set -o pipefail
+          zig test src/apprt/ipc/app_thread_bridge.zig 2>&1 | tee k-e02-bridge.txt
       - name: Protocol controls
         if: always()
         run: zig test src/apprt/ipc/protocol.zig
@@ -70,7 +72,9 @@ jobs:
         id: server
         if: always()
         continue-on-error: true
-        run: zig test src/apprt/ipc/server.zig 2>&1 | tee k-e02-server.txt
+        run: |
+          set -o pipefail
+          zig test src/apprt/ipc/server.zig 2>&1 | tee k-e02-server.txt
       - name: Upload semantic diagnostics
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
