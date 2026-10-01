@@ -56,6 +56,10 @@ jobs:
           echo "FORMAT_DIRTY=$(git diff --quiet -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig; echo $?)" >> "$GITHUB_ENV"
           git checkout -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
           exit 0
+      - name: Install GTK test build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libadwaita-1-dev libglib2.0-dev blueprint-compiler
       - name: Dependency-aware rich IPC controls
         id: richipc
         run: |
