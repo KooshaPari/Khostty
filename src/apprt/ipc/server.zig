@@ -207,8 +207,13 @@ pub const Server = struct {
             // while manager/broker/auth are still alive, then require workers
             // to leave before dependency teardown.
             self.connection_mutex.lock();
-            for (self.active_streams.items) |stream| stream.close(self.io);
+            const streams = self.gpa.dupe(std.Io.net.Stream, self.active_streams.items) catch {
+                self.connection_mutex.unlock();
+                @panic("unable to snapshot IPC streams for shutdown");
+            };
             self.connection_mutex.unlock();
+            defer self.gpa.free(streams);
+            for (streams) |stream| stream.close(self.io);
             if (!self.drainConnections(5_000)) {
                 @panic("IPC connection workers outlived server dependencies");
             }
