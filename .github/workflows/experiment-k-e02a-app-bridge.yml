@@ -57,7 +57,9 @@ jobs:
           git checkout -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
           exit 0
       - name: Bridge controls
-        run: zig test src/apprt/ipc/app_thread_bridge.zig
+        id: bridge
+        continue-on-error: true
+        run: zig test src/apprt/ipc/app_thread_bridge.zig 2>&1 | tee k-e02-bridge.txt
       - name: Protocol controls
         if: always()
         run: zig test src/apprt/ipc/protocol.zig
@@ -65,8 +67,29 @@ jobs:
         if: always()
         run: zig test src/apprt/ipc/handler.zig
       - name: Server lifecycle controls
+        id: server
         if: always()
-        run: zig test src/apprt/ipc/server.zig
+        continue-on-error: true
+        run: zig test src/apprt/ipc/server.zig 2>&1 | tee k-e02-server.txt
+      - name: Upload semantic diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: k-e02-semantic-diagnostics
+          path: |
+            k-e02-bridge.txt
+            k-e02-server.txt
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Require bridge and server controls
+        if: always()
+        env:
+          BRIDGE_OUTCOME: ${{ steps.bridge.outcome }}
+          SERVER_OUTCOME: ${{ steps.server.outcome }}
+        run: |
+          echo "bridge=$BRIDGE_OUTCOME server=$SERVER_OUTCOME"
+          test "$BRIDGE_OUTCOME" = success
+          test "$SERVER_OUTCOME" = success
       - name: Reject detached-worker lifecycle regression by source contract
         if: always()
         run: |
