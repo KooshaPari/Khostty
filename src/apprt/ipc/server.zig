@@ -145,7 +145,7 @@ pub const Server = struct {
     accept_thread: ?std.Thread = null,
     /// Connections accepted (observability + tests).
     connections_accepted: std.atomic.Value(usize) = .init(0),
-    /// Connections currently being served.
+    /// Connections currently being served. These must reach zero before dependency teardown.
     live_connections: std.atomic.Value(usize) = .init(0),
     /// Active connection streams, owned by the server only for shutdown interruption.
     connection_mutex: std.Thread.Mutex = .{},
