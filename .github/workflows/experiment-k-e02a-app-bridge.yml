@@ -55,5 +55,10 @@ jobs:
           zig test src/apprt/ipc/app_thread_bridge.zig
           zig test src/apprt/ipc/protocol.zig
           zig test src/apprt/ipc/handler.zig
+          zig test src/apprt/ipc/server.zig
+      - name: Reject detached-worker lifecycle regression by source contract
+        run: |
+          grep -q "force-disconnects idle clients" src/apprt/ipc/server.zig
+          grep -q "IPC connection workers outlived server dependencies" src/apprt/ipc/server.zig
       - name: Compile core path
         run: zig build -Dapp-runtime=gtk -Doptimize=Debug
