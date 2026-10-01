@@ -217,9 +217,9 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "1323e36fdd0cbce93aa3b94ac602ed4ae33cd387",
-      "workflow_run": 36770576989,
-      "status": "EXACT_HEAD_QUEUED",
+      "head": "c4db8802fd0dbbeb09c385248556d43255cd5ddb",
+      "workflow_run": 36820758671,
+      "status": "INFRA_RED_REPAIRED_REQUEUED",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
         "CoreApp.tick drains mailbox and experimental bridge",
@@ -240,7 +240,15 @@
         "no duplicate callback execution",
         "pane.send_input distinct from pane.write",
         "unqualified child input returns host_unsupported"
-      ]
+      ],
+      "prior_red": {
+        "head": "1323e36fdd0cbce93aa3b94ac602ed4ae33cd387",
+        "run": 36770576989,
+        "classification": "INFRASTRUCTURE_PRE_TEST",
+        "failed_step": "Install Zig",
+        "candidate_tests_executed": false
+      },
+      "latest_repair": "checksum-verified Zig primary plus fallback download; candidate test gates unchanged"
     },
     "next": "grade primitive; project one real pane operation through app thread; then K-E02b server lifecycle",
     "acceptance": false
