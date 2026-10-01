@@ -8,8 +8,11 @@ per artifact: how do I get it, what has been verified, and what has **not**.
 
 **First, read this:** the 0.1.0 release **is published** — tag `v0.1.0`, the GitHub
 release with its six assets, the crates.io crate, and the npm package are all live.
-**PyPI is the one exception**: `khostty-vt` is not on PyPI, because no credential
-exists on this host. See [RELEASE.md §7](RELEASE.md) for the per-surface state,
+**PyPI is the one exception**: `khostty-vt` is not on PyPI yet. The publication
+path is built and pre-flighted — `.github/workflows/publish-pypi.yml` (Trusted
+Publishing, no token) plus a content-verified local pre-flight of its build job
+— and the one remaining step is the operator registering the pending trusted
+publisher on PyPI. See [RELEASE.md §7](RELEASE.md) for the per-surface state,
 including what remains unverified.
 
 Practical consequence: `dist-release/` is gitignored (`.gitignore` line 42), so
@@ -29,7 +32,7 @@ has a script that reproduces it.
 | Windows PE payload | `dist-release/stage/windows/Khostty-0.1.0-win64/payload/` (`.exe`, `.dll`) | **yes** — bundled into the release's `Khostty-0.1.0-windows-x86_64-setup.exe` | cross-build via `packaging/windows/installer.sh` | yes, cross-compile |
 | Rust crate | `khostty-vt/` | **yes** — crates.io `khostty-vt@0.1.0` | `cd khostty-vt && cargo test` | source tree, in-repo |
 | Go module | `khostty-go/` | no — scaffold only, no registry publish applies to 0.1.0 | `cd khostty-go && go test ./...` | source tree, in-repo |
-| Python package | `khostty-python/` | **no — PyPI publish is blocked** on a missing operator credential; artifacts are prebuilt and `twine check`-clean | `pip install -e khostty-python` | source tree, in-repo |
+| Python package | `khostty-python/` | **no — PyPI publish awaits the operator's trusted-publisher registration** (`publish-pypi.yml` ready and pre-flighted); artifacts are prebuilt and `twine check`-clean | `pip install -e khostty-python` | source tree, in-repo |
 
 Checksums for every built artifact are in
 [RELEASE.md §6](RELEASE.md) and `dist-release/CHECKSUMS.txt`. Verify before consuming:

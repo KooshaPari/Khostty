@@ -49,8 +49,9 @@ Library packages published to registries: `khostty-vt 0.1.0` on
 [crates.io](https://crates.io/crates/khostty-vt) and
 `khostty-libghostty-vt-wasm 0.1.0` on
 [npm](https://www.npmjs.com/package/khostty-libghostty-vt-wasm).
-The PyPI publish is not yet made (credential-blocked; tracked in
-[RELEASE.md](RELEASE.md) §7).
+The PyPI publish is not yet made; the trusted-publishing workflow
+(`publish-pypi.yml`) is committed and pre-flighted, awaiting the operator's
+publisher registration (tracked in [RELEASE.md](RELEASE.md) §7).
 
 The per-platform sections below remain the install-and-verify authority; their
 `dist-release/...` paths are what the packaging scripts produce on a build
