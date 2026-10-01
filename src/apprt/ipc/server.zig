@@ -11,9 +11,9 @@
 //!
 //! Known limits, stated rather than implied:
 //!
-//!   * `stop`/`deinit` unblock `accept`, but in-flight connections end when the
-//!     client disconnects; they are not force-closed, because a half-written
-//!     frame is worse than a slow shutdown.
+//!   * `stop` unblocks `accept`; `deinit` gives live connections a short
+//!     graceful drain, then force-closes idle streams while dependencies are
+//!     still alive and requires all connection workers to exit before teardown.
 //!   * The event pusher polls (`Config.event_poll_ms`) instead of blocking on a
 //!     condition variable: `std.Io.net` reads take no timeout, and a per
 //!     connection poll at 25 ms costs nothing measurable while making a stuck
