@@ -338,7 +338,6 @@ test "tickets are monotonic correlation identities" {
     b.releaseCaller();
 }
 
-
 test "cancelled queued request runs cleanup exactly once" {
     var bridge = Bridge.init(std.testing.io);
     const Counters = struct { ran: usize = 0, cleaned: usize = 0 };
@@ -362,17 +361,21 @@ test "cancelled queued request runs cleanup exactly once" {
     request.releaseCaller();
 }
 
-
 test "wrong request state cannot execute callback twice" {
     var bridge = Bridge.init(std.testing.io);
     var value: usize = 0;
-    const Ctx = struct { fn run(ptr:*anyopaque) void { const n:*usize=@ptrCast(@alignCast(ptr)); n.* += 1; } };
-    const request=try Request.create(std.testing.allocator,&value,Ctx.run);
-    _=try bridge.submit(request);
-    try std.testing.expectEqual(@as(usize,1),bridge.drainOnAppThread());
-    try std.testing.expectEqual(@as(usize,0),bridge.drainOnAppThread());
-    try std.testing.expectEqual(@as(usize,1),value);
-    try std.testing.expectEqual(State.completed,try request.wait(null));
+    const Ctx = struct {
+        fn run(ptr: *anyopaque) void {
+            const n: *usize = @ptrCast(@alignCast(ptr));
+            n.* += 1;
+        }
+    };
+    const request = try Request.create(std.testing.allocator, &value, Ctx.run);
+    _ = try bridge.submit(request);
+    try std.testing.expectEqual(@as(usize, 1), bridge.drainOnAppThread());
+    try std.testing.expectEqual(@as(usize, 0), bridge.drainOnAppThread());
+    try std.testing.expectEqual(@as(usize, 1), value);
+    try std.testing.expectEqual(State.completed, try request.wait(null));
     request.releaseCaller();
 }
 
@@ -391,7 +394,6 @@ test "queue-full publication cancels request without executing it" {
     for(requests[0..64],0..) |req,idx| { try std.testing.expectEqual(State.completed,try req.wait(null)); try std.testing.expectEqual(@as(usize,1),values[idx]); req.releaseCaller(); }
     try std.testing.expectEqual(@as(usize,0),values[64]);
 }
-
 
 test "worker submission remains pending until app thread drains" {
     var bridge = Bridge.init(std.testing.io);
