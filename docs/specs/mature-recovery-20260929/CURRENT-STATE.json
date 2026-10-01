@@ -217,9 +217,9 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "71235bbea1c41f4549d2048efa9c870e5ed2a805",
-      "workflow_run": 36821252873,
-      "status": "FORMAT_PATCH_RECEIPT_REQUEUED",
+      "head": "9a0bd7e7c9bfb8675c5459b0cf595d1a8d2bd82f",
+      "workflow_run": 36874291494,
+      "status": "BUILD_GRAPH_TESTS_RUNNING",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
         "CoreApp.tick drains mailbox and experimental bridge",
@@ -277,7 +277,12 @@
       "format": "FAIL",
       "diagnostic_artifact_digest": "sha256:3eab46e077bc91670b9c3279a42f0cbe4545c6f3d593c16c4d4dfc5e0d89f8dc"
     },
-    "status": "SEMANTIC_AND_CORE_COMPILE_PASS__FORMAT_ONLY"
+    "status": "BUILD_GRAPH_SEMANTIC_REGRADE_ACTIVE",
+    "prior_grader_correction": {
+      "run": 36870710382,
+      "issue": "standalone zig test output was piped through tee without pipefail and module-root semantics differed from repository build graph",
+      "action": "semantic tests now run through zig build test filters; pipefail enforced; exact formatter patch applied"
+    }
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
   "product_horizon": "PURPOSEFUL_GHOSTTY_FORK_FOR_WINDOWS_SHELL_PLATFORM_IMPROVEMENTS_AND_CMUX_CLASS_PROGRAMMABLE_TERMINAL_CONTROL_AS_HELIOSLAB_INFRASTRUCTURE",
