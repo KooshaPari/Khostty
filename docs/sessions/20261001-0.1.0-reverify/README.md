@@ -41,6 +41,17 @@ session's PR storms; 52 runs cancelled repo-wide that day):
 Note: despite the 4 job failures, `ci / lint` failing on zig-fmt was the only
 gating failure; fixes above are all three root causes.
 
+**RESOLVED — run `36905910200` (2026-10-01, head `67669dad2`): `success`.**
+Every executed job green — Zig Fmt, Security Scan, TS/JS, `ci / lint`,
+`ci / test`, Detect, Rust, Go, Python (10 success, 3 conditional skips:
+Dependency Review, Build macOS, Cargo Deny). **First fully green CI run in
+this repo's history.** All three root causes above verified fixed in a real
+run. Caveat learned twice: `ci.yml` has `cancel-in-progress: true` on group
+`CI-refs/heads/main`, so every push to main cancels the in-flight run — no
+further pushes were made until this run completed (release discipline rule).
+Successor run `36919394995` on the docs push `743d00c5f` queued 20:09Z,
+watched separately.
+
 ## PyPI publication path (unchanged, still the one human step)
 
 - Browser upload form no longer exists in Warehouse (documented 09-29,
@@ -54,6 +65,17 @@ gating failure; fixes above are all three root causes.
   2. **Token:** project-scoped token + `read -rs T` twine command staged in
      Ghostty.
 - `publish-pypi.yml` never triggers on the existing `v0.1.0` tag by design.
+- **GitHub-side preconditions now complete (2026-10-01):** `publish-pypi.yml`
+  is active and recognized by GitHub (`gh workflow list`), and the `pypi`
+  environment it binds was created with **0 protection rules / 0 reviewers**
+  (the OIDC publish job cannot stall on an approval gate). PyPI-side pending
+  publisher registration remains the only missing piece.
+- Trigger tag `khostty-v0.1.0` is **staged locally as an annotated tag on
+  `202aad543`** (same commit as `v0.1.0`), deliberately **not pushed** — it is
+  pushed only after PyPI registration, so the workflow never runs into a
+  missing OIDC config. `docs/RELEASE.md` now documents the `khostty-v*` tag
+  convention, the pending-publisher URL, and both trigger paths (commit
+  `743d00c5f`).
 
 ## Open items after this re-verify
 
@@ -67,8 +89,9 @@ gating failure; fixes above are all three root causes.
    probe's rule: offline, no reschedule, no further probes, r4 left pending.
    The 2026-09-30 18:00Z slot was the final probe and the 17:00Z re-verify
    was the sole remaining backstop — both are now consumed.
-3. **CI green run** — three fixes pushed 10-01; awaiting the post-push run to
-   confirm Zig Fmt / Security Scan / TS/JS go green.
+3. ~~**CI green run**~~ — **RESOLVED 2026-10-01:** run `36905910200` completed
+   `success`, all three fixes confirmed green in a real run (details in the CI
+   status section above).
 
 ## Evidence artifacts
 
