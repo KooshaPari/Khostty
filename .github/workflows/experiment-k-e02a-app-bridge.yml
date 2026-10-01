@@ -56,12 +56,14 @@ jobs:
           echo "FORMAT_DIRTY=$(git diff --quiet -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig; echo $?)" >> "$GITHUB_ENV"
           git checkout -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
           exit 0
-      - name: Bridge + protocol + handler controls
-        run: |
-          zig test src/apprt/ipc/app_thread_bridge.zig
-          zig test src/apprt/ipc/protocol.zig
-          zig test src/apprt/ipc/handler.zig
-          zig test src/apprt/ipc/server.zig
+      - name: Bridge controls
+        run: zig test src/apprt/ipc/app_thread_bridge.zig
+      - name: Protocol controls
+        run: zig test src/apprt/ipc/protocol.zig
+      - name: Handler controls
+        run: zig test src/apprt/ipc/handler.zig
+      - name: Server lifecycle controls
+        run: zig test src/apprt/ipc/server.zig
       - name: Reject detached-worker lifecycle regression by source contract
         run: |
           grep -q "force-disconnects idle clients" src/apprt/ipc/server.zig
