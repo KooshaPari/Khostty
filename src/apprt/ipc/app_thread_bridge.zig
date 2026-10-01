@@ -380,40 +380,57 @@ test "wrong request state cannot execute callback twice" {
 }
 
 test "queue-full publication cancels request without executing it" {
-    var bridge=Bridge.init(std.testing.io);
-    var values:[65]usize = [_]usize{0} ** 65;
-    const Ctx=struct { fn run(ptr:*anyopaque) void { const n:*usize=@ptrCast(@alignCast(ptr)); n.* += 1; } };
-    var requests:[65]*Request=undefined;
-    var i:usize=0;
-    while(i<64):(i+=1){ requests[i]=try Request.create(std.testing.allocator,&values[i],Ctx.run); _=try bridge.submit(requests[i]); }
-    requests[64]=try Request.create(std.testing.allocator,&values[64],Ctx.run);
-    try std.testing.expectError(error.QueueFull,bridge.submit(requests[64]));
-    try std.testing.expectEqual(State.canceled,try requests[64].wait(null));
+    var bridge = Bridge.init(std.testing.io);
+    var values: [65]usize = [_]usize{0} ** 65;
+    const Ctx = struct {
+        fn run(ptr: *anyopaque) void {
+            const n: *usize = @ptrCast(@alignCast(ptr));
+            n.* += 1;
+        }
+    };
+    var requests: [65]*Request = undefined;
+    var i: usize = 0;
+    while (i < 64) : (i += 1) {
+        requests[i] = try Request.create(std.testing.allocator, &values[i], Ctx.run);
+        _ = try bridge.submit(requests[i]);
+    }
+    requests[64] = try Request.create(std.testing.allocator, &values[64], Ctx.run);
+    try std.testing.expectError(error.QueueFull, bridge.submit(requests[64]));
+    try std.testing.expectEqual(State.canceled, try requests[64].wait(null));
     requests[64].releaseCaller();
-    try std.testing.expectEqual(@as(usize,64),bridge.drainOnAppThread());
-    for(requests[0..64],0..) |req,idx| { try std.testing.expectEqual(State.completed,try req.wait(null)); try std.testing.expectEqual(@as(usize,1),values[idx]); req.releaseCaller(); }
-    try std.testing.expectEqual(@as(usize,0),values[64]);
+    try std.testing.expectEqual(@as(usize, 64), bridge.drainOnAppThread());
+    for (requests[0..64], 0..) |req, idx| {
+        try std.testing.expectEqual(State.completed, try req.wait(null));
+        try std.testing.expectEqual(@as(usize, 1), values[idx]);
+        req.releaseCaller();
+    }
+    try std.testing.expectEqual(@as(usize, 0), values[64]);
 }
 
 test "worker submission remains pending until app thread drains" {
     var bridge = Bridge.init(std.testing.io);
     var value: usize = 0;
-    const Ctx = struct { fn run(ptr:*anyopaque) void { const n:*usize=@ptrCast(@alignCast(ptr)); n.* += 1; } };
-    const request = try Request.create(std.testing.allocator, &value, Ctx.run);
-    const Submit = struct {
-        fn main(b:*Bridge, req:*Request, out:*std.atomic.Value(bool)) void {
-            _ = b.submit(req) catch return;
-            out.store(true,.release);
+    const Ctx = struct {
+        fn run(ptr: *anyopaque) void {
+            const n: *usize = @ptrCast(@alignCast(ptr));
+            n.* += 1;
         }
     };
-    var submitted: std.atomic.Value(bool)=.init(false);
-    const worker=try std.Thread.spawn(.{},Submit.main,.{&bridge,request,&submitted});
+    const request = try Request.create(std.testing.allocator, &value, Ctx.run);
+    const Submit = struct {
+        fn main(b: *Bridge, req: *Request, out: *std.atomic.Value(bool)) void {
+            _ = b.submit(req) catch return;
+            out.store(true, .release);
+        }
+    };
+    var submitted: std.atomic.Value(bool) = .init(false);
+    const worker = try std.Thread.spawn(.{}, Submit.main, .{ &bridge, request, &submitted });
     worker.join();
     try std.testing.expect(submitted.load(.acquire));
-    try std.testing.expectEqual(@as(usize,0),value);
-    try std.testing.expectEqual(State.queued,request.stateSnapshot());
-    try std.testing.expectEqual(@as(usize,1),bridge.drainOnAppThread());
-    try std.testing.expectEqual(@as(usize,1),value);
-    try std.testing.expectEqual(State.completed,try request.wait(null));
+    try std.testing.expectEqual(@as(usize, 0), value);
+    try std.testing.expectEqual(State.queued, request.stateSnapshot());
+    try std.testing.expectEqual(@as(usize, 1), bridge.drainOnAppThread());
+    try std.testing.expectEqual(@as(usize, 1), value);
+    try std.testing.expectEqual(State.completed, try request.wait(null));
     request.releaseCaller();
 }
