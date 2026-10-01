@@ -269,7 +269,7 @@ Execution state as of 2026-09-24:
 |---|---|
 | Git tag `v0.1.0` | **DONE** — annotated tag at `202aad543`, pushed to origin (tag object `7e1684f6`) |
 | crates.io `khostty-vt` 0.1.0 | **PUBLISHED** 2026-09-20 — API-verified: `newest_version=0.1.0`, downloaded-crate checksum matches the local `.crate`, `published_by KooshaPari`; 199/199 tests passed first |
-| PyPI `khostty-vt` | **BLOCKED — no credential exists on this machine** (no `.pypirc`, keyring entry, env var, netrc, or OIDC trusted publishing). Preconditions re-verified 2026-09-29: `twine check` PASSED on both artifacts, `git log v0.1.0..HEAD -- khostty-python/` is empty (artifacts still match the tagged source), and the name is free (`GET /pypi/khostty-vt/json` → `404`). Upload runs the moment an operator-provided token exists. See `docs/sessions/khostty-0.1.0-release/01_RESEARCH_pypi-publication.md`. |
+| PyPI `khostty-vt` | **BLOCKED — no credential exists on this machine** (no `.pypirc`, keyring entry, env var, netrc). Preconditions re-verified 2026-10-01: `twine check` PASSED on both artifacts, `git log v0.1.0..HEAD -- khostty-python/` is empty (artifacts still match the tagged source), and the name is free (`GET /pypi/khostty-vt/json` → `404`; note `pypi.org/project/khostty-vt/` returns a bot-challenge `200` — the JSON endpoint is authoritative). **Preferred unblock:** Trusted Publishing via `.github/workflows/publish-pypi.yml` — register the trusted publisher on PyPI (`KooshaPari`/`Khostty`/`publish-pypi.yml`/environment `pypi`), then push tag `khostty-v0.1.0` (the workflow gates on `khostty-v*`; the existing `v0.1.0` tag will not trigger it). **Fallback:** mint a project-scoped token and run the staged `read -rs` twine command below. See `docs/sessions/khostty-0.1.0-release/01_RESEARCH_pypi-publication.md`. |
 | npm `khostty-libghostty-vt-wasm` | **PUBLISHED 2026-09-24** — the stored token had been revoked; recovery was a fresh `/opt/homebrew/bin/npm login --auth-type=web` plus one browser 2FA approval, then `npm publish`. `npm view` returns `0.1.0` with `dist.shasum 2754b0a423ee035b421dc232ceb6f8fc6c85b57d` — byte-match to the staged package (27 files, 324.6 kB) — published 2026-09-24T10:47:28Z. |
 | Go module proxy | Not applicable to 0.1.0 (the Go module is scaffold only, G6.1) |
 | GitHub release + 6 assets | **PUBLISHED 2026-09-27** — https://github.com/KooshaPari/Khostty/releases/tag/v0.1.0. The command was deferred twice (hook-a683332d… expired; hook-ea20989d… lived 3 days then expired 2026-09-27 16:16 UTC); the re-issued canonical §7.1 command was executed by the gate 2026-09-27 16:18 UTC and uploaded all 6 assets. §7.2 verified: exactly 6 assets with expected byte sizes (CHECKSUMS.txt 4,273 B, macos.zip 35,953,098 B, windows setup.exe 19,766,307 B, wasm tarball 680,598 B, lib `.deb` 2,320,612 B, GTK `.deb` 18,143,964 B); local `shasum -c` 9/9 OK |
@@ -313,8 +313,31 @@ cd ../dist-release/wasm/stage/khostty-libghostty-vt-wasm-0.1.0 && npm publish   
 #        khostty-python/dist/khostty_vt-0.1.0-py3-none-any.whl
 #      unset PYPI_TOKEN
 #    Never paste the token into chat, shell history, or a committed file.
-#    Durable follow-up: enable Actions in this fork, then configure PyPI Trusted
-#    Publishing (OIDC) so no token is needed for future releases.
+#    Durable follow-up — now the PREFERRED path (2026-10-01): Actions is
+#    enabled on this fork (API: {"enabled":true}) and
+#    `.github/workflows/publish-pypi.yml` is committed. It builds the sdist/wheel
+#    from the tagged source, runs `twine check`, then publishes via OIDC
+#    Trusted Publishing (job-level `id-token: write`, environment `pypi`,
+#    `packages-dir: dist/`) — no token ever exists.
+#    Two operator actions remain, in order:
+#      1. At https://pypi.org/manage/account/publishing/ add a PENDING
+#         trusted publisher: owner `KooshaPari`, repo `Khostty`,
+#         workflow `publish-pypi.yml`, environment `pypi`.
+#         (khostty-vt does not exist yet, so its per-project publishing page
+#         404s; PyPI converts the pending publisher into a real project link
+#         on first upload. Once the project exists, the same four fields live
+#         at https://pypi.org/manage/project/khostty-vt/publishing/.)
+#      2. Trigger a run — either push the tag `khostty-v0.1.0`, or run the
+#         workflow from the Actions UI with input `version: khostty-v0.1.0`.
+#    TAG CONVENTION: the workflow gates on `khostty-v*` tags only.
+#    The existing `v0.1.0` tag does NOT match and will never trigger it.
+#    `khostty-v0.1.0` should be placed on the same commit as `v0.1.0`
+#    (`git tag khostty-v0.1.0 202aad543 && git push origin khostty-v0.1.0`).
+#    The workflow verifies the tag's `khostty-python/pyproject.toml` version
+#    matches the tag before building, so a mistyped tag fails fast, and PyPI
+#    forbids reusing a distribution filename, so the publish job never cancels
+#    in-flight. Until step 1-2 happen, PyPI stays 404 and the token path above
+#    remains the fallback.
 
 # 3. GitHub release with artifacts + checksums      # DONE 2026-09-27 (6/6 assets verified via §7.2)
 #    (6 assets; hook-ea20989dca45c9e2c6c1c915ba817571 — supersedes expired
