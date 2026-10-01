@@ -217,8 +217,8 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "79373c7cd74b015d4f045e156663dd1db49a2391",
-      "workflow_run": 36910495513,
+      "head": "05365c2c894fbe5def28369a5006c8cbff92c170",
+      "workflow_run": 36913031613,
       "status": "REPOSITORY_TEST_ROOT_AUTHORITY_QUEUED",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
@@ -277,7 +277,7 @@
       "format": "FAIL",
       "diagnostic_artifact_digest": "sha256:3eab46e077bc91670b9c3279a42f0cbe4545c6f3d593c16c4d4dfc5e0d89f8dc"
     },
-    "status": "DEPENDENCY_AWARE_HARNESS_SOURCE_DEFECT_FIXED__NATIVE_DEPS_ADDED__REQUEUED",
+    "status": "DEPENDENCY_AWARE_HARNESS_SECOND_REPAIR_REQUEUED",
     "prior_grader_correction": {
       "run": 36870710382,
       "issue": "standalone zig test output was piped through tee without pipefail and module-root semantics differed from repository build graph",
@@ -311,14 +311,16 @@
     },
     "harness_result": {
       "prior_run": 36906989011,
-      "artifact_digest": "sha256:05cecbb6a7691fb3806f2c9ef163441fa1ec5c30975ef140095c8b7a945b4ef5",
+      "artifact_digest": "sha256:ad8508b2d7ce30f2de1fa422a15d0e1c7bb3e6616bcf8be85f7d505039eb76e5",
       "findings": [
-        "real malformed frame delimiter literal at server.zig:341",
-        "runner lacked GTK4/libadwaita development headers"
+        "server.zig malformed newline writer at line 463",
+        "blueprint-compiler below required 0.16",
+        "gtk4-layer-shell header absent"
       ],
       "repairs": [
-        "valid newline delimiter literal",
-        "install libgtk-4-dev libadwaita-1-dev libglib2.0-dev blueprint-compiler"
+        "canonical newline character literal",
+        "modern blueprint compiler path",
+        "libgtk4-layer-shell-dev installed"
       ]
     }
   },
