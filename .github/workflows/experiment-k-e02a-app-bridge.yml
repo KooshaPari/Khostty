@@ -48,10 +48,14 @@ jobs:
           mkdir -p "$dest"
           tar -xJf /tmp/zig.tar.xz -C "$dest" --strip-components=1
           echo "$dest" >> "$GITHUB_PATH"
-      - name: Format gate
+      - name: Format diagnostic
         run: |
+          set +e
           zig fmt src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
-          git diff --exit-code -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
+          git diff -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
+          echo "FORMAT_DIRTY=$(git diff --quiet -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig; echo $?)" >> "$GITHUB_ENV"
+          git checkout -- src/App.zig src/apprt/ipc/app_thread_bridge.zig src/apprt/ipc/protocol.zig src/apprt/ipc/handler.zig src/apprt/ipc/server.zig
+          exit 0
       - name: Bridge + protocol + handler controls
         run: |
           zig test src/apprt/ipc/app_thread_bridge.zig
@@ -64,3 +68,6 @@ jobs:
           grep -q "IPC connection workers outlived server dependencies" src/apprt/ipc/server.zig
       - name: Compile core path
         run: zig build -Dapp-runtime=gtk -Doptimize=Debug
+      - name: Enforce format after semantic gates
+        if: always()
+        run: test "${FORMAT_DIRTY:-1}" = 0
