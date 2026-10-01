@@ -1,0 +1,60 @@
+Publish build-job pre-flight — 2026-10-01 20:16–20:22Z
+========================================================
+
+Purpose: execute the EXACT commands of the publish-pypi.yml "build" job
+locally, against the EXACT tree the CI checkout will see (the staged
+khostty-v0.1.0 tag), before the operator registers the PyPI trusted
+publisher. The workflow itself has never run; this proves its build half
+works and its outputs equal the rehearsed artifacts.
+
+Setup
+-----
+  git archive khostty-v0.1.0 khostty-python | tar -x -C $SCRATCH
+    -> extracted: examples khostty_vt LICENSE MANIFEST.in pyproject.toml
+       README.md tests tools uv.lock   (no dist/ — it is untracked,
+       confirmed: git ls-files khostty-python/dist/ -> 0 files)
+  Interpreter: uv-managed CPython 3.12.13 (workflow pins "3.12").
+
+Step 1 — Read package version (workflow cmd, tomllib)
+  output: 0.1.0                                      PASS
+
+Step 2 — Check tag matches pyproject version (gate simulation)
+  effective_tag=khostty-v0.1.0 -> tag_version=0.1.0
+  pyproject=0.1.0
+  GATE PASS
+
+Step 3 — python -m build  (workflow: python -m pip install --upgrade
+        build twine; python -m build)
+  Successfully built khostty_vt-0.1.0.tar.gz and
+                    khostty_vt-0.1.0-py3-none-any.whl
+  wall time 3m35s (build isolation downloads)         PASS
+
+Step 4 — twine check dist/*
+  Checking khostty_vt-0.1.0-py3-none-any.whl: PASSED
+  Checking khostty_vt-0.1.0.tar.gz: PASSED            PASS
+
+Step 5 — Compare fresh build vs staged (rehearsed) artifacts
+  staged wheel  51,194 B  sha256 4e87e82175133ded0e8eb0149a26f701c02ba2c6fe7aae5039d0de3032e455da
+  fresh  wheel  51,194 B  sha256 fe76952390b3253556c252f22b25f2aa2a59147de93d558f5fd456e703b35e5d
+  staged sdist 59,871 B  sha256 7143183894f2c81ac97e2cbd66154b31413178b74571aea3ffb5adc9d608dbc9
+  fresh  sdist 59,375 B  sha256 ce3f2b535514c7988446c86400663f810a98f7b3ec120c8f40c8e4f27e66244f
+
+  sdist member file lists: identical (diff of sorted `tar tzf` output)
+  extracted content, recursive diff:
+    SDIST: IDENTICAL CONTENT
+    WHEEL: IDENTICAL CONTENT
+  => byte differences are archive timestamps only (mtimes differ between
+     the original build and this reconstruction); semantic content of the
+     artifacts PyPI will receive from the workflow build equals the
+     rehearsed, checksummed staged copies.
+
+Conclusion
+----------
+All 4 executed workflow steps PASS on the exact tag tree. The only
+untested part of publish-pypi.yml is the OIDC exchange in the publish job,
+which cannot be tested without the operator's PyPI pending-publisher
+registration (r2b).
+
+Artifacts (scratch, disposable):
+  $JCODE_SCRATCH_DIR/khostty-preflight-1790885826/   (tag tree + fresh dist/)
+  $JCODE_SCRATCH_DIR/contentcmp-*/                    (extraction for diff)
