@@ -338,8 +338,7 @@ pub const Server = struct {
             // primitive: it consumes the delimiter, and returns null at a
             // clean end of stream. Exclusive leaves the delimiter in the
             // buffer, which turns the next read into a zero-length frame.
-            const frame = conn.reader.interface.takeDelimiter('
-') catch |err| switch (err) {
+            const frame = conn.reader.interface.takeDelimiter('\\n') catch |err| switch (err) {
                 error.StreamTooLong => {
                     // Protocol rule: an oversized frame is rejected and the
                     // connection is closed, because the reader can no longer
@@ -470,8 +469,7 @@ pub const Client = struct {
     /// stream, which is how a server closing the connection appears. The slice
     /// borrows the client's read buffer and stays valid until the next read.
     pub fn readFrame(self: *Client) !?[]const u8 {
-        return self.reader.interface.takeDelimiter('
-');
+        return self.reader.interface.takeDelimiter('\\n');
     }
 
     /// Read one frame and parse it as JSON.
