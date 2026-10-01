@@ -456,3 +456,13 @@ are the events published since the previous tick.
   agent that needs real state should follow up with `pane.state`.
 - One subscription per connection: a second `events.subscribe` replaces the
   first, and `events.unsubscribe` without one is `not_subscribed`.
+
+
+### Experimental mounting gate
+
+The rich server is not mounted into the GTK runtime merely because it compiles.
+Mounting requires all of the following on one exact candidate: app-thread bridge
+controls, server zero-worker teardown, authentication setup, exact socket/token
+ownership, and a native socket round-trip against a real runtime-owned pane.
+Until that gate passes, direct `AppHost` calls from connection threads remain
+architecturally invalid even when an individual operation appears to work.
