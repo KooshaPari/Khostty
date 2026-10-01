@@ -7,7 +7,7 @@
   "nodes": [
     {
       "id": "K-E02",
-      "state": "ACTIVE_K_E02A",
+      "state": "ACTIVE_REGRADING",
       "depends_on": [],
       "parallel_group": "K-P1",
       "purpose": "Native/control alternative bake-off",
@@ -32,8 +32,13 @@
       "candidate": {
         "branch": "experiment/mature-recovery-k-e02a-app-bridge",
         "pr": 11,
-        "head": "1091294fdf428627224ec7b0f0a0ae03e102d4a2",
-        "status": "EXACT_HEAD_QUEUED"
+        "head": "c4db8802fd0dbbeb09c385248556d43255cd5ddb",
+        "workflow_run": 36820758671,
+        "status": "INFRA_RED_REPAIRED_REQUEUED"
+      },
+      "prior_red": {
+        "run": 36770576989,
+        "classification": "infra before candidate gates"
       }
     },
     {
