@@ -25,10 +25,29 @@ jobs:
           ref: ${{ env.CANDIDATE_SHA }}
       - name: Verify exact candidate checkout
         run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
-      - uses: ./.github/actions/install-zig
-        with:
-          version: "0.16.0"
-          shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
+      - name: Install Zig with verified primary + official mirror fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=0.16.0
+          expected=70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
+          urls=(
+            "https://ziglang.org/download/$version/zig-x86_64-linux-$version.tar.xz"
+            "https://pkg.machengine.org/zig/zig-x86_64-linux-$version.tar.xz"
+          )
+          ok=0
+          for url in "${urls[@]}"; do
+            rm -f /tmp/zig.tar.xz
+            if curl --fail --location --silent --show-error --retry 2 --connect-timeout 20 --max-time 300 -o /tmp/zig.tar.xz "$url"; then
+              actual="$(sha256sum /tmp/zig.tar.xz | cut -d' ' -f1)"
+              if [ "$actual" = "$expected" ]; then ok=1; break; fi
+            fi
+          done
+          test "$ok" = 1
+          dest="${RUNNER_TOOL_CACHE}/zig/$version/x64"
+          mkdir -p "$dest"
+          tar -xJf /tmp/zig.tar.xz -C "$dest" --strip-components=1
+          echo "$dest" >> "$GITHUB_PATH"
       - name: Format gate
         run: zig fmt --check src/App.zig src/apprt/ipc/app_thread_bridge.zig
       - name: Bridge + protocol + handler controls
