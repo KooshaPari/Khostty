@@ -58,24 +58,20 @@ jobs:
           exit 0
       - name: Bridge controls
         id: bridge
-        continue-on-error: true
         run: |
           set -o pipefail
           zig build test -Dapp-runtime=gtk -Dtest-filter="bridge " 2>&1 | tee k-e02-bridge.txt
       - name: Protocol controls
         id: protocol
         if: always()
-        continue-on-error: true
         run: zig build test -Dapp-runtime=gtk -Dtest-filter="protocol"
       - name: Handler controls
         id: handler
         if: always()
-        continue-on-error: true
         run: zig build test -Dapp-runtime=gtk -Dtest-filter="handler"
       - name: Server lifecycle controls
         id: server
         if: always()
-        continue-on-error: true
         run: |
           set -o pipefail
           zig build test -Dapp-runtime=gtk -Dtest-filter="lifecycle:" 2>&1 | tee k-e02-server.txt
@@ -91,19 +87,6 @@ jobs:
             k-e02-format.patch
           if-no-files-found: warn
           retention-days: 30
-      - name: Require bridge and server controls
-        if: always()
-        env:
-          BRIDGE_OUTCOME: ${{ steps.bridge.outcome }}
-          PROTOCOL_OUTCOME: ${{ steps.protocol.outcome }}
-          HANDLER_OUTCOME: ${{ steps.handler.outcome }}
-          SERVER_OUTCOME: ${{ steps.server.outcome }}
-        run: |
-          echo "bridge=$BRIDGE_OUTCOME protocol=$PROTOCOL_OUTCOME handler=$HANDLER_OUTCOME server=$SERVER_OUTCOME"
-          test "$BRIDGE_OUTCOME" = success
-          test "$PROTOCOL_OUTCOME" = success
-          test "$HANDLER_OUTCOME" = success
-          test "$SERVER_OUTCOME" = success
       - name: Reject detached-worker lifecycle regression by source contract
         if: always()
         run: |
