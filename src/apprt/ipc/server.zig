@@ -1209,3 +1209,25 @@ test "socket: concurrent agents do not deadlock and do not cross panes" {
     try testing.expectEqual(@as(usize, 0), remaining.items.len);
     try testing.expectEqual(@as(usize, agent_count), h.fake.close_calls);
 }
+
+
+test "lifecycle: deinit force-disconnects idle clients before dependency teardown" {
+    var h = try Harness.init(testing.allocator, .{});
+    // Keep an idle client connected: old detached-worker lifecycle could wait
+    // five seconds and then tear dependencies down while this worker survived.
+    var client = try h.connect();
+    try testing.expect(h.server.live_connections.load(.acquire) >= 1);
+
+    h.server.deinit();
+    try testing.expectEqual(@as(usize, 0), h.server.live_connections.load(.acquire));
+    try testing.expectEqual(@as(usize, 0), h.server.active_streams.items.len);
+
+    // Server owns no dependency after deinit; now the harness pieces can safely
+    // be torn down without a detached worker retaining manager/broker/auth.
+    client.deinit();
+    h.manager.deinit(h.io);
+    h.authenticator.deinit();
+    h.broker.deinit(h.io);
+    h.fake.deinit();
+    testing.allocator.free(h.path);
+}
