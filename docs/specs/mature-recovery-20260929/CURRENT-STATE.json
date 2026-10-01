@@ -217,9 +217,9 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "3329559de550092b05fdd064931c8ef434df7a60",
+      "head": "788d266dbbd4c9d45d67ba8dedb06eb4e205ceac",
       "workflow_run": 36821252873,
-      "status": "FORMAT_DIAGNOSTIC_PLUS_SEMANTIC_GATES_REQUEUED",
+      "status": "CORE_COMPILE_RECEIPT_INSTRUMENTED_REQUEUED",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
         "CoreApp.tick drains mailbox and experimental bridge",
@@ -264,7 +264,20 @@
         "idle-client-across-deinit adversarial test"
       ],
       "mounted": false
-    }
+    },
+    "semantic_evidence": {
+      "head": "3b9458f37ac110ea4f6a60e5e62a33c36b5e14b9",
+      "run": 36854691011,
+      "bridge": "PASS",
+      "protocol": "PASS",
+      "handler": "PASS",
+      "server_lifecycle": "PASS",
+      "source_lifecycle_contract": "PASS",
+      "core_compile": "FAIL",
+      "format": "FAIL",
+      "diagnostic_artifact_digest": "sha256:eb736ba42a804397164e22bc843351daccdff2492eeda4f920f96c3039e588f5"
+    },
+    "status": "SEMANTIC_SLICES_PASS__CORE_COMPILE_AND_FORMAT_REMAIN"
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
   "product_horizon": "PURPOSEFUL_GHOSTTY_FORK_FOR_WINDOWS_SHELL_PLATFORM_IMPROVEMENTS_AND_CMUX_CLASS_PROGRAMMABLE_TERMINAL_CONTROL_AS_HELIOSLAB_INFRASTRUCTURE",
