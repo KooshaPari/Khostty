@@ -217,9 +217,9 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "9a0bd7e7c9bfb8675c5459b0cf595d1a8d2bd82f",
-      "workflow_run": 36874291494,
-      "status": "BUILD_GRAPH_TESTS_RUNNING",
+      "head": "92d448099c6cc03eb0198e7e9bf3246f8d0bc79b",
+      "workflow_run": 36899154761,
+      "status": "PROTOCOL_HANDLER_ISOLATED_GRADE_RUNNING",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
         "CoreApp.tick drains mailbox and experimental bridge",
@@ -277,11 +277,20 @@
       "format": "FAIL",
       "diagnostic_artifact_digest": "sha256:3eab46e077bc91670b9c3279a42f0cbe4545c6f3d593c16c4d4dfc5e0d89f8dc"
     },
-    "status": "BUILD_GRAPH_SEMANTIC_REGRADE_ACTIVE",
+    "status": "BUILD_GRAPH_PROTOCOL_HANDLER_ISOLATION_ACTIVE",
     "prior_grader_correction": {
       "run": 36870710382,
       "issue": "standalone zig test output was piped through tee without pipefail and module-root semantics differed from repository build graph",
       "action": "semantic tests now run through zig build test filters; pipefail enforced; exact formatter patch applied"
+    },
+    "last_authoritative": {
+      "head": "9a0bd7e7c9bfb8675c5459b0cf595d1a8d2bd82f",
+      "run": 36874291494,
+      "bridge": "PASS",
+      "server_lifecycle": "PASS",
+      "core_compile": "PASS",
+      "format": "PASS",
+      "protocol_handler_combined": "FAIL"
     }
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
