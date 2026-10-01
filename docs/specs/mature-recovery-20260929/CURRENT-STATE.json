@@ -217,8 +217,8 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "ef108bce3671d0885867a5dc511194c315babd17",
-      "workflow_run": 36923297919,
+      "head": "16400e5679813d752c2311455ad3cbe983c53b8a",
+      "workflow_run": 36927684059,
       "status": "REPOSITORY_TEST_ROOT_AUTHORITY_QUEUED",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
@@ -277,7 +277,7 @@
       "format": "FAIL",
       "diagnostic_artifact_digest": "sha256:3eab46e077bc91670b9c3279a42f0cbe4545c6f3d593c16c4d4dfc5e0d89f8dc"
     },
-    "status": "DEPENDENCY_INSTALL_YAML_REPAIRED_REQUEUED",
+    "status": "HEADLESS_DEPENDENCY_AWARE_AUTHORITY_QUEUED",
     "prior_grader_correction": {
       "run": 36870710382,
       "issue": "standalone zig test output was piped through tee without pipefail and module-root semantics differed from repository build graph",
@@ -307,7 +307,12 @@
     "harness_fix": {
       "source": "src/apprt.zig test root imports rich IPC bridge/protocol/handler/server",
       "grade": "zig build test through normal repository module/dependency graph",
-      "mount": "still blocked until exact-head harness + core compile + format green"
+      "mount": "still blocked until exact-head harness + core compile + format green",
+      "latest": {
+        "reason": "IPC semantic harness does not require GTK renderer stack",
+        "change": "rich IPC tests use repository graph with app-runtime=none; full GTK compile remains separate native-integration gate",
+        "benefit": "removes Blueprint/layer-shell package noise from semantic oracle"
+      }
     },
     "harness_result": {
       "prior_run": 36906989011,
