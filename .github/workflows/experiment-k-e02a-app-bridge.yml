@@ -93,10 +93,12 @@ jobs:
           echo "$RUNNER_TEMP/blueprint-venv/bin" >> "$GITHUB_PATH"
           git clone --depth 1 https://github.com/wmww/gtk4-layer-shell.git "$RUNNER_TEMP/gtk4-layer-shell"
           sudo apt-get install -y meson ninja-build libwayland-dev
-          meson setup "$RUNNER_TEMP/gtk4-layer-shell/build" "$RUNNER_TEMP/gtk4-layer-shell" --prefix=/usr
+          meson setup "$RUNNER_TEMP/gtk4-layer-shell/build" "$RUNNER_TEMP/gtk4-layer-shell" --prefix=/usr -Dtests=false -Dexamples=false -Ddocs=false -Dvapi=false
           ninja -C "$RUNNER_TEMP/gtk4-layer-shell/build"
           sudo ninja -C "$RUNNER_TEMP/gtk4-layer-shell/build" install
           sudo ldconfig
+          test -f /usr/include/gtk4-layer-shell/gtk4-layer-shell.h
+          blueprint-compiler --version
       - name: Compile core path
         id: corebuild
         if: always()
