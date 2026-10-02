@@ -90,7 +90,8 @@ pub const Conn = struct {
         var buf: [1024]u8 = undefined;
         var w = self.stream.writer(io, &buf);
         try w.interface.writeAll(bytes);
-        try w.interface.writeByte('\n');
+        try w.interface.writeByte('
+');
         try w.interface.flush();
     }
 
@@ -338,7 +339,8 @@ pub const Server = struct {
             // primitive: it consumes the delimiter, and returns null at a
             // clean end of stream. Exclusive leaves the delimiter in the
             // buffer, which turns the next read into a zero-length frame.
-            const frame = conn.reader.interface.takeDelimiter('\n') catch |err| switch (err) {
+            const frame = conn.reader.interface.takeDelimiter('
+') catch |err| switch (err) {
                 error.StreamTooLong => {
                     // Protocol rule: an oversized frame is rejected and the
                     // connection is closed, because the reader can no longer
@@ -460,7 +462,8 @@ pub const Client = struct {
     pub fn sendRaw(self: *Client, bytes: []const u8) !void {
         var w = self.stream.writer(self.io, &self.write_buf);
         try w.interface.writeAll(bytes);
-        try w.interface.writeByte('\n');
+        try w.interface.writeByte('
+');
         try w.interface.flush();
     }
 
@@ -468,7 +471,8 @@ pub const Client = struct {
     /// stream, which is how a server closing the connection appears. The slice
     /// borrows the client's read buffer and stays valid until the next read.
     pub fn readFrame(self: *Client) !?[]const u8 {
-        return self.reader.interface.takeDelimiter('\n');
+        return self.reader.interface.takeDelimiter('
+');
     }
 
     /// Read one frame and parse it as JSON.
@@ -629,7 +633,8 @@ const Harness = struct {
         _ = self;
         if (response.value.object.get("ok").?.bool) return response;
         std.debug.print(
-            "unexpected error response: {s}: {s}\n",
+            "unexpected error response: {s}: {s}
+",
             .{
                 response.value.object.get("error").?.object.get("code").?.string,
                 response.value.object.get("error").?.object.get("message").?.string,
@@ -894,7 +899,8 @@ test "socket: authenticated pane workflow end to end" {
     );
 
     const write = try h.authed(
-        ",\\\"cmd\\\":\\\"pane.write\\\",\\\"pane_id\\\":\\\"p-1\\\",\\\"data\\\":\\\"hello\\\\r\\\\n\\\"",
+        ",\\\"cmd\\\":\\\"pane.write\\\",\\\"pane_id\\\":\\\"p-1\\\",\\\"data\\\":\\\"hello\\\\r\\\
+\\\"",
     );
     defer testing.allocator.free(write);
     try client.sendRaw(write);
@@ -1025,8 +1031,11 @@ test "socket: a full agent workflow over one connection" {
     try testing.expectEqualStrings("p-2", second);
 
     // 2. Drive both with VT, including a title change and a cursor move.
-    try h.write(&client, first, "\\u001b[1;1Hbuilding\\r\\n\\u001b]0;make\\u0007");
-    try h.write(&client, second, "log line one\\r\\nERROR: nope\\r\\n");
+    try h.write(&client, first, "\\u001b[1;1Hbuilding\\r\
+\\u001b]0;make\\u0007");
+    try h.write(&client, second, "log line one\\r\
+ERROR: nope\\r\
+");
 
     // 3. Read machine state back.
     {
@@ -1126,7 +1135,8 @@ fn agentSequence(h: *Harness, index: usize) !usize {
     // write landed in this agent's own pane.
     const needle = try std.fmt.allocPrint(testing.allocator, "needle-{d}", .{index});
     defer testing.allocator.free(needle);
-    const data = try std.fmt.allocPrint(testing.allocator, "{s}\\r\\n", .{needle});
+    const data = try std.fmt.allocPrint(testing.allocator, "{s}\\r\
+", .{needle});
     defer testing.allocator.free(data);
     try h.write(&client, pane_id, data);
     steps += 1;
@@ -1165,7 +1175,8 @@ fn agentSequence(h: *Harness, index: usize) !usize {
 
 fn agentMain(h: *Harness, index: usize, out: *std.atomic.Value(usize)) void {
     const steps = agentSequence(h, index) catch |err| {
-        std.debug.print("agent {d} failed: {}\\n", .{ index, err });
+        std.debug.print("agent {d} failed: {}\
+", .{ index, err });
         return;
     };
     out.store(steps, .release);
@@ -1194,7 +1205,8 @@ test "socket: concurrent agents do not deadlock and do not cross panes" {
     for (results, 0..) |result, i| {
         const steps = result.load(.acquire);
         if (steps != agent_steps) {
-            std.debug.print("agent {d} completed {d}/{d} steps\\n", .{ i, steps, agent_steps });
+            std.debug.print("agent {d} completed {d}/{d} steps\
+", .{ i, steps, agent_steps });
             return error.TestUnexpectedResult;
         }
     }
