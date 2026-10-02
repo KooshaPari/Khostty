@@ -70,16 +70,50 @@ watched separately.
   environment it binds was created with **0 protection rules / 0 reviewers**
   (the OIDC publish job cannot stall on an approval gate). PyPI-side pending
   publisher registration remains the only missing piece.
-- Trigger tag `khostty-v0.1.0` is **staged locally as an annotated tag on
-  `202aad543`** (same commit as `v0.1.0`), deliberately **not pushed** — it is
-  pushed only after PyPI registration, so the workflow never runs into a
-  missing OIDC config. `docs/RELEASE.md` now documents the `khostty-v*` tag
-  convention, the pending-publisher URL, and both trigger paths (commit
-  `743d00c5f`).
+- Trigger tag `khostty-v0.1.0` was staged locally as an annotated tag on
+  `202aad543` (same commit as `v0.1.0`) and **pushed 2026-10-01 ~21:16Z** under
+  the "do it all" authorization. The push proved the tag path **cannot** fire
+  `publish-pypi.yml` (see post-verify developments below); `docs/RELEASE.md`
+  was corrected accordingly in `af7697294`.
+
+## Post-verify developments (2026-10-01 21:00Z – 2026-10-02 08:39Z)
+
+- **Tag push executed (21:16Z):** pushing `khostty-v0.1.0` produced **zero**
+  `publish-pypi.yml` runs — GitHub sources tag-push workflow files *from the
+  tagged commit*, and `202aad543` (09-19) predates `publish-pypi.yml` (~09-29).
+  It instead fired old-ref phantom runs (ci.yml + scorecard on `202aad543`,
+  instant failure, 0 jobs, non-gating; Nix skipped; Test queued). Remote
+  `main` verified intact. The earlier tag side-effect audit in RELEASE.md
+  (which read workflow files at main, not at the tag) was retracted and
+  corrected forward in `af7697294`.
+- **Dispatch is the only working trigger:**
+  `gh workflow run publish-pypi.yml --ref main -f version=khostty-v0.1.0`
+  loads the YAML from main while the checkout step (`ref: inputs.version`)
+  builds the tag tree. Submitted 22:01Z, **deferred to the approval inbox** as
+  `hook-b58bd04e8942def4147fbc6550efc236` — not self-approved.
+- **Other deferred inbox items:** `hook-068d3fcfeac238ab3a962f4112cbb3ea`
+  (DELETE zombie run A — now moot, A self-resolved `completed/cancelled`
+  22:18Z) and `hook-dc9b8fc9289ac57b9e653c2966f35035` (cancel Test-on-tag run
+  36927574117 — non-urgent).
+- **Three consecutive green CI runs:** `36905910200` (09-30) →
+  `36922050087` (10-02 02:06Z, the four-docs-commit consolidation
+  `f2227683d..cd39d6efa`) → `36976617392` (10-02 08:38Z, retraction commit
+  `af7697294`). Push discipline held throughout (no pushes while a proving
+  run executed).
+- **Queue crisis observed and rode out:** repo-wide active runs peaked at 19
+  (14+ from the parallel session's storms); run A went zombie (`queued` with
+  cancelled jobs, two accepted cancels no-ops) and group-blocked B at
+  `pending` for ~90 min until A self-resolved.
 
 ## Open items after this re-verify
 
-1. **r2b / PyPI** — operator action (trusted publisher registration or token).
+1. **r2b / PyPI** — two operator gates, both outstanding 2026-10-02 08:56Z:
+   (a) register the pending publisher at
+   `pypi.org/manage/account/publishing/` (`KooshaPari`/`Khostty`/
+   `publish-pypi.yml`/environment `pypi`), (b) approve inbox hook
+   `hook-b58bd04e8942def4147fbc6550efc236` (the dispatch trigger). Order
+   doesn't matter — a run before registration fails benignly and is
+   re-runnable. PyPI API still 404; zero publish runs exist.
 2. **r4 / WSL mirror** — desk hardware offline 6d; sole backstop consumed; no
    further probes scheduled per rule. Origin authoritative.
    *Final probe logged 2026-10-01 18:17Z (the `sched_5acd3225` "LAST desk
