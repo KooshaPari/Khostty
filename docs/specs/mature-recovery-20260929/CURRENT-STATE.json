@@ -217,8 +217,8 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "0a4d99783308db72d66568cd4efb19028c5e9e84",
-      "workflow_run": 36995559605,
+      "head": "b7f1fd42fe4fbe96671b8f7ed31483b581034376",
+      "workflow_run": 37039707831,
       "status": "REPOSITORY_TEST_ROOT_AUTHORITY_QUEUED",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
@@ -277,7 +277,7 @@
       "format": "FAIL",
       "diagnostic_artifact_digest": "sha256:3eab46e077bc91670b9c3279a42f0cbe4545c6f3d593c16c4d4dfc5e0d89f8dc"
     },
-    "status": "ALL_RAW_NEWLINE_HARNESS_ESCAPES_REMOVED__REGRADING",
+    "status": "DELIMITER_LITERALS_FIXED__NATIVE_GI_DEPS_ADDED__REGRADING",
     "prior_grader_correction": {
       "run": 36870710382,
       "issue": "standalone zig test output was piped through tee without pipefail and module-root semantics differed from repository build graph",
@@ -328,15 +328,19 @@
         "libgtk4-layer-shell-dev installed"
       ],
       "latest": {
-        "prior_run": 36993053366,
-        "artifact_digest": "sha256:8ba1738d14af26d3e082fa95811afe7adcb95119e2c427cef466cadfacc06625",
+        "prior_head": "86d7b5f0d5313a0fd33a03324ea1dec37025ab2b",
+        "prior_run": 37019541023,
         "findings": [
-          "raw newline in VT building/title harness",
-          "raw newlines in second-pane log harness",
-          "raw newline in generated needle CRLF harness"
+          "two newline delimiter character literals were over-escaped as '\\\\\\\\n'",
+          "format patch contained one extra blank",
+          "Blueprint pip build lacked girepository-2.0 headers"
         ],
-        "repair": "all backslash-newline source sequences eliminated; exact source scan now zero",
-        "mount": "blocked pending exact regrade"
+        "repairs": [
+          "canonical '\\\\n' character literals",
+          "format patch applied",
+          "libgirepository-2.0-dev + GTK GI package added"
+        ],
+        "mount": "blocked pending exact green"
       }
     },
     "core_compile_authority": {
