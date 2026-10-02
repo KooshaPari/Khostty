@@ -1165,8 +1165,7 @@ fn agentSequence(h: *Harness, index: usize) !usize {
 
 fn agentMain(h: *Harness, index: usize, out: *std.atomic.Value(usize)) void {
     const steps = agentSequence(h, index) catch |err| {
-        std.debug.print("agent {d} failed: {}
-", .{ index, err });
+        std.debug.print("agent {d} failed: {}\\n", .{ index, err });
         return;
     };
     out.store(steps, .release);
