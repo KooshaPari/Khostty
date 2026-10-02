@@ -460,8 +460,7 @@ pub const Client = struct {
     pub fn sendRaw(self: *Client, bytes: []const u8) !void {
         var w = self.stream.writer(self.io, &self.write_buf);
         try w.interface.writeAll(bytes);
-        try w.interface.writeByte('
-');
+        try w.interface.writeByte('\n');
         try w.interface.flush();
     }
 
