@@ -217,7 +217,7 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "3c383f7d47f3710594d1f182519cf1fe355a49ae",
+      "head": "e236d7fd4a51706ed1e785326a9234ccc988679c",
       "workflow_run": 36990256074,
       "status": "REPOSITORY_TEST_ROOT_AUTHORITY_QUEUED",
       "ownership_findings": [
@@ -277,7 +277,7 @@
       "format": "FAIL",
       "diagnostic_artifact_digest": "sha256:3eab46e077bc91670b9c3279a42f0cbe4545c6f3d593c16c4d4dfc5e0d89f8dc"
     },
-    "status": "THIRD_PARSER_DEFECT_FIXED__HEADLESS_AUTHORITY_REGRADING",
+    "status": "SEMANTIC_PLUS_NATIVE_AUTHORITIES_REGRADING",
     "prior_grader_correction": {
       "run": 36870710382,
       "issue": "standalone zig test output was piped through tee without pipefail and module-root semantics differed from repository build graph",
@@ -334,6 +334,12 @@
         "classification": "REAL_SOURCE_DEFECT",
         "repair": "canonical escaped newline; format/core gates remain separate"
       }
+    },
+    "core_compile_authority": {
+      "prior_claim": "WITHDRAWN",
+      "reason": "GTK compile command was piped through tee without pipefail; logs showed real command failure despite step outcome success",
+      "repair": "pipefail enforced; gettext + GTK4 + libadwaita + layer-shell + Blueprint>=0.16 prerequisites installed",
+      "mount": "blocked until semantic tests + authoritative GTK compile + format all green on same head"
     }
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
