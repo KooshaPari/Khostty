@@ -1126,8 +1126,7 @@ fn agentSequence(h: *Harness, index: usize) !usize {
     // write landed in this agent's own pane.
     const needle = try std.fmt.allocPrint(testing.allocator, "needle-{d}", .{index});
     defer testing.allocator.free(needle);
-    const data = try std.fmt.allocPrint(testing.allocator, "{s}\\r\
-", .{needle});
+    const data = try std.fmt.allocPrint(testing.allocator, "{s}\\r\\n", .{needle});
     defer testing.allocator.free(data);
     try h.write(&client, pane_id, data);
     steps += 1;
