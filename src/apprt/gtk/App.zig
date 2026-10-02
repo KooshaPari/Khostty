@@ -15,6 +15,8 @@ const Surface = @import("Surface.zig");
 const ipcNewWindow = @import("ipc/new_window.zig").newWindow;
 const ipcNewTab = @import("ipc/new_tab.zig").newTab;
 const ipcToggleQuickTerminal = @import("ipc/toggle_quick_terminal.zig").toggleQuickTerminal;
+const AgentIpcRuntime = @import("../ipc/runtime.zig").Runtime;
+const agentIpcEnabled = @import("../ipc/runtime.zig").enabled;
 
 const log = std.log.scoped(.gtk);
 
@@ -26,6 +28,9 @@ pub const object_path = @import("build/info.zig").object_path;
 
 /// The GObject Application instance
 app: *Application,
+
+/// Experimental K-E02 agent-control server. Separate from inherited apprt.ipc.
+agent_ipc: ?*AgentIpcRuntime = null,
 
 pub fn init(
     self: *App,
@@ -39,6 +44,16 @@ pub fn init(
     const app: *Application = try .new(self, core_app);
     errdefer app.unref();
     self.* = .{ .app = app };
+
+    if (agentIpcEnabled()) {
+        self.agent_ipc = AgentIpcRuntime.create(self) catch |err| ipc_err: {
+            log.err("agent IPC requested but failed to start: {}", .{err});
+            break :ipc_err null;
+        };
+        if (self.agent_ipc) |ipc| {
+            log.info("agent IPC listening on {s}", .{ipc.socketPath()});
+        }
+    }
     return;
 }
 
@@ -47,6 +62,11 @@ pub fn run(self: *App) !void {
 }
 
 pub fn terminate(self: *App) void {
+    if (self.agent_ipc) |ipc| {
+        ipc.deinit();
+        self.agent_ipc = null;
+    }
+
     // We force deinitialize the app. We don't unref because other things
     // tend to have a reference at this point, so this just forces the
     // disposal now.

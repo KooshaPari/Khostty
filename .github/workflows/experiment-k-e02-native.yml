@@ -1,0 +1,36 @@
+name: Experiment - K-E02 native agent IPC mount
+
+on:
+  push:
+    branches: [experiment/mature-recovery-k-e02]
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/apprt/ipc/**"
+      - "src/apprt/gtk/App.zig"
+      - ".github/workflows/experiment-k-e02-native.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  source-and-compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
+      - name: Format gate
+        run: zig fmt --check src/apprt/ipc src/apprt/gtk/App.zig
+      - name: Agent IPC module tests
+        run: |
+          zig test src/apprt/ipc/auth.zig
+          zig test src/apprt/ipc/events.zig
+          zig test src/apprt/ipc/protocol.zig
+          zig test src/apprt/ipc/pane.zig
+          zig test src/apprt/ipc/server.zig
+      - name: Compile GTK application path
+        run: zig build -Dapp-runtime=gtk -Doptimize=Debug
