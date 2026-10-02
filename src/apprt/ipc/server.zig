@@ -1194,8 +1194,7 @@ test "socket: concurrent agents do not deadlock and do not cross panes" {
     for (results, 0..) |result, i| {
         const steps = result.load(.acquire);
         if (steps != agent_steps) {
-            std.debug.print("agent {d} completed {d}/{d} steps
-", .{ i, steps, agent_steps });
+            std.debug.print("agent {d} completed {d}/{d} steps\\n", .{ i, steps, agent_steps });
             return error.TestUnexpectedResult;
         }
     }
