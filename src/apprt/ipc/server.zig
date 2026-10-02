@@ -1025,11 +1025,8 @@ test "socket: a full agent workflow over one connection" {
     try testing.expectEqualStrings("p-2", second);
 
     // 2. Drive both with VT, including a title change and a cursor move.
-    try h.write(&client, first, "\\u001b[1;1Hbuilding\\r\
-\\u001b]0;make\\u0007");
-    try h.write(&client, second, "log line one\\r\
-ERROR: nope\\r\
-");
+    try h.write(&client, first, "\\u001b[1;1Hbuilding\\r\\n\\u001b]0;make\\u0007");
+    try h.write(&client, second, "log line one\\r\\nERROR: nope\\r\\n");
 
     // 3. Read machine state back.
     {
