@@ -1,0 +1,46 @@
+Khostty 0.1.0 — live release-asset checksum audit
+==================================================
+Date:            2026-10-02 19:13Z
+Performed by:    jcode agent (autonomous release close-out)
+Method:          `gh release download v0.1.0 --repo KooshaPari/Khostty` (fresh
+                 download of ALL assets straight from GitHub as a consumer
+                 would fetch them), then SHA-256 of each downloaded file
+                 compared against the CHECKSUMS.txt manifest shipped IN the
+                 release; the wasm binary additionally extracted from the
+                 tarball and hashed. Distinct from the 2026-09-29 local-tree
+                 `shasum -c` 9/9 — this verifies the UPLOADED bytes.
+
+Downloaded asset sizes (all match docs/RELEASE.md §7.2 expected values):
+  CHECKSUMS.txt                                4,273 B   expected 4,273      OK
+  Khostty-0.1.0-macos.zip                 35,953,098 B   expected 35,953,098 OK
+  Khostty-0.1.0-windows-x86_64-setup.exe  19,766,307 B   expected 19,766,307 OK
+  khostty-libghostty-vt-wasm-0.1.0.tar.gz    680,598 B   expected 680,598    OK
+  khostty-vt_0.1.0_amd64.deb               2,320,612 B   expected 2,320,612  OK
+  khostty_0.1.0_amd64.deb                 18,143,964 B   expected 18,143,964 OK
+
+Hash results (manifest entry → result):
+  OK  dist-release/macos/Khostty-0.1.0-macos.zip
+      94abd2a7e7d63e79… (downloaded bytes match manifest)
+  OK  dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz
+      55cfc67572696db9… (downloaded bytes match manifest)
+  OK  dist/khostty-vt_0.1.0_amd64.deb
+      3c080d13a74d6bf6… (downloaded bytes match manifest)
+  OK  dist-release/khostty_0.1.0_amd64.deb
+      63d4e6159d65e97d… (downloaded bytes match manifest)
+  OK  dist-release/wasm/verify/…/khostty-vt.wasm
+      08ac8ed881ffdae6… (extracted from the downloaded tarball, 813,670 B)
+  OK  manifest pair consistent: ghostty.exe  df0b4c8772ad5de8… (listed twice
+      at zig-out/… and dist-release/stage/windows/… — identical hashes)
+  OK  manifest pair consistent: ghostty-vt.dll b4cff87e6ee95dd9… (listed twice,
+      identical hashes)
+  SKIP zig-out/bin/ghostty.exe — not present on this host; the installer payload
+      it hashes was install-verified 2026-09-19 on kooshapari-desk (silent
+      install → payload hashes MATCH → runs → clean uninstall).
+  SKIP zig-out/bin/ghostty-vt.dll — same as above.
+
+RESULT: 5 OK / 0 FAIL for every artifact verifiable from the release itself;
+        2 entries not extractable on macOS (covered by the 2026-09-19 Windows
+        install verification); 2 pair-consistency checks OK.
+
+Corroborating prior checks: local `shasum -c` 9/9 OK (2026-09-29 20:28Z);
+§7.2 size verification 2026-09-27.
