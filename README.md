@@ -42,7 +42,7 @@ If you want a finished desktop terminal today, use upstream Ghostty. Khostty is 
 
 ## Status
 
-> **v0.1.0 released — tag 2026-09-24, GitHub release 2026-09-27.** Tag `v0.1.0` cut at `202aad543`; `khostty-vt 0.1.0` live on [crates.io](https://crates.io/crates/khostty-vt); `khostty-libghostty-vt-wasm 0.1.0` live on [npm](https://www.npmjs.com/package/khostty-libghostty-vt-wasm); all 6 assets published at [releases/tag/v0.1.0](https://github.com/KooshaPari/Khostty/releases/tag/v0.1.0). The PyPI publish (WBS 10.5) remains credential-blocked — see the table below and [docs/RELEASE.md](docs/RELEASE.md) §7.
+> **v0.1.0 released — tag 2026-09-24, GitHub release 2026-09-27.** Tag `v0.1.0` cut at `202aad543`; `khostty-vt 0.1.0` live on [crates.io](https://crates.io/crates/khostty-vt); `khostty-libghostty-vt-wasm 0.1.0` live on [npm](https://www.npmjs.com/package/khostty-libghostty-vt-wasm); all 6 assets published at [releases/tag/v0.1.0](https://github.com/KooshaPari/Khostty/releases/tag/v0.1.0). The PyPI publish (WBS 10.5) is **pending Trusted Publishing** — workflow committed and build pre-flighted; awaits PyPI publisher registration + the dispatch trigger — see the table below and [docs/RELEASE.md](docs/RELEASE.md) §7.
 
 The authoritative task decomposition is [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md). The table below follows that WBS (115 tasks, 10m each).
 
@@ -58,7 +58,7 @@ The authoritative task decomposition is [`docs/sessions/20260916-fork-assessment
 | **G7** | WASM Cross-Compilation | 10 | 100m | **DONE** (54/54) |
 | **G8** | Khostty-Specific Improvements | 13 | 130m | **DONE** (measured) |
 | **G9** | Documentation and Packaging | 15 | 150m | **DONE** (all artifacts built + verified; macOS/GTK GUI launches observed) |
-| **G10** | Release Artifacts | 9 | 90m | **8/9 DONE** — tag `v0.1.0`, checksums (9/9), crates.io, npm, GitHub release (6 assets, 2026-09-27), announce docs done; PyPI (10.5) blocked on operator credential |
+| **G10** | Release Artifacts | 9 | 90m | **8/9 DONE** — tag `v0.1.0`, checksums (9/9), crates.io, npm, GitHub release (6 assets, 2026-09-27), announce docs done; PyPI (10.5) pending Trusted Publishing (registration + dispatch) |
 
 The WBS records 115 tasks and approximately 19.2 hours of planned work. Status labels in this README follow that WBS and are not claims of shipped functionality.
 
@@ -114,7 +114,7 @@ The repository exposes `libghostty-vt` through the Zig build system. Use the bui
 zig build --help
 ```
 
-Do not treat a library artifact as a completed Khostty binding. The Rust, Go, Python, and hardened WASM packages are all built and tested (G5–G7: Rust 199/199, Go+Python 207, WASM 54/54) — `khostty-vt 0.1.0` is published on crates.io and `khostty-libghostty-vt-wasm 0.1.0` on npm; the PyPI publish remains credential-blocked (see [docs/RELEASE.md](docs/RELEASE.md) §7).
+Do not treat a library artifact as a completed Khostty binding. The Rust, Go, Python, and hardened WASM packages are all built and tested (G5–G7: Rust 199/199, Go+Python 207, WASM 54/54) — `khostty-vt 0.1.0` is published on crates.io and `khostty-libghostty-vt-wasm 0.1.0` on npm; the PyPI publish is pending Trusted Publishing (see [docs/RELEASE.md](docs/RELEASE.md) §7).
 
 ## Architecture
 
@@ -204,7 +204,7 @@ G4 acceptance requires authenticated commands, pane lifecycle operations, state 
 
 ## Polyglot FFI
 
-> **Status: DONE, G5–G7.** All four packages are built and tested; the Rust crate is published on crates.io as [`khostty-vt`](https://crates.io/crates/khostty-vt) (2026-09-20) and the WASM package on npm as [`khostty-libghostty-vt-wasm`](https://www.npmjs.com/package/khostty-libghostty-vt-wasm) (2026-09-24). Only the PyPI publish remains blocked on a credential, tracked in [docs/RELEASE.md](docs/RELEASE.md) §7.
+> **Status: DONE, G5–G7.** All four packages are built and tested; the Rust crate is published on crates.io as [`khostty-vt`](https://crates.io/crates/khostty-vt) (2026-09-20) and the WASM package on npm as [`khostty-libghostty-vt-wasm`](https://www.npmjs.com/package/khostty-libghostty-vt-wasm) (2026-09-24). Only the PyPI publish is still pending (Trusted-Publishing workflow committed and pre-flighted), tracked in [docs/RELEASE.md](docs/RELEASE.md) §7.
 
 | Language | Status | Package | Purpose |
 |---|---|---|---|
