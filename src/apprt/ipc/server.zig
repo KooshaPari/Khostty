@@ -629,7 +629,7 @@ const Harness = struct {
         _ = self;
         if (response.value.object.get("ok").?.bool) return response;
         std.debug.print(
-            "unexpected error response: {s}: {s}\\n",
+            "unexpected error response: {s}: {s}\n",
             .{
                 response.value.object.get("error").?.object.get("code").?.string,
                 response.value.object.get("error").?.object.get("message").?.string,
