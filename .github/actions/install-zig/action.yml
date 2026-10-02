@@ -84,4 +84,6 @@ runs:
         # `zig: command not found` (exit 127) even though extraction succeeded.
         export PATH="$dest:$PATH"
         echo "$dest" >> "$GITHUB_PATH"
-        zig version
+        # GITHUB_PATH is applied to subsequent steps, not the current shell.
+        # Verify the exact installed binary directly here.
+        "$dest/zig" version

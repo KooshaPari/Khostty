@@ -129,6 +129,7 @@ fn main() {
     println!("cargo:rerun-if-env-changed=GHOSTTY_VT_LIB_DIR");
     println!("cargo:rerun-if-env-changed=GHOSTTY_VT_INCLUDE_DIR");
     println!("cargo:rerun-if-env-changed=GHOSTTY_VT_LINK_KIND");
+    println!("cargo:rerun-if-env-changed=KHOSTTY_VT_REQUIRE_LINK");
 
     if let Some(include_dir) = find_include_dir(&manifest_dir) {
         let mut headers = Vec::new();
@@ -157,14 +158,33 @@ fn link_feature(manifest_dir: &Path) {
     }
 
     let kind = requested_link_kind();
+
+    // In evidence mode an explicitly named library is part of the subject
+    // identity. Do not silently fall back to a checkout-relative library when
+    // that exact artifact is missing.
+    if env::var_os("KHOSTTY_VT_REQUIRE_LINK").is_some() {
+        if let Ok(explicit) = env::var("GHOSTTY_VT_LIB") {
+            let explicit = PathBuf::from(explicit);
+            if !explicit.is_file() {
+                panic!(
+                    "KHOSTTY_VT_REQUIRE_LINK is set and GHOSTTY_VT_LIB={} does not exist",
+                    explicit.display()
+                );
+            }
+        }
+    }
+
     let Some((dir, path)) = find_lib_dir(manifest_dir, &kind) else {
-        println!(
-            "cargo:warning=khostty-vt: no prebuilt libghostty-vt found (looked in \
-             GHOSTTY_VT_LIB_DIR, {LIB_DIR_CANDIDATES:?} under {}). The crate will \
-             typecheck but not link. Build it with `zig build -Dlibghostty-vt=true` \
-             or set GHOSTTY_VT_LIB_DIR.",
+        let message = format!(
+            "khostty-vt: no prebuilt libghostty-vt found (looked in \
+             GHOSTTY_VT_LIB_DIR, {LIB_DIR_CANDIDATES:?} under {}). Build it with \
+             `zig build -Dlibghostty-vt=true` or set GHOSTTY_VT_LIB_DIR.",
             manifest_dir.display()
         );
+        if env::var_os("KHOSTTY_VT_REQUIRE_LINK").is_some() {
+            panic!("{message} KHOSTTY_VT_REQUIRE_LINK is set, so unlinked success is forbidden.");
+        }
+        println!("cargo:warning={message} The crate will typecheck but not link.");
         return;
     };
 
