@@ -87,8 +87,16 @@ jobs:
         if: always()
         run: |
           sudo apt-get update
-          sudo apt-get install -y gettext libgtk-4-dev libadwaita-1-dev libglib2.0-dev
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          sudo apt-get install -y gettext libgtk-4-dev libadwaita-1-dev libglib2.0-dev python3-venv
+          python3 -m venv "$RUNNER_TEMP/blueprint-venv"
+          "$RUNNER_TEMP/blueprint-venv/bin/pip" install "blueprint-compiler>=0.16.0"
+          echo "$RUNNER_TEMP/blueprint-venv/bin" >> "$GITHUB_PATH"
+          git clone --depth 1 https://github.com/wmww/gtk4-layer-shell.git "$RUNNER_TEMP/gtk4-layer-shell"
+          sudo apt-get install -y meson ninja-build libwayland-dev
+          meson setup "$RUNNER_TEMP/gtk4-layer-shell/build" "$RUNNER_TEMP/gtk4-layer-shell" --prefix=/usr
+          ninja -C "$RUNNER_TEMP/gtk4-layer-shell/build"
+          sudo ninja -C "$RUNNER_TEMP/gtk4-layer-shell/build" install
+          sudo ldconfig
       - name: Compile core path
         id: corebuild
         if: always()
