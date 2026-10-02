@@ -217,8 +217,8 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "16400e5679813d752c2311455ad3cbe983c53b8a",
-      "workflow_run": 36927684059,
+      "head": "0965b6c558f0ec682532a62b610b087263c59b9b",
+      "workflow_run": 36982142767,
       "status": "REPOSITORY_TEST_ROOT_AUTHORITY_QUEUED",
       "ownership_findings": [
         "GTK runloop calls CoreApp.tick on app thread",
@@ -277,7 +277,7 @@
       "format": "FAIL",
       "diagnostic_artifact_digest": "sha256:3eab46e077bc91670b9c3279a42f0cbe4545c6f3d593c16c4d4dfc5e0d89f8dc"
     },
-    "status": "HEADLESS_DEPENDENCY_AWARE_AUTHORITY_QUEUED",
+    "status": "SECOND_SOURCE_DEFECT_FIXED__HEADLESS_AUTHORITY_REGRADING",
     "prior_grader_correction": {
       "run": 36870710382,
       "issue": "standalone zig test output was piped through tee without pipefail and module-root semantics differed from repository build graph",
@@ -328,10 +328,11 @@
         "libgtk4-layer-shell-dev installed"
       ],
       "latest": {
-        "prior_run": 36913031613,
-        "classification": "WORKFLOW_SERIALIZATION_RED",
-        "detail": "literal escaped newlines joined apt and pip commands",
-        "repair": "real multiline dependency install + pkg-config/blueprint preflight"
+        "prior_head": "16400e5679813d752c2311455ad3cbe983c53b8a",
+        "prior_run": 36927684059,
+        "finding": "second raw newline character literal at server.zig:463 prevented repository test graph compilation",
+        "classification": "REAL_SOURCE_DEFECT",
+        "repair": "canonical newline character literal; headless app-runtime=none IPC authority retained; GTK compile separate"
       }
     }
   },
