@@ -83,11 +83,20 @@ jobs:
         run: |
           grep -q "force-disconnects idle clients" src/apprt/ipc/server.zig
           grep -q "IPC connection workers outlived server dependencies" src/apprt/ipc/server.zig
+      - name: Install native GTK compile dependencies
+        if: always()
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gettext libgtk-4-dev libadwaita-1-dev libglib2.0-dev libgtk4-layer-shell-dev
+          python3 -m pip install --user "blueprint-compiler>=0.16.0"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Compile core path
         id: corebuild
         if: always()
         continue-on-error: true
-        run: zig build -Dapp-runtime=gtk -Doptimize=Debug 2>&1 | tee k-e02-core-build.txt
+        run: |
+          set -o pipefail
+          zig build -Dapp-runtime=gtk -Doptimize=Debug 2>&1 | tee k-e02-core-build.txt
       - name: Require core compile
         if: always()
         env:
