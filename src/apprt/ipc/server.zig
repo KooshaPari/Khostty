@@ -894,8 +894,7 @@ test "socket: authenticated pane workflow end to end" {
     );
 
     const write = try h.authed(
-        ",\\\"cmd\\\":\\\"pane.write\\\",\\\"pane_id\\\":\\\"p-1\\\",\\\"data\\\":\\\"hello\\\\r\\\
-\\\"",
+        ",\\\"cmd\\\":\\\"pane.write\\\",\\\"pane_id\\\":\\\"p-1\\\",\\\"data\\\":\\\"hello\\\\r\\\\n\\\"",
     );
     defer testing.allocator.free(write);
     try client.sendRaw(write);
