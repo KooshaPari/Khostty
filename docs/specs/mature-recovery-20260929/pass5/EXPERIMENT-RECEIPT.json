@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "pass": 5,
+  "observed_on": "2026-09-29",
+  "product_source": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
+  "upstream_merge_base": "d4c88d8069912b653d707191388ca98e24751f12",
+  "local_static_check": {
+    "python": "3.13.5",
+    "checker_sha256": "47f323667f334c2bf350d61f9dfea0ec36d591a91c824d2ad8216fc799ef842c",
+    "raw_report_sha256": "31b32586660b0b2f9760545b53b4e62bdc2fbb7851612261060e22a6da3101b1",
+    "full_source_files_hash_verified": {"src/apprt/windows/App.zig": "7e677fb91431e6d19f4347f1fd352e3a341d5df9", "src/apprt.zig": "67dd08c54744b947b0cb236c08ed0c542b3e8076"},
+    "observations": ["Windows runtime is selectable", "Windows init returns Unimplemented", "Windows registerWindowClass returns Unimplemented", "Windows run returns Unimplemented", "apprt.ipc exports the legacy mod.zig"],
+    "scope": "Byte-verified static source inspection only, NOT a Zig/native runtime test"
+  },
+  "inherited_abi_proof": [
+    {"path": "include/ghostty/vt/types.h", "product_blob": "059bc5c8fd5cf971eb02611ab1033f906963b42f", "merge_base_blob": "059bc5c8fd5cf971eb02611ab1033f906963b42f"},
+    {"path": "src/terminal/c/types.zig", "product_blob": "4184de8227ec74cbe1d5e4aad5978d206138de2b", "merge_base_blob": "4184de8227ec74cbe1d5e4aad5978d206138de2b", "also_read_from": "ghostty-org/ghostty"}
+  ],
+  "corrected_differentiation": "The ABI manifest generator and public type header are inherited, not demonstrated Khostty contributions. Wrapper integration is a separate possible delta.",
+  "external_comparator": {"repository": "dzearing/ghoztty", "revision": "fd3838acfa834c29e99616cdc8500c0208a13a09", "readme_blob": "4d1efb4d5fbab5d10428d496dca15f048907c237", "license_blob": "0a07a66cd1ad6ea35cc3b8150e2c37702fe5989d", "root_license": "MIT", "runtime_tested": false, "scope": "README CLI/identity declarations and root license; not a full architecture, health or license-dependency audit"},
+  "native_product_executed": false,
+  "alternative_bakeoff_executed": false,
+  "full_source_inventory_executed": false,
+  "product_acceptance": "NOT_AWARDED"
+}
