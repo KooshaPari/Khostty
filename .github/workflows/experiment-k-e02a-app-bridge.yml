@@ -97,7 +97,9 @@ jobs:
           ninja -C "$RUNNER_TEMP/gtk4-layer-shell/build"
           sudo ninja -C "$RUNNER_TEMP/gtk4-layer-shell/build" install
           sudo ldconfig
-          test -f /usr/include/gtk4-layer-shell/gtk4-layer-shell.h
+          test -f /usr/include/gtk4-layer-shell/gtk4-layer-shell.h || test -f /usr/local/include/gtk4-layer-shell/gtk4-layer-shell.h
+          export C_INCLUDE_PATH="/usr/include/gtk4-layer-shell:/usr/local/include/gtk4-layer-shell:${C_INCLUDE_PATH:-}"
+          echo "C_INCLUDE_PATH=$C_INCLUDE_PATH" >> "$GITHUB_ENV"
           blueprint-compiler --version
       - name: Compile core path
         id: corebuild
