@@ -47,8 +47,7 @@ Non-goals (v1):
 
 - No remote/TCP transport. Local socket (Unix domain socket; Windows named pipe is
   a follow-up, see `src/apprt/windows/ipc.zig`).
-- No pty input injection (`pane.write` writes *VT bytes into the terminal parser*,
-  it does not type into the child process). Typing into the child is a v2 item.
+- `pane.write` is intentionally frozen as VT parser/display injection for v1 compatibility. It does **not** type into the child process. Child input is a separate mature-product obligation and must receive a distinct command/API rather than silently changing `pane.write` semantics.
 - No protocol negotiation beyond an integer version check.
 
 ## 2. Transport and framing
@@ -65,7 +64,7 @@ Non-goals (v1):
 | Concurrency | One connection may pipeline requests; responses arrive in request order |
 | Encoding | JSON. Binary payloads are base64 **not** used in v1: `pane.write.data` is a UTF-8 string and `\u0000`-style escapes carry control bytes |
 
-`pane.write` carries terminal input as a JSON string, so an agent writes
+`pane.send_input` is reserved for real child/PTY input and currently returns `host_unsupported`; reserving a distinct wire identity prevents later implementation from silently changing `pane.write` compatibility semantics.\n\n`pane.write` carries terminal input as a JSON string, so an agent writes
 `"data": "\u001b[31mred\u001b[0m"` or `"data": "ls -la\n"`. Escapes are decoded by
 the JSON parser before the bytes reach the terminal parser.
 
@@ -457,3 +456,13 @@ are the events published since the previous tick.
   agent that needs real state should follow up with `pane.state`.
 - One subscription per connection: a second `events.subscribe` replaces the
   first, and `events.unsubscribe` without one is `not_subscribed`.
+
+
+### Experimental mounting gate
+
+The rich server is not mounted into the GTK runtime merely because it compiles.
+Mounting requires all of the following on one exact candidate: app-thread bridge
+controls, server zero-worker teardown, authentication setup, exact socket/token
+ownership, and a native socket round-trip against a real runtime-owned pane.
+Until that gate passes, direct `AppHost` calls from connection threads remain
+architecturally invalid even when an individual operation appears to work.

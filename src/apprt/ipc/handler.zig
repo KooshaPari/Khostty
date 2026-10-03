@@ -102,6 +102,7 @@ pub const Handler = struct {
             .pane_focus => self.paneFocus(arena, io, req),
             .pane_list => self.paneList(arena, io, req),
             .pane_write => self.paneWrite(arena, io, req),
+            .pane_send_input => Response.failure(req.id, .host_unsupported, "pane.send_input is reserved but not mounted until the PTY ownership path is qualified"),
             .pane_state => self.paneState(arena, io, req),
             .pane_search => self.paneSearch(arena, io, req),
             .pane_resize_split => self.paneResizeSplit(arena, io, req),

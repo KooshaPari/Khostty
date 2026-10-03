@@ -85,6 +85,7 @@ pub const Command = enum {
     pane_focus,
     pane_list,
     pane_write,
+    pane_send_input,
     pane_state,
     pane_search,
     pane_resize_split,
@@ -102,6 +103,7 @@ pub const Command = enum {
             .pane_focus => "pane.focus",
             .pane_list => "pane.list",
             .pane_write => "pane.write",
+            .pane_send_input => "pane.send_input",
             .pane_state => "pane.state",
             .pane_search => "pane.search",
             .pane_resize_split => "pane.resize_split",
@@ -130,7 +132,7 @@ pub const Command = enum {
     /// Whether the command requires a `pane_id` argument.
     pub fn requiresPane(self: Command) bool {
         return switch (self) {
-            .pane_close, .pane_focus, .pane_write, .pane_state, .pane_search, .pane_zoom => true,
+            .pane_close, .pane_focus, .pane_write, .pane_send_input, .pane_state, .pane_search, .pane_zoom => true,
             else => false,
         };
     }
