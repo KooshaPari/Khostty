@@ -217,7 +217,7 @@
     "app_thread_bridge": {
       "branch": "experiment/mature-recovery-k-e02a-app-bridge",
       "pr": 11,
-      "head": "69b87749211a36fff7daf0acaf00139e15626152",
+      "head": "8696f632b15167e96c0e75ff3096c071940d3295",
       "workflow_run": 37039707831,
       "status": "REPOSITORY_TEST_ROOT_AUTHORITY_QUEUED",
       "ownership_findings": [
@@ -277,7 +277,7 @@
       "format": "FAIL",
       "diagnostic_artifact_digest": "sha256:3eab46e077bc91670b9c3279a42f0cbe4545c6f3d593c16c4d4dfc5e0d89f8dc"
     },
-    "status": "FRAME_DELIMITER_LITERALS_CANONICALIZED__NATIVE_ENV_STILL_BLOCKED",
+    "status": "CURRENT_BRANCH_ERROR_DIAGNOSTIC_FIXED__REGRADING",
     "prior_grader_correction": {
       "run": 36870710382,
       "issue": "standalone zig test output was piped through tee without pipefail and module-root semantics differed from repository build graph",
@@ -328,15 +328,10 @@
         "libgtk4-layer-shell-dev installed"
       ],
       "latest": {
-        "prior_head": "b7f1fd42fe4fbe96671b8f7ed31483b581034376",
-        "prior_run": 37039707831,
-        "findings": [
-          "three raw character-literal newlines in frame delimiter/write/read paths",
-          "native Blueprint check and layer-shell header environment still failing"
-        ],
-        "repairs": [
-          "all three newline character literals canonicalized"
-        ],
+        "prior_head": "da83134fabc5a9616b5144fdf40836648326a791",
+        "prior_run": 37063703473,
+        "finding": "current branch still contained raw newline in unexpected-error diagnostic at server.zig:632",
+        "repair": "canonical escaped newline",
         "mount": "blocked"
       }
     },
