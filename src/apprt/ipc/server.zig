@@ -1126,8 +1126,7 @@ fn agentSequence(h: *Harness, index: usize) !usize {
     // write landed in this agent's own pane.
     const needle = try std.fmt.allocPrint(testing.allocator, "needle-{d}", .{index});
     defer testing.allocator.free(needle);
-    const data = try std.fmt.allocPrint(testing.allocator, "{s}\\r\
-", .{needle});
+    const data = try std.fmt.allocPrint(testing.allocator, "{s}\\r\\n", .{needle});
     defer testing.allocator.free(data);
     try h.write(&client, pane_id, data);
     steps += 1;
@@ -1166,8 +1165,7 @@ fn agentSequence(h: *Harness, index: usize) !usize {
 
 fn agentMain(h: *Harness, index: usize, out: *std.atomic.Value(usize)) void {
     const steps = agentSequence(h, index) catch |err| {
-        std.debug.print("agent {d} failed: {}\
-", .{ index, err });
+        std.debug.print("agent {d} failed: {}\\n", .{ index, err });
         return;
     };
     out.store(steps, .release);
@@ -1196,8 +1194,7 @@ test "socket: concurrent agents do not deadlock and do not cross panes" {
     for (results, 0..) |result, i| {
         const steps = result.load(.acquire);
         if (steps != agent_steps) {
-            std.debug.print("agent {d} completed {d}/{d} steps\
-", .{ i, steps, agent_steps });
+            std.debug.print("agent {d} completed {d}/{d} steps\\n", .{ i, steps, agent_steps });
             return error.TestUnexpectedResult;
         }
     }
