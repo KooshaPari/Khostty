@@ -9,6 +9,9 @@ on:
       - "src/App.zig"
       - "src/apprt/ipc/app_thread_bridge.zig"
       - ".github/workflows/experiment-k-e02a-app-bridge.yml"
+      - "src/apprt/ipc/protocol.zig"
+      - "src/apprt/ipc/handler.zig"
+      - "src/apprt/ipc/server.zig"
 
 permissions:
   contents: read
