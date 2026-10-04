@@ -3,6 +3,7 @@ name: Experiment - K-E02a app-thread bridge
 on:
   push:
     branches: [experiment/mature-recovery-k-e02a-app-bridge]
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
