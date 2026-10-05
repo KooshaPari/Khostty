@@ -1218,7 +1218,6 @@ test "socket: concurrent agents do not deadlock and do not cross panes" {
     try testing.expectEqual(@as(usize, agent_count), h.fake.close_calls);
 }
 
-
 test "lifecycle: deinit force-disconnects idle clients before dependency teardown" {
     var h = try Harness.init(testing.allocator, .{});
     // Keep an idle client connected: old detached-worker lifecycle could wait
