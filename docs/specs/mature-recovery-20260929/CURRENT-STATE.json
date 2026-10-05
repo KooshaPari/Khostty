@@ -1,0 +1,411 @@
+{
+  "schema_version": 3,
+  "program_id": "KR-20260929",
+  "product": "KooshaPari/Khostty",
+  "repository_id": 1322607630,
+  "observed_on": "2026-09-30",
+  "assessment_pass": 10,
+  "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
+  "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
+  "specification_branch": "docs/mature-recovery-20260929",
+  "implementation_candidate": {
+    "branch": "experiment/mature-recovery-k-e03",
+    "head": "1e51ffcb222201d03eed2c28eb910d63d1d2903b",
+    "draft_pr": 9,
+    "status": "EXPERIMENTAL_BLOCKED_PENDING_EXACT_HEAD_EXECUTION",
+    "baseline": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d"
+  },
+  "status": "INCOMPLETE_BLOCKED",
+  "handoff_status": "READY_FOR_PARALLEL_EXPERIMENTAL_IMPLEMENTATION",
+  "general_dev_handoff": false,
+  "parallel_general_dev_handoff": false,
+  "handoff_document": "DEVELOPER-HANDOFF.md",
+  "ready_work_packages": [
+    "K-E02_NATIVE_CONTROL",
+    "K-E03_NATIVE_EXECUTION_AND_UPSTREAM_COMPARISON"
+  ],
+  "dependent_experimental_work_packages": {},
+  "contract_authority": "CURRENT_USER_INTENT_RESOLVED_2026_09_30",
+  "authority_correction": "Prior framing that broad fork ownership was not the default assumption is superseded. Subsystem alternatives still optimize bootstrap/maintenance but do not challenge accepted substantial-fork product identity.",
+  "source_denominator": {
+    "state": "OPEN_SEMANTIC_RESOLUTION",
+    "tracked_tree_enumeration": "CLOSED",
+    "total_semantic_sources": null,
+    "resolved_semantic_sources": null,
+    "fraction": null
+  },
+  "mature_completion": null,
+  "specification_completion": null,
+  "journey_closure": "AGENT_JSON_SERVER_SOURCE_PROVEN_ADJACENT_TO_INHERITED_IPC_AND_UNMOUNTED_BY_SOURCE_TRACE; NO_NATIVE_RUN",
+  "native_tests_run_this_pass": false,
+  "static_checks_executed": "TWO_FULL_SOURCE_BLOBS_VERIFIED_AND_RUNTIME_BODIES_CHECKED",
+  "experiment_receipt": "pass5/EXPERIMENT-RECEIPT.json",
+  "blocking_findings": [
+    "K-F01",
+    "K-F02",
+    "K-F03",
+    "K-F07",
+    "K-F08",
+    "K-F09",
+    "K-F10",
+    "K-F11",
+    "K-F12",
+    "K-F13",
+    "K-F14",
+    "K-F15",
+    "K-F16",
+    "K-F17",
+    "K-F18"
+  ],
+  "high_risk_unknowns": [
+    "K-F04",
+    "K-F06"
+  ],
+  "abi_manifest_disposition": "UPSTREAM_INHERITED_NOT_FORK_DIFFERENTIATION",
+  "windows_gui_state": "APP_RENDERER_SURFACE_AND_PIPE_TRANSPORT_IMPLEMENTATION_GAPS_CONFIRMED",
+  "existence_gate": "FORK_EXISTENCE_ACCEPTED; SUBSYSTEM_BOOTSTRAP_AND_ARCHITECTURE_GATE_OPEN",
+  "independent_fresh_review": "NOT_PERFORMED",
+  "invalid_catalogs_eligible_for_grading": false,
+  "existing_ci_enforcement_changed": false,
+  "pilot": "NOT_RUN_SEPARATE_POST_BUILD_GATE",
+  "fork_delta": {
+    "comparison_base": "f9e82709360d97b2246718f774c544de0f16787b",
+    "merge_base": "d4c88d8069912b653d707191388ca98e24751f12",
+    "ahead_by": 207,
+    "behind_by": 145,
+    "status": "EARLIER_DATED_OBSERVATION_NOT_RERUN_THIS_PASS"
+  },
+  "progress_policy": "Static diagnostics, imported assertions, native observations and product acceptance are distinct. No scalar document-count or test-count completion.",
+  "tracked_tree_enumeration": {
+    "state": "CLOSED_AT_TOP_LEVEL_FAMILY_BOUNDARY",
+    "exact_non_fuzz_blob_rows": 2138,
+    "fuzz_family": {
+      "blobs": 4014,
+      "corpus_blobs": 4002
+    },
+    "all_top_level_trees_covered": true,
+    "all_recursive_responses_untruncated": true,
+    "summary": "inventory/SUMMARY.json"
+  },
+  "K_E01_progress": {
+    "tracked_tree_inventory": "COMPLETE",
+    "fork_ownership": "HIGH_PRIORITY_BOUNDARY_RESOLVED",
+    "agent_server_reachability": "UNMOUNTED_BY_CURRENT_SOURCE_EVIDENCE",
+    "remaining": "full semantic family/history resolution and native execution"
+  },
+  "tracked_product_relevant_inventory": {
+    "unique_blobs": 2055,
+    "raw_rows": 2117,
+    "overlap_paths": 62,
+    "object_id_conflicts": 0,
+    "semantic_state": "OPEN",
+    "bulk_test_blobs_excluded_from_obligation_count": 4020,
+    "vendor_blobs_excluded_from_obligation_count": 9
+  },
+  "mount_archaeology": "NEW_AGENT_IPC_NOT_MOUNTED_AT_FROZEN_SOURCE_REASONABLE_FALSIFICATION_STANDARD",
+  "finding_namespace": {
+    "state": "CANONICAL_UNIQUE",
+    "range": "K-F01..K-F18",
+    "duplicate_ids": false
+  },
+  "current_main_observed": "882d6cd4aa7b5f9f9bffc5fb0a8b4d70460c90e6",
+  "source_drift_from_snapshot": {
+    "ahead_by": 2,
+    "files": [
+      ".github/workflows/publish-pypi.yml",
+      "docs/RELEASE.md",
+      "docs/sessions/khostty-0.1.0-release/01_RESEARCH_pypi-publication.md",
+      "docs/sessions/khostty-0.1.0-release/evidence/zig-checksum-verification.txt"
+    ],
+    "classification": "POST_SNAPSHOT_RELEASE_OPERATIONS_NOT_PRODUCT_RUNTIME"
+  },
+  "experimental_candidates": {
+    "K_E03": {
+      "branch": "experiment/mature-recovery-k-e03",
+      "head": "da1fa84d9552d1a747b75ee3ab4c627267aa6b7a",
+      "pr": 9,
+      "status": "EXPERIMENTALLY_ACCEPTED_EMBEDDING_SLICE_RUN_28"
+    },
+    "K_E02": {
+      "branch": "experiment/mature-recovery-k-e02",
+      "head": "a007160c333566a45b5a1572b7099ed57529203d",
+      "pr": 10,
+      "status": "BLOCKED_SAFE_SHUTDOWN_AND_NATIVE_EXECUTION"
+    }
+  },
+  "windows_alternatives": {
+    "primary": "shiweis/ghostty-windows@119b9270c8585fa3ae6969c353767fab5a32e438",
+    "external_ci_run": 33633427282,
+    "external_ci_conclusion": "success",
+    "current_upstream_divergence": {
+      "ahead_by": 241,
+      "behind_by": 362,
+      "merge_base": "20abdb50a6216c450d6d4d010c41c7edf5ab15b2"
+    },
+    "disposition": "QUALIFY_ADAPT_VS_CUSTOM_BEFORE_KHOSTTY_WINDOWS_IMPLEMENTATION"
+  },
+  "fork_ownership": {
+    "merge_base": "d4c88d8069912b653d707191388ca98e24751f12",
+    "top_level": {
+      "identical": 43,
+      "added": 13,
+      "modified": 6,
+      "removed": 0
+    },
+    "ownership_map": "inventory/FORK-OWNERSHIP.md"
+  },
+  "agent_ipc_mounting": "NOT_MOUNTED_BY_PUBLIC_APPRT_IPC; NEW_SERVER_CALLERS_NOT_FOUND_OUTSIDE_SUBSYSTEM_DOCS",
+  "ipc_security_scope": "SHARED_USER_TOKEN_NOT_PER_PROCESS_IDENTITY; K-E02_THREAT_MODEL_REQUIRED",
+  "wrapper_value_model": "FORK_OWNED_BINDINGS_OVER_INHERITED_LIBGHOSTTY_VT; EVALUATE SAFETY_ERGONOMICS_PACKAGING_NOT_VT_SEMANTICS",
+  "K_E03_readiness": "HARNESS_CANDIDATE_EXISTS_EXECUTION_AND_COMPARATOR_REVISION_REQUIRED",
+  "wrapper_evidence_policy": "TYPECHECK_IS_NOT_LINKED_EVIDENCE; REQUIRE_ACTUAL_LIB_IDENTITY_AND_CONSUMER_EXECUTION",
+  "wrapper_packaging": "STANDALONE_CONSUMPTION_UNPROVEN",
+  "K_E03_candidate": {
+    "branch": "experiment/mature-recovery-k-e03",
+    "pr": 9,
+    "head": "2321282191b30d0862a9864a2096009d0c9a7066",
+    "state": "BLOCKED_ON_NATIVE_AND_UPSTREAM_COMPARISON",
+    "prior_linked_workflow": {
+      "commit": "38ff7359eee093c960632fb626f9d868286a1bd9",
+      "run": 36706051964,
+      "result": "INFRA_FAILURE_BEFORE_ZIG_AVAILABLE",
+      "cause": "GITHUB_PATH_NOT_APPLIED_WITHIN_SAME_COMPOSITE_STEP"
+    },
+    "installer_fix": "ABSOLUTE_DEST_ZIG_VERSION_CHECK",
+    "current_workflow_run": 36719693538
+  },
+  "exact_candidate_ci": {
+    "prior_sha": "3c749be20f5a5489dc963d74daf3b8690819577d",
+    "prior_run": 36741131134,
+    "result": "FAIL_HARNESS_RECEIPT_KEY_TYPO",
+    "native_build": {
+      "result": "PASS",
+      "artifact": "zig-out/lib/libghostty-vt.a",
+      "sha256": "baf8e58b30f60d12a705a613849e05d338618bdcdc22aaa3b2fda2a35e044250"
+    },
+    "failure": "receipt read GHOSTTY_VT_LINK_KIND while harness set KHOSTTY_VT_LINK_KIND; occurred after subprocess checks but before receipt write",
+    "new_sha": "1edff1a00d6b68cbb297d97926e30030c8844b82",
+    "new_run": 36744824103,
+    "status": "QUEUED"
+  },
+  "K_E02_status": "K-E02A_APP_THREAD_BRIDGE_CANDIDATE_ACTIVE",
+  "K_E02_guard": "DIRECT_SERVER_BIND_WITH_CROSS_THREAD_APPHOST_ACCESS_IS_FAIL",
+  "K_E03_status": "EXPERIMENTALLY_ACCEPTED_EMBEDDING_SLICE_ONLY; PACKAGING_BURDEN_REMAINS; DOES_NOT_ACCEPT_FORK_OR_CONTROL_PLANE",
+  "K_E03_partial_evidence": {
+    "candidate_native_build": "PASS",
+    "candidate_direct_c_consumer": "PASS",
+    "candidate_rust_wrapper_runtime": "PASS_WITH_EXPLICIT_PLATFORM_LOADER_PATH",
+    "candidate_abi_ffi_tests": "PASS",
+    "missing_library_control": "PASS",
+    "rust_lifetime_control": "PASS",
+    "upstream_merge_base_native_build": "PASS",
+    "upstream_direct_c_and_wrapper_comparison": "PASS",
+    "exact_head": "da1fa84d9552d1a747b75ee3ab4c627267aa6b7a",
+    "dedicated_workflow_run": 36762466662,
+    "evidence_artifact_digest": "sha256:1f565ad49b63ee1c13959cd7b2680b9169a9bfd7e021f944a02092153b5c0b3d",
+    "packaging_caveat": "execution witness requires explicit platform loader path; standalone packaging remains unproven"
+  },
+  "K_E03": {
+    "exact_head": "da1fa84d9552d1a747b75ee3ab4c627267aa6b7a",
+    "dedicated_workflow_run": 36762466662,
+    "experiment_result": "PASS_EMBEDDING_SLICE",
+    "general_acceptance": false
+  },
+  "K_E02": {
+    "negative_baseline_pr": 10,
+    "direct_mount": "REJECTED_THREADING_AND_LIFECYCLE_SHAPE",
+    "app_thread_bridge": {
+      "branch": "experiment/mature-recovery-k-e02a-app-bridge",
+      "pr": 11,
+      "head": "36566871102b5d04566a8a5aeab9c8d0988277bd",
+      "workflow_run": 37257243337,
+      "status": "REPOSITORY_TEST_ROOT_AUTHORITY_QUEUED",
+      "ownership_findings": [
+        "GTK runloop calls CoreApp.tick on app thread",
+        "CoreApp.tick drains mailbox and experimental bridge",
+        "Surface.queueIo is terminal-IO ownership path",
+        "pane.write remains parser/display injection, not child input"
+      ],
+      "controls": [
+        "correlated heap-owned request",
+        "queued/executing/completed/canceled states",
+        "queued timeout cancellation",
+        "executing request cannot timeout context lifetime",
+        "shutdown cancellation",
+        "queued context cleanup",
+        "runtime wakeup on submit",
+        "CoreApp.tick execution owner",
+        "exact pane identity observation projection",
+        "queue-full fail-closed",
+        "no duplicate callback execution",
+        "pane.send_input distinct from pane.write",
+        "unqualified child input returns host_unsupported",
+        "worker-thread submission remains queued until app-thread drain"
+      ],
+      "prior_red": {
+        "head": "14387d180430580eb654fb3cf21dd00ab7bd4a52",
+        "run": 36821252873,
+        "classification": "SOURCE_FORMAT_GATE",
+        "install": "PASS",
+        "candidate_semantic_tests_executed": false
+      },
+      "latest_repair": "checksum-verified Zig primary plus fallback download; candidate test gates unchanged"
+    },
+    "next": "grade primitive; project one real pane operation through app thread; then K-E02b server lifecycle",
+    "acceptance": false,
+    "server_lifecycle": {
+      "status": "EXPERIMENTAL_CANDIDATE",
+      "head": "14387d180430580eb654fb3cf21dd00ab7bd4a52",
+      "controls": [
+        "track active connection streams for shutdown only",
+        "force-disconnect idle clients before dependency teardown",
+        "never close streams while lifecycle mutex held",
+        "require live worker count reach zero",
+        "idle-client-across-deinit adversarial test"
+      ],
+      "mounted": false
+    },
+    "semantic_evidence": {
+      "head": "788d266dbbd4c9d45d67ba8dedb06eb4e205ceac",
+      "run": 36856668757,
+      "bridge": "PASS",
+      "protocol": "PASS",
+      "handler": "PASS",
+      "server_lifecycle": "PASS",
+      "source_lifecycle_contract": "PASS",
+      "core_compile": "PASS",
+      "format": "FAIL",
+      "diagnostic_artifact_digest": "sha256:3eab46e077bc91670b9c3279a42f0cbe4545c6f3d593c16c4d4dfc5e0d89f8dc"
+    },
+    "status": "SEMANTIC_CHAR_LITERALS_AND_NATIVE_INTROSPECTION_REPAIRED_REGRADING",
+    "prior_grader_correction": {
+      "run": 36870710382,
+      "issue": "standalone zig test output was piped through tee without pipefail and module-root semantics differed from repository build graph",
+      "action": "semantic tests now run through zig build test filters; pipefail enforced; exact formatter patch applied"
+    },
+    "last_authoritative": {
+      "head": "92d448099c6cc03eb0198e7e9bf3246f8d0bc79b",
+      "run": 36899154761,
+      "bridge": "PASS",
+      "protocol": "PASS",
+      "handler": "PASS",
+      "server_lifecycle": "PASS",
+      "source_contract": "PASS",
+      "core_compile": "in_progress_at_observation",
+      "format": "not_final_at_observation",
+      "aggregate_meta_gate": "BROKEN_REMOVED"
+    },
+    "grader_finding": {
+      "head": "1bb53ddcc40bd71029b687a5446431ef04459800",
+      "run": 36899697150,
+      "core_compile": "PASS",
+      "format": "PASS",
+      "filtered_build_tests": "UNSUPPORTED_AUTHORITY",
+      "reason": "repository build graph does not expose those source-level filters as valid dedicated subsystem harnesses",
+      "next": "add real dependency-aware bridge/server harnesses or owning build steps before guarded GTK mount"
+    },
+    "harness_fix": {
+      "source": "src/apprt.zig test root imports rich IPC bridge/protocol/handler/server",
+      "grade": "zig build test through normal repository module/dependency graph",
+      "mount": "still blocked until exact-head harness + core compile + format green",
+      "latest": {
+        "reason": "IPC semantic harness does not require GTK renderer stack",
+        "change": "rich IPC tests use repository graph with app-runtime=none; full GTK compile remains separate native-integration gate",
+        "benefit": "removes Blueprint/layer-shell package noise from semantic oracle"
+      }
+    },
+    "harness_result": {
+      "prior_run": 36906989011,
+      "artifact_digest": "sha256:ad8508b2d7ce30f2de1fa422a15d0e1c7bb3e6616bcf8be85f7d505039eb76e5",
+      "findings": [
+        "server.zig malformed newline writer at line 463",
+        "blueprint-compiler below required 0.16",
+        "gtk4-layer-shell header absent"
+      ],
+      "repairs": [
+        "canonical newline character literal",
+        "modern blueprint compiler path",
+        "libgtk4-layer-shell-dev installed"
+      ],
+      "latest": {
+        "prior_run": 37233262547,
+        "findings": [
+          "four Zig newline chars were double-escaped",
+          "gtk4-layer-shell source build lacked gobject-introspection-1.0",
+          "one canonical zig fmt blank-line delta"
+        ],
+        "repairs": [
+          "real '\\\\n' character literals",
+          "install gobject-introspection",
+          "apply exact zig fmt delta"
+        ],
+        "mount": "blocked pending same-head green"
+      }
+    },
+    "core_compile_authority": {
+      "prior_claim": "WITHDRAWN",
+      "reason": "GTK compile command was piped through tee without pipefail; logs showed real command failure despite step outcome success",
+      "repair": "pipefail enforced; gettext + GTK4 + libadwaita + layer-shell + Blueprint>=0.16 prerequisites installed",
+      "mount": "blocked until semantic tests + authoritative GTK compile + format all green on same head"
+    }
+  },
+  "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
+  "product_horizon": "PURPOSEFUL_GHOSTTY_FORK_FOR_WINDOWS_SHELL_PLATFORM_IMPROVEMENTS_AND_CMUX_CLASS_PROGRAMMABLE_TERMINAL_CONTROL_AS_HELIOSLAB_INFRASTRUCTURE",
+  "core_spine": [
+    "Ghostty terminal semantics",
+    "Windows/platform runtime",
+    "Zsh/PowerShell integration",
+    "windows/tabs/panes/workspaces identities",
+    "socket/API control and events",
+    "authorization/policy",
+    "human terminal UX",
+    "HeliosLab/agent integration",
+    "lifecycle/recovery",
+    "packaging/support"
+  ],
+  "authoritative_product_intent": "AUTHORITATIVE-PRODUCT-INTENT.md",
+  "shell_contract": {
+    "zsh": "UPSTREAM_GHOSTTY_HAS_INTEGRATION_IDENTIFY_KHOSTTY_DELTA",
+    "powershell": "ACCEPTED_GAP_FAMILY_UPSTREAM_AUTOINJECTION_NOT_DOCUMENTED"
+  },
+  "control_plane_baseline": "CMUX_CLASS_DEEP_API_OUTCOME_ACCEPTED_AS_REFERENCE_NOT_REQUIRED_CLONE",
+  "windows_bootstrap": {
+    "status": "COMPARATOR_SET_EXPANDED",
+    "decision": "ADAPT/PORT/COMPOSE before custom host",
+    "comparators": [
+      "shiweis/ghostty-windows",
+      "cullendotdev/winghostty",
+      "thin libghostty native host",
+      "custom residual"
+    ],
+    "qualification_required": [
+      "native build",
+      "ConPTY child nonce",
+      "exact pane identity",
+      "tabs/splits",
+      "PowerShell integration",
+      "IME",
+      "restart/session state",
+      "automation/control-plane",
+      "packaging",
+      "accessibility",
+      "upstream-sync burden"
+    ],
+    "layered_decision": {
+      "native_host": [
+        "shiweis/ghostty-windows",
+        "winghostty",
+        "thin libghostty host"
+      ],
+      "control_plane": [
+        "Khostty authenticated rich IPC",
+        "winghostty allowlist/structural-ID lessons"
+      ],
+      "evidence": [
+        "native black-box Windows harness",
+        "socket/in-process exact-pane oracle"
+      ],
+      "rule": "compose layers; no winner-take-all Windows score"
+    }
+  }
+}

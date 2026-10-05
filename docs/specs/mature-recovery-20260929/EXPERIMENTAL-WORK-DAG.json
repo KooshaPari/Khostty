@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "program": "KR-20260929",
+  "status": "READY_FOR_PARALLEL_EXPERIMENTAL_IMPLEMENTATION",
+  "general_dev_handoff": false,
+  "source": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
+  "nodes": [
+    {
+      "id": "K-E02",
+      "state": "ACTIVE_DIAGNOSTIC_GRADE",
+      "depends_on": [],
+      "parallel_group": "K-P1",
+      "purpose": "Native/control alternative bake-off",
+      "write_scope": [
+        "experiment worktree",
+        "src/apprt/ipc only if bounded wiring spike is needed",
+        "native hook required by spike",
+        "recovery receipts"
+      ],
+      "forbidden": [
+        "silently change v1 pane.write semantics",
+        "broad agent platform",
+        "merge/release"
+      ],
+      "exit": [
+        "same nonce journey on Khostty and strongest alternative",
+        "no unintended target",
+        "controller replacement",
+        "stale target behavior",
+        "exact candidate/config evidence"
+      ],
+      "candidate": {
+        "branch": "experiment/mature-recovery-k-e02a-app-bridge",
+        "pr": 11,
+        "head": "3329559de550092b05fdd064931c8ef434df7a60",
+        "workflow_run": 36851081941,
+        "status": "FORMAT_DIAGNOSTIC_THEN_SEMANTIC_GATES"
+      },
+      "prior_red": {
+        "run": 36770576989,
+        "classification": "infra before candidate gates"
+      },
+      "subslices": {
+        "K_E02a": "app-thread bridge + worker witness",
+        "K_E02b": "unmounted server lifecycle zero-worker invariant"
+      }
+    },
+    {
+      "id": "K-E03",
+      "state": "EXPERIMENTALLY_ACCEPTED_SLICE",
+      "depends_on": [],
+      "parallel_group": "K-P1",
+      "purpose": "Embedding consumer comparison + CI/native evidence qualification",
+      "write_scope": [
+        "one wrapper test/experiment surface",
+        "recovery receipts",
+        "CI evidence policy/tests only"
+      ],
+      "exit": [
+        "real upstream/native library linked",
+        "positive native integration-test sentinel",
+        "create/feed/resize/read/free",
+        "callback/thread lifetime",
+        "comparison with direct upstream",
+        "expected-job matrix distinguishes required/advisory/skipped/swallowed failure"
+      ],
+      "candidate": {
+        "branch": "experiment/mature-recovery-k-e03",
+        "pr": 9,
+        "head": "da1fa84d9552d1a747b75ee3ab4c627267aa6b7a",
+        "workflow_run": 36762466662,
+        "status": "PASS_EMBEDDING_SLICE"
+      },
+      "residual": [
+        "standalone packaging/loader burden",
+        "does not accept Khostty product/control plane/Windows"
+      ]
+    }
+  ],
+  "closed_prerequisites": [
+    "tracked-tree enumeration",
+    "top-level merge-base ownership",
+    "agent IPC mount trace: adjacent/unmounted",
+    "Windows App lifecycle source state",
+    "embedding/CI qualification folded into K-E03; no redundant K-E01-EMBED node"
+  ],
+  "remaining_general_blockers": [
+    "primary intent authority",
+    "semantic source resolution",
+    "native alternative experiments",
+    "mature contract",
+    "complete trace/oracle graph",
+    "qualifying CI",
+    "fresh independent review"
+  ]
+}

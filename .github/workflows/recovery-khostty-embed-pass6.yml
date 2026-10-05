@@ -1,0 +1,202 @@
+name: Recovery embedding — K-E03
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/specs/mature-recovery-20260929/**"
+      - ".github/workflows/recovery-khostty-embed-pass6.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  k-e03-rust:
+    name: K-E03 real Rust wrapper consumer
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SOURCE_SHA: a29aa9c6553d9f42aa68e2919116c0f6d53f329d
+      UPSTREAM_SHA: f9e82709360d97b2246718f774c544de0f16787b
+      RECEIPTS: recovery-embed-receipts
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate recovery metadata integrity
+        run: |
+          set -euo pipefail
+          mkdir -p "${RECEIPTS:-recovery-receipts}"
+          python docs/specs/mature-recovery-20260929/pass6/validate_recovery_state.py \
+            --prefix K-F \
+            --out "${RECEIPTS:-recovery-receipts}/recovery-metadata-integrity.json"
+
+
+      - name: Assert implementation and wrapper remain frozen
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$SOURCE_SHA" --             src include khostty-vt             ':(exclude).github/workflows/recovery-khostty-embed-pass6.yml'
+          mkdir -p "$RECEIPTS"
+          git rev-parse HEAD | tee "$RECEIPTS/recovery-head.txt"
+          git status --porcelain=v1 | tee "$RECEIPTS/status-before.txt"
+
+      - uses: ./.github/actions/install-zig
+        with:
+          version: '0.16.0'
+          shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Diagnose frozen CI evidence false-green mechanisms
+        run: |
+          set -euo pipefail
+          python docs/specs/mature-recovery-20260929/pass6/probe_ci_evidence.py \
+            --repo . --source "$SOURCE_SHA" \
+            --out "$RECEIPTS/ci-evidence-baseline.json" \
+            | tee "$RECEIPTS/ci-evidence-baseline.log"
+
+      - name: Build real shared libghostty-vt
+        run: |
+          set -euo pipefail
+          zig version | tee "$RECEIPTS/zig-version.txt"
+          zig build -Demit-lib-vt -Doptimize=ReleaseSafe             2>&1 | tee "$RECEIPTS/zig-lib-build.log"
+          find zig-out/lib -maxdepth 1 \( -type f -o -type l \) | sort | tee "$RECEIPTS/library-files.txt"
+          test -n "$(find zig-out/lib -maxdepth 1 -type f \( -name 'libghostty-vt.so*' -o -name 'libghostty-vt.a' \) -print -quit)"
+          sha256sum zig-out/lib/libghostty-vt* 2>/dev/null | tee "$RECEIPTS/library-sha256.txt" || true
+
+      - name: Require wrapper to link the real library
+        env:
+          GHOSTTY_VT_LIB_DIR: ${{ github.workspace }}/zig-out/lib
+          GHOSTTY_VT_INCLUDE_DIR: ${{ github.workspace }}/include
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path khostty-vt/Cargo.toml --no-run -vv             2>&1 | tee "$RECEIPTS/cargo-no-run.log"
+          grep -q "khostty-vt: linking" "$RECEIPTS/cargo-no-run.log" || {
+            echo "Rust wrapper did not report linking libghostty-vt" >&2
+            exit 1
+          }
+
+      - name: Require non-empty linked test denominator
+        env:
+          GHOSTTY_VT_LIB_DIR: ${{ github.workspace }}/zig-out/lib
+          GHOSTTY_VT_INCLUDE_DIR: ${{ github.workspace }}/include
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path khostty-vt/Cargo.toml -- --list             2>&1 | tee "$RECEIPTS/test-list.txt"
+          count="$(grep -c ': test$' "$RECEIPTS/test-list.txt" || true)"
+          echo "$count" | tee "$RECEIPTS/test-count.txt"
+          test "$count" -gt 0 || {
+            echo "False green: linked integration test denominator is empty" >&2
+            exit 1
+          }
+
+      - name: Run linked Rust wrapper tests
+        env:
+          GHOSTTY_VT_LIB_DIR: ${{ github.workspace }}/zig-out/lib
+          GHOSTTY_VT_INCLUDE_DIR: ${{ github.workspace }}/include
+          LD_LIBRARY_PATH: ${{ github.workspace }}/zig-out/lib
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path khostty-vt/Cargo.toml --no-fail-fast             2>&1 | tee "$RECEIPTS/cargo-test.log"
+
+      - name: Run agent-shaped wrapper example
+        env:
+          GHOSTTY_VT_LIB_DIR: ${{ github.workspace }}/zig-out/lib
+          GHOSTTY_VT_INCLUDE_DIR: ${{ github.workspace }}/include
+          LD_LIBRARY_PATH: ${{ github.workspace }}/zig-out/lib
+        run: |
+          set -euo pipefail
+          cargo run --manifest-path khostty-vt/Cargo.toml --example agent_session             2>&1 | tee "$RECEIPTS/agent-session-example.log"
+          grep -q "== search ==" "$RECEIPTS/agent-session-example.log"
+          grep -q "== snapshot ==" "$RECEIPTS/agent-session-example.log"
+          grep -q "== input ==" "$RECEIPTS/agent-session-example.log"
+
+      - name: Checkout pinned upstream Ghostty comparator
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ghostty-org/ghostty
+          ref: ${{ env.UPSTREAM_SHA }}
+          path: _upstream/ghostty
+          fetch-depth: 1
+
+      - name: Build pinned upstream libghostty-vt
+        working-directory: _upstream/ghostty
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD | tee "$GITHUB_WORKSPACE/$RECEIPTS/upstream-head.txt"
+          test "$(git rev-parse HEAD)" = "$UPSTREAM_SHA"
+          zig build -Demit-lib-vt -Doptimize=ReleaseSafe \
+            2>&1 | tee "$GITHUB_WORKSPACE/$RECEIPTS/upstream-zig-lib-build.log"
+          find zig-out/lib -maxdepth 1 \( -type f -o -type l \) | sort \
+            | tee "$GITHUB_WORKSPACE/$RECEIPTS/upstream-library-files.txt"
+          sha256sum zig-out/lib/libghostty-vt* 2>/dev/null \
+            | tee "$GITHUB_WORKSPACE/$RECEIPTS/upstream-library-sha256.txt" || true
+
+      - name: Run the same Khostty wrapper against pinned upstream library
+        env:
+          GHOSTTY_VT_LIB_DIR: ${{ github.workspace }}/_upstream/ghostty/zig-out/lib
+          GHOSTTY_VT_INCLUDE_DIR: ${{ github.workspace }}/_upstream/ghostty/include
+          LD_LIBRARY_PATH: ${{ github.workspace }}/_upstream/ghostty/zig-out/lib
+          CARGO_TARGET_DIR: ${{ github.workspace }}/recovery-target-upstream
+        run: |
+          set -euo pipefail
+          cargo test --manifest-path khostty-vt/Cargo.toml -- --list \
+            2>&1 | tee "$RECEIPTS/upstream-test-list.txt"
+          count="$(grep -c ': test        run: |
+          set -euo pipefail
+          git status --porcelain=v1 | tee "$RECEIPTS/status-after.txt"
+          if [ -n "$(git status --porcelain=v1 --untracked-files=no)" ]; then
+            git diff -- .
+            exit 1
+          fi
+          sha256sum \
+            "$RECEIPTS/test-list.txt" \
+            "$RECEIPTS/cargo-test.log" \
+            "$RECEIPTS/agent-session-example.log" \
+            "$RECEIPTS/upstream-test-list.txt" \
+            "$RECEIPTS/upstream-cargo-test.log" \
+            "$RECEIPTS/upstream-agent-session-example.log" \
+            > "$RECEIPTS/key-receipts.sha256"
+
+      - name: Upload K-E03 receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: khostty-k-e03-rust-wrapper-receipts
+          path: recovery-embed-receipts/
+          if-no-files-found: error
+          retention-days: 30
+ "$RECEIPTS/upstream-test-list.txt" || true)"
+          echo "$count" | tee "$RECEIPTS/upstream-test-count.txt"
+          test "$count" -gt 0 || {
+            echo "False green: upstream-linked integration denominator is empty" >&2
+            exit 1
+          }
+          cargo test --manifest-path khostty-vt/Cargo.toml --no-fail-fast \
+            2>&1 | tee "$RECEIPTS/upstream-cargo-test.log"
+          cargo run --manifest-path khostty-vt/Cargo.toml --example agent_session \
+            2>&1 | tee "$RECEIPTS/upstream-agent-session-example.log"
+          grep -q "== search ==" "$RECEIPTS/upstream-agent-session-example.log"
+          grep -q "== snapshot ==" "$RECEIPTS/upstream-agent-session-example.log"
+          grep -q "== input ==" "$RECEIPTS/upstream-agent-session-example.log"
+
+      - name: Ensure tests did not mutate tracked candidate
+        run: |
+          set -euo pipefail
+          git status --porcelain=v1 | tee "$RECEIPTS/status-after.txt"
+          if [ -n "$(git status --porcelain=v1 --untracked-files=no)" ]; then
+            git diff -- .
+            exit 1
+          fi
+          sha256sum "$RECEIPTS/test-list.txt" "$RECEIPTS/cargo-test.log"             "$RECEIPTS/agent-session-example.log" > "$RECEIPTS/key-receipts.sha256"
+
+      - name: Upload K-E03 receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: khostty-k-e03-rust-wrapper-receipts
+          path: recovery-embed-receipts/
+          if-no-files-found: error
+          retention-days: 30

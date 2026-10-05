@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "product": "KooshaPari/Khostty",
+  "source_snapshot": "a29aa9c6553d9f42aa68e2919116c0f6d53f329d",
+  "tracked_tree_status": "ALL_TOP_LEVEL_TREES_ENUMERATED_WITH_UNTRUNCATED_GIT_TREE_RESPONSES",
+  "parts": {
+    "A": {
+      "file": "TRACKED-TREE-A.json",
+      "blob_rows": 1283,
+      "scope": "src/docs/wrappers/conformance/wasm/packaging/.github/bench"
+    },
+    "B": {
+      "file": "TRACKED-TREE-B.json",
+      "blob_rows": 834,
+      "scope": "remaining support/native/public API/examples/package families + root blobs"
+    },
+    "test": {
+      "tree_sha": "1696e0e9fa369d143807195c6d9786ebfc493a7b",
+      "top_level_blobs": 3,
+      "fuzz_libghostty": {
+        "tree_sha": "2d41dd3215bc95819e4d36e1b351e8b9cadea96c",
+        "entries": 4022,
+        "blobs": 4014,
+        "corpus_blobs": 4002,
+        "truncated": false,
+        "semantic_policy": "Treat corpus as one inherited/verification source family until a specific seed carries a distinct product obligation; inventory count must not inflate requirements/completion."
+      },
+      "windows": {
+        "tree_sha": "7303d8d09109565207e37e8ef547b78ecb35f05d",
+        "blobs": 3,
+        "truncated": false,
+        "paths": {
+          ".gitignore": "5b32b4cb4f2c08bf695ed507f3547ddc9a761a9d",
+          "README.md": "da2be75212c279b1a9b2daaffcca065e0f41420b",
+          "test_dll_init.c": "7215e2b69d15d30e62da0862e34cbfaf75907cbe"
+        }
+      }
+    }
+  },
+  "source_family_denominator": "OPEN_SEMANTIC_RESOLUTION",
+  "warning": "Every top-level tree is structurally accounted for. A/B contain 2,117 raw rows with 62 exact-path overlaps (packaging 8, .github 29, bench 25), yielding 2,055 unique non-fuzz paths and zero object-ID conflicts. Fuzz/vendor/inherited file counts are not requirement counts.",
+  "raw_inventory_rows": 2117,
+  "overlap_paths_between_parts": 62,
+  "overlap_extra_rows": 62,
+  "unique_inventory_paths": 2055,
+  "object_id_conflicts_across_overlap": 0
+}

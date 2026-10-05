@@ -1,0 +1,93 @@
+name: Recovery source baseline — Khostty
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/specs/mature-recovery-20260929/**"
+      - ".github/workflows/recovery-khostty-pass6.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  k-e01:
+    name: Frozen tree and caller graph evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SOURCE_SHA: a29aa9c6553d9f42aa68e2919116c0f6d53f329d
+      MERGE_BASE_SHA: d4c88d8069912b653d707191388ca98e24751f12
+      RECEIPTS: recovery-receipts
+    steps:
+      - name: Checkout recovery branch with history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate recovery metadata integrity
+        run: |
+          set -euo pipefail
+          mkdir -p "${RECEIPTS:-recovery-receipts}"
+          python docs/specs/mature-recovery-20260929/pass6/validate_recovery_state.py \
+            --prefix K-F \
+            --out "${RECEIPTS:-recovery-receipts}/recovery-metadata-integrity.json"
+
+
+      - name: Assert product implementation remains frozen
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$SOURCE_SHA" -- \
+            src include khostty-vt khostty-go khostty-python wasm conformance \
+            packaging macos dist example bench .github \
+            ':(exclude).github/workflows/recovery-khostty-pass6.yml' \
+            ':(exclude).github/workflows/recovery-khostty-embed-pass6.yml'
+          mkdir -p "$RECEIPTS"
+          git ls-tree -r "$SOURCE_SHA" > "$RECEIPTS/source-tree.tsv"
+          git ls-tree -r "$MERGE_BASE_SHA" > "$RECEIPTS/merge-base-tree.tsv"
+          git diff --name-status "$MERGE_BASE_SHA" "$SOURCE_SHA" > "$RECEIPTS/fork-delta-name-status.tsv"
+          sha256sum "$RECEIPTS/source-tree.tsv" "$RECEIPTS/merge-base-tree.tsv"             "$RECEIPTS/fork-delta-name-status.tsv" > "$RECEIPTS/tree-receipts.sha256"
+          git status --porcelain=v1 | tee "$RECEIPTS/status-before.txt"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+
+      - name: Verify source snapshots and static Windows baseline
+        run: |
+          set -euo pipefail
+          python docs/specs/mature-recovery-20260929/pass5/check_snapshots.py             --out "$RECEIPTS/static-snapshot-check.json"             | tee "$RECEIPTS/static-snapshot-check.log"
+
+      - name: Run real-checkout caller graph probe
+        run: |
+          set -euo pipefail
+          python docs/specs/mature-recovery-20260929/pass6/probe_caller_graph.py             --repo . --source "$SOURCE_SHA"             --out "$RECEIPTS/caller-graph.json"             | tee "$RECEIPTS/caller-graph.log"
+
+      - name: Record high-risk source identities
+        run: |
+          set -euo pipefail
+          for p in             src/apprt/windows/App.zig             src/apprt/windows/renderer.zig             src/apprt/windows/surface.zig             src/apprt/windows/ipc.zig             src/apprt/ipc/protocol.md             src/apprt/ipc/app_host.zig             src/apprt/ipc/server.zig             src/apprt/ipc/auth.zig; do
+              printf '%s\t%s\n' "$p" "$(git rev-parse "$SOURCE_SHA:$p")"
+          done | tee "$RECEIPTS/high-risk-blobs.tsv"
+
+      - name: Verify recovery analysis did not mutate tracked candidate
+        run: |
+          set -euo pipefail
+          git status --porcelain=v1 | tee "$RECEIPTS/status-after.txt"
+          if [ -n "$(git status --porcelain=v1 --untracked-files=no)" ]; then
+            echo "Recovery checks modified tracked candidate files" >&2
+            git diff -- .
+            exit 1
+          fi
+          sha256sum "$RECEIPTS/caller-graph.json" "$RECEIPTS/static-snapshot-check.json"             > "$RECEIPTS/key-receipts.sha256"
+
+      - name: Upload raw recovery receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: khostty-k-e01-recovery-receipts
+          path: recovery-receipts/
+          if-no-files-found: error
+          retention-days: 30
