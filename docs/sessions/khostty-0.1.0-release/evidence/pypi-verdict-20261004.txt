@@ -1,0 +1,92 @@
+KHOSTTY 0.1.0 — READ-ONLY PYPI VERDICT — 2026-10-04 (collected ~10:11-10:13Z)
+Repo: /Users/kooshapari/CodeProjects/Phenotype/repos/khostty | gh pinned: --repo KooshaPari/Khostty | no pushes/approvals/inbox touched
+
+(a) SENTINEL LOG (docs/sessions/khostty-0.1.0-release/evidence/pypi-sentinel-log.txt, PRESENT, tail 60capped)
+- 04:31:48Z SENTINEL START v2 durable, poll 300s, max 12h
+- 04:32:06Z POLL#1: run 37177220070 completed/failure, PyPI HTTP=404
+- 04:32:25Z RUN_DETAIL: build=success (all 13 steps ok incl. Upload distributions), publish=failure (step 'Publish to PyPI' failed)
+- 04:33:21Z FAILLOG: `Trusted publishing exchange failure: invalid-publisher — valid token, but no corresponding publisher (Publisher with matching claims was not found)`
+- 04:40:09Z..05:05:43Z POSTFAIL_POLL.1-5: all 404, run unchanged
+- 05:07:21Z SENTINEL FINAL VERDICT: PYPI=404 RUN=completed/failure; gates = (1) register pending trusted publisher at pypi.org/manage/account/publishing/ [owner=KooshaPari, project=Khostty, workflow=publish-pypi.yml, environment=pypi] (2) approve newest workflow_dispatch request in approval inbox, then re-dispatch (failed run consumed prior request)
+
+(b) gh run view 37177220070 --json status,conclusion,jobs
+- run: status=completed, conclusion=failure
+- jobs (2):
+  1. build   — completed / success (04:30:55Z→04:31:18Z)
+  2. publish — completed / failure (04:31:20Z→04:31:37Z), failed step = "Publish to PyPI"
+- --log-failed (last 25 lines, sanitized; token-scan hits=0):
+  `##[error]Trusted publishing exchange failure:`
+  `* invalid-publisher: valid token, but no corresponding publisher (Publisher with matching claims was not found)`
+  claims: sub=repo:KooshaPari@42529354/Khostty@1322607630:environment:pypi; repository=KooshaPari/Khostty;
+  repository_owner=KooshaPari; owner_id=42529354; workflow_ref=.github/workflows/publish-pypi.yml@refs/heads/main;
+  ref=refs/heads/main; environment=pypi
+  docs: https://docs.pypi.org/trusted-publishers/troubleshooting/
+
+(c) curl -s --max-time 20 https://pypi.org/pypi/khostty-vt/json → HTTP 404
+
+(d) N/A (HTTP != 200; no package JSON, no files)
+
+(e) gh run list --workflow=publish-pypi.yml --limit 10 → 1 total run:
+  37177220070 | completed | failure | 2026-10-04T04:30:50Z
+  → OTHER_RUNS (besides 37177220070) = 0
+
+VERDICT: PYPI=404 RUN3717=completed/failure JOBS=1/2 OTHER_RUNS=0 NEXT=gate: pending-publisher registration, failing job publish invalid-publisher
+NEXT STEPS (human, not executed here): register trusted publisher on PyPI (owner KooshaPari / repo Khostty / workflow publish-pypi.yml / environment pypi), then approve+re-dispatch a new workflow_dispatch run; re-arm sentinel only if asked.
+
+================================================================
+APPEND — RUN 37194938638 (probe re-dispatch) — collected 2026-10-04 ~10:19-10:21Z
+Same read-only rules: gh pinned --repo KooshaPari/Khostty, timeout 30 (retry once), sanitized logs, no pushes/approvals/inbox, no git add/commit.
+Trigger: second Trusted-Publishing run fired 2026-10-04T10:18:07Z, version=khostty-v0.1.0, probe after 04:30 run failed invalid-publisher.
+
+1) POLLING: poll#1 (10:19Z) already terminal -> completed/failure (no retries needed; loop exited at poll 1 of max 20).
+
+2) RUN VERDICT: status=completed, conclusion=failure
+   JOB TABLE (2 jobs):
+   - build   : completed / success : 2026-10-04T10:18:28Z -> 10:18:46Z
+   - publish : completed / failure : 2026-10-04T10:18:49Z -> 10:19:08Z
+     failed step: "Publish to PyPI"
+
+3) FAILURE LOG (--log-failed, last 25 lines, token-scan HITS=0, key-shaped strings stripped):
+   ##[error]Trusted publishing exchange failure:
+   * `invalid-publisher`: valid token, but no corresponding publisher (Publisher with matching claims was not found)
+   This generally indicates a trusted publisher configuration error (or internal GitHub/PyPI error).
+   claims: sub=repo:KooshaPari@42529354/Khostty@1322607630:environment:pypi
+           repository=KooshaPari/Khostty  repository_owner=KooshaPari  owner_id=42529354
+           workflow_ref=KooshaPari/Khostty/.github/workflows/publish-pypi.yml@refs/heads/main
+           job_workflow_ref=same  ref=refs/heads/main  environment=pypi
+   See https://docs.pypi.org/trusted-publishers/troubleshooting/
+   => IDENTICAL error-class to run 37177220070: publisher registration still NOT effective.
+
+4) PYPI TERMINAL CHECK: curl https://pypi.org/pypi/khostty-vt/json -> HTTP 404 (at 10:20:34Z)
+   => package not live; no info.version / file list (200-only step skipped).
+
+VERDICT2: PYPI=404 RUN37194=completed/failure JOBS=1/2 NEXT=gate: pending-publisher registration, invalid-publisher
+
+================================================================
+APPEND — RUN 37238091039 (probe 3) — collected 2026-10-04 ~21:57Z
+Same read-only rules: gh pinned --repo KooshaPari/Khostty, timeout 30 + retry once, sanitized logs, no pushes/approvals/inbox, no git add/commit.
+Trigger: third probe run fired 2026-10-04T21:56:24Z, publish-pypi.yml, version=khostty-v0.1.0.
+
+1) POLLING: poll#1 (21:57:11Z) already terminal -> completed/failure (loop exited at poll 1 of max 15).
+
+2) RUN VERDICT: status=completed, conclusion=failure
+   JOB TABLE (2 jobs):
+   - build   : completed / success : 2026-10-04T21:56:39Z -> 21:56:55Z
+   - publish : completed / failure : 2026-10-04T21:56:58Z -> 21:57:11Z
+     failed step: "Publish to PyPI"
+
+3) FAILURE LOG (--log-failed, last 25 lines, token-scan HITS=0, key-shaped strings stripped):
+   ##[error]Trusted publishing exchange failure:
+   * `invalid-publisher`: valid token, but no corresponding publisher (Publisher with matching claims was not found)
+   This generally indicates a trusted publisher configuration error (or internal GitHub/PyPI error).
+   claims: sub=repo:KooshaPari@42529354/Khostty@1322607630:environment:pypi
+           repository=KooshaPari/Khostty  repository_owner=KooshaPari  owner_id=42529354
+           workflow_ref=KooshaPari/Khostty/.github/workflows/publish-pypi.yml@refs/heads/main
+           job_workflow_ref=same  ref=refs/heads/main  environment=pypi
+   See https://docs.pypi.org/trusted-publishers/troubleshooting/
+   => UNCHANGED vs runs 37177220070 (04:30) and 37194938638 (10:18): publisher registration still NOT effective.
+
+4) PYPI TERMINAL CHECK: curl https://pypi.org/pypi/khostty-vt/json -> HTTP 404 (at 21:57:50Z)
+   => package not live; no info.version / file list (200-only step skipped).
+
+VERDICT3: PYPI=404 RUN37238=completed/failure JOBS=1/2 NEXT=gate: pending-publisher registration, invalid-publisher
