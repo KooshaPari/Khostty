@@ -11,9 +11,9 @@
 //!
 //! Known limits, stated rather than implied:
 //!
-//!   * `stop`/`deinit` unblock `accept`, but in-flight connections end when the
-//!     client disconnects; they are not force-closed, because a half-written
-//!     frame is worse than a slow shutdown.
+//!   * `stop` unblocks `accept`; `deinit` gives live connections a short
+//!     graceful drain, then force-closes idle streams while dependencies are
+//!     still alive and requires all connection workers to exit before teardown.
 //!   * The event pusher polls (`Config.event_poll_ms`) instead of blocking on a
 //!     condition variable: `std.Io.net` reads take no timeout, and a per
 //!     connection poll at 25 ms costs nothing measurable while making a stuck
@@ -144,8 +144,11 @@ pub const Server = struct {
     accept_thread: ?std.Thread = null,
     /// Connections accepted (observability + tests).
     connections_accepted: std.atomic.Value(usize) = .init(0),
-    /// Connections currently being served.
+    /// Connections currently being served. These must reach zero before dependency teardown.
     live_connections: std.atomic.Value(usize) = .init(0),
+    /// Active connection streams, owned by the server only for shutdown interruption.
+    connection_mutex: std.Thread.Mutex = .{},
+    active_streams: std.ArrayListUnmanaged(std.Io.net.Stream) = .empty,
     /// Frames parsed and answered (observability + tests).
     frames_handled: std.atomic.Value(usize) = .init(0),
 
@@ -198,13 +201,23 @@ pub const Server = struct {
         // gone before those are torn down. Clients that already disconnected
         // drain immediately; a client that is still connected only ends the
         // wait after the timeout, and that case is logged rather than hidden.
-        if (!self.drainConnections(5_000)) {
-            log.warn(
-                "shutting down with {d} connection(s) still live; their frames " ++
-                    "will not be answered",
-                .{self.live_connections.load(.acquire)},
-            );
+        if (!self.drainConnections(250)) {
+            // Detached workers may be blocked in read. Force-close every stream
+            // while manager/broker/auth are still alive, then require workers
+            // to leave before dependency teardown.
+            self.connection_mutex.lock();
+            const streams = self.gpa.dupe(std.Io.net.Stream, self.active_streams.items) catch {
+                self.connection_mutex.unlock();
+                @panic("unable to snapshot IPC streams for shutdown");
+            };
+            self.connection_mutex.unlock();
+            defer self.gpa.free(streams);
+            for (streams) |stream| stream.close(self.io);
+            if (!self.drainConnections(5_000)) {
+                @panic("IPC connection workers outlived server dependencies");
+            }
         }
+        self.active_streams.deinit(self.gpa);
         if (self.listener_open) {
             self.listener.deinit(self.io);
             self.listener_open = false;
@@ -246,6 +259,14 @@ pub const Server = struct {
 
             _ = self.connections_accepted.fetchAdd(1, .monotonic);
             _ = self.live_connections.fetchAdd(1, .monotonic);
+            self.connection_mutex.lock();
+            self.active_streams.append(self.gpa, stream) catch {
+                self.connection_mutex.unlock();
+                _ = self.live_connections.fetchSub(1, .monotonic);
+                stream.close(self.io);
+                continue;
+            };
+            self.connection_mutex.unlock();
 
             // One thread per connection: an agent that is slow, idle, or stuck
             // must not hold up another agent.
@@ -260,7 +281,18 @@ pub const Server = struct {
     }
 
     fn connMain(self: *Server, stream: std.Io.net.Stream) void {
-        defer _ = self.live_connections.fetchSub(1, .monotonic);
+        defer {
+            self.connection_mutex.lock();
+            var i: usize = 0;
+            while (i < self.active_streams.items.len) : (i += 1) {
+                if (std.meta.eql(self.active_streams.items[i], stream)) {
+                    _ = self.active_streams.swapRemove(i);
+                    break;
+                }
+            }
+            self.connection_mutex.unlock();
+            _ = self.live_connections.fetchSub(1, .monotonic);
+        }
         self.serveConnection(stream);
     }
 
@@ -597,7 +629,7 @@ const Harness = struct {
         _ = self;
         if (response.value.object.get("ok").?.bool) return response;
         std.debug.print(
-            "unexpected error response: {s}: {s}\n",
+            "unexpected error response: {s}: {s}\\n",
             .{
                 response.value.object.get("error").?.object.get("code").?.string,
                 response.value.object.get("error").?.object.get("message").?.string,
@@ -862,7 +894,7 @@ test "socket: authenticated pane workflow end to end" {
     );
 
     const write = try h.authed(
-        ",\"cmd\":\"pane.write\",\"pane_id\":\"p-1\",\"data\":\"hello\\r\\n\"",
+        ",\\\"cmd\\\":\\\"pane.write\\\",\\\"pane_id\\\":\\\"p-1\\\",\\\"data\\\":\\\"hello\\\\r\\\\n\\\"",
     );
     defer testing.allocator.free(write);
     try client.sendRaw(write);
@@ -1133,7 +1165,7 @@ fn agentSequence(h: *Harness, index: usize) !usize {
 
 fn agentMain(h: *Harness, index: usize, out: *std.atomic.Value(usize)) void {
     const steps = agentSequence(h, index) catch |err| {
-        std.debug.print("agent {d} failed: {}\n", .{ index, err });
+        std.debug.print("agent {d} failed: {}\\n", .{ index, err });
         return;
     };
     out.store(steps, .release);
@@ -1162,7 +1194,7 @@ test "socket: concurrent agents do not deadlock and do not cross panes" {
     for (results, 0..) |result, i| {
         const steps = result.load(.acquire);
         if (steps != agent_steps) {
-            std.debug.print("agent {d} completed {d}/{d} steps\n", .{ i, steps, agent_steps });
+            std.debug.print("agent {d} completed {d}/{d} steps\\n", .{ i, steps, agent_steps });
             return error.TestUnexpectedResult;
         }
     }
@@ -1184,4 +1216,25 @@ test "socket: concurrent agents do not deadlock and do not cross panes" {
     try h.manager.list(arena.allocator(), h.io, &remaining);
     try testing.expectEqual(@as(usize, 0), remaining.items.len);
     try testing.expectEqual(@as(usize, agent_count), h.fake.close_calls);
+}
+
+test "lifecycle: deinit force-disconnects idle clients before dependency teardown" {
+    var h = try Harness.init(testing.allocator, .{});
+    // Keep an idle client connected: old detached-worker lifecycle could wait
+    // five seconds and then tear dependencies down while this worker survived.
+    var client = try h.connect();
+    try testing.expect(h.server.live_connections.load(.acquire) >= 1);
+
+    h.server.deinit();
+    try testing.expectEqual(@as(usize, 0), h.server.live_connections.load(.acquire));
+    try testing.expectEqual(@as(usize, 0), h.server.active_streams.items.len);
+
+    // Server owns no dependency after deinit; now the harness pieces can safely
+    // be torn down without a detached worker retaining manager/broker/auth.
+    client.deinit();
+    h.manager.deinit(h.io);
+    h.authenticator.deinit();
+    h.broker.deinit(h.io);
+    h.fake.deinit();
+    testing.allocator.free(h.path);
 }

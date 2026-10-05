@@ -16,6 +16,8 @@ const BlockingQueue = @import("datastruct/main.zig").BlockingQueue;
 const renderer = @import("renderer.zig");
 const font = @import("font/main.zig");
 const global = @import("global.zig");
+const agent_bridge = @import("apprt/ipc/app_thread_bridge.zig");
+const AgentAppBridge = agent_bridge.Bridge;
 
 const log = std.log.scoped(.app);
 
@@ -49,6 +51,10 @@ focused_surface: ?*Surface = null,
 /// The mailbox that can be used to send this thread messages. Note
 /// this is a blocking queue so if it is full you will get errors (or block).
 mailbox: Mailbox.Queue,
+
+/// K-E02a correlated worker→app-thread bridge. The socket server is not mounted
+/// here; CoreApp.tick is the sole execution owner for submitted app work.
+agent_app_bridge: AgentAppBridge,
 
 /// The set of font GroupCache instances shared by surfaces with the
 /// same font configuration.
@@ -124,12 +130,18 @@ pub fn init(
         .alloc = alloc,
         .surfaces = .empty,
         .mailbox = .{},
+        .agent_app_bridge = AgentAppBridge.init(global.io()),
         .font_grid_set = font_grid_set,
         .config_conditional_state = .{},
     };
 }
 
 pub fn deinit(self: *App) void {
+    // K-E02a: pending worker requests must lose queued ownership before the
+    // CoreApp storage they target can be destroyed. No queued callback executes
+    // during shutdown.
+    _ = self.agent_app_bridge.cancelPendingOnAppThread();
+
     // Clean up all our surfaces
     for (self.surfaces.items) |surface| surface.deinit();
     self.surfaces.deinit(self.alloc);
@@ -154,8 +166,9 @@ pub fn destroy(self: *App) void {
 /// events. This should be called by the application runtime on every loop
 /// tick.
 pub fn tick(self: *App, rt_app: *apprt.App) !void {
-    // Drain our mailbox
+    // Drain ordinary app messages, then K-E02a agent work on this same app thread.
     try self.drainMailbox(rt_app);
+    _ = self.agent_app_bridge.drainOnAppThread();
 }
 
 /// Update the configuration associated with the app. This can only be
@@ -245,6 +258,71 @@ pub fn deleteSurface(self: *App, rt_surface: *apprt.Surface) void {
 
 /// The last focused surface. This is only valid while on the main thread
 /// before tick is called.
+/// Submit K-E02a work for execution by the next app-thread tick.
+///
+/// The request owns its callback lifetime independently of the queue. The only
+/// cross-thread CoreApp access here is the bridge's synchronized queue; actual
+/// callback work executes from tick(). A successful publish explicitly wakes
+/// the runtime so an idle application does not strand the request.
+pub fn submitAgentAppWork(
+    self: *App,
+    rt_app: *apprt.App,
+    request: *agent_bridge.Request,
+) agent_bridge.BridgeError!agent_bridge.Ticket {
+    const ticket = try self.agent_app_bridge.submit(request);
+    rt_app.wakeup();
+    return ticket;
+}
+
+/// K-E02a app-thread-owned pane identity projection.
+/// This is intentionally read-only: it proves that a worker can request an
+/// exact runtime-owned pane observation without dereferencing CoreApp off-thread.
+pub const AgentPaneObservation = struct {
+    requested_id: u64,
+    found_id: ?u64 = null,
+    focused: ?bool = null,
+};
+
+pub fn submitAgentPaneObservation(
+    self: *App,
+    rt_app: *apprt.App,
+    observation: *AgentPaneObservation,
+    request_out: **agent_bridge.Request,
+) !agent_bridge.Ticket {
+    const Ctx = struct {
+        fn run(ptr: *anyopaque) void {
+            const pair: *struct { app: *App, observation: *AgentPaneObservation } = @ptrCast(@alignCast(ptr));
+            const surface = pair.app.findSurfaceByID(pair.observation.requested_id) orelse return;
+            pair.observation.found_id = surface.id;
+            pair.observation.focused = pair.app.focused_surface == surface;
+        }
+    };
+
+    const Pair = struct { app: *App, observation: *AgentPaneObservation };
+    const pair = try self.alloc.create(Pair);
+    pair.* = .{ .app = self, .observation = observation };
+    errdefer self.alloc.destroy(pair);
+
+    const Wrapped = struct {
+        fn run(ptr: *anyopaque) void {
+            const p: *Pair = @ptrCast(@alignCast(ptr));
+            Ctx.run(p);
+            p.app.alloc.destroy(p);
+        }
+        fn cleanup(ptr: *anyopaque) void {
+            const p: *Pair = @ptrCast(@alignCast(ptr));
+            p.app.alloc.destroy(p);
+        }
+    };
+    const request = try agent_bridge.Request.createWithCleanup(self.alloc, pair, Wrapped.run, Wrapped.cleanup);
+    errdefer {
+        _ = request.cancelQueued();
+        request.releaseCaller();
+    }
+    request_out.* = request;
+    return self.submitAgentAppWork(rt_app, request);
+}
+
 pub fn focusedSurface(self: *const App) ?*Surface {
     const surface = self.focused_surface orelse return null;
     if (!self.hasSurface(surface)) return null;
