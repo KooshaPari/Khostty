@@ -90,7 +90,7 @@ pub const Conn = struct {
         var buf: [1024]u8 = undefined;
         var w = self.stream.writer(io, &buf);
         try w.interface.writeAll(bytes);
-        try w.interface.writeByte('\\n');
+        try w.interface.writeByte('\n');
         try w.interface.flush();
     }
 
@@ -338,7 +338,7 @@ pub const Server = struct {
             // primitive: it consumes the delimiter, and returns null at a
             // clean end of stream. Exclusive leaves the delimiter in the
             // buffer, which turns the next read into a zero-length frame.
-            const frame = conn.reader.interface.takeDelimiter('\\n') catch |err| switch (err) {
+            const frame = conn.reader.interface.takeDelimiter('\n') catch |err| switch (err) {
                 error.StreamTooLong => {
                     // Protocol rule: an oversized frame is rejected and the
                     // connection is closed, because the reader can no longer
@@ -460,7 +460,7 @@ pub const Client = struct {
     pub fn sendRaw(self: *Client, bytes: []const u8) !void {
         var w = self.stream.writer(self.io, &self.write_buf);
         try w.interface.writeAll(bytes);
-        try w.interface.writeByte('\\n');
+        try w.interface.writeByte('\n');
         try w.interface.flush();
     }
 
@@ -468,7 +468,7 @@ pub const Client = struct {
     /// stream, which is how a server closing the connection appears. The slice
     /// borrows the client's read buffer and stays valid until the next read.
     pub fn readFrame(self: *Client) !?[]const u8 {
-        return self.reader.interface.takeDelimiter('\\n');
+        return self.reader.interface.takeDelimiter('\n');
     }
 
     /// Read one frame and parse it as JSON.
