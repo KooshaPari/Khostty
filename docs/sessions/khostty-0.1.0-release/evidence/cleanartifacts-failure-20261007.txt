@@ -140,3 +140,11 @@ FIX VERIFICATION (Clean Artifacts run): NOT DISPATCHED.
   => Next scheduled cron run (daily 00:00 UTC, observed ~03-04Z) will validate
   the fix. Old failing run 37567109212 was NOT rerun (old unfixed workflow).
 ================================================================================
+VERIFY-CRON — 2026-10-08T06:03:42Z
+- Clean Artifacts run 37724252519 (head 5fcc3b7f9, created 2026-10-08T03:45:43Z):
+  completed/success, 141 artifacts deleted (0 failed, 0 skipped-tagged,
+  5 recent, 178 newer-than-max-age). Job "remove-old-artifacts" success;
+  steps: Set up job:success, Remove old artifacts:success, Complete job:success.
+  (Includes fix commit 2e7f282df — permissions actions:write, contents:read.)
+- Run K 37709666650 (ci.yml @ 5fcc3b7f9): re-confirmed completed/success.
+================================================================================
