@@ -1,0 +1,142 @@
+================================================================================
+Clean Artifacts workflow failure — run 37567109212 (2026-10-07)
+Read-only diagnosis performed 2026-10-08 (PDT). Repo: KooshaPari/Khostty.
+No pushes, no re-runs, no git mutations. Token values redacted as ***.
+================================================================================
+
+1. WORKFLOW FILE
+--------------------------------------------------------------------------------
+gh api repos/KooshaPari/Khostty/actions/workflows --jq '... select(.name=="Clean Artifacts")'
+  {"id":327519508,"path":".github/workflows/clean-artifacts.yml","state":"active"}
+
+2. FAILING JOB / STEP (run 37567109212)
+--------------------------------------------------------------------------------
+gh run view 37567109212 --json jobs
+  {"conclusion":"failure","name":"remove-old-artifacts",
+   "steps":["Remove old artifacts"]}
+Single job, single failing step: "Remove old artifacts"
+(c-hive/gha-remove-artifacts@62c2fbea931baa7dd4a6b73ea5a799984a818f61, v1.8.0).
+
+3. FAILURE LOG EXCERPT (sanitized)
+--------------------------------------------------------------------------------
+2026-10-07T03:31:04Z GITHUB_TOKEN Permissions:
+    Contents: read
+    Metadata: read
+    Packages: read
+    (no "Actions: write" entry)
+2026-10-07T03:31:05Z with: age: 1 week / skip-tags: true / skip-recent: 5 / GITHUB_TOKEN: ***
+2026-10-07T03:31:05Z Removing artifacts created before 2026-09-30T03:31:05+00:00
+2026-10-07T03:31:07Z Found 321 artifacts.
+2026-10-07T03:31:08Z Failed to remove artifact (id: 11064882656, name: gitleaks-results.sarif): HTTP 403: Resource not accessible by integration
+2026-10-07T03:31:08Z Failed to remove artifact (id: 11064598652, name: gitleaks-results.sarif): HTTP 403: Resource not accessible by integration
+2026-10-07T03:31:10Z Failed to remove artifact (id: 11064192074, name: khostty-k-e03-rust-wrapper-receipts): HTTP 403: Resource not accessible by integration
+2026-10-07T03:31:10Z Failed to remove artifact (id: 11065001376, name: khostty-k-e03-rust-wrapper-receipts): HTTP 403: Resource not accessible by integration
+2026-10-07T03:31:12Z Failed to remove artifact (id: 11065330311, name: khostty-k-e03-rust-wrapper-receipts): HTTP 403: Resource not accessible by integration
+2026-10-07T03:31:13Z Failed to remove artifact (id: 11064756257, name: khostty-k-e03-rust-wrapper-receipts): HTTP 403: Resource not accessible by integration
+2026-10-07T03:31:14Z Failed to remove artifact (id: 11041008678, name: gitleaks-results.sarif): HTTP 403: Resource not accessible by integration
+2026-10-07T03:31:14Z Done. Removed 0 artifacts. Skipped 0 tagged, 5 recent, 309 newer than the maximum age, 0 invalid. Failed: 7.
+2026-10-07T03:31:14Z ##[error]Error: 7 artifact(s) could not be removed, see the log above.
+Reference: https://docs.github.com/rest/actions/artifacts#delete-an-artifact
+
+4. COMPARISON WITH GREEN RUN 37411874520 (2026-10-06T04:03Z)
+--------------------------------------------------------------------------------
+gh run view 37411874520 --json jobs
+  {"conclusion":"success","name":"remove-old-artifacts"}   (identical job/step shape)
+Green-run log:
+  2026-10-06T04:03:20Z Removing artifacts created before 2026-09-29T04:03:20+00:00
+  2026-10-06T04:03:22Z Found 321 artifacts.
+  2026-10-06T04:03:22Z Done. Removed 0 artifacts. Skipped 0 tagged, 5 recent, 316 newer than the maximum age, 0 invalid. Failed: 0.
+=> Same 321 artifacts. On 10-06 NOTHING was old enough to delete (316 newer than
+   age threshold), so zero DELETE calls were made and the step passed. On 10-07
+   the cutoff advanced one day (09-29 -> 09-30) and 7 artifacts crossed the
+   1-week age line; the first-ever DELETE attempts returned HTTP 403.
+
+5. TRIGGER / PERMISSIONS (workflow yaml, read-only fetch)
+--------------------------------------------------------------------------------
+name: Clean Artifacts
+on:
+  schedule:
+    - cron: "0 0 * * *"      # daily 00:00 UTC (runs observed ~03-04Z = GitHub schedule delay)
+  workflow_dispatch:
+jobs:
+  remove-old-artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Remove old artifacts
+        uses: c-hive/gha-remove-artifacts@62c2fbea931baa7dd4a6b73ea5a799984a818f61 # v1.8.0
+        with:
+          age: "1 week"
+          skip-tags: true
+          skip-recent: 5
+NOTE: NO `permissions:` block anywhere in the yaml. Job token permissions as
+reported in the failing log: Contents: read, Metadata: read, Packages: read —
+no `actions` entry. Deleting an artifact requires `actions: write`; the token
+is effectively read-only (repo default workflow permissions), hence 403.
+
+6. RUN HISTORY (gh run list --workflow .github/workflows/clean-artifacts.yml)
+--------------------------------------------------------------------------------
+databaseId    status     conclusion  createdAt
+37567109212   completed  failure     2026-10-07T03:31:00Z
+37411874520   completed  success     2026-10-06T04:03:16Z
+37258731921   completed  success     2026-10-05T03:15:46Z
+37174449254   completed  success     2026-10-04T03:34:17Z
+37092053118   completed  success     2026-10-03T03:05:47Z
+36959746396   completed  success     2026-10-02T03:20:36Z
+36810013721   completed  success     2026-10-01T03:19:56Z
+36663412937   completed  success     2026-09-30T03:13:16Z
+Exactly ONE failure (37567109212). Prior-day spot checks of full logs:
+  10-01 (36810013721): Found 141 artifacts, Removed 0, Failed: 0
+  10-02 (36959746396): Found 218 artifacts, Removed 0, Failed: 0
+  10-03 (37092053118): Found 279 artifacts, Removed 0, Failed: 0
+=> The workflow has NEVER successfully deleted an artifact (Removed 0 every
+   run). It only ever passed because no artifact had aged past 7 days. Artifact
+   count grew 141 -> 321 between 10-01 and 10-06; first age-outs occurred on
+   the 10-07 run, which exposed the missing `actions: write` permission.
+
+7. ROOT CAUSE / FIX
+--------------------------------------------------------------------------------
+ROOT CAUSE: The job's GITHUB_TOKEN lacks `actions: write` (no `permissions:`
+block in clean-artifacts.yml; repo default grants read-only). When the first
+artifacts crossed the 1-week age threshold on 2026-10-07, the action's DELETE
+calls returned HTTP 403 "Resource not accessible by integration" for 7
+artifacts, failing the step. Time/state-dependent, head unchanged (011e53b9f).
+RECOMMENDED FIX (operator action required, not performed here):
+  Add to jobs.remove-old-artifacts (or workflow top level):
+    permissions:
+      actions: write
+      contents: read
+  Then re-run/dispatch Clean Artifacts to confirm green.
+================================================================================
+
+================================================================================
+FIX / VERIFY — 2026-10-08 (PDT)
+================================================================================
+FIX APPLIED (2026-10-08):
+  File: .github/workflows/clean-artifacts.yml (only file in commit)
+  Diff (+3 lines, inserted between `on:` block and `jobs:`):
+    permissions:
+      actions: write
+      contents: read
+  Commit: 2e7f282df48632dec50cafd773d83eaba2fce97a
+    "ci(clean-artifacts): grant actions:write so aged artifact deletion succeeds"
+  Push: f24521334..2e7f282df -> origin/main, no --force.
+  Push gate Run I (ci.yml @ f24521334ea7042a450d0ace8889c1fbf27a08aa):
+    run 37707297131, status=completed, conclusion=success (checked pre-push).
+
+RUN J — ci.yml at fix commit 2e7f282df48632dec50cafd773d83eaba2fce97a:
+  run id 37708543665, status=completed, conclusion=success
+  (confirmed terminal twice: 2026-10-08T00:37Z and re-check 00:44Z).
+
+PUSH SYNC: origin/main == 2e7f282df48632dec50cafd773d83eaba2fce97a == local HEAD
+  (git rev-parse after `git fetch origin main`, 2026-10-08T00:44Z).
+
+FIX VERIFICATION (Clean Artifacts run): NOT DISPATCHED.
+  Trigger check: clean-artifacts.yml has BOTH `schedule` (cron 0 0 * * *)
+  and `workflow_dispatch`. However, both dispatch attempts (`gh workflow run
+  clean-artifacts.yml` and POST .../actions/workflows/<id>/dispatches) were
+  DEFERRED to the approval inbox by the pre_tool hook; harness hard rules
+  forbid approval-inbox interaction, so no fresh run was issued.
+  => Next scheduled cron run (daily 00:00 UTC, observed ~03-04Z) will validate
+  the fix. Old failing run 37567109212 was NOT rerun (old unfixed workflow).
+================================================================================
