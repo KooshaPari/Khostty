@@ -96,3 +96,10 @@ GAP RECON — collected 2026-10-08T00:16:47Z
 2) Publish runs since 2026-10-05: NO_PUBLISH_RUNS_SINCE_20261005 (publish-pypi.yml created>=2026-10-05T00:00Z returned empty).
 3) Latest 5 runs (all head 011e53b9f unless noted): 37567109212 Clean Artifacts completed/failure (2026-10-07T03:31:00Z), 37411874520 Clean Artifacts completed/success (2026-10-06T04:03:16Z), 37395953565 Release Tip completed/skipped (2026-10-06T00:48:58Z), 37295346950 Trunk Check completed/success (2026-10-05T10:14:54Z), 37267117353 Vouch-Sync CODEOWNERS completed/cancelled (2026-10-05T05:17:28Z); pending approval requests: none (status=waiting/action_required/requested all total_count=0); all 29 workflows state=active (incl. Publish PyPI id 370545506, CI id 327519530); note createdAt field is null in API runs listing (timestamps above are created_at).
 5) origin/main latest: still 011e53b9f, "docs(evidence): PyPI trusted-publishing probe trilogy + sentinel log", committer date 2026-10-05T00:48:25Z — nothing landed after.
+
+PUBLISH RUN 37865837641 — STILL-GATED — 2026-10-09T00:40Z
+- Dispatch: gh workflow run publish-pypi.yml --ref main -f version=khostty-v0.1.0 (fired 2026-10-09T00:38:51Z, single fire; pre-check showed no run in flight)
+- Run: 37865837641, head 011e53b9f, created 2026-10-09T00:38Z, completed/failure at 00:39Z (2 polls)
+- Jobs: build=success, publish=failure
+- Error (same class as runs 37177220070/37194938638/37238091039): `Trusted publishing exchange failure: Token request failed: * invalid-publisher: valid token, but no corresponding publisher (Publisher with matching claims was not found)`
+- Verdict: VERDICT4: STILL-GATED — PyPI trusted-publisher registration still not effective for owner KooshaPari / project Khostty / workflow publish-pypi.yml / environment pypi. No further dispatch fired (hard-stop).

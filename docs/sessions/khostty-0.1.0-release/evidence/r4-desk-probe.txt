@@ -1,0 +1,66 @@
+DESK PROBE — task r4 (Khostty WSL mirror sync prep)
+Date: 2026-10-09T00:31Z–00:34Z (probe window)
+Mode: READ-ONLY. No git mutations, no sync, no secrets printed.
+
+RESULT: UNREACHABLE (address known; host offline on Tailscale)
+
+== Address discovery (sources checked, read-only) ==
+- ~/.ssh/config: found `Host desk kooshapari-desk 100.96.135.160` (User koosh,
+  HostKeyAlias kooshapari-desk, key auth, StrictHostKeyChecking yes). Comment:
+  "Tailscale - kooshapari-desk (Windows with 3090 Ti)".
+  Also `Host kooshapari-desk-1` (HostName 100.84.189.31) and
+  `Host kooshapari-desk-2` (HostName 100.122.128.84).
+- ~/.jcode/memories/global/portage-merge-handoff-20260918.md: confirms desk =
+  Windows + Git Bash, Tailscale 100.96.135.160, aliases desk/kooshapari-desk;
+  note: remote side rejects compound `;` commands — keep remote cmds simple.
+- khostty docs/sessions/khostty-0.1.0-release/: only hit is
+  evidence/release-asset-checksum-audit-20261002.txt (asset install-verified on
+  kooshapari-desk 2026-09-19); no WSL/mirror sync address details.
+- Other khostty session docs (20260916-fork-assessment): desk =
+  kooshapari-desk (Tailscale 100.96.135.160), Windows NT 10.0.28120.0.
+- ~/.ssh/known_hosts: kooshapari-desk and kooshapari-desk.tail2b570.ts.net
+  entries exist (fingerprints present; not printed here).
+- No LAN (192.168/10.x) address for the desk found anywhere. No LAN scan done.
+
+== Reachability attempts (all failed; macOS syntax used) ==
+1. nc -z -G 3 100.96.135.160 22                      -> exit 1 (refused/timeout)
+2. ssh -o BatchMode=yes -o ConnectTimeout=5 desk      -> timeout (exit 255)
+3. ssh BatchMode kooshapari-desk-1 (100.84.189.31)    -> timeout (exit 255)
+4. ssh BatchMode kooshapari-desk-2 (100.122.128.84)   -> timeout (exit 255)
+5. ssh BatchMode kooshapari-desk.tail2b570.ts.net     -> hostname does not
+   resolve locally (MagicDNS not in use on this Mac)
+6. tailscale ping -c 2 100.96.135.160                 -> "no reply" (x2)
+7. Retry round after ~60s wait (ssh + nc + tailscale status) -> still timeout
+
+== Tailscale control-plane state (at 00:33Z) ==
+100.96.135.160  kooshapari-desk    windows  relay "lax"; OFFLINE, last seen 2h ago
+100.84.189.31   kooshapari-desk-1  linux    OFFLINE, last seen 157d ago
+100.122.128.84  kooshapari-desk-2  linux    OFFLINE, last seen 36d ago
+Local tailnet peers: kooshas-laptop (this Mac, online), cachyos/iphone offline.
+Operator reported desk "back" at 2026-10-09T00:29Z, but Tailscale still shows
+it offline (last seen ~00:30Z minus 2h) through 00:34Z — likely the desk
+powered on but its Tailscale client/session has not reconnected, or it joined
+a network where Tailscale cannot reach the control plane.
+
+== Auth mode ==
+Not exercised: BatchMode failed at connect stage (host unreachable), so no
+auth attempt was made. Configured auth = SSH key (IdentityFile + ssh-agent,
+AddKeysToAgent/UseKeychain). No password prompt attempted, no credentials
+requested. Auth mode therefore UNDETERMINED at runtime; config says key-based.
+
+== Discovered WSL/mirror paths on desk ==
+None — the desk never became reachable, so no read-only facts could be
+collected (uname / /mnt/* / Khostty* / `command -v wsl` all NOT run).
+WSL availability on desk: UNVERIFIED (desk is Windows, historically Git-Bash +
+WSL mirror target per task context).
+
+== Sources checked ==
+~/.ssh/config, ~/.ssh/known_hosts, ~/.jcode/memories (desk|mirror grep),
+khostty docs/sessions/khostty-0.1.0-release/, other khostty session docs,
+tailscale status, tailscale ping, local netstat/last (no reverse SSH sessions).
+
+== Follow-up for next probe (r4 retry) ==
+Re-run liveness only: `nc -z -G 3 100.96.135.160 22` then
+`ssh -o BatchMode=yes -o ConnectTimeout=5 desk 'echo DESK-ALIVE'` once
+`tailscale status` shows kooshapari-desk as online (not "offline").
+Keep remote commands single/simple (desk's Windows OpenSSH rejects `;`).
