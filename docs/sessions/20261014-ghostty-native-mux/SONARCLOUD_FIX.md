@@ -12,8 +12,38 @@ workflow that replaces the inherited SonarCloud GitHub App check on
   in commit `17fe76744`).
 - Sets `sonar.qualitygate.breakBuildOnQualityGateFailure=false` AND uses
   `continue-on-error: true` at the job level. Both layers: belt and suspenders.
-- `if: env.SONAR_TOKEN != ''` makes the job a no-op until the secret is set,
-  so PRs are not blocked while operator setup is in progress.
+- Gates the job on `env.SONAR_TOKEN_PRESENT` (a job-level `env` shim fed by
+  `secrets.SONAR_TOKEN != ''`) so it is a no-op until the secret is set, so PRs
+  are not blocked while operator setup is in progress.
+- Checks out with `fetch-depth: 0`, since the scanner computes new-code
+  periods and blame over the default branch.
+
+## Defects found and fixed before merge (2026-10-15)
+
+PR #14 was authored in this session and merged the same day. Three defects
+were found while reviewing its CI status rather than merging it red:
+
+1. **The job was unconditionally skipped.** The guard was written as
+   `if: ${{ env.SONAR_TOKEN != '' }}`, but `SONAR_TOKEN` was only defined in a
+   step-level `env` block. At job level the `env` context has no such key, so
+   the expression evaluated as `'' != ''` → false, and the job never ran.
+   Operator step 1 (`gh secret set SONAR_TOKEN`) would have silently done
+   nothing. Fixed by gating on the `secrets` context via a job-level `env`
+   shim, which is the only form that works at job scope.
+
+2. **`Lint & Format` failed** on this very file (`SONARCLOUD_FIX.md`): prettier
+   violations, fixed with `prettier --write`. The repo rule is prettier on
+   every committed `.md`; the file shipped without it.
+
+3. **`Security Scan` failed** in the pre-existing `ci.yml`, not in this PR's
+   workflow. `gitleaks-action` resolves its range as `<head>^..<head>`, but the
+   job checked out with the default `fetch-depth: 1`, so the parent commit was
+   absent and git reported `fatal: ambiguous argument`. The action then
+   degraded to a partial 0-byte scan that printed "no leaks found" — a failed
+   scan, not a clean one. Fixed with `fetch-depth: 0`.
+
+Defect 3 predates this workstream: it is an inherited upstream CI weakness, so
+it affects every PR on the fork, not just #14.
 
 ## Why this is the right fix
 
@@ -36,9 +66,11 @@ workflow file's header comment.
 After the PR is merged:
 
 1. **Set `SONAR_TOKEN` secret:**
+
    ```bash
    gh secret set SONAR_TOKEN --repo KooshaPari/Khostty
    ```
+
    Token from <https://sonarcloud.io/account/security>. Project key is
    `KooshaPari_ghostty` if reusing the inherited project, or create a
    separate `KooshaPari_Khostty` project and use that key.

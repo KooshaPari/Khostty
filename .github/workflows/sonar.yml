@@ -66,12 +66,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: true
-    if: ${{ env.SONAR_TOKEN != '' }}
+    # 2026-10-15: the guard was `if: ${{ env.SONAR_TOKEN != '' }}`, but
+    # `env.SONAR_TOKEN` is only defined at STEP level below, so the job-level
+    # `env` context is undefined and the comparison is `'' != ''` -- which is
+    # FALSE. The job therefore skipped unconditionally, and setting
+    # SONAR_TOKEN in repo secrets would have silently done nothing.
+    # Fix: gate on the secrets context, which IS available at job level.
+    # `secrets` cannot be used directly in a top-level `if`, hence the
+    # job-level `env` shim below plus the explicit `env.` reference here.
+    env:
+      SONAR_TOKEN_PRESENT: ${{ secrets.SONAR_TOKEN != '' }}
+    if: ${{ env.SONAR_TOKEN_PRESENT == 'true' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          # Full history: the scanner computes new-code periods and blame
+          # over the default branch, so a shallow clone silently degrades
+          # (or fails) its analysis.
           fetch-depth: 0
 
       - name: SonarCloud Scan

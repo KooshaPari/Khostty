@@ -224,6 +224,14 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 2026-10-15: gitleaks-action resolves its diff range as
+          # `<head>^..<head>`. The default shallow clone (depth 1) does not
+          # contain the parent commit, so git failed with
+          # "fatal: ambiguous argument" and the scan degraded to a partial
+          # 0-byte scan (it reported "no leaks found" -- that was a failed
+          # scan, not a clean one). Fetch full history so the range resolves.
+          fetch-depth: 0
       - name: gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
