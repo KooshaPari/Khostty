@@ -3,6 +3,9 @@
 //! Run: zig build test-windows-apprt -Dtest-filter=<name>
 
 test {
+    if (@import("builtin").os.tag == .windows) _ = @import("apprt/windows/Session.zig");
+    if (@import("builtin").os.tag == .windows) _ = @import("apprt/windows/conpty.zig");
+    _ = @import("apprt/windows/input_bridge.zig");
     if (@import("builtin").os.tag == .windows) _ = @import("apprt/windows/App.zig");
     _ = @import("apprt/windows/Window.zig");
     _ = @import("apprt/windows/input.zig");

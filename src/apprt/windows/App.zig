@@ -4,7 +4,7 @@ const std = @import("std");
 const api = @import("win32api.zig");
 const CoreApp = @import("../../App.zig");
 const ipc = @import("../../apprt.zig").ipc;
-const Renderer = @import("renderer.zig").Renderer;
+const Renderer = @import("Session.zig");
 
 hwnd: api.c.HWND = null,
 previous_dpi: api.c.DPI_AWARENESS_CONTEXT = null,

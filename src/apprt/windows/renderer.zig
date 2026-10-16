@@ -32,7 +32,7 @@ pub const Renderer = struct {
         try self.invalidate();
     }
 
-    fn handleMessage(context: *anyopaque, msg: api.c.UINT, wp: api.c.WPARAM, lp: api.c.LPARAM) ?api.c.LRESULT {
+    pub fn handleMessage(context: *anyopaque, msg: api.c.UINT, wp: api.c.WPARAM, lp: api.c.LPARAM) ?api.c.LRESULT {
         const self: *Renderer = @ptrCast(@alignCast(context));
         switch (msg) {
             api.c.WM_PAINT => {

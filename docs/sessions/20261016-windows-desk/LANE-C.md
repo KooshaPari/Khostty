@@ -1,7 +1,9 @@
 # Windows native runtime receipt
 
-Status: S2/S1/S3 local gates passed; S5/S6 pending. This is an experimental
-Windows runtime, not a completed interactive terminal. S5/S6 remain unimplemented.
+Status: BLOCKED on input-under-Herdr verification. Local S2/S1/S3/S5/S6 gates
+passed. GUI launch proof was not required and was not attempted. This is an
+experimental Windows runtime with a working native ConPTY path, not a
+production-parity terminal.
 
 ## Scope and isolation
 
@@ -26,9 +28,9 @@ No other checkout was edited. No issue was created or closed, and nothing merged
 S3 deliberately renders plain text. SGR attributes, precise per-font cell metrics,
 selection/cursor rendering, and the core Surface bridge are still missing. Its
 own terminal grid is not a complete replacement for the core Surface lifecycle.
-Input dispatch, bracketed paste, ConPTY, interactive shell round-trip, and herdr
-verification are not implemented or claimed. No default GUI launch was attempted.
-The operator's earlier `error.Unimplemented` GUI report is historical evidence,
+S5/S6 now implement input dispatch, clipboard paste and ConPTY. An interactive
+GUI keyboard round-trip and input under Herdr remain unexecuted. No default GUI
+launch was attempted. The operator's earlier `error.Unimplemented` GUI report is historical evidence,
 not a newly verified error or an attribution to a current call site.
 
 The prescribed `C:\Users\koosh\Downloads\docs-3\products\khostty\DOSSIER.md`
@@ -155,3 +157,98 @@ The integrated native test also includes this glyph-ID check and negative contro
 as well as the real `cmd.exe` pipe-output/VT-parser/draw test. Neither command
 captures pixels or proves an interactive ConPTY session. No full test suite, GUI
 launch, hosted CI, deployment, or merge is claimed.
+
+## S5/S6 implementation and final verification
+
+The native session connects the existing Win32 input router to the shared
+Ghostty key/mouse/paste encoders and a ConPTY process. The window's timer drains
+queued output into the persistent VT parser and software renderer. Modifier
+state is refreshed from GetKeyState; AltGr text is normalized without Ctrl/Alt
+prefixes; C0 WM_CHAR input is restored to its printable base for the shared
+encoder. Clipboard paste uses Ctrl+Shift+V or Shift+Insert and the terminal's
+mode 2004; the complete sanitized frame is queued atomically.
+
+ConPTY uses separate reader/writer threads, bounded 16-MiB queues, and a private
+KILL_ON_JOB_CLOSE job. Queue overflow is fatal and reported, not silent loss.
+Child creation is suspended until assignment to the private job and I/O setup.
+Default selection searches pwsh, powershell, cmd, then wsl; PowerShell starts
+without profiles. User-configured shell profiles/WSL distributions are not
+validated. Resize is propagated to both the terminal grid and ResizePseudoConsole.
+On close, the private job terminates this session's shell tree, I/O threads join,
+and the owned handles/console are closed.
+
+Final commands (900-second outer caps), both exit 0:
+
+```powershell
+zig build test-windows-apprt -Dtarget=x86_64-windows-gnu -Dapp-runtime=windows -Dtest-filter=native -Demit-docs=false -j2 --cache-dir .zig-cache --global-cache-dir .zig-global-cache --summary all
+# 91/91 steps succeeded; 84/84 tests passed. This is the native-filter AppRT root,
+# not the full zig build test suite. Runtime reported 1s; compile reported 1m.
+zig build -Dtarget=x86_64-windows-gnu -Dapp-runtime=windows -Demit-docs=false -Demit-macos-app=false -j2 --cache-dir .zig-cache --global-cache-dir .zig-global-cache --summary failures
+# Exit 0; executable/DLL build including S5/S6.
+pwsh -NoProfile -File tools/lane-c/bounded.ps1 -Seconds 60 -Name cli-version-final -Command '& ./tools/lane-c/version.ps1'
+# Exit 0; .windows, .freetype_windows, IOCP. Build config says OpenGL, while the
+# Win32 window adapter explicitly uses software Direct2D/DirectWrite.
+```
+
+Input checks cover arrows, Ctrl/Alt, AltGr, dead-key completion, UTF-16 surrogate
+pairs, mouse reporting disabled/enabled, and bracketed paste disabled/enabled.
+ConPTY tests verify an output marker distinct from the echoed command, resize,
+a ready long-running child interrupted by Ctrl-C, shell survival, and process
+termination during cleanup. They do not prove physical keyboard/layout behavior
+or a GUI-keystroke recording. No recording was attempted.
+
+The independent C probe was compiled with:
+
+```powershell
+zig build-exe .zig-cache/conpty-ready-probe.c -target x86_64-windows-gnu -lc -j2 --cache-dir .zig-cache --global-cache-dir .zig-global-cache "-femit-bin=.zig-cache/conpty-ready-probe.exe"
+# Exit 0; 120-second cap.
+& ./.zig-cache/conpty-ready-probe.exe
+# Exit 0; 60-second cap.
+```
+
+```text
+create HRESULT=0x00000000
+resize HRESULT=0x00000000
+roundtrip=1 bytes=375 HRESULT=0x00000000
+ping-ready=1
+ctrl-c child-started=1 interrupted=1 shell-alive=1
+close HRESULT=0x00000000
+child-wait=0
+```
+
+Probe sources are preserved under `tools/lane-c/`; their includes are adjusted
+for that tracked location. The commands above used the original cache copies.
+
+## S5/S6 red attempts, retained honestly
+
+- Initial compile exit 1: Session.init's `hwnd` parameter shadowed its method.
+  Renamed the parameter.
+- Initial direct diagnostic exit 1: 83/84 tests passed; ConPTY's output-marker
+  assertion failed. Child output escaped into the parent's redirected stdout.
+  Fixed process creation with STARTF_USESTDHANDLES and null standard handles,
+  following [Microsoft Terminal's launch implementation](https://github.com/microsoft/terminal/blob/main/src/cascadia/TerminalConnection/ConptyConnection.cpp).
+  The obsolete integrated run was then canceled by verified owned PID 303220;
+  taskkill exited 0, child/wrapper exited 1. Not a pass or a timeout.
+- Next integrated run exit 1: 82/84 passed. Ctrl-A encoded empty instead of 0x01;
+  fixed C0 base-character normalization. The interruption assertion also failed.
+- Initial ConPTY C probe exited 12: round-trip/resize/cleanup succeeded, but the
+  interrupt was sent before the new process was ready. Resetting the probe's own
+  Ctrl-C ignore flag did not help (also exit 12); that hypothesis was rejected
+  and no such reset was added to production code. The final test waits for a
+  real `TTL=` reply before Ctrl-C, retaining the interruption assertion. The
+  ready probe and final integrated tests pass. Ping uses loopback only.
+
+## Blocked / unexecuted acceptance
+
+`herdr --help` and `herdr --skill` exited 0. The installed embedded Herdr skill
+requires `HERDR_ENV=1` and says: "If the check fails, say that you are not running
+inside Herdr and stop. Do not inspect or control the focused Herdr session from
+outside Herdr." The process environment check exited 1: this session is outside
+Herdr. No pane/session control, environment spoofing, other-agent interaction, or
+Herdr state change was attempted. The exact embedded instruction is archived in
+`.zig-cache/lane-c-receipts/herdr-skill.stdout`. Input-under-Herdr is UNEXECUTED.
+
+Manual GUI/key-device round-trip is UNEXECUTED. Clipboard copy/selection, IME,
+full SGR rendering, exact font cell metrics, complete core Surface integration,
+all shell variants/WSL, hosted CI and product QA coverage floors remain UNKNOWN
+or unimplemented. The PR must remain draft and no issue-completion claim is made.

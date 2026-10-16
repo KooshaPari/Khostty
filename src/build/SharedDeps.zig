@@ -716,6 +716,10 @@ pub fn add(
                     .file = b.path("src/apprt/windows/text_renderer.c"),
                     .flags = &.{"-std=c11"},
                 });
+                step.root_module.addCSourceFile(.{
+                    .file = b.path("src/apprt/windows/conpty.c"),
+                    .flags = &.{"-std=c11"},
+                });
             },
             // Upstream removed GTK-NG entirely (049014df1 "gtkNg -> gtk:
             // eliminate the last vestiges of the great rewrite", plus
