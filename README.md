@@ -33,7 +33,7 @@ Khostty does not rebuild that engine or maintain a separate terminal user experi
 | Value area | Upstream Ghostty | Khostty direction | Status |
 |---|---|---|---|
 | Embedding | `libghostty-vt` C ABI and examples | Prove the embedding path end to end with Khostty-specific tooling | **DONE (G1/G2)** — native builds + 84/84 conformance, 2026-09-16/17 |
-| Windows | Native macOS AppKit and Linux/BSD GTK runtimes; no Windows app runtime | Native Win32 and DirectWrite application in `src/apprt/windows/` | **DONE (build/exec) — G3**: exe + DLL built 2026-09-18, executed on real Windows 2026-09-19 (`+version`, DLL ABI 0 failures), installer install/uninstall-verified; GUI window still open |
+| Windows | Native macOS AppKit and Linux/BSD GTK runtimes; no Windows app runtime | Native Win32 and DirectWrite application in `src/apprt/windows/` | **PARTIAL — G3**: historical exe + DLL build/CLI/installer evidence from 2026-09-18/19; GUI lifecycle and rendering remain scaffold. See [platform gates](docs/PLATFORMS.md#5-windows). |
 | Agent/IPC | `ipc.zig` supports `new_window`, `new_tab`, and `toggle_quick_terminal` | JSON command and event protocol for panes, state, and automation | **DONE (G4)** — 458/458 protocol tests across 7 modules |
 | Polyglot FFI | C and Zig APIs, with examples for other languages | Safe Rust, Go, Python, and hardened WASM wrappers | **DONE (G5–G7)** — Rust 199/199, Go+Python 207, WASM 54/54; `khostty-vt` published on crates.io |
 | Phenotype integration | General-purpose terminal and embeddable VT engine | Reusable terminal surfaces in the Phenotype Fabric graph | Planned |
@@ -51,7 +51,7 @@ The authoritative task decomposition is [`docs/sessions/20260916-fork-assessment
 | **G0** | Fork Hygiene | 4 | 40m | **DONE** |
 | **G1** | Native Build Validation | 3 | 30m | **DONE** |
 | **G2** | Conformance Evidence | 12 | 120m | **DONE** (84/84) |
-| **G3** | Windows App Runtime | 15 | 150m | **DONE** (cross-build + real Windows runner: `+version` exit 0, DLL ABI 0 failures) |
+| **G3** | Windows App Runtime | 15 | 150m | **PARTIAL** (historical build/CLI checks; GUI, input, rendering and named-pipe gates open) |
 | **G4** | Agent/IPC Surface Expansion | 14 | 140m | **DONE** |
 | **G5** | Polyglot FFI — Rust | 10 | 100m | **DONE** (199/199) |
 | **G6** | Polyglot FFI: Go and Python | 10 | 100m | **DONE** (207 tests) |
@@ -68,7 +68,7 @@ The WBS records 115 tasks and approximately 19.2 hours of planned work. Status l
 |---|---|---|
 | **macOS** | **DONE** | Upstream Swift/AppKit application runtime; G1 build validation; GUI launch verified 2026-09-20 (interactive keystroke round-trip) |
 | **Linux/BSD** | **DONE** | Upstream GTK application runtime; G1 build validation; `.deb` install + headless GUI launch verified 2026-09-19 |
-| **Windows** | **DONE** | Khostty's `src/apprt/windows/` runtime: `+version` executed on a real Windows host 2026-09-19, installer built + install/uninstall-verified |
+| **Windows** | **PARTIAL** | Historical CLI and installer verification (2026-09-19); GUI window not verified. [Desk build gate](packaging/windows/README.md). |
 | **WASM** | **DONE** | Hardened `ghostty-vt.wasm` cross-compile; typed JS/TS package staged for npm under G7 |
 
 G1 separately verified a 795KB `ghostty-vt.wasm` cross-compile artifact with 40+ function signatures. That evidence is not a claim that the Khostty-hardened WASM product, typed JavaScript API, or package distribution is complete.

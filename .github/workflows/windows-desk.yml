@@ -1,0 +1,66 @@
+name: Windows desk installer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/windows-desk.yml'
+      - 'packaging/**'
+      - 'src/**'
+      - 'build.zig'
+      - 'build.zig.zon'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-desk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  installer:
+    if: github.repository == 'KooshaPari/Khostty' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    # No hosted fallback. The fork API returned zero runners on 2026-10-16.
+    # These are standard labels, not a discovered desk-specific label.
+    # Register the desk with this repository before expecting this job to run.
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 60
+    steps:
+      - name: Require the desk host
+        shell: pwsh
+        run: |
+          if ($env:COMPUTERNAME -ne 'KOOSHAPARI-DESK') { throw "error.UnexpectedBuildHost: $env:COMPUTERNAME" }
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install pinned official Zig in user space
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '0.16.0'
+          $expected = '68659eb5f1e4eb1437a722f1dd889c5a322c9954607f5edcf337bc3684a75a7e'
+          if ((Get-Content build.zig.zon -Raw) -notmatch ('minimum_zig_version = "' + [regex]::Escape($version) + '"')) { throw 'error.ZigVersionPinMismatch' }
+          $root = Join-Path $env:RUNNER_TEMP "zig-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+          $archive = Join-Path $root 'zig.zip'
+          Invoke-WebRequest "https://ziglang.org/download/$version/zig-x86_64-windows-$version.zip" -OutFile $archive
+          if ((Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'error.ZigChecksumMismatch' }
+          Expand-Archive $archive -DestinationPath $root
+          $zigDir = Join-Path $root "zig-x86_64-windows-$version"
+          $zigDir >> $env:GITHUB_PATH
+          & "$zigDir/zig.exe" version
+          if ($LASTEXITCODE -ne 0) { throw 'error.ZigInstallFailed' }
+      - name: Build, test and package on the desk
+        shell: pwsh
+        run: ./packaging/windows/build.ps1 -Jobs 2
+      - name: Preserve build receipt and installer
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-desk-installer
+          path: |
+            dist-release/logs/windows-*.log
+            dist-release/windows/*.txt
+            dist-release/stage/windows/*/output/*.exe
+          if-no-files-found: error
