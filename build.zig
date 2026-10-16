@@ -437,11 +437,7 @@ pub fn build(b: *std.Build) !void {
         test_valgrind_step.dependOn(&valgrind_run.step);
     }
 
-    // Windows app runtime tests. The modules under src/apprt/windows/ decode
-    // Win32 message parameters and never call Win32, so their tests run on the
-    // host even though the runtime they serve is Windows-only. Their root file
-    // has to sit in src/ for their `../../input/*` imports to stay inside the
-    // module; see src/main_windows_apprt.zig.
+    // Message decoders run on any host; native lifecycle tests require Windows.
     {
         const win_apprt_test = b.addTest(.{
             .name = "windows-apprt-test",
@@ -457,6 +453,8 @@ pub fn build(b: *std.Build) !void {
             .use_llvm = true,
         });
         _ = try deps.add(win_apprt_test);
+        if (config.target.result.os.tag == .windows)
+            win_apprt_test.root_module.linkSystemLibrary("user32", .{});
 
         // The apprt modules reach `src/lib/enum.zig`, whose tests import the
         // translated `ghostty.h` module. The main test root gets this via

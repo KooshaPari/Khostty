@@ -6,13 +6,10 @@
 //! and redrawInspector(*Surface) void with the same signatures as GTK.
 //! Embedded uses host callbacks and different init options, not a native loop.
 //!
-//! Stub status for G3.4-G3.15:
-//! - init, registerWindowClass, run, performAction and performIpc fail with
-//!   error.Unimplemented. No operation reports successful native work.
-//! - terminate, wakeup and redrawInspector are no-ops, with no native resources.
-//! - Window.init and Surface.init fail with error.Unimplemented.
-//! - Window.handle and Surface.nativeWindow are null until explicitly attached.
-//! - resourcesDir returns an empty ResourcesDir (both paths absent).
+//! Native lifecycle: App registers a process-scoped window class, creates an
+//! HWND, shows it, and pumps messages until WM_DESTROY posts WM_QUIT.
+//! Window and Surface construction, core actions and IPC remain unavailable.
+//! The Win32 host tests exercise an invisible native window without capture.
 //!
 //! Surface's HWND association is maintained separately in surface.zig. The
 //! future core bridge must supply GTK's core() *CoreSurface, rtApp() *App,
@@ -35,12 +32,26 @@ comptime {
     }
 }
 
-test "Windows App lifecycle remains unavailable" {
+test "native App initialization and termination release the HWND" {
+    const api = @import("win32api.zig");
+    // init currently only needs the core identity, not initialized core state.
+    var core: @import("../../App.zig") = undefined;
+    core.alloc = std.testing.allocator;
     var app: App = .{};
-    try std.testing.expectError(error.Unimplemented, app.registerWindowClass());
-    try std.testing.expectError(error.Unimplemented, app.run());
+    try std.testing.expectError(error.WindowNotInitialized, app.run());
+    try app.init(&core, .{});
+    defer app.terminate();
+    try app.registerWindowClass();
+    const hwnd = app.hwnd;
+    try std.testing.expect(api.c.IsWindow(hwnd) != 0);
     app.wakeup();
     app.terminate();
+    try std.testing.expectEqual(null, app.hwnd);
+    try std.testing.expectEqual(null, app.previous_dpi);
+    try std.testing.expect(api.c.IsWindow(hwnd) == 0);
+    // DestroyWindow posts quit. Drain it so it cannot end another test's loop.
+    var msg: api.c.MSG = undefined;
+    while (api.c.PeekMessageW(&msg, null, 0, 0, api.c.PM_REMOVE) != 0) {}
 }
 
 test "Windows Surface construction remains unavailable" {

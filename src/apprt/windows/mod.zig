@@ -1,4 +1,4 @@
-//! Experimental Windows application runtime. No Win32 operations are implemented.
+//! Experimental Windows runtime with native window lifecycle; terminal rendering is pending.
 pub const App = @import("App.zig");
 pub const Window = @import("Window.zig");
 pub const Surface = @import("surface.zig");

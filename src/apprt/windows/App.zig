@@ -1,27 +1,74 @@
-//! Windows application lifecycle scaffold. Native initialization is unavailable.
+//! Native Windows application lifecycle. Terminal Surface integration is pending.
 const App = @This();
+const std = @import("std");
+const api = @import("win32api.zig");
 const CoreApp = @import("../../App.zig");
 const ipc = @import("../../apprt.zig").ipc;
+const Renderer = @import("renderer.zig").Renderer;
 
-pub fn init(_: *App, _: *CoreApp, _: struct {}) !void {
-    return error.Unimplemented;
+hwnd: api.c.HWND = null,
+previous_dpi: api.c.DPI_AWARENESS_CONTEXT = null,
+renderer: ?Renderer = null,
+const wake_message = api.c.WM_APP + 1;
+
+pub fn init(self: *App, core: *CoreApp, _: struct {}) !void {
+    self.* = .{};
+    self.previous_dpi = try api.enablePerMonitorDpi();
+    errdefer {
+        _ = api.c.SetThreadDpiAwarenessContext(self.previous_dpi);
+        self.previous_dpi = null;
+    }
+    try self.registerWindowClass();
+    self.hwnd = try api.createWindow();
+    errdefer {
+        _ = api.c.DestroyWindow(self.hwnd);
+        self.hwnd = null;
+    }
+    self.renderer = try Renderer.init(core.alloc, @ptrCast(self.hwnd.?));
+    errdefer {
+        self.renderer.?.deinit();
+        self.renderer = null;
+    }
+    try self.renderer.?.attach();
 }
 
-/// Register the native window class in a later Windows runtime task.
 pub fn registerWindowClass(_: *App) !void {
-    return error.Unimplemented;
+    try api.registerClass(api.windowProc);
 }
 
-pub fn run(_: *App) !void {
-    return error.Unimplemented;
+pub fn run(self: *App) !void {
+    const hwnd = self.hwnd orelse return error.WindowNotInitialized;
+    _ = api.c.ShowWindow(hwnd, api.c.SW_SHOW);
+    // UpdateWindow returns zero when no update region exists, not just on error.
+    _ = api.c.UpdateWindow(hwnd);
+    var msg: api.c.MSG = undefined;
+    while (try api.nextMessage(&msg)) {
+        _ = api.c.TranslateMessage(&msg);
+        _ = api.c.DispatchMessageW(&msg);
+    }
+    if (api.c.IsWindow(hwnd) == 0) self.hwnd = null;
 }
 
-/// No native resources can be acquired by this scaffold.
-pub fn terminate(_: *App) void {}
+pub fn terminate(self: *App) void {
+    if (self.renderer) |*renderer| {
+        renderer.deinit();
+        self.renderer = null;
+    }
+    if (self.hwnd) |hwnd| {
+        if (api.c.IsWindow(hwnd) != 0 and api.c.DestroyWindow(hwnd) == 0)
+            std.log.err("DestroyWindow failed: {d}", .{api.c.GetLastError()});
+    }
+    self.hwnd = null;
+    if (self.previous_dpi) |previous| {
+        _ = api.c.SetThreadDpiAwarenessContext(previous);
+        self.previous_dpi = null;
+    }
+}
 
-/// Event-loop delivery is unavailable until the native message pump exists.
-pub fn wakeup(_: *App) void {}
-
+pub fn wakeup(self: *App) void {
+    if (self.hwnd) |hwnd| api.post(hwnd, wake_message) catch |err|
+        std.log.err("Windows wakeup failed: {s}", .{@errorName(err)});
+}
 pub fn performAction(
     _: *App,
     _: @import("../../apprt.zig").Target,

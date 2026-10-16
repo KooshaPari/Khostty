@@ -47,3 +47,6 @@ vgcore.*
 # only the archives are ignored. Address and hash them from the script output
 # or `docs/INSTALL.md`; they are reproducible, not source.
 /dist/*.deb
+
+# Worktree-local Zig global cache for Windows lane verification
+/.zig-global-cache/

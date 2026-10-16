@@ -225,7 +225,13 @@ pub fn add(
     // (note: errno is C stdlib but we just include it here because that's
     // where it's generally included otherwise)
     try translate_c.addImportToModule(b, "posix_c", step.root_module, .{
-        .source = .{ .includes = .{ .files = &.{
+        // Windows has the C runtime headers, but no Unix passwd database or
+        // unistd API. Their users already select platform-specific branches.
+        .source = .{ .includes = .{ .files = if (target.result.os.tag == .windows) &.{
+            .{ .path = "errno.h" },
+            .{ .path = "signal.h" },
+            .{ .path = "sys/types.h" },
+        } else &.{
             .{ .path = "errno.h" },
             .{ .path = "pwd.h" },
             .{ .path = "signal.h" },
@@ -700,7 +706,17 @@ pub fn add(
         switch (self.config.app_runtime) {
             // `.windows` is fork-only (src/apprt/runtime.zig, WBS G3.1-G3.15);
             // upstream's enum has no such member, so the arm is kept here.
-            .none, .windows => {},
+            .none => {},
+            .windows => {
+                step.root_module.linkSystemLibrary("user32", .{});
+                step.root_module.linkSystemLibrary("d2d1", .{});
+                step.root_module.linkSystemLibrary("dwrite", .{});
+                step.root_module.linkSystemLibrary("uuid", .{});
+                step.root_module.addCSourceFile(.{
+                    .file = b.path("src/apprt/windows/text_renderer.c"),
+                    .flags = &.{"-std=c11"},
+                });
+            },
             // Upstream removed GTK-NG entirely (049014df1 "gtkNg -> gtk:
             // eliminate the last vestiges of the great rewrite", plus
             // 97fb36402 and 9b7a4d540 which finished the removal). `addGtkNg`
