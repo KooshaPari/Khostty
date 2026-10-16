@@ -1,238 +1,219 @@
-//! Windows named-pipe IPC stub.
-//!
-//! This is the skeleton for libghostty's IPC transport on Windows, the
-//! counterpart of the Unix-domain socket pair used on GTK and macOS. The pipe
-//! operations themselves (CreateNamedPipe, ConnectNamedPipe, ReadFile,
-//! WriteFile) are deferred to G3.4+; every operation returns
-//! `error.Unimplemented`, so nothing here is reachable today.
-//!
-//! Three decisions are recorded here rather than left to the implementation,
-//! because each was wrong or absent in an earlier revision:
-//!
-//! 1. The path namespace. Pipes live at
-//!    `\.\pipe\khostty-{server_pid}` — see `PIPE_PREFIX` and `pipeName`.
-//! 2. The DACL. Pipes are owner-only, not process-default — see
-//!    `PIPE_DACL_SDDL`.
-//! 3. Handle inheritance. Pipe handles must not leak into child processes —
-//!    see `PIPE_HANDLE_INHERITABLE`.
-//!
-//! `docs/SECURITY.md#4-windows-transport-weakness-scaffold` tracks why 2 and 3
-//! matter; this file is where they become concrete.
-
+//! Local, synchronous Windows named-pipe transport. Not an application dispatcher.
+//! Wire header: little-endian action (u16), payload length (u32), then payload.
 const std = @import("std");
+const w = std.os.windows;
 const Allocator = std.mem.Allocator;
-
-const stdwin = std.os.windows;
-
-/// A single backslash, spelled once so no literal has to count them.
-const backslash: u8 = '\\';
-
-/// Runtime prefix of every khostty named pipe: `\.\pipe\khostty-`.
-///
-/// The two leading backslashes are load-bearing. Win32 named pipes live in the
-/// `\.\pipe\` device namespace. A path with a *single* leading backslash is an
-/// absolute path on the current drive, which is a different namespace, not where
-/// `CreateNamedPipeW` puts a pipe, and not where a client would find one.
-///
-/// The bytes are spelled out one at a time on purpose. Zig has no raw strings,
-/// so a literal has to double every backslash, and the previous revision of this
-/// constant lost exactly that doubling: it read `"\\.\\pipe\\khostty-"`, whose
-/// runtime value is `\.\pipe\khostty-`, one backslash short. Writing the bytes
-/// takes escape arithmetic off the review surface, and the tests below assert
-/// byte positions rather than comparing two literals, so a mistake cannot agree
-/// with itself.
-pub const PIPE_PREFIX: []const u8 = &.{
-    backslash, backslash, '.', backslash, 'p', 'i', 'p', 'e', backslash,
-    'k',       'h',       'o', 's',       't', 't', 'y', '-',
+const api = @import("ipc_win32.zig");
+pub const PIPE_PREFIX = "\\\\.\\pipe\\khostty-";
+pub const max_frame_bytes = 1024 * 1024;
+pub const MessageFrame = struct { action: u16, length: u32 };
+pub const Frame = struct {
+    action: u16,
+    payload: []u8,
+    pub fn deinit(self: Frame, alloc: Allocator) void {
+        alloc.free(self.payload);
+    }
 };
 
-/// Decimal digits a `u32` process id can need.
-const max_pid_digits = 10;
-
-/// Full runtime path of the pipe served by `server_pid`:
-/// `\.\pipe\khostty-{server_pid}`.
-///
-/// The caller owns the result. It is null-terminated because Win32 object APIs
-/// consume NUL-terminated strings; converting to the UTF-16 form that
-/// `CreateNamedPipeW` wants is the implementation's job.
-pub fn pipeName(alloc: Allocator, server_pid: u32) Allocator.Error![:0]u8 {
-    var digits_buf: [max_pid_digits]u8 = undefined;
-    const digits = std.fmt.bufPrint(&digits_buf, "{d}", .{server_pid}) catch unreachable;
-
-    const buf = try alloc.allocSentinel(u8, PIPE_PREFIX.len + digits.len, 0);
-    @memcpy(buf[0..PIPE_PREFIX.len], PIPE_PREFIX);
-    @memcpy(buf[PIPE_PREFIX.len..][0..digits.len], digits);
-    return buf;
+pub fn pipeName(alloc: Allocator, pid: u32) ![:0]u8 {
+    return std.fmt.allocPrintSentinel(alloc, "{s}{d}", .{ PIPE_PREFIX, pid }, 0);
 }
 
-/// The DACL every khostty pipe must carry once a pipe is actually created.
-///
-/// Security Descriptor Definition Language: `D:P(A;;GA;;;OW)`.
-///
-/// | Part | Meaning |
-/// |---|---|
-/// | `D:` | This is the DACL. |
-/// | `P` | Protected: it inherits no ACE from its parent container. |
-/// | `(A;;GA;;;OW)` | One ACE: allow `GENERIC_ALL` to `OW`, the owner-rights SID. |
-///
-/// `OW` is `S-1-3-4`, which the system resolves to the object's owner. The ACE
-/// therefore grants the user who created the pipe and no one else — the Windows
-/// counterpart of the `0o600` socket the Unix transports use. A pipe left on the
-/// process default DACL instead admits every process in the session, which is the
-/// Windows equivalent of a world-writable socket.
-pub const PIPE_DACL_SDDL = "D:P(A;;GA;;;OW)";
-
-/// Pipe handles must not be inheritable. An inheritable handle would pass the
-/// transport into every child process the terminal spawns, a wider trust
-/// boundary than `PIPE_DACL_SDDL` draws.
-pub const PIPE_HANDLE_INHERITABLE = false;
-
-/// Not applied yet, and deliberately so: converting `PIPE_DACL_SDDL` into a
-/// `SECURITY_ATTRIBUTES` needs
-/// `ConvertStringSecurityDescriptorToSecurityDescriptorW` and
-/// `LocalFree`, neither of which `std.os.windows` declares, and there is no pipe
-/// to attach a descriptor to while every operation returns
-/// `error.Unimplemented`. The two constants above are the decision the earlier
-/// revision lacked; wiring them belongs to the pipe implementation.
-///
-/// The v1 IPC auth design in `src/apprt/ipc/protocol.md` is Unix-socket-shaped
-/// and does not describe this transport. It needs to, before G3 and G4 converge.
-/// Named pipe server stub.
 pub const Server = struct {
-    handle: stdwin.HANDLE = stdwin.INVALID_HANDLE_VALUE,
-    /// Owned by the caller. Build it with `pipeName`.
-    pipe_name: []const u8,
+    handle: w.HANDLE,
+    alloc: Allocator,
+    pipe_name: [:0]u8,
+    connected: bool = false,
 
-    /// Failure code for unimplemented functionality.
-    pub const Error = error{Unimplemented};
-
-    /// Initialize the pipe server. Stubbed.
-    ///
-    /// The real implementation creates `pipeName(server_pid)` with
-    /// `PIPE_DACL_SDDL` as its DACL and `PIPE_HANDLE_INHERITABLE` as its
-    /// inheritance flag.
-    pub fn init(alloc: Allocator, server_pid: u32) Error!Server {
-        _ = alloc;
-        _ = server_pid;
-        return Error.Unimplemented;
+    pub fn init(alloc: Allocator, pid: u32) !Server {
+        const name = try pipeName(alloc, pid);
+        errdefer alloc.free(name);
+        const wide = try std.unicode.utf8ToUtf16LeAllocZ(alloc, name);
+        defer alloc.free(wide);
+        var security = try api.Security.init(alloc);
+        defer security.deinit();
+        // FIRST_PIPE_INSTANCE refuses a pre-existing name, including a squatter.
+        const handle = api.CreateNamedPipeW(wide, api.PIPE_ACCESS_DUPLEX | api.FILE_FLAG_FIRST_PIPE_INSTANCE, api.PIPE_REJECT_REMOTE_CLIENTS, 1, 65536, 65536, 0, &security.attributes);
+        if (handle == w.INVALID_HANDLE_VALUE) return error.PipeCreateFailed;
+        return .{ .handle = handle, .alloc = alloc, .pipe_name = name };
     }
 
-    /// Free any held resources (none today).
     pub fn deinit(self: *Server) void {
-        _ = self;
+        _ = api.CloseHandle(self.handle);
+        self.alloc.free(self.pipe_name);
+        self.* = undefined;
     }
 
-    /// Accept an incoming client connection. Stubbed.
-    pub fn acceptConnection(self: *Server) Error!stdwin.HANDLE {
-        _ = self;
-        return Error.Unimplemented;
+    /// Borrowed handle; owned and closed by Server. One client at a time.
+    pub fn acceptConnection(self: *Server) !w.HANDLE {
+        if (self.connected) return error.AlreadyConnected;
+        if (api.ConnectNamedPipe(self.handle, null) == 0 and api.GetLastError() != 535)
+            return error.PipeConnectFailed;
+        self.connected = true;
+        return self.handle;
+    }
+
+    /// Disconnect without flushing: an unresponsive client cannot hold shutdown.
+    pub fn disconnect(self: *Server) !void {
+        if (!self.connected) return error.NotConnected;
+        if (api.DisconnectNamedPipe(self.handle) == 0) return error.PipeDisconnectFailed;
+        self.connected = false;
+    }
+    /// Wait for the peer to consume replies before an orderly disconnect.
+    /// May block; shutdown should use deinit instead.
+    pub fn flush(self: *Server) !void {
+        if (!self.connected) return error.NotConnected;
+        if (api.FlushFileBuffers(self.handle) == 0) return error.PipeFlushFailed;
+    }
+    pub fn send(self: *Server, action: u16, payload: []const u8) !void {
+        if (!self.connected) return error.NotConnected;
+        try sendFrame(self.handle, action, payload);
+    }
+    pub fn receive(self: *Server) !Frame {
+        if (!self.connected) return error.NotConnected;
+        return receiveFrame(self.alloc, self.handle);
     }
 };
 
-/// Named pipe client stub.
 pub const Client = struct {
-    handle: stdwin.HANDLE = stdwin.INVALID_HANDLE_VALUE,
-    /// Owned by the caller. Build it with `pipeName`.
-    pipe_name: []const u8,
-
-    pub const Error = error{Unimplemented};
-
-    /// Connect to the pipe served by `server_pid`. Stubbed.
-    pub fn connect(alloc: Allocator, server_pid: u32) Error!Client {
-        _ = alloc;
-        _ = server_pid;
-        return Error.Unimplemented;
+    handle: w.HANDLE,
+    alloc: Allocator,
+    pipe_name: [:0]u8,
+    pub fn connect(alloc: Allocator, pid: u32) !Client {
+        const name = try pipeName(alloc, pid);
+        errdefer alloc.free(name);
+        const wide = try std.unicode.utf8ToUtf16LeAllocZ(alloc, name);
+        defer alloc.free(wide);
+        // OPEN_EXISTING; no inheritance, no fallback to another transport.
+        const handle = api.CreateFileW(wide, 0xC0000000, 0, null, 3, 0, null);
+        if (handle == w.INVALID_HANDLE_VALUE) return error.PipeConnectFailed;
+        return .{ .handle = handle, .alloc = alloc, .pipe_name = name };
     }
-
-    /// Release the connection and handle.
     pub fn deinit(self: *Client) void {
-        _ = self;
+        _ = api.CloseHandle(self.handle);
+        self.alloc.free(self.pipe_name);
+        self.* = undefined;
     }
-
-    /// Send an IPC frame (action + payload). Stubbed.
-    pub fn send(self: *Client, action: u16, payload: []const u8) Error!void {
-        _ = self;
-        _ = action;
-        _ = payload;
-        return Error.Unimplemented;
+    pub fn send(self: *Client, action: u16, payload: []const u8) !void {
+        try sendFrame(self.handle, action, payload);
     }
-
-    /// Receive an IPC frame from the server. Stubbed.
-    pub fn receive(self: *Client) Error![]const u8 {
-        _ = self;
-        return Error.Unimplemented;
+    /// Caller owns the returned payload and frees it with Client.alloc.
+    pub fn receive(self: *Client) !Frame {
+        return receiveFrame(self.alloc, self.handle);
     }
 };
 
-/// IPC message frame layout (G4 will define version and exact payload).
-pub const MessageFrame = extern struct {
-    action: u16, // Ghostty IPC action tag (see apprt/ipc.zig).
-    length: u32, // Size of the payload in bytes.
-    // Payload follows immediately after this header (packed).
-};
-
-test "windows ipc stubs" {
-    const t = std.testing;
-    // Server init returns Unimplemented.
-    try t.expectError(error.Unimplemented, Server.init(t.allocator, 1234));
-    // Client init returns Unimplemented.
-    try t.expectError(error.Unimplemented, Client.connect(t.allocator, 1234));
+pub fn encodeHeader(action: u16, length: u32) [6]u8 {
+    var bytes: [6]u8 = undefined;
+    std.mem.writeInt(u16, bytes[0..2], action, .little);
+    std.mem.writeInt(u32, bytes[2..6], length, .little);
+    return bytes;
 }
-
-test "the pipe prefix names the Win32 device namespace" {
-    const t = std.testing;
-
-    // `\.\pipe\` is two backslashes, a dot and a backslash. One leading
-    // backslash is a drive-relative path and not a pipe at all.
-    try t.expectEqual(@as(usize, 17), PIPE_PREFIX.len);
-    try t.expectEqual(backslash, PIPE_PREFIX[0]);
-    try t.expectEqual(backslash, PIPE_PREFIX[1]);
-    try t.expectEqual(@as(u8, '.'), PIPE_PREFIX[2]);
-    try t.expectEqual(backslash, PIPE_PREFIX[3]);
-    try t.expectEqualStrings("pipe", PIPE_PREFIX[4..8]);
-    try t.expectEqual(backslash, PIPE_PREFIX[8]);
-    try t.expectEqualStrings("khostty-", PIPE_PREFIX[9..]);
+fn sendFrame(handle: w.HANDLE, action: u16, payload: []const u8) !void {
+    if (payload.len > max_frame_bytes) return error.FrameTooLarge;
+    const header = encodeHeader(action, @intCast(payload.len));
+    try writeAll(handle, &header);
+    try writeAll(handle, payload);
 }
-
-test "pipeName builds the device-namespace path for a pid" {
-    const t = std.testing;
-
-    const name = try pipeName(t.allocator, 1234);
-    defer t.allocator.free(name);
-
-    // The form one writes in docs: `\.\pipe\khostty-1234`. Two leading
-    // backslashes. The byte assertions below are the load-bearing ones; this
-    // line exists to fail loudly if the prefix regresses.
-    try t.expectEqualStrings("\\\\.\\pipe\\khostty-1234", name);
-    try t.expectEqual(backslash, name[0]);
-    try t.expectEqual(backslash, name[1]);
-    try t.expectEqual(@as(u8, 0), name.ptr[name.len]);
-
-    const max = try pipeName(t.allocator, std.math.maxInt(u32));
-    defer t.allocator.free(max);
-    try t.expectEqualStrings("\\\\.\\pipe\\khostty-4294967295", max);
+fn receiveFrame(alloc: Allocator, handle: w.HANDLE) !Frame {
+    var header: [6]u8 = undefined;
+    try readAll(handle, &header);
+    const length = std.mem.readInt(u32, header[2..6], .little);
+    if (length > max_frame_bytes) return error.FrameTooLarge;
+    const payload = try alloc.alloc(u8, length);
+    errdefer alloc.free(payload);
+    try readAll(handle, payload);
+    return .{ .action = std.mem.readInt(u16, header[0..2], .little), .payload = payload };
 }
-
-test "the pipe ACL is owner-only and not inheritable" {
-    const t = std.testing;
-
-    try t.expectEqualStrings("D:P(A;;GA;;;OW)", PIPE_DACL_SDDL);
-
-    // Exactly one ACE, and it is the owner-rights SID.
-    try t.expectEqual(@as(usize, 1), std.mem.count(u8, PIPE_DACL_SDDL, "("));
-    try t.expect(std.mem.endsWith(u8, PIPE_DACL_SDDL, ";;;OW)"));
-    // Protected, so a parent container cannot widen it.
-    try t.expect(std.mem.startsWith(u8, PIPE_DACL_SDDL, "D:P"));
-
-    // No well-known wider trustee, by SID abbreviation.
-    for ([_][]const u8{ "WD", "BU", "AU", "AN", "BG", "SY", "BA", "CO" }) |sid| {
-        var needle: [6]u8 = undefined;
-        const pattern = try std.fmt.bufPrint(&needle, ";;;{s})", .{sid});
-        try t.expectEqual(
-            @as(?usize, null),
-            std.mem.indexOf(u8, PIPE_DACL_SDDL, pattern),
-        );
+fn readAll(handle: w.HANDLE, bytes: []u8) !void {
+    var offset: usize = 0;
+    while (offset < bytes.len) {
+        var count: u32 = 0;
+        if (api.ReadFile(handle, bytes[offset..].ptr, @intCast(bytes.len - offset), &count, null) == 0)
+            return error.PipeReadFailed;
+        if (count == 0) return error.EndOfStream;
+        offset += count;
     }
+}
+fn writeAll(handle: w.HANDLE, bytes: []const u8) !void {
+    var offset: usize = 0;
+    while (offset < bytes.len) {
+        var count: u32 = 0;
+        if (api.WriteFile(handle, bytes[offset..].ptr, @intCast(bytes.len - offset), &count, null) == 0)
+            return error.PipeWriteFailed;
+        if (count == 0) return error.PipeWriteFailed;
+        offset += count;
+    }
+}
 
-    try t.expect(!PIPE_HANDLE_INHERITABLE);
+test "pipe namespace and six byte little endian header" {
+    const name = try pipeName(std.testing.allocator, 1234);
+    defer std.testing.allocator.free(name);
+    try std.testing.expectEqualStrings("\\\\.\\pipe\\khostty-1234", name);
+    try std.testing.expectEqualSlices(u8, &.{ 92, 92, 46, 92 }, name[0..4]);
+    try std.testing.expectEqualSlices(u8, &.{ 0x34, 0x12, 4, 3, 2, 1 }, &encodeHeader(0x1234, 0x01020304));
+}
+
+test "first instance rejects collision and closes release the name" {
+    if (@import("builtin").os.tag != .windows) return error.SkipZigTest;
+    var server = try Server.init(std.testing.allocator, api.GetCurrentProcessId());
+    try std.testing.expectError(error.PipeCreateFailed, Server.init(std.testing.allocator, api.GetCurrentProcessId()));
+    server.deinit();
+    var next = try Server.init(std.testing.allocator, api.GetCurrentProcessId());
+    defer next.deinit();
+}
+
+test "restricted token cannot connect to the user-only pipe" {
+    if (@import("builtin").os.tag != .windows) return error.SkipZigTest;
+    var server = try Server.init(std.testing.allocator, api.GetCurrentProcessId());
+    defer server.deinit();
+    const wide = try std.unicode.utf8ToUtf16LeAllocZ(std.testing.allocator, server.pipe_name);
+    defer std.testing.allocator.free(wide);
+    try api.expectRestrictedClientDenied(wide);
+}
+
+test "oversize send and disconnected server fail explicitly" {
+    if (@import("builtin").os.tag != .windows) return error.SkipZigTest;
+    var server = try Server.init(std.testing.allocator, api.GetCurrentProcessId());
+    defer server.deinit();
+    try std.testing.expectError(error.NotConnected, server.send(0, ""));
+    try std.testing.expectError(error.NotConnected, server.receive());
+    const bytes = try std.testing.allocator.alloc(u8, max_frame_bytes + 1);
+    defer std.testing.allocator.free(bytes);
+    try std.testing.expectError(error.FrameTooLarge, sendFrame(w.INVALID_HANDLE_VALUE, 0, bytes));
+}
+
+test "oversize and truncated incoming frames fail without payload leaks" {
+    if (@import("builtin").os.tag != .windows) return error.SkipZigTest;
+    const alloc = std.testing.allocator;
+    {
+        var server = try Server.init(alloc, api.GetCurrentProcessId());
+        defer server.deinit();
+        var client = try Client.connect(alloc, api.GetCurrentProcessId());
+        defer client.deinit();
+        _ = try server.acceptConnection();
+        const header = encodeHeader(1, max_frame_bytes + 1);
+        try writeAll(client.handle, &header);
+        try std.testing.expectError(error.FrameTooLarge, server.receive());
+    }
+    {
+        var server = try Server.init(alloc, api.GetCurrentProcessId());
+        defer server.deinit();
+        var client = try Client.connect(alloc, api.GetCurrentProcessId());
+        _ = server.acceptConnection() catch |err| {
+            client.deinit();
+            return err;
+        };
+        const header = encodeHeader(1, 4);
+        writeAll(client.handle, &header) catch |err| {
+            client.deinit();
+            return err;
+        };
+        writeAll(client.handle, "x") catch |err| {
+            client.deinit();
+            return err;
+        };
+        client.deinit();
+        try std.testing.expectError(error.PipeReadFailed, server.receive());
+    }
 }

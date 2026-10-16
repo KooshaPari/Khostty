@@ -138,50 +138,34 @@ implementation bugs.
 
 ---
 
-## 4. Windows transport weakness (scaffold)
+<a id="4-windows-transport-weakness-scaffold"></a>
 
-`src/apprt/windows/ipc.zig` sketches a named pipe for the Windows equivalent of a
-Unix domain socket. Observed 2026-09-17 03:58 PT (rewritten by commit `1e6687dd2`).
+## 4. Windows transport security
 
-**The pipe path is currently malformed.** The constant is:
+The S4 transport (`src/apprt/windows/ipc.zig`) creates a local-only named pipe
+at `\\.\pipe\khostty-{pid}`. Creation fails if another instance already owns
+the name (`FILE_FLAG_FIRST_PIPE_INSTANCE`); it never attaches to an existing
+server. Remote clients are rejected (`PIPE_REJECT_REMOTE_CLIENTS`).
 
-```zig
-pub const PIPE_PREFIX: []const u8 = "\\.\\pipe\\khostty-";
-```
+`ipc_win32.zig` obtains TokenUser from the process token and constructs a
+protected DACL with exactly one allow ACE granting that SID generic-all access.
+It deliberately avoids the owner-rights SID: elevated processes can assign an
+Administrators owner even when their token user is an individual account.
+Security construction errors abort creation; no default/null-DACL fallback is
+allowed. Handles are non-inheritable, and all temporary token/security allocations
+are released. Same-user processes remain trusted; this is not process isolation.
 
-Read that as Zig source. Each `\\` is one runtime backslash, so the runtime value
-is `\.\pipe\khostty-` — **one leading backslash**, not two. Win32 named pipes live
-in the device namespace and require `\\.\pipe\` at runtime (two leading
-backslashes). A path with a single leading backslash is an absolute path on the
-current drive, which is not the named-pipe namespace at all.
+The six-byte little-endian S4 header bounds payloads at 1 MiB before allocation.
+Short I/O is completed in loops; truncated frames and API failures return errors.
+Callers must disconnect after malformed/truncated frames. Blocking transport I/O
+must run off the UI thread. This transport does not dispatch application commands
+or replace G4 token authorization; the runtime integration remains pending.
 
-Two consequences:
-
-1. A server would not be reachable at the documented path, so the transport would
-   silently fail rather than error clearly.
-2. If a later implementation resolves it to a filesystem-relative location instead,
-   the isolation property that `\\.\pipe\` was chosen for is lost.
-
-The in-file comment and the unit test both encode the same mistake — the test asserts
-`"\.\pipe\khostty-"`, which passes while the value stays wrong. A test that agrees
-with a bug is not a control.
-
-**ACL undecided.** The earlier revision of this file declared
-`SECURITY_ATTRIBUTES { .lpSecurityDescriptor = null, .bInheritHandle = TRUE }` —
-default DACL, inheritable handle, i.e. the Windows equivalent of a world-writable
-socket. Commit `1e6687dd2` removed that declaration, so the file no longer asserts
-insecure attributes, but it also no longer decides anything. **No ACL design exists
-for the Windows transport**, and the v1 IPC auth design in
-[`src/apprt/ipc/protocol.md`](../src/apprt/ipc/protocol.md) is Unix-socket-shaped.
-
-`MessageFrame` (`extern struct { action: u16, length: u32 }`, payload packed after
-the header) is unchanged, and every operation still returns
-`error.Unimplemented`, so none of this is reachable today. **The Windows IPC
-transport needs its own authorization design, including an explicit DACL, before G3
-and G4 converge.** Recorded here so it is not discovered later.
+The host fixture validates separate-process framing and reconnects, not actual
+new-tab behavior. A real second-user denial and a remote-machine denial remain
+separate acceptance gates; flags and DACL inspection alone are not runtime proof.
 
 ---
-
 ## 5. Memory safety
 
 ### Why the model is tractable

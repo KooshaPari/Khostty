@@ -55,7 +55,7 @@ Non-goals (v1):
 
 | Item | Value |
 | --- | --- |
-| Transport | Unix domain socket (macOS/Linux). Windows: named pipe, same framing. |
+| Transport | Unix domain socket (macOS/Linux). Windows S4 transport is separate; see below. |
 | Default path | macOS: `~/Library/Caches/khostty/ipc.sock` |
 | | Linux/BSD: `$XDG_RUNTIME_DIR/khostty/ipc.sock` (fallback `/tmp/khostty-$UID/ipc.sock`) |
 | Path override | `KHOSTTY_IPC_SOCKET` |
@@ -65,6 +65,11 @@ Non-goals (v1):
 | Concurrency | One connection may pipeline requests; responses arrive in request order |
 | Encoding | JSON. Binary payloads are base64 **not** used in v1: `pane.write.data` is a UTF-8 string and `\u0000`-style escapes carry control bytes |
 
+Windows S4 (`../windows/ipc.zig`) implements a binary transport envelope:
+six little-endian bytes (`action: u16`, `length: u32`) followed by the payload.
+It is not yet a G4 server and does not consume this newline-delimited protocol.
+A runtime adapter must enforce the authentication and dispatch rules below before
+exposing G4 commands. The Windows App still returns `error.Unimplemented` for IPC.
 `pane.write` carries terminal input as a JSON string, so an agent writes
 `"data": "\u001b[31mred\u001b[0m"` or `"data": "ls -la\n"`. Escapes are decoded by
 the JSON parser before the bytes reach the terminal parser.

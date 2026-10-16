@@ -225,29 +225,38 @@ This is the fork's headline delta: upstream has no Windows application runtime.
 - **No real Win32 calls.** `win32api.zig` declares function pointers; no code
   invokes them.
 
-### Known defect (observed 2026-09-17)
+### S0 import casing (checked 2026-10-16)
 
-`src/apprt/windows/mod.zig` imports `"Surface.zig"`, but the tracked file is
-`surface.zig`. The import resolves only on a case-insensitive filesystem. Any
-case-sensitive build that pulls `mod.zig` into the graph will fail.
+`src/apprt/windows/mod.zig` imports `"surface.zig"`, matching the tracked filename.
+S0 was already corrected on the lane A base (`795383086`); no rename is needed.
 
-### Windows IPC sketch
+### Windows IPC transport
 
-| Item | Value |
-|---|---|
-| Pipe name | `\\.\pipe\khostty-{server_pid}` intended; **the constant currently has one leading backslash, which is not the pipe namespace** (observed 2026-09-17) |
-| Frame | `extern struct { action: u16, length: u32 }` + packed payload |
-| Security attributes | **None declared.** The earlier null-DACL / inheritable-handle declaration was removed without a replacement, so no ACL design exists. |
-| Status | SCAFFOLD, `error.Unimplemented` |
+`src/apprt/windows/ipc.zig` implements a synchronous, single-client transport.
+The pipe is `\\.\pipe\khostty-{pid}`; creation uses `FIRST_PIPE_INSTANCE` and
+`PIPE_REJECT_REMOTE_CLIENTS`. A protected DACL grants only the process-token user
+SID access, and handles are not inheritable. A name collision fails closed;
+closing the server releases the name. Disconnect permits a subsequent client.
 
-Details and the security implication: [SECURITY.md](SECURITY.md#4-windows-transport-weakness-scaffold).
+Frames are exactly six little-endian header bytes (`action: u16`, `length: u32`)
+followed by up to 1 MiB of payload. No native struct padding is transmitted.
+This is the S4 binary envelope; it does not itself parse, authenticate or dispatch
+G4 JSON. `Client.receive` and `Server.receive` return an owned `Frame`; callers
+must free its payload. Oversize or incomplete frames require disconnecting.
+Blocking I/O belongs on a worker thread, never the UI event loop.
+
+The separate-process fixture in `test/windows/ipc-roundtrip.ps1` echoes ping and
+new_tab payloads to validate framing; it does not create a tab. The App runtime
+is not wired to this transport. Real second-user and remote-machine rejection
+require separate integration environments and must not be inferred from a local
+round-trip or the presence of security flags.
 
 ### G3 exit criteria (from the WBS)
 
 Cross-compile succeeds; the binary runs (native or Wine); keyboard and mouse
 input encode correctly via `ghostty_key_encoder_*` / `ghostty_mouse_encoder_*`;
 DirectWrite renders glyphs with font fallback; clipboard works with bracketed
-paste; the named pipe accepts agent commands. **Two are met**: cross-compile succeeds (2026-09-18) and the binary runs natively (`+version`, DLL ABI, 2026-09-19). **Open**: keyboard and mouse input encode checks, DirectWrite render with font fallback, clipboard bracketed paste, and named-pipe command acceptance — the windowing and IPC scaffolds still return `error.Unimplemented`.
+paste; the named pipe accepts agent commands. **Two are met**: cross-compile succeeds (2026-09-18) and the binary runs natively (`+version`, DLL ABI, 2026-09-19). **Open**: keyboard and mouse input encode checks, DirectWrite render with font fallback, clipboard bracketed paste, and named-pipe command acceptance — the windowing and application IPC dispatch still return `error.Unimplemented`.
 
 ---
 

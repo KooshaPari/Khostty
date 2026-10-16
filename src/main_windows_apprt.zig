@@ -1,7 +1,7 @@
 //! Test root for the Windows application runtime (`src/apprt/windows/`).
 //!
-//! The modules under `src/apprt/windows/` decode Win32 message parameters and
-//! never call a Win32 function, so their tests are host-runnable. They cannot
+//! Most modules decode Win32 message parameters; their tests are host-runnable.
+//! IPC transport tests call Win32 on Windows and skip on other hosts. They cannot
 //! be reached by rooting a module at `src/apprt/windows/`: the input modules
 //! import `../../input/key.zig` and `../../input/mouse.zig`, which Zig rejects
 //! with "import of file outside module path" once the module root is that deep.

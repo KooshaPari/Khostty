@@ -172,6 +172,12 @@ pub fn add(
     const target = step.root_module.resolved_target.?;
     const optimize = step.root_module.optimize.?;
 
+    // Named-pipe IPC uses token/SID and protected security descriptor APIs.
+    if (target.result.os.tag == .windows) {
+        step.root_module.linkSystemLibrary("advapi32", .{});
+        step.root_module.linkSystemLibrary("kernel32", .{});
+    }
+
     // We maintain a list of our static libraries and return it so that
     // we can build a single fat static library for the final app.
     var static_libs: LazyPathList = .empty;
