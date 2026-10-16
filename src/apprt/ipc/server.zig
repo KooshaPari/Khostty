@@ -805,11 +805,23 @@ test "socket: an oversized frame is rejected and the connection closes" {
     // cases the *wrapped cause* is `error.ConnectionResetByPeer`, exposed
     // by `std.Io.net.Stream.Reader.err` (zig 0.16).
     //
+    // `Client.readFrame` is `!?[]const u8` and delegates to
+    // `std.Io.Reader.takeDelimiter`, whose inferred error set is exactly
+    // `error{ReadFailed, StreamTooLong}` (see std/Io/Reader.zig:895).
+    // `EndOfStream` is converted to null inside `takeDelimiter`, so it
+    // never reaches the test. We exhaustively switch on the two real
+    // members and never `else`-swallow.
+    //
     // We accept:
     //   1. a null (EOF) frame -- macOS clean FIN,
     //   2. `error.ConnectionResetByPeer` -- Linux direct RST,
     //   3. `error.ReadFailed` only when `client.reader.err` is
     //      `error.ConnectionResetByPeer` -- Linux wrapped RST.
+    //
+    // `error.StreamTooLong` is propagated explicitly. After
+    // `readResponse` consumed the bad_request response, the client reader
+    // is empty, so this branch should not fire; if it ever does, the
+    // test fails with the actual error rather than a silent pass.
     //
     // Anything else (UnexpectedEof, BrokenPipe, a non-null frame, a
     // ReadFailed whose wrapped cause is anything other than reset) fails
@@ -826,13 +838,15 @@ test "socket: an oversized frame is rejected and the connection closes" {
             const underlying = client.reader.err orelse return error.ReadFailed;
             try testing.expectEqual(error.ConnectionResetByPeer, underlying);
         },
-        // takeDelimiter surfaces StreamTooLong when the server-side frame
-        // (or its absence) crosses the reader's buffer limit before a
-        // delimiter is found. For a peer-initiated close this is not a
-        // protocol-level reset -- propagate it so the test (and any future
-        // caller) sees the real failure rather than silently turning it
-        // into success.
-        error.StreamTooLong => return err,
+        error.StreamTooLong => {
+            // Not reachable in this scenario: the client buffer is empty
+            // after readResponse consumed the bad_request response, so
+            // takeDelimiter cannot find a full buffer without a delimiter.
+            // Propagate explicitly to keep the switch exhaustive (the
+            // IPC test root enforces this) and to surface a real bug
+            // rather than a swallowed result.
+            return error.StreamTooLong;
+        },
     }
 }
 
