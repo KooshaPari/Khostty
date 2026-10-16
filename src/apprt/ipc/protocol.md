@@ -8,18 +8,18 @@ additive, agent-facing surface.
 
 Implementation map:
 
-| File | Responsibility | Verified by |
-| --- | --- | --- |
-| `protocol.md` | this document: the normative schema | sections 4 and 7 match the code |
-| `protocol.zig` | wire types, request parsing, response/JSON writers | 30 tests |
-| `auth.zig` | token resolution, constant-time verification | 12 tests |
-| `state.zig` | `pane.state` snapshot + JSON | 5 tests |
-| `events.zig` | event types, subscription broker, drop accounting | 13 tests |
-| `pane.zig` | pane registry, `Host` vtable, payload writers | 34 tests |
-| `handler.zig` | command dispatch, error mapping, event polling | 22 tests |
-| `server.zig` | Unix socket server, framing, client, event pusher | 14 tests |
-| `app_host.zig` | `Host` implementation over the real app runtime | not yet in the build graph, see section 7 |
-| `fake_host.zig` | in-memory VT used as the `Host` for tests | exercised by all of the above |
+| File            | Responsibility                                     | Verified by                               |
+| --------------- | -------------------------------------------------- | ----------------------------------------- |
+| `protocol.md`   | this document: the normative schema                | sections 4 and 7 match the code           |
+| `protocol.zig`  | wire types, request parsing, response/JSON writers | 30 tests                                  |
+| `auth.zig`      | token resolution, constant-time verification       | 12 tests                                  |
+| `state.zig`     | `pane.state` snapshot + JSON                       | 5 tests                                   |
+| `events.zig`    | event types, subscription broker, drop accounting  | 13 tests                                  |
+| `pane.zig`      | pane registry, `Host` vtable, payload writers      | 34 tests                                  |
+| `handler.zig`   | command dispatch, error mapping, event polling     | 22 tests                                  |
+| `server.zig`    | Unix socket server, framing, client, event pusher  | 14 tests                                  |
+| `app_host.zig`  | `Host` implementation over the real app runtime    | not yet in the build graph, see section 7 |
+| `fake_host.zig` | in-memory VT used as the `Host` for tests          | exercised by all of the above             |
 
 Run everything with:
 
@@ -47,23 +47,23 @@ Non-goals (v1):
 
 - No remote/TCP transport. Local socket (Unix domain socket; Windows named pipe is
   a follow-up, see `src/apprt/windows/ipc.zig`).
-- No pty input injection (`pane.write` writes *VT bytes into the terminal parser*,
+- No pty input injection (`pane.write` writes _VT bytes into the terminal parser_,
   it does not type into the child process). Typing into the child is a v2 item.
 - No protocol negotiation beyond an integer version check.
 
 ## 2. Transport and framing
 
-| Item | Value |
-| --- | --- |
-| Transport | Unix domain socket (macOS/Linux). Windows S4 transport is separate; see below. |
-| Default path | macOS: `~/Library/Caches/khostty/ipc.sock` |
-| | Linux/BSD: `$XDG_RUNTIME_DIR/khostty/ipc.sock` (fallback `/tmp/khostty-$UID/ipc.sock`) |
-| Path override | `KHOSTTY_IPC_SOCKET` |
-| Framing | One JSON value per line, UTF-8, `\n` terminated |
-| Max frame | 1 MiB (`max_frame_bytes`); over-long frames get `bad_request` and the connection is closed |
-| Direction | Full duplex. Responses are correlated with requests; events are unsolicited |
-| Concurrency | One connection may pipeline requests; responses arrive in request order |
-| Encoding | JSON. Binary payloads are base64 **not** used in v1: `pane.write.data` is a UTF-8 string and `\u0000`-style escapes carry control bytes |
+| Item          | Value                                                                                                                                   |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Transport     | Unix domain socket (macOS/Linux). Windows S4 transport is separate; see below.                                                          |
+| Default path  | macOS: `~/Library/Caches/khostty/ipc.sock`                                                                                              |
+|               | Linux/BSD: `$XDG_RUNTIME_DIR/khostty/ipc.sock` (fallback `/tmp/khostty-$UID/ipc.sock`)                                                  |
+| Path override | `KHOSTTY_IPC_SOCKET`                                                                                                                    |
+| Framing       | One JSON value per line, UTF-8, `\n` terminated                                                                                         |
+| Max frame     | 1 MiB (`max_frame_bytes`); over-long frames get `bad_request` and the connection is closed                                              |
+| Direction     | Full duplex. Responses are correlated with requests; events are unsolicited                                                             |
+| Concurrency   | One connection may pipeline requests; responses arrive in request order                                                                 |
+| Encoding      | JSON. Binary payloads are base64 **not** used in v1: `pane.write.data` is a UTF-8 string and `\u0000`-style escapes carry control bytes |
 
 Windows S4 (`../windows/ipc.zig`) implements a binary transport envelope:
 six little-endian bytes (`action: u16`, `length: u32`) followed by the payload.
@@ -79,61 +79,89 @@ the JSON parser before the bytes reach the terminal parser.
 ### 3.1 Request (agent -> khostty)
 
 ```json
-{"v":1,"id":7,"auth":"<token>","cmd":"pane.create","opts":{"split":"vertical"}}
+{
+  "v": 1,
+  "id": 7,
+  "auth": "<token>",
+  "cmd": "pane.create",
+  "opts": { "split": "vertical" }
+}
 ```
 
-| Field | Type | Required | Meaning |
-| --- | --- | --- | --- |
-| `v` | integer | no | Protocol version. Absent means 1. Mismatch -> `version_unsupported`. |
-| `id` | integer | no | Correlation id, echoed verbatim in the response. Absent means uncorrelated. |
-| `auth` | string | yes | Auth token. Alternatively sent once as `auth.token`; per-request is authoritative. |
-| `cmd` | string | yes | Command name (section 4). |
-| `pane_id` | string \| integer | command-dependent | Pane handle: `"p-3"`, `"3"`, or `3`. |
-| `data` | string | command-dependent | VT bytes to inject (`pane.write`). |
-| `query` | string | command-dependent | Search needle (`pane.search`). |
-| `opts` | object | command-dependent | Command options (section 4.1). |
+| Field     | Type              | Required          | Meaning                                                                            |
+| --------- | ----------------- | ----------------- | ---------------------------------------------------------------------------------- |
+| `v`       | integer           | no                | Protocol version. Absent means 1. Mismatch -> `version_unsupported`.               |
+| `id`      | integer           | no                | Correlation id, echoed verbatim in the response. Absent means uncorrelated.        |
+| `auth`    | string            | yes               | Auth token. Alternatively sent once as `auth.token`; per-request is authoritative. |
+| `cmd`     | string            | yes               | Command name (section 4).                                                          |
+| `pane_id` | string \| integer | command-dependent | Pane handle: `"p-3"`, `"3"`, or `3`.                                               |
+| `data`    | string            | command-dependent | VT bytes to inject (`pane.write`).                                                 |
+| `query`   | string            | command-dependent | Search needle (`pane.search`).                                                     |
+| `opts`    | object            | command-dependent | Command options (section 4.1).                                                     |
 
 Unknown top-level fields are ignored (`ignore_unknown_fields`) so clients can be
-forward-compatible with newer servers. Unknown *values* inside `opts` are ignored
+forward-compatible with newer servers. Unknown _values_ inside `opts` are ignored
 for the same reason; unknown option names are not errors.
 
 ### 3.2 Response (khostty -> agent)
 
 ```json
-{"v":1,"id":7,"ok":true,"data":{"pane_id":"p-3","pid":12345,"title":"bash","cols":120,"rows":40}}
+{
+  "v": 1,
+  "id": 7,
+  "ok": true,
+  "data": {
+    "pane_id": "p-3",
+    "pid": 12345,
+    "title": "bash",
+    "cols": 120,
+    "rows": 40
+  }
+}
 ```
 
 ```json
-{"v":1,"id":7,"ok":false,"error":{"code":"pane_not_found","message":"no pane with id p-9"}}
+{
+  "v": 1,
+  "id": 7,
+  "ok": false,
+  "error": { "code": "pane_not_found", "message": "no pane with id p-9" }
+}
 ```
 
-| Field | Type | Present | Meaning |
-| --- | --- | --- | --- |
-| `v` | integer | always | Protocol version the server speaks. |
-| `id` | integer | iff the request carried an id | Correlation id. |
-| `ok` | bool | always | Success flag. |
-| `data` | object or array | iff `ok` | Command-specific payload. |
-| `error` | object | iff `!ok` | `{code, message}`. |
+| Field   | Type            | Present                       | Meaning                             |
+| ------- | --------------- | ----------------------------- | ----------------------------------- |
+| `v`     | integer         | always                        | Protocol version the server speaks. |
+| `id`    | integer         | iff the request carried an id | Correlation id.                     |
+| `ok`    | bool            | always                        | Success flag.                       |
+| `data`  | object or array | iff `ok`                      | Command-specific payload.           |
+| `error` | object          | iff `!ok`                     | `{code, message}`.                  |
 
 Error codes (`protocol.ErrorCode`):
 
-| Code | Meaning |
-| --- | --- |
-| `bad_request` | Malformed JSON, missing `cmd`, malformed `pane_id`, oversized frame. |
-| `unknown_command` | `cmd` is not in the table in section 4. |
-| `unauthorized` | Missing or wrong auth token. |
-| `version_unsupported` | `v` is not supported by this server. |
-| `pane_not_found` | `pane_id` does not address a live pane. |
-| `pane_not_found_after_close` | Pane exited between lookup and operation. |
-| `host_unsupported` | The app runtime cannot do this (e.g. daemonized build). |
-| `too_many_panes` | `pane.create` exceeded the configured pane ceiling. |
-| `not_subscribed` | `events.unsubscribe` for an unknown subscription. |
-| `internal` | Unexpected host error. |
+| Code                         | Meaning                                                              |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `bad_request`                | Malformed JSON, missing `cmd`, malformed `pane_id`, oversized frame. |
+| `unknown_command`            | `cmd` is not in the table in section 4.                              |
+| `unauthorized`               | Missing or wrong auth token.                                         |
+| `version_unsupported`        | `v` is not supported by this server.                                 |
+| `pane_not_found`             | `pane_id` does not address a live pane.                              |
+| `pane_not_found_after_close` | Pane exited between lookup and operation.                            |
+| `host_unsupported`           | The app runtime cannot do this (e.g. daemonized build).              |
+| `too_many_panes`             | `pane.create` exceeded the configured pane ceiling.                  |
+| `not_subscribed`             | `events.unsubscribe` for an unknown subscription.                    |
+| `internal`                   | Unexpected host error.                                               |
 
 ### 3.3 Event (khostty -> agent, unsolicited)
 
 ```json
-{"v":1,"event":"title_change","pane_id":"p-3","seq":12,"data":{"title":"~/projects/khostty"}}
+{
+  "v": 1,
+  "event": "title_change",
+  "pane_id": "p-3",
+  "seq": 12,
+  "data": { "title": "~/projects/khostty" }
+}
 ```
 
 Events are delivered only to connections that issued `events.subscribe`. They may
@@ -142,57 +170,74 @@ of `event` rather than assuming a response.
 
 ## 4. Commands
 
-| `cmd` | Options | `data` payload |
-| --- | --- | --- |
-| `ping` | - | `{"server":"khostty","version":1,"pid":123}` |
-| `pane.create` | `opts` | pane object (section 4.1) |
-| `pane.close` | `pane_id` | `{"closed":true,"pane_id":"p-3"}` |
-| `pane.focus` | `pane_id` | `{"focused":true,"pane_id":"p-3"}` |
-| `pane.list` | - | array of pane objects |
-| `pane.write` | `pane_id`, `data` | `{"written":9}` |
-| `pane.state` | `pane_id` | snapshot object (section 4.2) |
-| `pane.search` | `pane_id`, `query`, `opts.limit` | array of match objects |
-| `pane.resize_split` | `pane_id`, `opts:{dir,amount}` | `{"resized":true}` |
-| `pane.equalize` | - | `{"equalized":true}` |
-| `pane.zoom` | `pane_id` | `{"zoomed":true}` |
-| `events.subscribe` | `opts.events` | `{"subscribed":true,"events":["title_change",...]}` |
-| `events.unsubscribe` | - | `{"unsubscribed":true}` |
+| `cmd`                | Options                          | `data` payload                                      |
+| -------------------- | -------------------------------- | --------------------------------------------------- |
+| `ping`               | -                                | `{"server":"khostty","version":1,"pid":123}`        |
+| `pane.create`        | `opts`                           | pane object (section 4.1)                           |
+| `pane.close`         | `pane_id`                        | `{"closed":true,"pane_id":"p-3"}`                   |
+| `pane.focus`         | `pane_id`                        | `{"focused":true,"pane_id":"p-3"}`                  |
+| `pane.list`          | -                                | array of pane objects                               |
+| `pane.write`         | `pane_id`, `data`                | `{"written":9}`                                     |
+| `pane.state`         | `pane_id`                        | snapshot object (section 4.2)                       |
+| `pane.search`        | `pane_id`, `query`, `opts.limit` | array of match objects                              |
+| `pane.resize_split`  | `pane_id`, `opts:{dir,amount}`   | `{"resized":true}`                                  |
+| `pane.equalize`      | -                                | `{"equalized":true}`                                |
+| `pane.zoom`          | `pane_id`                        | `{"zoomed":true}`                                   |
+| `events.subscribe`   | `opts.events`                    | `{"subscribed":true,"events":["title_change",...]}` |
+| `events.unsubscribe` | -                                | `{"unsubscribed":true}`                             |
 
 ### 4.1 `pane.create`
 
 ```json
-{"cmd":"pane.create","opts":{"split":"vertical","cwd":"/tmp","title":"build","focus":true}}
+{
+  "cmd": "pane.create",
+  "opts": {
+    "split": "vertical",
+    "cwd": "/tmp",
+    "title": "build",
+    "focus": true
+  }
+}
 ```
 
-| Option | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| `split` | `"vertical"` \| `"horizontal"` | `"vertical"` | tmux-style: vertical = side-by-side (splits left/right, `right`), horizontal = stacked (`down`). |
-| `dir` | `"right"` \| `"down"` \| `"left"` \| `"up"` | - | Explicit split direction; overrides `split`. |
-| `pane_id` | pane handle | focused pane | Pane to split relative to. |
-| `cwd` | string | focused pane cwd | Working directory for the new pane. |
-| `title` | string | - | Requested title (may be overwritten by shell integration). |
-| `focus` | bool | `true` | Focus the new pane. |
-| `command` | string | - | Reserved for v2 (requires `new_split` to accept arguments upstream). |
+| Option    | Type                                        | Default          | Meaning                                                                                          |
+| --------- | ------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------ |
+| `split`   | `"vertical"` \| `"horizontal"`              | `"vertical"`     | tmux-style: vertical = side-by-side (splits left/right, `right`), horizontal = stacked (`down`). |
+| `dir`     | `"right"` \| `"down"` \| `"left"` \| `"up"` | -                | Explicit split direction; overrides `split`.                                                     |
+| `pane_id` | pane handle                                 | focused pane     | Pane to split relative to.                                                                       |
+| `cwd`     | string                                      | focused pane cwd | Working directory for the new pane.                                                              |
+| `title`   | string                                      | -                | Requested title (may be overwritten by shell integration).                                       |
+| `focus`   | bool                                        | `true`           | Focus the new pane.                                                                              |
+| `command` | string                                      | -                | Reserved for v2 (requires `new_split` to accept arguments upstream).                             |
 
 `splits` map onto real upstream actions only:
 
-| Request | Upstream action |
-| --- | --- |
-| `dir=right` | `apprt.Action.new_split = .right` |
-| `dir=down` | `apprt.Action.new_split = .down` |
-| `dir=left` | `apprt.Action.new_split = .left` |
-| `dir=up` | `apprt.Action.new_split = .up` |
-| `focus=false` + `dir=X` | `new_split = X` then focus returns to the origin pane |
-| `pane.focus` | `apprt.Action.goto_split` (`.previous`/`.next`) or direct surface focus when the runtime exposes one |
-| `pane.close` | `apprt.Action.close_tab = .this` when the pane is the tab root, else surface close |
-| `pane.resize_split` | `apprt.Action.resize_split = .{amount, direction}` |
-| `pane.equalize` | `apprt.Action.equalize_splits` |
-| `pane.zoom` | `apprt.Action.toggle_split_zoom` |
+| Request                 | Upstream action                                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| `dir=right`             | `apprt.Action.new_split = .right`                                                                    |
+| `dir=down`              | `apprt.Action.new_split = .down`                                                                     |
+| `dir=left`              | `apprt.Action.new_split = .left`                                                                     |
+| `dir=up`                | `apprt.Action.new_split = .up`                                                                       |
+| `focus=false` + `dir=X` | `new_split = X` then focus returns to the origin pane                                                |
+| `pane.focus`            | `apprt.Action.goto_split` (`.previous`/`.next`) or direct surface focus when the runtime exposes one |
+| `pane.close`            | `apprt.Action.close_tab = .this` when the pane is the tab root, else surface close                   |
+| `pane.resize_split`     | `apprt.Action.resize_split = .{amount, direction}`                                                   |
+| `pane.equalize`         | `apprt.Action.equalize_splits`                                                                       |
+| `pane.zoom`             | `apprt.Action.toggle_split_zoom`                                                                     |
 
 Pane object (returned by `pane.create`, and each entry of `pane.list`):
 
 ```json
-{"pane_id":"p-3","title":"bash","pid":12345,"cwd":"/tmp","cols":120,"rows":40,"focused":true,"exited":false}
+{
+  "pane_id": "p-3",
+  "title": "bash",
+  "pid": 12345,
+  "cwd": "/tmp",
+  "cols": 120,
+  "rows": 40,
+  "focused": true,
+  "exited": false
+}
 ```
 
 > Deviation from the WBS draft: the draft used `"id"` in `pane.list` entries but
@@ -209,22 +254,36 @@ bounded wait, `pane.create` fails with `internal` rather than inventing an id.
 ### 4.2 `pane.state` snapshot
 
 ```json
-{"ok":true,"data":{
-  "pane_id":"p-3",
-  "title":"bash",
-  "pid":12345,
-  "cwd":"/Users/me/project",
-  "size":{"cols":120,"rows":40,"pixel_width":1440,"pixel_height":960},
-  "cursor":{"row":12,"col":45,"visible":true,"style":"block","blinking":false},
-  "alt_screen":false,
-  "focused":true,
-  "mouse_tracking":true,
-  "bell_count":0,
-  "scrollback_rows":1024,
-  "viewport_rows":40,
-  "exited":false,
-  "exit_code":null
-}}
+{
+  "ok": true,
+  "data": {
+    "pane_id": "p-3",
+    "title": "bash",
+    "pid": 12345,
+    "cwd": "/Users/me/project",
+    "size": {
+      "cols": 120,
+      "rows": 40,
+      "pixel_width": 1440,
+      "pixel_height": 960
+    },
+    "cursor": {
+      "row": 12,
+      "col": 45,
+      "visible": true,
+      "style": "block",
+      "blinking": false
+    },
+    "alt_screen": false,
+    "focused": true,
+    "mouse_tracking": true,
+    "bell_count": 0,
+    "scrollback_rows": 1024,
+    "viewport_rows": 40,
+    "exited": false,
+    "exit_code": null
+  }
+}
 ```
 
 Every field is optional in the sense that the host may not know it: unknown values
@@ -234,11 +293,23 @@ rendered as `0` or `false`.
 ### 4.3 `pane.search`
 
 ```json
-{"cmd":"pane.search","pane_id":"p-3","query":"error","opts":{"limit":5}}
+{
+  "cmd": "pane.search",
+  "pane_id": "p-3",
+  "query": "error",
+  "opts": { "limit": 5 }
+}
 ```
 
 ```json
-{"ok":true,"data":{"matches":[{"row":-3,"col":8,"len":5,"text":"error"}],"total":1,"truncated":false}}
+{
+  "ok": true,
+  "data": {
+    "matches": [{ "row": -3, "col": 8, "len": 5, "text": "error" }],
+    "total": 1,
+    "truncated": false
+  }
+}
 ```
 
 `row` is relative to the viewport top; negative rows are scrollback. `total` is the
@@ -248,20 +319,23 @@ because `limit` was reached.
 ### 4.4 `events.subscribe`
 
 ```json
-{"cmd":"events.subscribe","opts":{"events":["title_change","child_exit","resize","bell"]}}
+{
+  "cmd": "events.subscribe",
+  "opts": { "events": ["title_change", "child_exit", "resize", "bell"] }
+}
 ```
 
 Event kinds:
 
-| `event` | `data` |
-| --- | --- |
-| `title_change` | `{"title":"..."}` |
-| `child_exit` | `{"exit_code":0,"signal":null}` |
-| `resize` | `{"cols":120,"rows":40}` |
-| `bell` | `{"count":1}` |
-| `focus_change` | `{"focused":true}` |
-| `pane_created` | `{"title":"bash"}` |
-| `pane_closed` | `{"reason":"exit"}` |
+| `event`        | `data`                          |
+| -------------- | ------------------------------- |
+| `title_change` | `{"title":"..."}`               |
+| `child_exit`   | `{"exit_code":0,"signal":null}` |
+| `resize`       | `{"cols":120,"rows":40}`        |
+| `bell`         | `{"count":1}`                   |
+| `focus_change` | `{"focused":true}`              |
+| `pane_created` | `{"title":"bash"}`              |
+| `pane_closed`  | `{"reason":"exit"}`             |
 
 Omitting `opts.events` (or an empty array) subscribes to all kinds. Each subscriber
 has a bounded queue (`events.queue_capacity`, default 256). On overflow the oldest
@@ -308,7 +382,7 @@ Threading, as implemented:
 
 - `server.zig` runs one accept thread, one thread per connection, and (only for
   connections that subscribed) one event-pusher thread per connection.
-- `pane.Manager` serializes registry access *and* host calls behind one
+- `pane.Manager` serializes registry access _and_ host calls behind one
   `std.Io.Mutex`. Host implementations therefore need not be thread safe, two
   concurrent `pane.create` calls cannot race the registry, and the only lock
   ordering used is Manager -> Broker. A host call must not call back into the
