@@ -354,6 +354,7 @@ jobs:
               echo "  ✓ $name: $result"
             else
               echo "  ? $name: $result"
+              failed=$((failed + 1))
             fi
           done
           if [ "$failed" -gt 0 ]; then
@@ -389,6 +390,7 @@ jobs:
               echo "  ✓ $name: $result"
             else
               echo "  ? $name: $result"
+              failed=$((failed + 1))
             fi
           done
           if [ "$failed" -gt 0 ]; then
