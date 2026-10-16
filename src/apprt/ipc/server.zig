@@ -826,6 +826,13 @@ test "socket: an oversized frame is rejected and the connection closes" {
             const underlying = client.reader.err orelse return error.ReadFailed;
             try testing.expectEqual(error.ConnectionResetByPeer, underlying);
         },
+        // takeDelimiter surfaces StreamTooLong when the server-side frame
+        // (or its absence) crosses the reader's buffer limit before a
+        // delimiter is found. For a peer-initiated close this is not a
+        // protocol-level reset -- propagate it so the test (and any future
+        // caller) sees the real failure rather than silently turning it
+        // into success.
+        error.StreamTooLong => return err,
     }
 }
 
