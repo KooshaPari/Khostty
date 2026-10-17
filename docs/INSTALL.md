@@ -3,8 +3,8 @@
 **Observed:** 2026-10-17 · **Version:** `0.1.0` · **Source revision:** `main` HEAD (post-Phase-0 merge at `ebc033eba`)
 
 This is the install counterpart to [`BUILD.md`](BUILD.md). BUILD.md answers
-*"how do I compile this?"*. This document answers *"how do I install the
-result, and how do I prove the install actually worked?"*.
+_"how do I compile this?"_. This document answers _"how do I install the
+result, and how do I prove the install actually worked?"_.
 
 The three rules below govern every claim in this document:
 
@@ -55,14 +55,14 @@ zig build -Demit-lib-vt -Doptimize=ReleaseSafe
 Download from the GitHub release page:
 **<https://github.com/KooshaPari/Khostty/releases/tag/v0.1.0>**
 
-| Asset | Bytes | Status (as of 2026-10-17) |
-|---|---:|---|
-| `Khostty-0.1.0-macos.zip` | 35,953,098 | **shippable** — signed; interactive keystroke round-trip verified 2026-09-20; not notarized |
-| `Khostty-0.1.0-windows-x86_64-setup.exe` | 19,766,307 | **build + install + uninstall verified** — GUI window not yet launched (G3 scaffold; runtime calls return `error.Unimplemented` until G3 is lifted) |
-| `khostty_0.1.0_amd64.deb` (GTK application) | 18,143,964 | **shippable** — install-verified on WSL Fedora 44; GUI-launch half-verified via Xvfb 2026-09-19 |
-| `khostty-vt_0.1.0_amd64.deb` (library) | 2,320,612 | **shippable** — install-and-run-verified in x86-64 Debian 12 container |
-| `khostty-libghostty-vt-wasm-0.1.0.tar.gz` | 680,598 | **shippable** — npm 0.1.0 published; `wasm/package.json` shows 0.0.0 (drift — Phase A6 fix) |
-| `CHECKSUMS.txt` | 4,273 | release manifest |
+| Asset                                       |      Bytes | Status (as of 2026-10-17)                                                                                                                           |
+| ------------------------------------------- | ---------: | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Khostty-0.1.0-macos.zip`                   | 35,953,098 | **shippable** — signed; interactive keystroke round-trip verified 2026-09-20; not notarized                                                         |
+| `Khostty-0.1.0-windows-x86_64-setup.exe`    | 19,766,307 | **build + install + uninstall verified** — GUI window not yet launched (G3 scaffold; runtime calls return `error.Unimplemented` until G3 is lifted) |
+| `khostty_0.1.0_amd64.deb` (GTK application) | 18,143,964 | **shippable** — install-verified on WSL Fedora 44; GUI-launch half-verified via Xvfb 2026-09-19                                                     |
+| `khostty-vt_0.1.0_amd64.deb` (library)      |  2,320,612 | **shippable** — install-and-run-verified in x86-64 Debian 12 container                                                                              |
+| `khostty-libghostty-vt-wasm-0.1.0.tar.gz`   |    680,598 | **shippable** — npm 0.1.0 published; `wasm/package.json` shows 0.0.0 (drift — Phase A6 fix)                                                         |
+| `CHECKSUMS.txt`                             |      4,273 | release manifest                                                                                                                                    |
 
 Verify a download against the recorded checksum:
 
@@ -139,19 +139,19 @@ Authoritative handoff:
 
 ## 1. Host requirements
 
-| Target | Build host | Install/verify host | Tools the build host must have |
-|---|---|---|---|
-| Rust `khostty-vt` | any (build script invokes Zig) | any | `cargo`, `zig` 0.16.0; pre-built `libghostty-vt` (or rely on crate's link feature) |
-| WASM tarball | macOS or Linux | any (Node ≥ 20) | `zig` 0.16.0, `node`, `tar`, `gzip` |
-| Go `khostty-go` | any with cgo + Zig | any | `go` 1.23+, `zig` 0.16.0, pre-built `libghostty-vt` |
-| Python `khostty-vt` | macOS or Linux | any | `python` 3.8+, `zig` 0.16.0, `cffi` |
-| macOS library | macOS | macOS | `zig` 0.16.0, `cc`; Metal toolchain **not** required for `-Demit-lib-vt` |
-| macOS `.app` | macOS | macOS with a GUI session | `zig` 0.16.0, Xcode, **Metal Toolchain component** |
-| Linux `.deb` (GTK application) | Linux (native x86_64; cross-build from macOS is not viable: the payload needs GTK4 for the target) | Debian/Ubuntu x86-64 | `zig` 0.16.0, `dpkg-deb`, GTK4 + libadwaita development headers for the host (`gtk4-devel`, `libadwaita-devel`), `ImageMagick` for icons |
-| Linux `.deb` (libghostty-vt library) | macOS or Linux — cross-compiles cleanly | Debian/Ubuntu x86-64 | `zig` 0.16.0, `dpkg-deb` (`brew install dpkg`); `docker` only for `--verify` |
-| Windows installer | any host with `zig` | Windows x86-64 | `zig` 0.16.0, Inno Setup 6.3+ (`ISCC.exe`); on a non-Windows host also `wine` + `winepath` |
+| Target                               | Build host                                                                                         | Install/verify host      | Tools the build host must have                                                                                                           |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Rust `khostty-vt`                    | any (build script invokes Zig)                                                                     | any                      | `cargo`, `zig` 0.16.0; pre-built `libghostty-vt` (or rely on crate's link feature)                                                       |
+| WASM tarball                         | macOS or Linux                                                                                     | any (Node ≥ 20)          | `zig` 0.16.0, `node`, `tar`, `gzip`                                                                                                      |
+| Go `khostty-go`                      | any with cgo + Zig                                                                                 | any                      | `go` 1.23+, `zig` 0.16.0, pre-built `libghostty-vt`                                                                                      |
+| Python `khostty-vt`                  | macOS or Linux                                                                                     | any                      | `python` 3.8+, `zig` 0.16.0, `cffi`                                                                                                      |
+| macOS library                        | macOS                                                                                              | macOS                    | `zig` 0.16.0, `cc`; Metal toolchain **not** required for `-Demit-lib-vt`                                                                 |
+| macOS `.app`                         | macOS                                                                                              | macOS with a GUI session | `zig` 0.16.0, Xcode, **Metal Toolchain component**                                                                                       |
+| Linux `.deb` (GTK application)       | Linux (native x86_64; cross-build from macOS is not viable: the payload needs GTK4 for the target) | Debian/Ubuntu x86-64     | `zig` 0.16.0, `dpkg-deb`, GTK4 + libadwaita development headers for the host (`gtk4-devel`, `libadwaita-devel`), `ImageMagick` for icons |
+| Linux `.deb` (libghostty-vt library) | macOS or Linux — cross-compiles cleanly                                                            | Debian/Ubuntu x86-64     | `zig` 0.16.0, `dpkg-deb` (`brew install dpkg`); `docker` only for `--verify`                                                             |
+| Windows installer                    | any host with `zig`                                                                                | Windows x86-64           | `zig` 0.16.0, Inno Setup 6.3+ (`ISCC.exe`); on a non-Windows host also `wine` + `winepath`                                               |
 
-All packaging scripts accept a probe mode that only *reports* readiness and
+All packaging scripts accept a probe mode that only _reports_ readiness and
 changes nothing. Run it first on any new host:
 
 ```bash
@@ -506,15 +506,15 @@ Observed in an `x86_64` `debian:bookworm` container (Debian 12.15, glibc 2.36)
 on this host, launched with `docker run --platform linux/amd64` with the
 repository mounted read-only:
 
-| Check | Observed |
-|---|---|
-| `dpkg -i dist/khostty-vt_0.1.0_amd64.deb` | exit 0; `Setting up khostty-vt (0.1.0) ...`; `dpkg -s` → `Status: install ok installed` |
-| `dpkg -L khostty-vt` | 54 entries, including `/usr/lib/x86_64-linux-gnu/libghostty-vt.so.0.1.0`, `.../libghostty-vt.so.0`, `.../libghostty-vt.so`, `/usr/include/ghostty/vt.h`, the `vt/**` headers, and `.../pkgconfig/libghostty-vt.pc` |
-| `dpkg -V khostty-vt` | no modified or missing files — the package's `md5sums` integrity holds |
-| `ldconfig -p \| grep ghostty` | `libghostty-vt.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libghostty-vt.so.0` |
-| `gcc example/c-vt-formatter/src/main.c -lghostty-vt` | compiled against the **installed** headers and the **installed** `.so`; ran and printed the formatted 80×24 screen |
-| functional assertions | 4/4 PASS — literal text, `CSI 2K` erase-and-rewrite, CUP placement at (5,10), right-edge clamp |
-| `dpkg -r khostty-vt` | exit 0; clean removal |
+| Check                                                | Observed                                                                                                                                                                                                           |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `dpkg -i dist/khostty-vt_0.1.0_amd64.deb`            | exit 0; `Setting up khostty-vt (0.1.0) ...`; `dpkg -s` → `Status: install ok installed`                                                                                                                            |
+| `dpkg -L khostty-vt`                                 | 54 entries, including `/usr/lib/x86_64-linux-gnu/libghostty-vt.so.0.1.0`, `.../libghostty-vt.so.0`, `.../libghostty-vt.so`, `/usr/include/ghostty/vt.h`, the `vt/**` headers, and `.../pkgconfig/libghostty-vt.pc` |
+| `dpkg -V khostty-vt`                                 | no modified or missing files — the package's `md5sums` integrity holds                                                                                                                                             |
+| `ldconfig -p \| grep ghostty`                        | `libghostty-vt.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libghostty-vt.so.0`                                                                                                                                    |
+| `gcc example/c-vt-formatter/src/main.c -lghostty-vt` | compiled against the **installed** headers and the **installed** `.so`; ran and printed the formatted 80×24 screen                                                                                                 |
+| functional assertions                                | 4/4 PASS — literal text, `CSI 2K` erase-and-rewrite, CUP placement at (5,10), right-edge clamp                                                                                                                     |
+| `dpkg -r khostty-vt`                                 | exit 0; clean removal                                                                                                                                                                                              |
 
 ### 2.8 Windows — `.exe` installer — BUILT + install-verified 2026-09-19
 

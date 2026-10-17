@@ -46,11 +46,11 @@ zig build -Demit-lib-vt -Doptimize=ReleaseSafe
 
 Download from the GitHub release page: **<https://github.com/KooshaPari/Khostty/releases/tag/v0.1.0>**
 
-| Platform | Asset | Status |
-|---|---|---|
-| macOS | `Khostty-0.1.0-macos.zip` | **shippable** (signed, interactive keystroke round-trip verified 2026-09-20; not notarized) |
-| Linux (Debian/Ubuntu x86_64) | `khostty_0.1.0_amd64.deb` | **shippable** (GTK application; install-verified on WSL Fedora 44, GUI launch half-verified via Xvfb 2026-09-19) |
-| Windows | `Khostty-0.1.0-windows-x86_64-setup.exe` | **build + install + uninstall verified; GUI window not yet launched** — the runtime is a scaffold (Phase 0 → Phase B GTK priority; see Status) |
+| Platform                     | Asset                                    | Status                                                                                                                                         |
+| ---------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| macOS                        | `Khostty-0.1.0-macos.zip`                | **shippable** (signed, interactive keystroke round-trip verified 2026-09-20; not notarized)                                                    |
+| Linux (Debian/Ubuntu x86_64) | `khostty_0.1.0_amd64.deb`                | **shippable** (GTK application; install-verified on WSL Fedora 44, GUI launch half-verified via Xvfb 2026-09-19)                               |
+| Windows                      | `Khostty-0.1.0-windows-x86_64-setup.exe` | **build + install + uninstall verified; GUI window not yet launched** — the runtime is a scaffold (Phase 0 → Phase B GTK priority; see Status) |
 
 The macOS ZIP, Linux `.deb`, and Windows installer are all built and signed on a
 release host. The Windows GUI launch is the one step still owed: the runtime
@@ -85,12 +85,12 @@ Khostty does **not** rebuild that engine or maintain a separate terminal user
 experience. It tracks upstream and focuses the fork delta on capabilities upstream
 does not provide:
 
-| Value area | Upstream Ghostty | Khostty direction | Status |
-|---|---|---|---|
-| Embedding | `libghostty-vt` C ABI + 30 examples | Polyglot FFI: Rust, Go, Python, WASM | **0.1.0 SHIPPED** — Rust on crates.io; WASM on npm; Python sdist built (PyPI pending); Go local |
-| Windows | macOS AppKit + Linux/BSD GTK only | Win32 + DirectWrite scaffold | **SCAFFOLD** — `ghostty.exe + ghostty-vt.dll` builds + installs + uninstalls; GUI window not yet launched (G3 deferred) |
-| Agent IPC | `ipc.zig`: 3 commands (`new_window`, `new_tab`, `toggle_quick_terminal`) | Typed JSON command/event protocol: 13 commands, 7 events, fail-closed token auth | **CODE-COMPLETE, RUNTIME WIRING IN PROGRESS** — 6,839 LOC, 458 tests, build-wired at `test-agent-ipc`; `Server.bind` not yet called from any runtime |
-| Phenotype integration | None | Reusable terminal surfaces in the Phenotype Fabric graph | Planned |
+| Value area            | Upstream Ghostty                                                         | Khostty direction                                                                | Status                                                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Embedding             | `libghostty-vt` C ABI + 30 examples                                      | Polyglot FFI: Rust, Go, Python, WASM                                             | **0.1.0 SHIPPED** — Rust on crates.io; WASM on npm; Python sdist built (PyPI pending); Go local                                                      |
+| Windows               | macOS AppKit + Linux/BSD GTK only                                        | Win32 + DirectWrite scaffold                                                     | **SCAFFOLD** — `ghostty.exe + ghostty-vt.dll` builds + installs + uninstalls; GUI window not yet launched (G3 deferred)                              |
+| Agent IPC             | `ipc.zig`: 3 commands (`new_window`, `new_tab`, `toggle_quick_terminal`) | Typed JSON command/event protocol: 13 commands, 7 events, fail-closed token auth | **CODE-COMPLETE, RUNTIME WIRING IN PROGRESS** — 6,839 LOC, 458 tests, build-wired at `test-agent-ipc`; `Server.bind` not yet called from any runtime |
+| Phenotype integration | None                                                                     | Reusable terminal surfaces in the Phenotype Fabric graph                         | Planned                                                                                                                                              |
 
 If you want a finished desktop terminal today, use upstream Ghostty.
 Khostty is the integration and extension path: embed the VT engine, drive a
@@ -110,19 +110,19 @@ terminal from an agent, or extend the binding surfaces.
 > and Linux `.deb` shipped; Windows installer build-verified but GUI not yet
 > launchable. **Agent IPC: code-complete, runtime wiring in progress.**
 
-| Surface | Status |
-|---|---|
-| C ABI `libghostty-vt` | **shippable** — build from source; 84/84 conformance |
-| Rust `khostty-vt 0.1.0` | **shipped** on crates.io |
-| WASM `@khostty/libghostty-vt-wasm 0.1.0` | **shipped** on npm (with `wasm/package.json` 0.0.0 drift — Phase A6 fix) |
-| Python `khostty_vt 0.1.0` | sdist built; **PyPI pending trusted publisher** (operator action) |
-| Go `khostty-go` | local clone only; no tagged module path |
-| macOS `Khostty.app` | **shipped** signed; not notarized |
-| Linux GTK `.deb` | **shipped**; install-verified; GUI-launch half-verified via Xvfb |
-| Windows `setup.exe` | **build + install + uninstall verified**; GUI not yet launched (G3 scaffold) |
-| Agent IPC v1 (13 commands, 7 events) | **code-complete, build-wired**; runtime `Server.bind` not yet called; 2 commands (`pane.focus`, `pane.search`) return `error.Unsupported` even after GTK wiring (upstream-core API work; out of fork-only scope) |
-| Conformance (`conformance/`, 84/84) | **shipped** |
-| EGL type-regression harness | **shipped** (PR #19 / `795383` + BOTH-arms synthetic coverage `69e955cfc`/`5055d2c17`) |
+| Surface                                  | Status                                                                                                                                                                                                           |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C ABI `libghostty-vt`                    | **shippable** — build from source; 84/84 conformance                                                                                                                                                             |
+| Rust `khostty-vt 0.1.0`                  | **shipped** on crates.io                                                                                                                                                                                         |
+| WASM `@khostty/libghostty-vt-wasm 0.1.0` | **shipped** on npm (with `wasm/package.json` 0.0.0 drift — Phase A6 fix)                                                                                                                                         |
+| Python `khostty_vt 0.1.0`                | sdist built; **PyPI pending trusted publisher** (operator action)                                                                                                                                                |
+| Go `khostty-go`                          | local clone only; no tagged module path                                                                                                                                                                          |
+| macOS `Khostty.app`                      | **shipped** signed; not notarized                                                                                                                                                                                |
+| Linux GTK `.deb`                         | **shipped**; install-verified; GUI-launch half-verified via Xvfb                                                                                                                                                 |
+| Windows `setup.exe`                      | **build + install + uninstall verified**; GUI not yet launched (G3 scaffold)                                                                                                                                     |
+| Agent IPC v1 (13 commands, 7 events)     | **code-complete, build-wired**; runtime `Server.bind` not yet called; 2 commands (`pane.focus`, `pane.search`) return `error.Unsupported` even after GTK wiring (upstream-core API work; out of fork-only scope) |
+| Conformance (`conformance/`, 84/84)      | **shipped**                                                                                                                                                                                                      |
+| EGL type-regression harness              | **shipped** (PR #19 / `795383` + BOTH-arms synthetic coverage `69e955cfc`/`5055d2c17`)                                                                                                                           |
 
 ### What the agent IPC story looks like today
 
@@ -263,21 +263,21 @@ authentication.
 
 The command set, with honest status:
 
-| Command | Status | Note |
-|---|---|---|
-| `pane.create` | implemented, runtime-wiring pending | split vertical/horizontal + cwd |
-| `pane.close` | implemented, runtime-wiring pending | by pane id |
-| `pane.list` | implemented, runtime-wiring pending | live panes |
-| `pane.write` | implemented, runtime-wiring pending | race fix must ship with wiring |
-| `pane.state` | implemented, runtime-wiring pending | cursor, title, size, scrollback |
-| `pane.resize_split` | implemented, runtime-wiring pending | resize split ratio |
-| `pane.equalize` | implemented, runtime-wiring pending | equalize splits |
-| `pane.zoom` | implemented, runtime-wiring pending | zoom toggle |
-| `pane.focus` | **returns `error.Unsupported`** | needs upstream focus-by-id API |
-| `pane.search` | **returns `error.Unsupported`** | needs upstream synchronous scan API |
-| `events.subscribe` / `events.unsubscribe` | implemented, runtime-wiring pending | title_change, pane_exit, resize, bell, osc_* |
-| `ping` | implemented, runtime-wiring pending | only unauthenticated command |
-| `surface.list`, `window.list` | implemented, runtime-wiring pending | enumerate surfaces and windows |
+| Command                                   | Status                              | Note                                          |
+| ----------------------------------------- | ----------------------------------- | --------------------------------------------- |
+| `pane.create`                             | implemented, runtime-wiring pending | split vertical/horizontal + cwd               |
+| `pane.close`                              | implemented, runtime-wiring pending | by pane id                                    |
+| `pane.list`                               | implemented, runtime-wiring pending | live panes                                    |
+| `pane.write`                              | implemented, runtime-wiring pending | race fix must ship with wiring                |
+| `pane.state`                              | implemented, runtime-wiring pending | cursor, title, size, scrollback               |
+| `pane.resize_split`                       | implemented, runtime-wiring pending | resize split ratio                            |
+| `pane.equalize`                           | implemented, runtime-wiring pending | equalize splits                               |
+| `pane.zoom`                               | implemented, runtime-wiring pending | zoom toggle                                   |
+| `pane.focus`                              | **returns `error.Unsupported`**     | needs upstream focus-by-id API                |
+| `pane.search`                             | **returns `error.Unsupported`**     | needs upstream synchronous scan API           |
+| `events.subscribe` / `events.unsubscribe` | implemented, runtime-wiring pending | title*change, pane_exit, resize, bell, osc*\* |
+| `ping`                                    | implemented, runtime-wiring pending | only unauthenticated command                  |
+| `surface.list`, `window.list`             | implemented, runtime-wiring pending | enumerate surfaces and windows                |
 
 See [`docs/src/apprt/ipc/protocol.md`](docs/src/apprt/ipc/protocol.md) and
 [`docs/SECURITY.md`](docs/SECURITY.md) §5 for the full protocol + auth design.
@@ -316,12 +316,12 @@ bash conformance/build.sh run
 
 ## Platform support
 
-| Platform | Status | Runtime or artifact |
-|---|---|---|
-| **macOS** | **shippable** | Upstream Swift/AppKit application runtime; `Khostty-0.1.0-macos.zip` signed + interactive keystroke round-trip verified 2026-09-20; not notarized |
-| **Linux/BSD** | **shippable** | Upstream GTK application runtime; `khostty_0.1.0_amd64.deb` install-verified on WSL Fedora 44, GUI-launch half-verified via Xvfb 2026-09-19 |
-| **Windows** | **scaffold** | `ghostty.exe + ghostty-vt.dll` build + install + uninstall verified 2026-09-19; GUI window not yet launched (G3 deferred; 3-4w scope to lift) |
-| **WASM** | **shippable** | `@khostty/libghostty-vt-wasm 0.1.0` on npm; `wasm/package.json` shows 0.0.0 (drift; Phase A6 fix) |
+| Platform      | Status        | Runtime or artifact                                                                                                                               |
+| ------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **macOS**     | **shippable** | Upstream Swift/AppKit application runtime; `Khostty-0.1.0-macos.zip` signed + interactive keystroke round-trip verified 2026-09-20; not notarized |
+| **Linux/BSD** | **shippable** | Upstream GTK application runtime; `khostty_0.1.0_amd64.deb` install-verified on WSL Fedora 44, GUI-launch half-verified via Xvfb 2026-09-19       |
+| **Windows**   | **scaffold**  | `ghostty.exe + ghostty-vt.dll` build + install + uninstall verified 2026-09-19; GUI window not yet launched (G3 deferred; 3-4w scope to lift)     |
+| **WASM**      | **shippable** | `@khostty/libghostty-vt-wasm 0.1.0` on npm; `wasm/package.json` shows 0.0.0 (drift; Phase A6 fix)                                                 |
 
 The Windows runtime scaffold (`src/apprt/windows/`, ~3,300 lines, 11 files) is
 intentionally kept; **every `error.Unimplemented` is test-asserted**
@@ -331,13 +331,13 @@ intentionally kept; **every `error.Unimplemented` is test-asserted**
 
 ## Polyglot FFI
 
-| Language | Status | Package | Purpose |
-|---|---|---|---|
-| **Rust** | **0.1.0 SHIPPED** | [`khostty-vt`](https://crates.io/crates/khostty-vt) | Safe Rust wrapper with RAII handles, typed errors, 199/199 integration tests |
-| **Go** | **local clone** | `github.com/KooshaPari/Khostty/khostty-go` | cgo-based idiomatic Go wrapper with context and error handling (45/45 tests; no tagged module path yet) |
-| **Python** | **sdist 0.1.0 BUILT; PyPI pending** | `khostty-vt` (`pip install khostty-vt`) | cffi-based Python package for terminal automation and scripting; PyPI trusted publisher registration pending operator action |
-| **WASM** | **0.1.0 SHIPPED** | [`@khostty/libghostty-vt-wasm`](https://www.npmjs.com/package/@khostty/libghostty-vt-wasm) | Hardened WASM package + typed JavaScript API; browser/Node consumption of the VT engine (54/54 tests) |
-| **C ABI** | **build from source** | `libghostty-vt` | The upstream C ABI; 203 `GHOSTTY_API` functions across 30+ headers |
+| Language   | Status                              | Package                                                                                    | Purpose                                                                                                                      |
+| ---------- | ----------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Rust**   | **0.1.0 SHIPPED**                   | [`khostty-vt`](https://crates.io/crates/khostty-vt)                                        | Safe Rust wrapper with RAII handles, typed errors, 199/199 integration tests                                                 |
+| **Go**     | **local clone**                     | `github.com/KooshaPari/Khostty/khostty-go`                                                 | cgo-based idiomatic Go wrapper with context and error handling (45/45 tests; no tagged module path yet)                      |
+| **Python** | **sdist 0.1.0 BUILT; PyPI pending** | `khostty-vt` (`pip install khostty-vt`)                                                    | cffi-based Python package for terminal automation and scripting; PyPI trusted publisher registration pending operator action |
+| **WASM**   | **0.1.0 SHIPPED**                   | [`@khostty/libghostty-vt-wasm`](https://www.npmjs.com/package/@khostty/libghostty-vt-wasm) | Hardened WASM package + typed JavaScript API; browser/Node consumption of the VT engine (54/54 tests)                        |
+| **C ABI**  | **build from source**               | `libghostty-vt`                                                                            | The upstream C ABI; 203 `GHOSTTY_API` functions across 30+ headers                                                           |
 
 The upstream C ABI and existing examples remain the baseline that these
 packages wrap. The Rust design uses raw bindings isolated behind a documented
