@@ -26,8 +26,8 @@ assignees: []
 
 <!-- What other approaches were considered, and why is the proposed one best? -->
 
-- Alternative 1: ___
-- Alternative 2: ___
+- Alternative 1: \_\_\_
+- Alternative 2: \_\_\_
 
 ## Cross-reference
 
@@ -35,7 +35,7 @@ assignees: []
 
 - Upstream `ghostty-org/ghostty` issue: #
 - Related Khostty issue: #
-- Design doc / discussion: ___
+- Design doc / discussion: \_\_\_
 
 ## Scope
 
