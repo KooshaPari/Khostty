@@ -204,6 +204,20 @@ for upstream's repository, not this fork.
 
 ---
 
+## 5.1 Upstream-owned file modifications (fork-discipline guard inventory)
+
+Every file in the upstream-owned surface list (`src/terminal/`, `src/Surface.zig`,
+`src/Command.zig`, `src/runner.zig`) that the fork has modified, with its
+tracking issue. Maintained by `tools/check-fork-discipline.zig` and surfaced
+on every PR by `.github/workflows/ci-fork-discipline.yml`. See
+`docs/FORK-DISCIPLINE.md` for the rule set.
+
+| Path | Tracking issue | Bracketed? | Notes |
+|---|---|---|---|
+| `src/terminal/mouse.zig` | GH-14736 | yes | Adds `.windows` to the `.none` switch arm so the Win32 embedding path compiles. The exhaustive upstream switch would otherwise fail to build. |
+
+---
+
 ## 6. Is the fork worth maintaining?
 
 The WBS asks this explicitly. An honest read of the current evidence (observed

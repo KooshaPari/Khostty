@@ -3,6 +3,7 @@
 .swp
 *.log
 !docs/sessions/**/evidence/*.log
+artifacts/
 .DS_Store
 .vscode/
 .direnv/

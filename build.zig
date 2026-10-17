@@ -101,6 +101,40 @@ pub fn build(b: *std.Build) !void {
         "Update translation files",
     );
 
+    // ---- fork-discipline guard ---------------------------------------------
+    // Run the tools/check-fork-discipline.zig checker against the working tree.
+    // This is a fork-only tool: it flags any modification to upstream-owned
+    // surfaces (src/terminal/, src/Surface.zig, src/Command.zig, src/runner.zig)
+    // that isn't documented in docs/FORK.md and bracketed by a // FORK: block.
+    // Default mode is advisory (exit 0). Pass `-Dfork-discipline-strict=true`
+    // to make the step fail on violations.
+    const fork_discipline_step = b.step(
+        "check-fork-discipline",
+        "Run the fork-discipline guard over upstream-owned files (advisory by default)",
+    );
+    {
+        const strict = b.option(bool, "fork-discipline-strict", "Exit non-zero on fork-discipline violations") orelse false;
+        const upstream = b.option([]const u8, "fork-discipline-upstream", "Upstream git ref to diff against") orelse "upstream/main";
+
+        // Ensure artifacts/ exists so the tool can write its report.
+        const mkdir_step = b.addSystemCommand(&.{ "sh", "-c", "mkdir -p artifacts" });
+        mkdir_step.setCwd(b.path("."));
+
+        const check = b.addSystemCommand(&.{
+            "zig", "run", "tools/check-fork-discipline.zig", "--",
+        });
+        if (strict) {
+            check.addArg("--strict");
+        }
+        check.addArg("--upstream");
+        check.addArg(upstream);
+        check.addArg("--output");
+        check.addArg("artifacts/fork-discipline.md");
+        check.setCwd(b.path("."));
+        check.step.dependOn(&mkdir_step.step);
+        fork_discipline_step.dependOn(&check.step);
+    }
+
     // Ghostty resources like terminfo, shell integration, themes, etc.
     const resources = try buildpkg.GhosttyResources.init(b, &config, &deps);
     const i18n = if (config.i18n) try buildpkg.GhosttyI18n.init(b, &config) else null;
