@@ -245,7 +245,6 @@ pub fn runMuxShell(
     //     signalWait();
     //
     _ = server_mod; // referenced by the TODO(phase-1) block above; keep the import live.
-    _ = socket_path;
     log.info("khostty-mux skeleton: setup complete, server bind TODO(phase-1)", .{});
 }
 
