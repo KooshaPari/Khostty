@@ -25,24 +25,24 @@ term.html();
 
 ## Contents
 
-| Path | What it is |
-|---|---|
-| `khostty-vt.wasm` | The compiled module. **Not committed**; run `./build.sh`. |
-| `build.sh` | Pinned, reproducible wasm32 build of `libghostty-vt`. |
-| `js/index.js` | ESM loader plus minimal bindings (terminal, formatter, snapshot, search handles). |
-| `js/api.js` | High-level entry point: `Terminal`, `Snapshot`, `Search`, `openTerminal`. |
-| `js/terminal.js` | `Terminal`: state getters, `write`, `resize`, `reset`, `text`/`html`/`vtText`, `snapshot`, `search`. |
-| `js/snapshot.js` | `Snapshot`: `bytes`, `metadata()`, `restore()`. |
-| `js/search.js` | `Search`: `needle`, `status`, `totalMatches`, `selectedIndex`, `run`, `next`, `prev`. |
-| `js/abi.js` | `Abi`: allocation, opaque-handle construction, typed struct read/write. |
-| `js/layout.js` | `TypeLayout`: the type manifest the library publishes. |
-| `js/memory.js` | `Memory`: growth-safe linear memory access. |
-| `js/errors.js` | `GhosttyResult` to `GhosttyError`. |
-| `js/terminal-data.js` | Generated `GhosttyTerminalData` key to out-parameter type map. |
-| `js/*.d.ts` | TypeScript declarations, one file per module. |
-| `include/ghostty-vt.h` | The whole public C ABI in a single self-contained header. |
-| `tools/` | Generators, the wasm section parser, and the header verifier. |
-| `test/` | Runtime smoke test, ABI conformance test, type-level test. |
+| Path                   | What it is                                                                                           |
+| ---------------------- | ---------------------------------------------------------------------------------------------------- |
+| `khostty-vt.wasm`      | The compiled module. **Not committed**; run `./build.sh`.                                            |
+| `build.sh`             | Pinned, reproducible wasm32 build of `libghostty-vt`.                                                |
+| `js/index.js`          | ESM loader plus minimal bindings (terminal, formatter, snapshot, search handles).                    |
+| `js/api.js`            | High-level entry point: `Terminal`, `Snapshot`, `Search`, `openTerminal`.                            |
+| `js/terminal.js`       | `Terminal`: state getters, `write`, `resize`, `reset`, `text`/`html`/`vtText`, `snapshot`, `search`. |
+| `js/snapshot.js`       | `Snapshot`: `bytes`, `metadata()`, `restore()`.                                                      |
+| `js/search.js`         | `Search`: `needle`, `status`, `totalMatches`, `selectedIndex`, `run`, `next`, `prev`.                |
+| `js/abi.js`            | `Abi`: allocation, opaque-handle construction, typed struct read/write.                              |
+| `js/layout.js`         | `TypeLayout`: the type manifest the library publishes.                                               |
+| `js/memory.js`         | `Memory`: growth-safe linear memory access.                                                          |
+| `js/errors.js`         | `GhosttyResult` to `GhosttyError`.                                                                   |
+| `js/terminal-data.js`  | Generated `GhosttyTerminalData` key to out-parameter type map.                                       |
+| `js/*.d.ts`            | TypeScript declarations, one file per module.                                                        |
+| `include/ghostty-vt.h` | The whole public C ABI in a single self-contained header.                                            |
+| `tools/`               | Generators, the wasm section parser, and the header verifier.                                        |
+| `test/`                | Runtime smoke test, ABI conformance test, type-level test.                                           |
 
 ## Building
 
@@ -98,7 +98,9 @@ The default source is the sibling `khostty-vt.wasm`. Point it elsewhere with any
 of `wasmPath`, `wasmUrl`, `wasmBytes`, or `wasmModule`:
 
 ```js
-const term = await Terminal.open({ wasmPath: "/opt/ghostty/libghostty-vt.wasm" });
+const term = await Terminal.open({
+  wasmPath: "/opt/ghostty/libghostty-vt.wasm",
+});
 ```
 
 ### Browser
@@ -125,7 +127,9 @@ From a CDN, the artifact and bindings are two fetches:
 
 ```js
 import { loadGhosttyVt } from "https://cdn.example/@khostty/libghostty-vt-wasm/js/index.js";
-const vt = await loadGhosttyVt({ wasmUrl: "https://cdn.example/@khostty/libghostty-vt-wasm/khostty-vt.wasm" });
+const vt = await loadGhosttyVt({
+  wasmUrl: "https://cdn.example/@khostty/libghostty-vt-wasm/khostty-vt.wasm",
+});
 ```
 
 ### The object model
@@ -134,33 +138,33 @@ const vt = await loadGhosttyVt({ wasmUrl: "https://cdn.example/@khostty/libghost
 await using term = await Terminal.open({ cols: 40, rows: 6 });
 term.write("alpha beta\r\ndelta beta");
 
-term.cols;             // 40
-term.cursorX;          // 10
-term.cursorY;          // 1
-term.screen;           // "PRIMARY"
-term.cursorVisible;    // true
-term.totalRows;        // 6
-term.scrollbackRows;   // 0
-term.title;            // "" (or the OSC 0/2 title)
+term.cols; // 40
+term.cursorX; // 10
+term.cursorY; // 1
+term.screen; // "PRIMARY"
+term.cursorVisible; // true
+term.totalRows; // 6
+term.scrollbackRows; // 0
+term.title; // "" (or the OSC 0/2 title)
 
-term.text();           // plain text
-term.unwrappedText();  // soft-wrapped lines joined
-term.html();           // HTML with inline styles
-term.vtText();         // re-emitted escape sequences
+term.text(); // plain text
+term.unwrappedText(); // soft-wrapped lines joined
+term.html(); // HTML with inline styles
+term.vtText(); // re-emitted escape sequences
 
 // Snapshot: capture, inspect, restore
 const snap = term.snapshot();
-snap.byteLength;       // 1118 for the content above
-snap.metadata();       // { bytes, sourceOffset, historyRowsPrimary, ... }
+snap.byteLength; // 1118 for the content above
+snap.metadata(); // { bytes, sourceOffset, historyRowsPrimary, ... }
 const restored = snap.restore();
 
 // Search
 const search = term.search("beta");
 search.run();
-search.totalMatches;   // 2
-search.status;         // "COMPLETE"
+search.totalMatches; // 2
+search.status; // "COMPLETE"
 search.next();
-search.selectedIndex;  // 0
+search.selectedIndex; // 0
 ```
 
 Every class owns a wasm handle, `close()` is idempotent, and each implements
