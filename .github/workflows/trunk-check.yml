@@ -50,6 +50,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Full history so `git merge-base` can isolate the PR's own changes.
+          fetch-depth: 0
 
       - name: Install Prettier
         shell: bash
@@ -88,9 +91,21 @@ jobs:
             base_ref="${{ github.event.before }}"
           fi
 
-          git fetch --no-tags --depth=1 origin "$base_ref"
+          # Diff against the MERGE BASE, not the (possibly stale) base SHA.
+          #
+          # On a pull_request event, actions/checkout checks out `refs/pull/N/merge`,
+          # which GitHub regenerates as "the PR merged into the base branch's CURRENT
+          # tip". Diffing that tree against the PR's recorded `base.sha` therefore pulls
+          # in commits the PR never authored -- e.g. docs merged to main after the PR
+          # was opened. The job then failed on files the PR does not own, and no PR
+          # could go green while main carried any formatting drift.
+          #
+          # The merge base isolates exactly the changes this PR introduces.
+          git fetch --no-tags origin "$base_ref"
+          merge_base="$(git merge-base FETCH_HEAD HEAD)"
+          echo "base_ref=$base_ref merge_base=$merge_base head=$(git rev-parse HEAD)"
 
-          files_arg="$(cd "$GITHUB_WORKSPACE" && git diff --diff-filter=ACMR --name-only FETCH_HEAD HEAD -- '*.md' '*.yml' '*.yaml' '*.json' '*.jsonc' '*.mdx')"
+          files_arg="$(cd "$GITHUB_WORKSPACE" && git diff --diff-filter=ACMR --name-only "$merge_base" HEAD -- '*.md' '*.yml' '*.yaml' '*.json' '*.jsonc' '*.mdx')"
 
           if [ -z "$files_arg" ]; then
             echo "No changed Prettier-supported files to check."
