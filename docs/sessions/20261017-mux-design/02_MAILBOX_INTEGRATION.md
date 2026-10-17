@@ -73,6 +73,7 @@ separate so that a flood of PTY output (termio) cannot starve
 lifecycle events (app) and vice-versa.
 
 Caller examples:
+
 - `Surface.zig:935,965` — `inspector = true/false`
 - `Surface.zig:1037,1230,1261,1860` — resize, write, etc.
 
@@ -105,10 +106,10 @@ the message's mutex to the calling thread (`.unlocked`) or blocks
 `Manager.write` enqueue from the IPC thread without holding any
 mutex across the syscall.
 
-| Mutex state | When to use | Effect |
-|---|---|---|
-| `.unlocked` | Caller does not hold the termio mutex (typical for IPC thread) | Queue hands the mutex to the termio thread |
-| `.locked` | Caller already holds the termio mutex (rare; only for in-thread re-entry) | Queue assumes the mutex is already held |
+| Mutex state | When to use                                                               | Effect                                     |
+| ----------- | ------------------------------------------------------------------------- | ------------------------------------------ |
+| `.unlocked` | Caller does not hold the termio mutex (typical for IPC thread)            | Queue hands the mutex to the termio thread |
+| `.locked`   | Caller already holds the termio mutex (rare; only for in-thread re-entry) | Queue assumes the mutex is already held    |
 
 The mux shell's IPC handler thread never holds a termio mutex
 (because it is not the termio thread), so it always uses `.unlocked`.
@@ -127,15 +128,15 @@ copies the data into a fresh `gpa.dupe` slice before calling
 
 ---
 
-## What is *not* in C2
+## What is _not_ in C2
 
-* Concrete timeouts for `App.Mailbox.push`. The mux shell's `Config`
+- Concrete timeouts for `App.Mailbox.push`. The mux shell's `Config`
   will expose these in a future PR (C6); for the skeleton, the
   default `App.Mailbox.Queue.Timeout` is used.
-* The reverse direction (termio → app). The mux shell does not need
+- The reverse direction (termio → app). The mux shell does not need
   to send messages to the app thread; it only consumes events from
   the termio thread via the events broker.
-* The `pane.Manager` lock — the broker serializes publishes, and
+- The `pane.Manager` lock — the broker serializes publishes, and
   `Manager` takes the broker only when constructing the setup
   (`src/apprt/ipc/mux_shell.zig:setup`). See C4 §4 for the lock
   ordering rule.
@@ -144,8 +145,8 @@ copies the data into a fresh `gpa.dupe` slice before calling
 
 ## Out-of-scope deferred items
 
-* Per-surface thread-pool draining of the termio queue. Currently
+- Per-surface thread-pool draining of the termio queue. Currently
   each surface has a single termio thread; multi-threaded termio is
   a Phase 3+ concern.
-* Mailbox back-pressure metrics. Phase 1 surfaces mailbox-full as
+- Mailbox back-pressure metrics. Phase 1 surfaces mailbox-full as
   a `pane.write` error; metrics come later.
