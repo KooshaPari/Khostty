@@ -13,13 +13,13 @@
 
 Phase B is the **GTK-on-Linux runtime wire-up** for the agent IPC surface. The substrate is already built and unit-tested (`test-agent-ipc` at `build.zig:79-508`, 3899/3925 tests passing on `main`). Phase B exposes it under a real GTK application so an external agent can connect to `$XDG_RUNTIME_DIR/khostty/ipc.sock` and drive a real terminal.
 
-| Task | File:line | Effort | Block |
-|---|---|---|---|
-| **B1** Wire `Server.bind` from GTK runtime | `src/apprt/gtk/App.zig:30-43` (add `startIpcServer` after `init`) | 1d | Linux GTK host |
-| **B2** Fix `pane.write` cross-thread parser access | `src/apprt/ipc/app_host.zig:290-298` (replace `stream.nextSlice` with `core.queueIo`) | 1d (with B1) | Linux GTK host |
-| **B4** Map 4 event publish hooks | `src/apprt/gtk/class/surface.zig:2109` (`setTitle`), `:1521` (`childExited`), `:3398` (`renderSurfaceResize`), `:2564` (`ringBell`); add `broker` field to `class/application.zig:170-184` `Private` | 1d | Linux GTK host |
-| **B5** Snapshot counters (`bell_count`/`exited`/`exit_code`/`exit_signal`/`command`/`last_activity_ms`) | `src/apprt/ipc/app_host.zig:479-489` (runtime-side tracking) | 1d | GTK runtime |
-| **E2E** Acceptance script | `conformance/khostty-phase-b-e2e.bash` (new) | 4h | All of the above |
+| Task                                                                                                    | File:line                                                                                                                                                                                            | Effort       | Block            |
+| ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ---------------- |
+| **B1** Wire `Server.bind` from GTK runtime                                                              | `src/apprt/gtk/App.zig:30-43` (add `startIpcServer` after `init`)                                                                                                                                    | 1d           | Linux GTK host   |
+| **B2** Fix `pane.write` cross-thread parser access                                                      | `src/apprt/ipc/app_host.zig:290-298` (replace `stream.nextSlice` with `core.queueIo`)                                                                                                                | 1d (with B1) | Linux GTK host   |
+| **B4** Map 4 event publish hooks                                                                        | `src/apprt/gtk/class/surface.zig:2109` (`setTitle`), `:1521` (`childExited`), `:3398` (`renderSurfaceResize`), `:2564` (`ringBell`); add `broker` field to `class/application.zig:170-184` `Private` | 1d           | Linux GTK host   |
+| **B5** Snapshot counters (`bell_count`/`exited`/`exit_code`/`exit_signal`/`command`/`last_activity_ms`) | `src/apprt/ipc/app_host.zig:479-489` (runtime-side tracking)                                                                                                                                         | 1d           | GTK runtime      |
+| **E2E** Acceptance script                                                                               | `conformance/khostty-phase-b-e2e.bash` (new)                                                                                                                                                         | 4h           | All of the above |
 
 **Total: ~5 working days on a Linux GTK host. B2 MUST ship with B1 (the race fires the moment B1 lands per state §6 + stubs MVP-LAZY #1).** B3 (`max_connections` + rate limit) and B6 (CI conformance) are independent of GTK and already partially landed in `server.zig:50,55` per the comments; they are out of scope for this spec.
 
@@ -33,11 +33,11 @@ B1 cannot start until the following are true. **None of these are fork-only deli
 
 ### 1.1 Operator decisions (Q1, Q2, Q3)
 
-| Decision | Effect on B1-B5 | Status |
-|---|---|---|
+| Decision                            | Effect on B1-B5                                                                                                | Status                         |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------ |
 | **Q1(a/b/c)** windowed-runtime path | Phase B is **GTK-on-Linux (Q1a)**. Q1b (embedded-on-macOS) and Q1c (mock-only) are out of scope for this spec. | **REQUIRED** before B1 starts. |
-| **Q2** `pane.focus` priority | No effect on B1-B5; `focusUnsupported` at `app_host.zig:208-214` returns `error.Unsupported` already. | Not blocking. |
-| **Q3** `pane.search` priority | Same as Q2; `searchUnsupported` at `app_host.zig:216-232` returns `error.Unsupported` already. | Not blocking. |
+| **Q2** `pane.focus` priority        | No effect on B1-B5; `focusUnsupported` at `app_host.zig:208-214` returns `error.Unsupported` already.          | Not blocking.                  |
+| **Q3** `pane.search` priority       | Same as Q2; `searchUnsupported` at `app_host.zig:216-232` returns `error.Unsupported` already.                 | Not blocking.                  |
 
 **Action:** confirm Q1 = (a) before scheduling B1. The FWD-PATH §3 effort budget assumes Q1a (5d total for Phase B); Q1b is +1w (Phase C1 audit + Phase D build on macOS via `embedded.zig`).
 
@@ -45,14 +45,14 @@ B1 cannot start until the following are true. **None of these are fork-only deli
 
 **Block.** The macOS operator host cannot build GTK (per FWD-PATH §3 B1 footnote "macOS operator host cannot build GTK"). Phase B work happens on a **separate Linux machine**:
 
-| Requirement | How to verify |
-|---|---|
-| Linux kernel 5.10+ with `glib-2.0` ≥ 2.74 | `pkg-config --modversion glib-2.0` |
-| `gtk4` development files | `pkg-config --modversion gtk4` (expected ≥ 4.10) |
-| Zig 0.14.0 toolchain | `zig version` |
-| Read+write to `$XDG_RUNTIME_DIR/khostty` | `mkdir -p $XDG_RUNTIME_DIR/khostty; touch $XDG_RUNTIME_DIR/khostty/test && echo OK` |
-| `khostty-client` Python package ≥ 0.1.0 | `python -c "import khostty_vt; print(khostty_vt.__version__)"` |
-| `socat` for E2E script | `which socat` |
+| Requirement                               | How to verify                                                                       |
+| ----------------------------------------- | ----------------------------------------------------------------------------------- |
+| Linux kernel 5.10+ with `glib-2.0` ≥ 2.74 | `pkg-config --modversion glib-2.0`                                                  |
+| `gtk4` development files                  | `pkg-config --modversion gtk4` (expected ≥ 4.10)                                    |
+| Zig 0.14.0 toolchain                      | `zig version`                                                                       |
+| Read+write to `$XDG_RUNTIME_DIR/khostty`  | `mkdir -p $XDG_RUNTIME_DIR/khostty; touch $XDG_RUNTIME_DIR/khostty/test && echo OK` |
+| `khostty-client` Python package ≥ 0.1.0   | `python -c "import khostty_vt; print(khostty_vt.__version__)"`                      |
+| `socat` for E2E script                    | `which socat`                                                                       |
 
 **Action:** the operator provisions the Linux host per Q1. Subagent **shall not** spin up new SSH sessions; the worker reports SHELL-only environment to the operator if the host is not yet reachable.
 
@@ -107,21 +107,21 @@ Construct an `apprt.ipc.Server` from inside the GTK application's `init` path, b
 
 **File:** `src/apprt/gtk/App.zig`
 
-| Field | Existing | Action |
-|---|---|---|
-| `app: *Application` (line 28) | sole field | keep |
-| `init` (lines 30-43) | constructs `Application`, no IPC | add broker + manager + server wiring |
-| `run` (lines 45-47) | calls `self.app.run()` | no change |
-| `terminate` (lines 49-54) | calls `self.app.deinit()` | add `self.stopIpcServer()` before deinit |
-| `wakeup` (lines 57-59) | no-op passthrough | no change |
-| `performAction` (lines 61-68) | passthrough | no change |
+| Field                         | Existing                         | Action                                   |
+| ----------------------------- | -------------------------------- | ---------------------------------------- |
+| `app: *Application` (line 28) | sole field                       | keep                                     |
+| `init` (lines 30-43)          | constructs `Application`, no IPC | add broker + manager + server wiring     |
+| `run` (lines 45-47)           | calls `self.app.run()`           | no change                                |
+| `terminate` (lines 49-54)     | calls `self.app.deinit()`        | add `self.stopIpcServer()` before deinit |
+| `wakeup` (lines 57-59)        | no-op passthrough                | no change                                |
+| `performAction` (lines 61-68) | passthrough                      | no change                                |
 
 **Insertion points** (no existing call sites; this is net-new):
 
-| Symbol | File:line | Lines |
-|---|---|---|
-| `startIpcServer` (new fn) | `src/apprt/gtk/App.zig` after line 43 | ~40 |
-| `stopIpcServer` (new fn) | same file, before `terminate` | ~15 |
+| Symbol                    | File:line                             | Lines |
+| ------------------------- | ------------------------------------- | ----- |
+| `startIpcServer` (new fn) | `src/apprt/gtk/App.zig` after line 43 | ~40   |
+| `stopIpcServer` (new fn)  | same file, before `terminate`         | ~15   |
 
 ### 2.3 Imports to add at the top of `App.zig`
 
@@ -540,12 +540,12 @@ Expected: `pane.state` reflects all 1000 writes; no torn bytes; cursor is consis
 
 ### 3.7 Risks specific to B2
 
-| Risk | Mitigation |
-|---|---|
-| `Surface.queueIo` is private; need a public wrapper | Add `queueWriteAlloc` to `Surface.zig` per §3.3 Option B |
-| The IO thread is faster than the producer (back-pressure) | The mailbox capacity is 64 (`mailbox.zig:65`); under 1000 concurrent writes, the producer hits the slow path (`mailbox.zig:181-195`) which uses `.forever` blocking. No data loss; latency under load. |
-| `self.gpa.dupe` may be slow for large payloads | Use `termio.Message.writeReq(alloc, data)` which auto-picks `.write_small` (no copy) when the payload fits in 38 bytes. |
-| Allocator lifetime: does `self.gpa` survive until the IO thread consumes? | The same allocator is used everywhere in the surface lifecycle; the existing inputs use the same allocator. **Verified safe per C2 Open Question #3.** |
+| Risk                                                                      | Mitigation                                                                                                                                                                                             |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Surface.queueIo` is private; need a public wrapper                       | Add `queueWriteAlloc` to `Surface.zig` per §3.3 Option B                                                                                                                                               |
+| The IO thread is faster than the producer (back-pressure)                 | The mailbox capacity is 64 (`mailbox.zig:65`); under 1000 concurrent writes, the producer hits the slow path (`mailbox.zig:181-195`) which uses `.forever` blocking. No data loss; latency under load. |
+| `self.gpa.dupe` may be slow for large payloads                            | Use `termio.Message.writeReq(alloc, data)` which auto-picks `.write_small` (no copy) when the payload fits in 38 bytes.                                                                                |
+| Allocator lifetime: does `self.gpa` survive until the IO thread consumes? | The same allocator is used everywhere in the surface lifecycle; the existing inputs use the same allocator. **Verified safe per C2 Open Question #3.**                                                 |
 
 ---
 
@@ -1229,14 +1229,14 @@ echo "  last:    $LAST_ACTIVITY"
 
 ### 6.4 Negative tests (must fail correctly)
 
-| # | Action | Expected |
-|---|---|---|
-| 1 | 33 simultaneous connects | First 32 succeed; 33rd gets `ECONNREFUSED` |
-| 2 | 200 frames/sec from one connection | First ~100 accepted, rest get `rate_limited` |
-| 3 | 2 MiB frame | `bad_request`; connection closed |
-| 4 | `pane.focus` to nonexistent pane | `pane_not_found` or `host_unsupported` |
-| 5 | `pane.search` against real GTK | `host_unsupported` (per `searchUnsupported` at `app_host.zig:216-232`) |
-| 6 | Connect without token | `unauthorized`; connection closed |
+| #   | Action                             | Expected                                                               |
+| --- | ---------------------------------- | ---------------------------------------------------------------------- |
+| 1   | 33 simultaneous connects           | First 32 succeed; 33rd gets `ECONNREFUSED`                             |
+| 2   | 200 frames/sec from one connection | First ~100 accepted, rest get `rate_limited`                           |
+| 3   | 2 MiB frame                        | `bad_request`; connection closed                                       |
+| 4   | `pane.focus` to nonexistent pane   | `pane_not_found` or `host_unsupported`                                 |
+| 5   | `pane.search` against real GTK     | `host_unsupported` (per `searchUnsupported` at `app_host.zig:216-232`) |
+| 6   | Connect without token              | `unauthorized`; connection closed                                      |
 
 ### 6.5 CI integration
 
@@ -1248,13 +1248,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'conformance/**'
-      - 'src/apprt/gtk/App.zig'
-      - 'src/apprt/ipc/app_host.zig'
-      - 'src/apprt/ipc/server.zig'
-      - 'src/apprt/gtk/class/application.zig'
-      - 'src/apprt/gtk/class/surface.zig'
-      - 'src/Surface.zig'
+      - "conformance/**"
+      - "src/apprt/gtk/App.zig"
+      - "src/apprt/ipc/app_host.zig"
+      - "src/apprt/ipc/server.zig"
+      - "src/apprt/gtk/class/application.zig"
+      - "src/apprt/gtk/class/surface.zig"
+      - "src/Surface.zig"
 jobs:
   conformance:
     runs-on: ubuntu-latest
@@ -1373,20 +1373,20 @@ These are explicit non-goals for Phase B but recorded for completeness:
 
 ## Appendix A — File-by-file change summary
 
-| File | Lines | Action | Net Δ |
-|---|---|---|---|
-| `src/apprt/gtk/App.zig` | 92 | Add `startIpcServer`, `stopIpcServer`, fields, test | +100 / -0 |
-| `src/apprt/ipc/app_host.zig` | 574 | Replace `writeToParser` body (B2); add `last_activity_ms`/`bell_count`/`exit_info`/`last_command` arrays; update `snapshotWindowed`; add `deinit`; add tests | +90 / -10 |
-| `src/apprt/ipc/server.zig` | 1,413 | No changes (B1 only consumes the existing API) | 0 |
-| `src/apprt/ipc/auth.zig` | 530 | Add `loadOrCreateToken` helper (B1) | +25 / -0 |
-| `src/apprt/ipc/fake_host.zig` | ~150 | Add `totalBytesWritten()` for B2 test | +5 / -0 |
-| `src/apprt/gtk/class/application.zig` | 3,306 | Add `broker` field to `Private`; add `setEventBroker`/`broker` methods | +20 / -0 |
-| `src/apprt/gtk/class/surface.zig` | 4,439 | 4 insertions (B4 hooks + B5 counter updates); add `ipc` import; add tests | +80 / -5 |
-| `src/Surface.zig` | 6,708 | Add `queueWriteAlloc` public wrapper (B2); add `apphost()` accessor if needed | +15 / -0 |
-| `conformance/khostty-phase-b-e2e.bash` | new | E2E script | +90 / -0 |
-| `.github/workflows/ci-conformance.yml` | new | CI job (per FWD-PATH B6) | +30 / -0 |
-| `docs/sessions/<date>-phase-b/` | new | Session docs (per AGENTS.md §8) | +50 / -0 |
-| `docs/protocol.md` | TBD | Disclosure of B4 publish ordering, B5 `last_activity_ms` approximation, `last_command` null state (per FWD-PATH A1) | +15 / -0 |
+| File                                   | Lines | Action                                                                                                                                                       | Net Δ     |
+| -------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| `src/apprt/gtk/App.zig`                | 92    | Add `startIpcServer`, `stopIpcServer`, fields, test                                                                                                          | +100 / -0 |
+| `src/apprt/ipc/app_host.zig`           | 574   | Replace `writeToParser` body (B2); add `last_activity_ms`/`bell_count`/`exit_info`/`last_command` arrays; update `snapshotWindowed`; add `deinit`; add tests | +90 / -10 |
+| `src/apprt/ipc/server.zig`             | 1,413 | No changes (B1 only consumes the existing API)                                                                                                               | 0         |
+| `src/apprt/ipc/auth.zig`               | 530   | Add `loadOrCreateToken` helper (B1)                                                                                                                          | +25 / -0  |
+| `src/apprt/ipc/fake_host.zig`          | ~150  | Add `totalBytesWritten()` for B2 test                                                                                                                        | +5 / -0   |
+| `src/apprt/gtk/class/application.zig`  | 3,306 | Add `broker` field to `Private`; add `setEventBroker`/`broker` methods                                                                                       | +20 / -0  |
+| `src/apprt/gtk/class/surface.zig`      | 4,439 | 4 insertions (B4 hooks + B5 counter updates); add `ipc` import; add tests                                                                                    | +80 / -5  |
+| `src/Surface.zig`                      | 6,708 | Add `queueWriteAlloc` public wrapper (B2); add `apphost()` accessor if needed                                                                                | +15 / -0  |
+| `conformance/khostty-phase-b-e2e.bash` | new   | E2E script                                                                                                                                                   | +90 / -0  |
+| `.github/workflows/ci-conformance.yml` | new   | CI job (per FWD-PATH B6)                                                                                                                                     | +30 / -0  |
+| `docs/sessions/<date>-phase-b/`        | new   | Session docs (per AGENTS.md §8)                                                                                                                              | +50 / -0  |
+| `docs/protocol.md`                     | TBD   | Disclosure of B4 publish ordering, B5 `last_activity_ms` approximation, `last_command` null state (per FWD-PATH A1)                                          | +15 / -0  |
 
 **Total: ~520 lines of new code + 15 lines removed across 12 files. PRs ship as 3 commits: (B1+B2), (B4+B5), (E2E+CI).**
 
