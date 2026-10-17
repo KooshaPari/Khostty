@@ -87,3 +87,23 @@ When reviewing this session:
 4. [ ] Approve or reject PR #36.
 5. [ ] Decide Q1 (publishability) before Phase B code is drafted.
 6. [ ] When C1 (`01_EMBEDDED_AUDIT.md`) lands, diff it against this spec per the action item in §0.
+
+## ADDENDUM (06:43 UTC): Wider exposure discovered
+
+After the postmortem was committed, an inspection of the closed PR #14736's full file list showed the diff was 75,090 additions / 228 deletions across ~500 files (CI workflows, .circleci/config.yml, .github/workflows/*.yml, README.md, .codex/memories, .claude/agents.md, .jcode-comptime-check.zig, .gitleaks.toml, .mergify.yml, bench/*, plus all the Zig source and docs). This is **not** what the 4 commits I added contained; it's the full diff between the khostty fork's `main` and ghostty-org/ghostty's `main`.
+
+**Why this happened.** When `gh pr create` opened the PR in the upstream repo, GitHub computed the diff as `upstream/main..my-branch`. The khostty fork's main is significantly diverged from upstream's main (CI workflow additions, AGENTS.md customizations, .codex/.claude/.jcode configs, khostty-specific source code), so the diff was the entire fork delta — even though my 4 commits were docs-only.
+
+**Damage assessment.**
+- **No code was merged.** The PR was closed (not merged) within ~10 seconds of creation.
+- **No information was leaked that wasn't already public.** All the files in the diff are already in the public `KooshaPari/Khostty` repository.
+- **However**, the diff was briefly visible on `github.com/ghostty-org/ghostty/pulls/14736` to anyone with the link. The closed PR remains in the public record.
+- **No upstream maintainer acted on it** (the timeline is <1 minute from open to close).
+
+**Lesson captured.**
+1. ANY PR opened against an upstream repo from a fork exposes the full fork's divergence in the diff, regardless of what commits are in the head. This is a *property of the fork model*, not a bug in my workflow.
+2. This makes the `gh pr create` mistake MORE dangerous than I initially assessed. Even a "docs-only" branch on a heavily-diverged fork leaks the entire fork delta in the PR view.
+3. The fix is still the same: pass `--repo KooshaPari/Khostty` on every `gh pr/issue/discussion` invocation in the fork. This is now a CRITICAL rule in all 4 AGENTS.md files.
+4. **For future forks** with deep upstream divergence, consider setting `gh repo set-default KooshaPari/Khostty` in the local clone to make the default-repo resolution default to the fork. This is not done yet but is a candidate follow-up.
+
+**No further action required from this incident.** The PR is closed, no upstream code is affected, and the AGENTS.md fix prevents recurrence.
