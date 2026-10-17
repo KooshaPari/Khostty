@@ -1,0 +1,101 @@
+# =============================================================================
+# Conformance + WASM tests for the fork-only build steps
+# =============================================================================
+# Khostty adds two build steps that are not exercised by zig-fork-tests.yml:
+#
+#   1. Conformance (`./conformance/build.sh run`)
+#        Cross-language black-box tests that prove the IPC wire protocol
+#        behaves correctly under a hostile/probing client. Reads
+#        `conformance/spec/` and exercises the server with structured
+#        request/response fixtures.
+#
+#   2. WASM (`./wasm/build.sh` + `./wasm/test/*.test.mjs`)
+#        Compiles a JS/TS client to WASM and runs the resulting test bundle
+#        with `node --test`. Proves the wire format round-trips through the
+#        same serializer a browser-side client would use.
+#
+# Why push-on-main (not nightly):
+#   These tests are the contract for the wire format. A regression on the
+#   push path means a future merge ships a wire-breaking change. The cost
+#   is bounded: ~3 min cold, ~30s warm. Worth paying every push.
+#
+# Why no `pull_request` trigger:
+#   The fork's main branch is single-owner. The push-on-main trigger is
+#   the only place where the conformance gate needs to be loud. PR authors
+#   can run `./conformance/build.sh run` locally before pushing.
+#
+# Why filter to conformance/, wasm/, src/:
+#   This workflow should not re-run for changes to docs, fonts, locales, or
+#   the editor demo. None of those touch the wire or the wasm build.
+# =============================================================================
+
+name: Conformance + WASM
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/ci-conformance.yml"
+      - "conformance/**"
+      - "wasm/**"
+      - "src/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-conformance
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    name: conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          # See zig-fork-tests.yml for the source of this SHA-256.
+          shasum: "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      # Build the IPC server binary first so the conformance run can spawn
+      # it as a black-box child. The same build target is what an external
+      # integration test would link against.
+      - name: Build agent-ipc
+        run: nix develop -c zig build -Demit-lib-vt
+      - name: Run conformance
+        run: ./conformance/build.sh run
+
+  wasm:
+    name: wasm
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          shasum: "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build wasm
+        run: ./wasm/build.sh
+      - name: Run wasm tests
+        # `for f in ./wasm/test/*.test.mjs; do node --test $f; done` mirrors
+        # the local dev loop and keeps the failure output in the per-file
+        # order rather than as a single node --test --test-name-pattern run.
+        run: |
+          for f in ./wasm/test/*.test.mjs; do
+            node --test "$f"
+          done
