@@ -12,10 +12,10 @@ runtime insertion points that fire them.
 
 All four hooks already exist on `AppHost` (`src/apprt/ipc/app_host.zig:130-160`):
 
-* `publishTitleChange(self, core)`
-* `publishChildExit(self, core)`
-* `publishResize(self, core, cols, rows)`
-* `publishBell(self, core)`
+- `publishTitleChange(self, core)`
+- `publishChildExit(self, core)`
+- `publishResize(self, core, cols, rows)`
+- `publishBell(self, core)`
 
 When the broker is null, all four are no-ops. The wiring gap is that
 the GTK `class.Surface` cannot reach an `AppHost` today. The fix is
@@ -76,10 +76,11 @@ The mux shell's `main` calls
 `gtk_app.setEventBroker(&s.broker)` after the AppHost is constructed.
 
 Why `Application`, not `Surface`?
-* The broker is a singleton per process; it has one publisher (the
+
+- The broker is a singleton per process; it has one publisher (the
   AppHost) and many subscribers (the agent connections).
-* `Application` is the GTK-level singleton; `Surface` is per-window.
-* The `Application.default()` accessor already exists and is what
+- `Application` is the GTK-level singleton; `Surface` is per-window.
+- The `Application.default()` accessor already exists and is what
   the mux shell's main will use to wire the broker.
 
 ---
@@ -148,17 +149,17 @@ from any GTK callback context.
 
 ---
 
-## What is *not* in C3
+## What is _not_ in C3
 
-* Wiring the broker from `mux_shell.zig:setup` into the GTK
+- Wiring the broker from `mux_shell.zig:setup` into the GTK
   `Application` instance. This happens in the live binary's `main`,
   not in the test root. The skeleton is content with the AppHost
   holding the broker; the GTK hooks will be live once a real
   `khostty-mux` binary calls `gtk_app.setEventBroker`.
-* The reverse direction — an agent command that *sets* a title via
+- The reverse direction — an agent command that _sets_ a title via
   the broker. The mux shell handles that via the existing
   `apprt.surface.Message.set_title` path; no new hook is needed.
-* Per-event-type filtering. The `EventMask` already supports
+- Per-event-type filtering. The `EventMask` already supports
   per-subscriber filtering (`src/apprt/ipc/events.zig:285`); the
   mux shell does not need to add a new filter dimension.
 
@@ -166,10 +167,10 @@ from any GTK callback context.
 
 ## Out-of-scope deferred items
 
-* A `pane.list` change event. The events broker publishes
+- A `pane.list` change event. The events broker publishes
   `pane_created` and `pane_closed` from the Manager; a
   `pane_list_changed` event would require the Manager to diff
   before/after, which is a Phase 2+ concern.
-* An `app.focused` event. GTK has the underlying signal but the
+- An `app.focused` event. GTK has the underlying signal but the
   mux shell's pane model is per-surface, not per-app; this is a
   Phase 3+ concern.
