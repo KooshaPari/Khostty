@@ -1,8 +1,90 @@
+# Dependabot config for khostty (KooshaPari fork of ghostty-org/ghostty).
+#
+# 3.8/3.9 pytest lane policy (per state audit §5 #7, triage 2026-09-29):
+#   pytest CVE-2025-71176 affects pytest 3.8.x and 3.9.x; 3.10+ already patched.
+#   The 3.8/3.9 lane is deliberately kept: too disruptive to upgrade mid-cycle,
+#   risk is low (test-only, not a runtime dep). Dependabot is silenced there so
+#   we stop getting nag PRs for versions we have already triaged.
+#
+# Major bumps and security advisories for everything else still surface.
+# Minor + patch updates are bundled into 1 PR per ecosystem per week to keep
+# the queue usable instead of noisy.
+
 version: 2
+
 updates:
-  # Maintain dependencies for GitHub Actions
+
+  # ---------------------------------------------------------------------------
+  # Python: khostty-python/ (pip via uv.lock)
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "pip"
+    directory: "/khostty-python"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+    # Bundle all minor + patch updates into 1 weekly PR.
+    groups:
+      python-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    # 3.8/3.9 pytest lane kept open — see file header.
+    ignore:
+      - dependency-name: "pytest"
+        # Drop any update suggestion that would land pytest in 3.8.x or 3.9.x
+        # (the vulnerable lane). Major/minor upgrades above 3.10 still surface.
+        versions: [">=3.8, <3.10"]
+
+  # ---------------------------------------------------------------------------
+  # npm/wasm: wasm/ (libghostty-vt-wasm)
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/wasm"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "wasm"
+    groups:
+      wasm-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # ---------------------------------------------------------------------------
+  # Cargo: khostty-vt/ (Rust FFI binding)
+  # ---------------------------------------------------------------------------
+  - package-ecosystem: "cargo"
+    directory: "/khostty-vt"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "rust"
+    groups:
+      rust-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # ---------------------------------------------------------------------------
+  # GitHub Actions: / (workflow pins)
+  # ---------------------------------------------------------------------------
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      # Check for updates to GitHub Actions every weekday
-      interval: "daily"
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+    groups:
+      actions-minor-and-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
