@@ -6,18 +6,18 @@ Khostty is a fork of [ghostty-org/ghostty](https://github.com/ghostty-org/ghostt
 
 The risk model: a well-intentioned modification to a `src/terminal/` file (or any other upstream-owned surface) silently breaks the fork's rebase hygiene. Example: upstream moves an enum variant, the fork's synthetic harness catches the move, but the cost of that catch is proportional to how invasive the fork's local changes were.
 
-This guard catches the *opposite* failure mode — the well-intentioned modification that didn't trigger a synthetic harness but quietly grew the rebase surface.
+This guard catches the _opposite_ failure mode — the well-intentioned modification that didn't trigger a synthetic harness but quietly grew the rebase surface.
 
 ## What's "upstream-owned"
 
 These paths are treated as upstream-owned. A modification to any of them triggers the guard:
 
-| Pattern | Why |
-|---|---|
-| `src/terminal/` | The entire terminal subsystem. The fork's most likely rebase-conflict surface. |
-| `src/Surface.zig` | The terminal surface — close to the metal for the renderer. |
-| `src/Command.zig` | Command parser; structure changes here ripple widely. |
-| `src/runner.zig` | The lifecycle runner (note: this file does not exist in current upstream; the guard tolerates its absence). |
+| Pattern           | Why                                                                                                         |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| `src/terminal/`   | The entire terminal subsystem. The fork's most likely rebase-conflict surface.                              |
+| `src/Surface.zig` | The terminal surface — close to the metal for the renderer.                                                 |
+| `src/Command.zig` | Command parser; structure changes here ripple widely.                                                       |
+| `src/runner.zig`  | The lifecycle runner (note: this file does not exist in current upstream; the guard tolerates its absence). |
 
 The list lives at the top of `tools/check-fork-discipline.zig` as `UPSTREAM_OWNED_PATTERNS`. To add a new pattern, edit the array and re-run the test suite.
 
@@ -28,7 +28,7 @@ For every file in the upstream-owned surface list that diverges from upstream, t
 1. **Documented.** The path is mentioned in `docs/FORK.md`. A modification without a corresponding entry in FORK.md is a violation.
 2. **Bracketed.** Every added line is inside a `// FORK:` block in the source file. The block starts with a comment line of the form `// FORK: ...` and runs until the first blank or non-comment line.
 3. **Tracked.** Each `// FORK:` block references a tracking issue, either `#123` or `GH-123`. The reference may live on the marker line or on any subsequent comment line in the same block.
-4. **Single-segment additions.** The diff parser tracks ranges of contiguous `+` lines per hunk. Modifications that span a context line (e.g., "add line, then keep a context line, then add another") are split into multiple ranges so that an upstream-owned hunk that *happens* to contain context still flags its added lines.
+4. **Single-segment additions.** The diff parser tracks ranges of contiguous `+` lines per hunk. Modifications that span a context line (e.g., "add line, then keep a context line, then add another") are split into multiple ranges so that an upstream-owned hunk that _happens_ to contain context still flags its added lines.
 
 ## Running it
 
@@ -73,7 +73,7 @@ The Markdown report has the shape:
 ```md
 # Fork Discipline Report
 
-Upstream base: `upstream/main`  ·  Working tree mode: advisory (CI passes; review report)
+Upstream base: `upstream/main` · Working tree mode: advisory (CI passes; review report)
 
 ## Summary
 
@@ -138,5 +138,5 @@ After step 4, every new divergence is caught at PR time and the fork's rebase su
 ## Related
 
 - `docs/FORK.md` — The fork's own changelog and rationale. Required reading before any upstream-owned modification.
-- `tools/check-fork-discipline.zig` — The implementation. The doc you just read is the *what*; the source is the *how*.
+- `tools/check-fork-discipline.zig` — The implementation. The doc you just read is the _what_; the source is the _how_.
 - `.github/workflows/ci-fork-discipline.yml` — The CI surface.
