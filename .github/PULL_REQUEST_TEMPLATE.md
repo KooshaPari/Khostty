@@ -14,7 +14,7 @@
 
 - [ ] `zig build` (or `zig build -Doptimize=ReleaseSafe`) compiles cleanly on Linux/macOS.
 - [ ] Unit tests pass.
-- [ ] Smoke run on the affected platform(s): ___
+- [ ] Smoke run on the affected platform(s): \_\_\_
 - [ ] New code has matching tests (unit and/or integration).
 - [ ] `zig fmt` produces no diff on touched Zig files.
 - [ ] `prettier --check` clean on touched Markdown / YAML / JSON files.
