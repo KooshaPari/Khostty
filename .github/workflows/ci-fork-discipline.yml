@@ -1,0 +1,114 @@
+name: fork-discipline
+
+# Advisory fork-discipline check for khostty.
+#
+# Runs `zig build check-fork-discipline` against the PR branch. In advisory
+# mode the job always succeeds; the Markdown report is uploaded as an
+# artifact so the reviewer can read it. Switch to strict mode by setting the
+# repository variable `FORK_DISCIPLINE_STRICT=true` (default: off) — this
+# makes the job fail on violations.
+#
+# This workflow is the operator-facing view of the same data the local
+# `tools/check-fork-discipline.zig` produces. See docs/FORK-DISCIPLINE.md
+# for the rule set.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-discipline-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fork-discipline:
+    name: fork-discipline report
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/ghostty-org/ghostty.git
+          git fetch --depth=1 upstream main
+        shell: bash
+
+      - name: Set up Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+
+      - name: Run fork-discipline check (advisory)
+        id: check
+        # Always succeed in advisory mode by passing `--no-strict` to zig build.
+        # The artifact upload + PR-comment step let the reviewer act on the
+        # report without forcing a CI failure on first run.
+        run: zig build check-fork-discipline -Dfork-discipline-strict=false
+        continue-on-error: true
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fork-discipline-report
+          path: artifacts/fork-discipline.md
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'artifacts/fork-discipline.md';
+            if (!fs.existsSync(path)) {
+              console.log('No report to comment on.');
+              return;
+            }
+            const report = fs.readFileSync(path, 'utf8');
+            // Truncate to a sensible comment size.
+            const MAX = 60_000;
+            const body = report.length > MAX
+              ? report.slice(0, MAX) + '\n\n_(truncated; see artifact for full report)_\n'
+              : report;
+            const marker = '<!-- fork-discipline-bot -->';
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: `${marker}\n## Fork Discipline Report\n\n${body}`,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `${marker}\n## Fork Discipline Report\n\n${body}`,
+              });
+            }
+
+      - name: Fail when strict
+        if: env.FORK_DISCIPLINE_STRICT == 'true' && steps.check.outcome == 'failure'
+        run: |
+          echo "Strict fork-discipline is enabled; failing this job because the check failed."
+          echo "See the uploaded artifact fork-discipline-report for details."
+          exit 1
