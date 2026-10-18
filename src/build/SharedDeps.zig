@@ -225,7 +225,13 @@ pub fn add(
     // (note: errno is C stdlib but we just include it here because that's
     // where it's generally included otherwise)
     try translate_c.addImportToModule(b, "posix_c", step.root_module, .{
-        .source = .{ .includes = .{ .files = &.{
+        // Windows has the C runtime headers, but no Unix passwd database or
+        // unistd API. Their users already select platform-specific branches.
+        .source = .{ .includes = .{ .files = if (target.result.os.tag == .windows) &.{
+            .{ .path = "errno.h" },
+            .{ .path = "signal.h" },
+            .{ .path = "sys/types.h" },
+        } else &.{
             .{ .path = "errno.h" },
             .{ .path = "pwd.h" },
             .{ .path = "signal.h" },
