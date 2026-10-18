@@ -8,6 +8,9 @@ Beneficiary scope: a developer embedding a VT parser, and an agent driving a run
 **Installed / deployed:** `v0.1.0` artifacts exist (crates.io, npm, macOS `.app`, GTK `.deb`, Windows `setup.exe`); **not re-verified this snapshot** → see limitations.
 **Contract:** State & Forward Docket v1.0 (`handbook/specs/assessment/state-forward-docket-v1/CONTRACT.md`, branch `docs/high-velocity-state-forward-docket-20261016` @ `05e163820`).
 **Typed record:** `snapshot.json` (canonical). This Markdown is the authored reading projection.
+**Branch reconciliation (contract §5):** after this snapshot was observed, `main` advanced to
+`b51910e97` (#49 mergify queue + #52 mergify config, both CI-only). Neither touches the scored
+leaves; the snapshot subject stays `8e86ec93a`.
 
 > **Publication status.** Local artifact: yes. Pushed branch: yes (`docs/state-forward-docket-v1-20261017`, PR #51). Merged default: **no**. Deployed: **no**. Safari: **OPENED** (`open -a Safari` on the rendered PDF, this run). A pushed branch is not a merge, and a merge is not an accepted product.
 
