@@ -365,6 +365,17 @@ fn drainMailbox(
                     self.flags.linefeed_mode,
                 );
             },
+            .parser_write => |v| {
+                defer v.alloc.free(v.data);
+                // Same entry point the pty read path uses
+                // (`Termio.processOutput` -> `nextSlice`), so escape
+                // sequences, modes, and the grid behave exactly as if the
+                // child process had written the bytes. The parser is only
+                // ever touched here, on the IO thread.
+                //
+                // FORK: KooshaPari/Khostty#48.
+                io.terminal_stream.nextSlice(v.data);
+            },
         }
     }
 

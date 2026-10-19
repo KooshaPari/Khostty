@@ -9,13 +9,13 @@ push anything.
 
 ## 1. Which path are you on?
 
-| | Fork (this repository) | Upstream Ghostty |
-|---|---|---|
-| Who merges | Khostty maintainers | Ghostty maintainers |
-| Agent-authored PRs | Permitted for fork work | **Prohibited — see below** |
-| Prerequisite | None | Vouch system ([upstream CONTRIBUTING.md](../CONTRIBUTING.md)) |
-| AI disclosure | Required in the commit ledger | Required by [`AI_POLICY.md`](../AI_POLICY.md) |
-| Change scope | Khostty delta + docs | Upstream core |
+|                    | Fork (this repository)        | Upstream Ghostty                                              |
+| ------------------ | ----------------------------- | ------------------------------------------------------------- |
+| Who merges         | Khostty maintainers           | Ghostty maintainers                                           |
+| Agent-authored PRs | Permitted for fork work       | **Prohibited — see below**                                    |
+| Prerequisite       | None                          | Vouch system ([upstream CONTRIBUTING.md](../CONTRIBUTING.md)) |
+| AI disclosure      | Required in the commit ledger | Required by [`AI_POLICY.md`](../AI_POLICY.md)                 |
+| Change scope       | Khostty delta + docs          | Upstream core                                                 |
 
 ### Upstream rules that still bind
 
@@ -58,13 +58,13 @@ default.
 A change is done when it is merged, builds, and its behaviour is observed — not
 when it compiles.
 
-| Requirement | How it is demonstrated |
-|---|---|
-| Builds | The relevant build command runs clean; paste the command and result |
-| Tested | The relevant suite passes; state which suite and the date |
+| Requirement      | How it is demonstrated                                                                          |
+| ---------------- | ----------------------------------------------------------------------------------------------- |
+| Builds           | The relevant build command runs clean; paste the command and result                             |
+| Tested           | The relevant suite passes; state which suite and the date                                       |
 | No VT regression | `conformance/build.sh` still passes (84/84) for anything touching parsing, formatting, or state |
-| Documented | Public surface changes update `docs/API.md`; new gates update `docs/PLATFORMS.md` |
-| Traced | Commit carries `tx-agent`, `tx-validated`, and `tx-task` (see §7) |
+| Documented       | Public surface changes update `docs/API.md`; new gates update `docs/PLATFORMS.md`               |
+| Traced           | Commit carries `tx-agent`, `tx-validated`, and `tx-task` (see §7)                               |
 
 **Never claim a gate passed without a dated observation.** "Should work",
 "probably passes", and "same as before" are not evidence. If you did not run it,
@@ -76,15 +76,15 @@ say `tx-validated: none`.
 
 Pick by what you touched. See [TESTING.md](TESTING.md) for detail.
 
-| You changed | Run |
-|---|---|
-| `src/terminal/**`, formatter, snapshot, search | `conformance/build.sh` (native), `cd wasm && npm run check` |
-| Anything under `khostty-vt/` | `cd khostty-vt && cargo test && cargo clippy && cargo fmt --check` |
-| `wasm/js/**`, `wasm/tools/**` | `cd wasm && npm run check` |
-| `include/ghostty/**` (C ABI) | Regenerate the consolidated header, `cd wasm && npm run test:header`, and `khostty-vt/tests/abi_layout.rs` |
-| Zig sources generally | `zig build test` (use `-Dtest-filter` — the full suite is slow) |
-| `src/apprt/windows/**` | No suite exists yet (G3). State clearly that nothing was executed. |
-| Docs only | No suite. Verify links resolve and claims match the files you cite. |
+| You changed                                    | Run                                                                                                        |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `src/terminal/**`, formatter, snapshot, search | `conformance/build.sh` (native), `cd wasm && npm run check`                                                |
+| Anything under `khostty-vt/`                   | `cd khostty-vt && cargo test && cargo clippy && cargo fmt --check`                                         |
+| `wasm/js/**`, `wasm/tools/**`                  | `cd wasm && npm run check`                                                                                 |
+| `include/ghostty/**` (C ABI)                   | Regenerate the consolidated header, `cd wasm && npm run test:header`, and `khostty-vt/tests/abi_layout.rs` |
+| Zig sources generally                          | `zig build test` (use `-Dtest-filter` — the full suite is slow)                                            |
+| `src/apprt/windows/**`                         | No suite exists yet (G3). State clearly that nothing was executed.                                         |
+| Docs only                                      | No suite. Verify links resolve and claims match the files you cite.                                        |
 
 A C ABI change is a breaking change for every language wrapper. If you touch
 `include/ghostty/`, expect to touch the Rust bindings, the consolidated header,
@@ -110,13 +110,13 @@ zig fmt --check src/ build.zig   # what CI enforces
 
 ### Other languages
 
-| Language | Tool | Config |
-|---|---|---|
-| Swift | `swiftlint lint --strict --fix` | `.swiftlint.yml` |
-| Markdown / JSON / YAML | `prettier -w .` | `.prettierignore` |
-| Shell | `shellcheck` | `.shellcheckrc` |
-| All text | `typos` | `typos.toml` |
-| Editor | `.editorconfig` | — |
+| Language               | Tool                            | Config            |
+| ---------------------- | ------------------------------- | ----------------- |
+| Swift                  | `swiftlint lint --strict --fix` | `.swiftlint.yml`  |
+| Markdown / JSON / YAML | `prettier -w .`                 | `.prettierignore` |
+| Shell                  | `shellcheck`                    | `.shellcheckrc`   |
+| All text               | `typos`                         | `typos.toml`      |
+| Editor                 | `.editorconfig`                 | —                 |
 
 Some of these tools are declared by upstream but not wired into the fork's CI, so
 run them locally before you rely on them.
@@ -146,14 +146,14 @@ commit carries metadata trailers, and history is never rewritten.
 
 ### Required trailers
 
-| Trailer | Value | Required |
-|---|---|---|
-| `tx-agent` | `jcode`, `codex`, `forge`, `human` | yes |
-| `tx-validated` | `lint`, `test`, `build`, `cargo-check`, `manual`, `none` | yes |
-| `tx-task` | WBS task, e.g. `9.1,9.9` | recommended |
-| `tx-scope` | affected components, e.g. `docs` | recommended |
-| `tx-intent` | one line on what the change achieves | recommended |
-| `tx-parent` | parent transaction hash | when applicable |
+| Trailer        | Value                                                    | Required        |
+| -------------- | -------------------------------------------------------- | --------------- |
+| `tx-agent`     | `jcode`, `codex`, `forge`, `human`                       | yes             |
+| `tx-validated` | `lint`, `test`, `build`, `cargo-check`, `manual`, `none` | yes             |
+| `tx-task`      | WBS task, e.g. `9.1,9.9`                                 | recommended     |
+| `tx-scope`     | affected components, e.g. `docs`                         | recommended     |
+| `tx-intent`    | one line on what the change achieves                     | recommended     |
+| `tx-parent`    | parent transaction hash                                  | when applicable |
 
 ### Use the wrapper
 
@@ -178,26 +178,26 @@ git lg-audit              # integrity check
 
 ### Never rewrite history
 
-| Forbidden | Why |
-|---|---|
+| Forbidden                                 | Why                        |
+| ----------------------------------------- | -------------------------- |
 | `git push --force` / `--force-with-lease` | Rewrites published history |
-| `git reset --hard` | Destroys uncommitted work |
-| `git clean -fd` | Destroys untracked work |
-| `git branch -D` | Destroys branch state |
-| `gh repo delete` | Destroys the repository |
+| `git reset --hard`                        | Destroys uncommitted work  |
+| `git clean -fd`                           | Destroys untracked work    |
+| `git branch -D`                           | Destroys branch state      |
+| `gh repo delete`                          | Destroys the repository    |
 
 Fix forward. If a commit is wrong, add a corrective commit. Reverting a published
-commit is a *new* commit, not a rewrite.
+commit is a _new_ commit, not a rewrite.
 
 ---
 
 ## 8. Documentation conventions
 
-| Content | Location |
-|---|---|
-| Canonical reference (architecture, API, build, platforms, …) | `docs/*.md` |
-| Session work, evidence, assessments, WBS | `docs/sessions/<YYYYMMDD-name>/` |
-| Gate evidence and run outputs | the relevant session folder |
+| Content                                                      | Location                         |
+| ------------------------------------------------------------ | -------------------------------- |
+| Canonical reference (architecture, API, build, platforms, …) | `docs/*.md`                      |
+| Session work, evidence, assessments, WBS                     | `docs/sessions/<YYYYMMDD-name>/` |
+| Gate evidence and run outputs                                | the relevant session folder      |
 
 Rules:
 
@@ -217,10 +217,10 @@ Rules:
 
 `.github/workflows/ci.yml` is the fork's own workflow:
 
-| Job | Runner | Command |
-|---|---|---|
-| Zig Fmt | `ubuntu-latest` | `zig fmt --check src/ build.zig` |
-| Build (macOS) | `macos-latest` | `zig build -Doptimize=ReleaseSafe -Demit-macos-app=false` |
+| Job           | Runner          | Command                                                   |
+| ------------- | --------------- | --------------------------------------------------------- |
+| Zig Fmt       | `ubuntu-latest` | `zig fmt --check src/ build.zig`                          |
+| Build (macOS) | `macos-latest`  | `zig build -Doptimize=ReleaseSafe -Demit-macos-app=false` |
 
 Both install Zig 0.16.0.
 
@@ -228,12 +228,12 @@ Both install Zig 0.16.0.
 
 Upstream workflows are present but ineffective here:
 
-| Workflow | Why it cannot help |
-|---|---|
-| `test.yml` | Every job is gated on `github.repository == 'ghostty-org/ghostty'` |
-| `nix.yml`, `flatpak.yml`, `update-colorschemes.yml` | Same repository guard |
-| `nix.yml` additionally | Targets `namespace-profile-ghostty-*` runners that do not exist for this repository |
-| 12 other workflow files | Carry **no** repository guard and would attempt to run |
+| Workflow                                            | Why it cannot help                                                                  |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `test.yml`                                          | Every job is gated on `github.repository == 'ghostty-org/ghostty'`                  |
+| `nix.yml`, `flatpak.yml`, `update-colorschemes.yml` | Same repository guard                                                               |
+| `nix.yml` additionally                              | Targets `namespace-profile-ghostty-*` runners that do not exist for this repository |
+| 12 other workflow files                             | Carry **no** repository guard and would attempt to run                              |
 
 Notably there is **no Linux build job and no Linux test job**. If you are
 contributing Linux support, local verification is the only verification.

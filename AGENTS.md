@@ -87,10 +87,10 @@ here and is the canonical reference for any ambiguity).
 
 The IPC work (WBS G4) is split into two phases that are easy to confuse:
 
-| Phase | Scope | State (as of this commit) |
-|---|---|---|
-| **Phase 0** — Build graph wiring | The agent-IPC source tree is reachable from `zig build` (compile-time graph only). | **DONE** at commit `ebc033eba` (merged via PR #15). |
-| **Phase 1** — Runtime wire-up | A running `zig build run` instance actually accepts agent connections and round-trips `ping` → `pong`. | **NOT DONE**. This is the actual G4 finish line. |
+| Phase                            | Scope                                                                                                  | State (as of this commit)                           |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| **Phase 0** — Build graph wiring | The agent-IPC source tree is reachable from `zig build` (compile-time graph only).                     | **DONE** at commit `ebc033eba` (merged via PR #15). |
+| **Phase 1** — Runtime wire-up    | A running `zig build run` instance actually accepts agent connections and round-trips `ping` → `pong`. | **NOT DONE**. This is the actual G4 finish line.    |
 
 The two phases share a surface (both add files under `src/apprt/ipc/`) but are
 distinct deliverables. Phase 0 is necessary but not sufficient; claiming "G4
@@ -124,8 +124,8 @@ protected path. The guard exists precisely because the failure mode is silent.
 
 ## Issue and PR Guidelines (fork-only override)
 
-The upstream Ghostty `AGENTS.md` says: *never create an issue, never create a
-PR.* That rule exists to keep agents from spamming upstream maintainers. **It
+The upstream Ghostty `AGENTS.md` says: _never create an issue, never create a
+PR._ That rule exists to keep agents from spamming upstream maintainers. **It
 does not apply to this fork.** For `KooshaPari/Khostty`:
 
 - **Issues:** agents **may** open issues on `KooshaPari/Khostty` to track fork

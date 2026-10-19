@@ -16,7 +16,7 @@
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync, readFileSync, unlinkSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { dirname, isAbsolute, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -149,7 +149,19 @@ function render(perFile) {
   for (const [file, rawLines] of perFile) {
     const kept = restoreApiMacro(rawLines.join("\n")).split("\n");
     if (kept.length === 0) continue;
-    const header = relative(repoRoot, join(repoRoot, file)).replace(/\\/g, "/");
+    // The preprocessor emits ABSOLUTE line-marker paths. `join(repoRoot, file)`
+    // nests an absolute path under the repo root, and `relative` then hands
+    // back that machine's own prefix (Users/..., home/runner/...). The
+    // generated header therefore used to depend on where the checkout lived,
+    // which made it un-reproducible and made verify-header.sh unpassable on any
+    // machine other than the one that generated it.
+    //
+    // Normalise to a repo-relative path so the output depends only on
+    // repository content.
+    const header = relative(
+      repoRoot,
+      isAbsolute(file) ? file : join(repoRoot, file),
+    ).replace(/\\/g, "/");
     const rule = "/* " + "-".repeat(66) + " */";
     const label = `/* from ${header}`;
     const pad = Math.max(1, 70 - label.length);

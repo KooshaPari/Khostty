@@ -7,7 +7,7 @@ a precise in-repo meaning, the file that defines it is cited.
 
 ## Terminal protocol
 
-**VT** — *Virtual Terminal.* The family of behaviours a terminal emulator
+**VT** — _Virtual Terminal._ The family of behaviours a terminal emulator
 implements: escape sequence parsing, screen state, cursor movement, scrollback,
 attributes. Khostty's engine lives in `src/terminal/`. "VT" is also shorthand for
 the `libghostty-vt` library name.
@@ -15,23 +15,23 @@ the `libghostty-vt` library name.
 **Escape sequence** — A byte string beginning with `ESC` (`0x1B`) that instructs
 the terminal rather than printing a character. Introducers:
 
-| Introducer | Name | Meaning | Header |
-|---|---|---|---|
-| `ESC [` (CSI) | Control Sequence Introducer | Cursor movement, erase, modes, SGR | `src/terminal/csi.zig` (no standalone C parser) |
-| `ESC ]` (OSC) | Operating System Command | Window title, colours, cwd, hyperlinks, clipboard | `include/ghostty/vt/osc.h`, `src/terminal/osc/` |
-| `ESC P` (DCS) | Device Control String | Device queries and responses | `src/terminal/dcs.zig` |
-| `ESC _` (APC) | Application Program Command | Kitty graphics, clipboard protocol | `src/terminal/apc/` |
-| `ESC (` / `ESC )` (SCS) | Select Character Set | `G0`/`G1` charset shift, line drawing | `src/terminal/charsets.zig` |
+| Introducer              | Name                        | Meaning                                           | Header                                          |
+| ----------------------- | --------------------------- | ------------------------------------------------- | ----------------------------------------------- |
+| `ESC [` (CSI)           | Control Sequence Introducer | Cursor movement, erase, modes, SGR                | `src/terminal/csi.zig` (no standalone C parser) |
+| `ESC ]` (OSC)           | Operating System Command    | Window title, colours, cwd, hyperlinks, clipboard | `include/ghostty/vt/osc.h`, `src/terminal/osc/` |
+| `ESC P` (DCS)           | Device Control String       | Device queries and responses                      | `src/terminal/dcs.zig`                          |
+| `ESC _` (APC)           | Application Program Command | Kitty graphics, clipboard protocol                | `src/terminal/apc/`                             |
+| `ESC (` / `ESC )` (SCS) | Select Character Set        | `G0`/`G1` charset shift, line drawing             | `src/terminal/charsets.zig`                     |
 
-**CSI** — *Control Sequence Introducer.* The `ESC [` prefix. Examples:
+**CSI** — _Control Sequence Introducer._ The `ESC [` prefix. Examples:
 `CSI 2 J` (erase display), `CSI 5 ; 10 H` (move cursor to row 5, column 10).
 
-**SGR** — *Select Graphic Rendition.* The `CSI … m` subset that sets text
+**SGR** — _Select Graphic Rendition._ The `CSI … m` subset that sets text
 attributes: bold, dim, italic, underline (and styles), blink, reverse, strike,
 foreground/background colour, including 256-colour and 24-bit RGB. Parsed by
 `src/terminal/sgr.zig`; also exposed standalone as `include/ghostty/vt/sgr.h`.
 
-**OSC** — *Operating System Command.* The `ESC ]` prefix. Relevant codes:
+**OSC** — _Operating System Command._ The `ESC ]` prefix. Relevant codes:
 `OSC 0`/`2` window title, `OSC 7` working directory, `OSC 8` hyperlinks,
 `OSC 10`/`11`/`12` foreground/background/cursor colour, `OSC 52` clipboard.
 
@@ -41,7 +41,7 @@ foreground/background colour, including 256-colour and 24-bit RGB. Parsed by
 
 **Kitty graphics protocol** — An image-transport protocol sent over APC. Khostty
 carries the upstream parser (`src/terminal/kitty/`, `include/ghostty/vt/kitty_graphics.h`).
-It is *disabled* on freestanding/WASM targets, where the sequences are consumed
+It is _disabled_ on freestanding/WASM targets, where the sequences are consumed
 and ignored.
 
 **Grapheme cluster** — One user-perceived character, which may be several
@@ -61,7 +61,7 @@ in `include/ghostty/vt/terminal.h`).
 
 ## Khostty and Ghostty concepts
 
-**AppRT** — *Application Runtime.* The compile-time abstraction over the host
+**AppRT** — _Application Runtime._ The compile-time abstraction over the host
 application: creating windows, delivering input, reading the clipboard. Defined
 in `src/apprt.zig`; the selected implementations are `embedded` (macOS),
 `gtk` (Linux/FreeBSD), `browser` (wasm), `none` (headless), and `ipc`
@@ -73,7 +73,7 @@ in `src/apprt.zig`; the selected implementations are `embedded` (macOS),
 contract; platform runtimes wrap it (`src/apprt/gtk/Surface.zig`,
 `src/apprt/windows/surface.zig`, `src/apprt/embedded.zig`).
 
-**Pane** — A subdivision of a window holding a surface. Pane *creation* as an
+**Pane** — A subdivision of a window holding a surface. Pane _creation_ as an
 external, addressable operation is Khostty's G4 delta: upstream exposes splits
 only through the in-app action system (`src/apprt/action.zig`), not over IPC.
 
@@ -92,7 +92,7 @@ but not a split.
 scrollback metadata) that another terminal instance can restore. API:
 `include/ghostty/vt/snapshot.h`; implementation: `src/terminal/snapshot/`.
 
-**Formatter** — The component that renders terminal contents *out* as plain
+**Formatter** — The component that renders terminal contents _out_ as plain
 text, re-emitted VT sequences, or HTML. API: `include/ghostty/vt/formatter.h`.
 The conformance harness compares formatter output, because it is the same code
 path that copies terminal text to the clipboard.
@@ -105,7 +105,7 @@ survive scrolling, and can report when it has lost its value. APIs:
 screen, scrollback, cursor, styles, selection, search, render state, snapshots,
 Kitty graphics, SGR, OSC, and key/mouse encoding. Declared by
 `include/ghostty/vt.h`. This is the fork's central artifact; the Khostty
-principle is to *wrap* it, never to reimplement it.
+principle is to _wrap_ it, never to reimplement it.
 
 **libghostty** — The larger library surface used by the macOS embedded runtime
 (`src/lib/`). Broader than `libghostty-vt`.
@@ -117,7 +117,7 @@ principle is to *wrap* it, never to reimplement it.
 filesystem, no clock. `libghostty-vt` builds for it with `rdynamic` exports and a
 128 KB stack. Produces `ghostty-vt.wasm`.
 
-**ABI** — *Application Binary Interface.* The binary-level calling contract:
+**ABI** — _Application Binary Interface._ The binary-level calling contract:
 struct layouts, enum values, calling convention. Khostty treats it as data, not
 assumption: `ghostty_type_json()` publishes the ABI as a JSON manifest
 (pointer/`size_t` width, endianness, alignment, per-type offsets and enum values)
@@ -127,7 +127,7 @@ so wrappers lay out structs from the manifest instead of hardcoding numbers.
 layout. Detected by `khostty-vt/tests/abi_layout.rs` against the type manifest,
 and by the WASM type-level test against the same manifest.
 
-**FFI** — *Foreign Function Interface.* Calling C from another language.
+**FFI** — _Foreign Function Interface._ Calling C from another language.
 `khostty-vt` isolates all `unsafe` in `src/ffi.rs`; `wasm/js/abi.js` provides the
 typed handle/allocation layer for JS.
 
@@ -158,19 +158,19 @@ drives reset → resize → feed → snapshot → compare for each case.
 **Gate (G0–G10)** — A milestone in the Deep WBS with its own objective, task
 list, and acceptance criteria. Gates are ordered by dependency, not importance.
 
-| Gate | Scope | Status (2026-09-17) |
-|---|---|---|
-| G0 | Fork hygiene (CI, README) | DONE |
-| G1 | Native build validation | DONE |
-| G2 | Conformance evidence | DONE — 84/84 |
-| G3 | Windows application runtime | IN PROGRESS (SCAFFOLD) |
-| G4 | Agent/IPC surface expansion | IN PROGRESS |
-| G5 | Polyglot FFI — Rust | IN PROGRESS |
-| G6 | Polyglot FFI — Go + Python | IN PROGRESS (Go implemented, Python scaffold) |
-| G7 | WASM cross-compilation | IN PROGRESS |
-| G8 | Khostty improvements + benchmarks | IN PROGRESS |
-| G9 | Documentation + packaging | IN PROGRESS (this document set) |
-| G10 | Release artifacts + ecosystem | NOT STARTED |
+| Gate | Scope                             | Status (2026-09-17)                           |
+| ---- | --------------------------------- | --------------------------------------------- |
+| G0   | Fork hygiene (CI, README)         | DONE                                          |
+| G1   | Native build validation           | DONE                                          |
+| G2   | Conformance evidence              | DONE — 84/84                                  |
+| G3   | Windows application runtime       | IN PROGRESS (SCAFFOLD)                        |
+| G4   | Agent/IPC surface expansion       | IN PROGRESS                                   |
+| G5   | Polyglot FFI — Rust               | IN PROGRESS                                   |
+| G6   | Polyglot FFI — Go + Python        | IN PROGRESS (Go implemented, Python scaffold) |
+| G7   | WASM cross-compilation            | IN PROGRESS                                   |
+| G8   | Khostty improvements + benchmarks | IN PROGRESS                                   |
+| G9   | Documentation + packaging         | IN PROGRESS (this document set)               |
+| G10  | Release artifacts + ecosystem     | NOT STARTED                                   |
 
 **Accepted gate, not accepted product** — G2 passing 84/84 proves the VT core did
 not regress on that corpus. It does not mean Windows runs, IPC exists, or the
@@ -183,7 +183,7 @@ carries one. A historical pass is not a fresh pass; re-run before relying on it.
 
 ## Process vocabulary
 
-**WBS** — *Work Breakdown Structure.* The authoritative task decomposition at
+**WBS** — _Work Breakdown Structure._ The authoritative task decomposition at
 `docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md` (681 lines, 100 tasks,
 11 gates).
 
@@ -195,13 +195,13 @@ explicitly so no consumer builds against it by accident.
 ledger. Agent commits carry metadata trailers; history is never rewritten. See
 [CONTRIBUTING.md](CONTRIBUTING.md#7-commit-ledger).
 
-| Trailer | Value | Meaning |
-|---|---|---|
-| `tx-agent` | `jcode`, `codex`, `forge`, `human` | Who authored the change |
+| Trailer        | Value                                                    | Meaning                        |
+| -------------- | -------------------------------------------------------- | ------------------------------ |
+| `tx-agent`     | `jcode`, `codex`, `forge`, `human`                       | Who authored the change        |
 | `tx-validated` | `lint`, `test`, `build`, `cargo-check`, `manual`, `none` | What was run before committing |
-| `tx-task` | e.g. `9.1` | Which WBS task this closes |
-| `tx-scope` | e.g. `docs` | Affected components |
-| `tx-intent` | one line | What the change achieves |
+| `tx-task`      | e.g. `9.1`                                               | Which WBS task this closes     |
+| `tx-scope`     | e.g. `docs`                                              | Affected components            |
+| `tx-intent`    | one line                                                 | What the change achieves       |
 
 **Status vocabulary** — `DONE`, `IN PROGRESS`, `SCAFFOLD`, `NOT STARTED`,
 `UNKNOWN`, as defined in [ARCHITECTURE.md](ARCHITECTURE.md#khostty-architecture).
