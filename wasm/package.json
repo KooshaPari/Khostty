@@ -22,7 +22,7 @@
   },
   "scripts": {
     "build": "./build.sh",
-    "test": "node --test test/",
+    "test": "node --test test/*.test.mjs",
     "test:header": "./tools/verify-header.sh",
     "typecheck": "npx --yes -p typescript@5 tsc -p tsconfig.json",
     "check": "npm run test:header && npm run typecheck && npm test && npm run exports",
