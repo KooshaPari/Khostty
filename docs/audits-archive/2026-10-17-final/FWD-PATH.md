@@ -31,15 +31,15 @@ Khostty is "finished" in fork-only scope when **(a)** the post-SUNSET polish bat
 
 ### What "done" explicitly does NOT include
 
-| Excluded | Why |
-|---|---|
-| Windows GUI real runtime (G3) | Program deferral in `ROADMAP.md`; 3-4w scope; out of operator scope |
-| `bench/` (G8) | `-Demit-bench` is upstream tooling, not a fork deliverable |
-| Upstream-core focus-by-id API | FORK-ONLY binding; out of scope |
-| Upstream-core synchronous scan API | FORK-ONLY binding; out of scope |
-| Pytest 3.8/3.9 CVE-2025-71176 fix | 3.10+ lane already patched; deliberately left open on 3.8/3.9 |
-| WSL `kooshapari-desk` r4 sync | Tailscale offline; per binding, no probes |
-| Linux box setup | Requires operator decision (Q1) |
+| Excluded                           | Why                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------- |
+| Windows GUI real runtime (G3)      | Program deferral in `ROADMAP.md`; 3-4w scope; out of operator scope |
+| `bench/` (G8)                      | `-Demit-bench` is upstream tooling, not a fork deliverable          |
+| Upstream-core focus-by-id API      | FORK-ONLY binding; out of scope                                     |
+| Upstream-core synchronous scan API | FORK-ONLY binding; out of scope                                     |
+| Pytest 3.8/3.9 CVE-2025-71176 fix  | 3.10+ lane already patched; deliberately left open on 3.8/3.9       |
+| WSL `kooshapari-desk` r4 sync      | Tailscale offline; per binding, no probes                           |
+| Linux box setup                    | Requires operator decision (Q1)                                     |
 
 ---
 
@@ -51,16 +51,16 @@ Each task: file:line + effort + dependency. Total: ~3h.
 
 ### A1 — Refresh 5 stale doc claims (1h)
 
-**Why:** The docs currently *understate* the code; any plan generated from `SECURITY.md`/`PLATFORMS.md`/`protocol.md` will over-estimate remaining work.
+**Why:** The docs currently _understate_ the code; any plan generated from `SECURITY.md`/`PLATFORMS.md`/`protocol.md` will over-estimate remaining work.
 
-| File | Lines | Stale claim | Correct state |
-|---|---|---|---|
-| `docs/SECURITY.md` | 128-130 | "No `server.zig`" / "No `app_host.zig`" | both exist (1,238 + 574 lines, 458 tests) |
-| `docs/SECURITY.md` | 146-167 | "PIPE_PREFIX is malformed" | `windows/ipc.zig:34-39` now spells bytes individually; `ipc.zig:181-200` asserts byte positions |
-| `docs/SECURITY.md` | 169-176, 313, 350 | "No ACL design exists" | `PIPE_DACL_SDDL = "D:P(A;;GA;;;OW)"` + `PIPE_HANDLE_INHERITABLE = false` decided and tested |
-| `docs/PLATFORMS.md` | 234-238 | "Known defect: imports `Surface.zig` (wrong case)" | `mod.zig:4` now imports `surface.zig` (lowercase) |
-| `docs/SECURITY.md` + `docs/AGENT.md §4` | — | Agent IPC claimed "not yet in build graph" | Phase 0 wired `test-agent-ipc` at `build.zig:472-508` on `main` |
-| `docs/src/apprt/ipc/protocol.md` | 21 | `app_host.zig` row says "not yet in the build graph" | Phase 0 wired it |
+| File                                    | Lines             | Stale claim                                          | Correct state                                                                                   |
+| --------------------------------------- | ----------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `docs/SECURITY.md`                      | 128-130           | "No `server.zig`" / "No `app_host.zig`"              | both exist (1,238 + 574 lines, 458 tests)                                                       |
+| `docs/SECURITY.md`                      | 146-167           | "PIPE_PREFIX is malformed"                           | `windows/ipc.zig:34-39` now spells bytes individually; `ipc.zig:181-200` asserts byte positions |
+| `docs/SECURITY.md`                      | 169-176, 313, 350 | "No ACL design exists"                               | `PIPE_DACL_SDDL = "D:P(A;;GA;;;OW)"` + `PIPE_HANDLE_INHERITABLE = false` decided and tested     |
+| `docs/PLATFORMS.md`                     | 234-238           | "Known defect: imports `Surface.zig` (wrong case)"   | `mod.zig:4` now imports `surface.zig` (lowercase)                                               |
+| `docs/SECURITY.md` + `docs/AGENT.md §4` | —                 | Agent IPC claimed "not yet in build graph"           | Phase 0 wired `test-agent-ipc` at `build.zig:472-508` on `main`                                 |
+| `docs/src/apprt/ipc/protocol.md`        | 21                | `app_host.zig` row says "not yet in the build graph" | Phase 0 wired it                                                                                |
 
 **Effort:** 1h (read each context, rewrite 5 short passages). **Block:** none.
 
@@ -147,24 +147,26 @@ While editing `protocol.md` for A1, add a single line in §1 (overview) and §3 
 
 ### The actual G4 finish line
 
-| Task | Where | Effort | Block |
-|---|---|---|---|
-| **B1** Wire `Server.bind` from GTK runtime | `src/apprt/gtk/App.zig` (file:line TBD by audit subagent) | 1d | **GTK-on-Linux** |
+| Task                                                             | Where                                                                                      | Effort       | Block            |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------ | ---------------- |
+| **B1** Wire `Server.bind` from GTK runtime                       | `src/apprt/gtk/App.zig` (file:line TBD by audit subagent)                                  | 1d           | **GTK-on-Linux** |
 | **B2** Fix `pane.write` cross-thread parser access (mailbox hop) | `src/apprt/ipc/app_host.zig:290-298` (replace direct parser access with `Surface.queueIo`) | 1d (with B1) | **GTK-on-Linux** |
-| **B3** Add `max_connections` + rate limit | `src/apprt/ipc/server.zig` | 1h | none |
-| **B4** Map 4 event publish hooks (title/child-exit/resize/bell) | `src/apprt/gtk/` (file:line TBD) | 1d | **GTK-on-Linux** |
-| **B5** Snapshot counters (bell/exit/command/last_activity) | `src/apprt/ipc/app_host.zig:479-489` | 1d | GTK |
-| **B6** Add `conformance/` + `wasm/` to CI | `.github/workflows/` (new `ci/conformance.yml` + extend `ci/zig-fork-tests.yml`) | 1h | none |
+| **B3** Add `max_connections` + rate limit                        | `src/apprt/ipc/server.zig`                                                                 | 1h           | none             |
+| **B4** Map 4 event publish hooks (title/child-exit/resize/bell)  | `src/apprt/gtk/` (file:line TBD)                                                           | 1d           | **GTK-on-Linux** |
+| **B5** Snapshot counters (bell/exit/command/last_activity)       | `src/apprt/ipc/app_host.zig:479-489`                                                       | 1d           | GTK              |
+| **B6** Add `conformance/` + `wasm/` to CI                        | `.github/workflows/` (new `ci/conformance.yml` + extend `ci/zig-fork-tests.yml`)           | 1h           | none             |
 
 ### B1 — Wire `Server.bind` from GTK runtime (1d, dependency: GTK host)
 
 **Approach:**
+
 1. Audit subagent reads `src/apprt/gtk/App.zig` (28 files in `src/apprt/gtk/` — find the lifecycle hook called after the GTK loop is up).
 2. Construct `apprt.ipc.Server` with the documented socket path (`auth.zig:188-198` for platform path).
 3. Call `Server.bind(...)` from the GTK runtime; pass an `apprt.ipc.AppHost` instance.
 4. Verify via local GTK build on Linux; the agent IPC socket should appear at the platform-correct path.
 
 **Acceptance (per protocol.md + state §6):**
+
 - After `zig build` + `khostty` boots on GTK Linux, `ls $XDG_RUNTIME_DIR/khostty/ipc.sock` returns the socket.
 - `khostty-client ping` returns `{"ok":true}`.
 - `khostty-client pane.list` returns at least the focused pane.
@@ -176,6 +178,7 @@ While editing `protocol.md` for A1, add a single line in §1 (overview) and §3 
 **File:** `src/apprt/ipc/app_host.zig:290-298`
 
 **Approach:**
+
 1. Audit subagent traces `CoreSurface.queueIo` in `src/Surface.zig` (state §8 #4 + §9 #2 — currently untraced).
 2. Replace the direct `stream.nextSlice(data)` call with `surface.queueIo(...)` (or whatever the mailbox primitive turns out to be).
 3. Verify by `pane.write` test in the GTK context (cross-thread); previously this would race; after the fix, it should serialize.
@@ -187,6 +190,7 @@ While editing `protocol.md` for A1, add a single line in §1 (overview) and §3 
 **File:** `src/apprt/ipc/server.zig` (per stubs MVP-LAZY #9)
 
 **Approach:**
+
 - Add `max_connections: u32` field to `Server` config (default 32, env override `KHOSTTY_IPC_MAX_CONNECTIONS`).
 - Add a `Semaphore` or atomic counter around `acceptLoop`.
 - Add per-connection token-bucket rate limit (default 100 cmd/s; env override `KHOSTTY_IPC_RATE_LIMIT`).
@@ -198,12 +202,12 @@ While editing `protocol.md` for A1, add a single line in §1 (overview) and §3 
 
 **Per `app_host.zig:54-58`:** the 4 publish hooks belong next to the runtime's existing callbacks. **File:line TBD by audit subagent.** Candidates per mux §3 evidence:
 
-| Event | Likely upstream hook |
-|---|---|
-| `titleChange` | OSC title response (in `src/terminal/Terminal.zig`) |
-| `childExit` | child-process wait callback (in `src/runner.zig` or `src/Command.zig`) |
-| `resize` | resize callback (in `src/Surface.zig`) |
-| `bell` | bell path (in `src/terminal/Terminal.zig`) |
+| Event         | Likely upstream hook                                                   |
+| ------------- | ---------------------------------------------------------------------- |
+| `titleChange` | OSC title response (in `src/terminal/Terminal.zig`)                    |
+| `childExit`   | child-process wait callback (in `src/runner.zig` or `src/Command.zig`) |
+| `resize`      | resize callback (in `src/Surface.zig`)                                 |
+| `bell`        | bell path (in `src/terminal/Terminal.zig`)                             |
 
 **Effort:** 1d (audit + wire). **Block:** GTK runtime.
 
@@ -226,8 +230,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'conformance/**'
-      - 'wasm/**'
+      - "conformance/**"
+      - "wasm/**"
 jobs:
   conformance:
     runs-on: ubuntu-latest
@@ -252,13 +256,13 @@ jobs:
 
 ### Phase 1 design tasks (2d, no runtime needed)
 
-| # | Task | Where | Effort |
-|---|---|---|---|
-| **C1** | Audit `embedded.zig` for mux compatibility (multi-pane, lifecycle, surface API) | `src/apprt/embedded.zig` (89,852 bytes) | 1d |
-| **C2** | Trace `CoreSurface.queueIo` mailbox; write 1-pager | `src/Surface.zig` + new doc `docs/sessions/20261014-ghostty-native-mux/02_MAILBOX_INTEGRATION.md` | 1d |
-| **C3** | Map event hook insertion points in GTK runtime | `src/apprt/gtk/` + new doc `docs/sessions/20261014-ghostty-native-mux/03_EVENT_HOOKS.md` | 4h |
-| **C4** | Phase 1 architecture doc | new doc `docs/sessions/20261014-ghostty-native-mux/04_MUX_ARCHITECTURE.md` | 4h |
-| **C5** | Mock mux prototype skeleton (compile-check only) | `src/apprt/ipc/mux_shell.zig` | 4h |
+| #      | Task                                                                            | Where                                                                                             | Effort |
+| ------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------ |
+| **C1** | Audit `embedded.zig` for mux compatibility (multi-pane, lifecycle, surface API) | `src/apprt/embedded.zig` (89,852 bytes)                                                           | 1d     |
+| **C2** | Trace `CoreSurface.queueIo` mailbox; write 1-pager                              | `src/Surface.zig` + new doc `docs/sessions/20261014-ghostty-native-mux/02_MAILBOX_INTEGRATION.md` | 1d     |
+| **C3** | Map event hook insertion points in GTK runtime                                  | `src/apprt/gtk/` + new doc `docs/sessions/20261014-ghostty-native-mux/03_EVENT_HOOKS.md`          | 4h     |
+| **C4** | Phase 1 architecture doc                                                        | new doc `docs/sessions/20261014-ghostty-native-mux/04_MUX_ARCHITECTURE.md`                        | 4h     |
+| **C5** | Mock mux prototype skeleton (compile-check only)                                | `src/apprt/ipc/mux_shell.zig`                                                                     | 4h     |
 
 C1 + C2 are pre-requisites for Q1(b) (embedded-on-macOS option). C3 is pre-requisite for the operator decision (Q1(a) needs Linux box for validation; C3 specifies the menu swap surface).
 
@@ -289,18 +293,18 @@ Per state §3.2 + stubs §2: Windows GUI expansion is **deliberately deferred** 
 
 **If the operator lifts G3**, the work would be:
 
-| # | Task | Where | Effort |
-|---|---|---|---|
-| W1 | Wire Windows runtime into `src/apprt.zig` comptime switch | `src/apprt.zig` | 1h |
-| W2 | `App.zig` lifecycle (`init`/`registerWindowClass`/`run`/`terminate`/`wakeup`/`performAction`/`performIpc`/`redrawInspector`) — currently all `error.Unimplemented` | `src/apprt/windows/App.zig` | 1-2w |
-| W3 | `Window.zig` HWND handle | `src/apprt/windows/Window.zig` | 1d |
-| W4 | `surface.zig` GDI/Direct2D paint | `src/apprt/windows/surface.zig:92-94` | 1w |
-| W5 | `renderer.zig` (or new GDI/DirectWrite/D2D file) | `src/apprt/windows/` (new file) | 1-2w |
-| W6 | `keyboard.zig` modifier state (`GetKeyState`/`GetAsyncKeyState`/`ToUnicodeEx`) | `src/apprt/windows/keyboard.zig:46-52` | 1d |
-| W7 | `mouse.zig` `TrackMouseEvent(TME_LEAVE)` | `src/apprt/windows/mouse.zig:42-48` | 1h |
-| W8 | Named-pipe IPC transport (`ConvertStringSecurityDescriptorToSecurityDescriptorW`) | `src/apprt/windows/ipc.zig:117-163` | 1d |
-| W9 | `mod.zig` `resourcesDir` returns actual paths | `src/apprt/windows/mod.zig:7-9` | 1h |
-| W10 | Windows GUI launch verification on real hardware | (operator-only) | 1d |
+| #   | Task                                                                                                                                                               | Where                                  | Effort |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- | ------ |
+| W1  | Wire Windows runtime into `src/apprt.zig` comptime switch                                                                                                          | `src/apprt.zig`                        | 1h     |
+| W2  | `App.zig` lifecycle (`init`/`registerWindowClass`/`run`/`terminate`/`wakeup`/`performAction`/`performIpc`/`redrawInspector`) — currently all `error.Unimplemented` | `src/apprt/windows/App.zig`            | 1-2w   |
+| W3  | `Window.zig` HWND handle                                                                                                                                           | `src/apprt/windows/Window.zig`         | 1d     |
+| W4  | `surface.zig` GDI/Direct2D paint                                                                                                                                   | `src/apprt/windows/surface.zig:92-94`  | 1w     |
+| W5  | `renderer.zig` (or new GDI/DirectWrite/D2D file)                                                                                                                   | `src/apprt/windows/` (new file)        | 1-2w   |
+| W6  | `keyboard.zig` modifier state (`GetKeyState`/`GetAsyncKeyState`/`ToUnicodeEx`)                                                                                     | `src/apprt/windows/keyboard.zig:46-52` | 1d     |
+| W7  | `mouse.zig` `TrackMouseEvent(TME_LEAVE)`                                                                                                                           | `src/apprt/windows/mouse.zig:42-48`    | 1h     |
+| W8  | Named-pipe IPC transport (`ConvertStringSecurityDescriptorToSecurityDescriptorW`)                                                                                  | `src/apprt/windows/ipc.zig:117-163`    | 1d     |
+| W9  | `mod.zig` `resourcesDir` returns actual paths                                                                                                                      | `src/apprt/windows/mod.zig:7-9`        | 1h     |
+| W10 | Windows GUI launch verification on real hardware                                                                                                                   | (operator-only)                        | 1d     |
 
 **Total if lifted: 3-4 weeks.** Plus the windows runtime E2E test on a real Windows machine (operator-only).
 
@@ -312,67 +316,68 @@ Per state §3.2 + stubs §2: Windows GUI expansion is **deliberately deferred** 
 
 ### Operator-only (10m or less)
 
-| # | Item | Why operator-only | Effort |
-|---|---|---|---|
-| O1 | PyPI `khostty_vt` trusted publisher registration | Requires operator's PyPI account | 10m |
-| O2 | PyPI dispatch hook approval | Requires operator's PyPI account | 5m |
-| O3 | SonarCloud `SONAR_TOKEN` secret set | Requires operator's SonarCloud account | 1m |
-| O4 | SonarCloud inherited GitHub App uninstall | Requires operator's repo settings access | 1m |
+| #   | Item                                             | Why operator-only                        | Effort |
+| --- | ------------------------------------------------ | ---------------------------------------- | ------ |
+| O1  | PyPI `khostty_vt` trusted publisher registration | Requires operator's PyPI account         | 10m    |
+| O2  | PyPI dispatch hook approval                      | Requires operator's PyPI account         | 5m     |
+| O3  | SonarCloud `SONAR_TOKEN` secret set              | Requires operator's SonarCloud account   | 1m     |
+| O4  | SonarCloud inherited GitHub App uninstall        | Requires operator's repo settings access | 1m     |
 
 **Total operator time: 17m.** Unblocks: Python binding publication (carry-forward #17, #22), SonarCloud scanning (carry-forward #18, #19).
 
 ### Operator decision (no time estimate — needs judgment)
 
-| # | Question | Options |
-|---|---|---|
-| Q1 | **Windowed-runtime for Phase 1** | (a) Linux box with GTK; (b) `embedded.zig` surface-within-surface on macOS; (c) mock-only prototype, defer real runtime |
-| Q2 | **`pane.focus` priority** | ship without focus (defer to fork post-1.0); or schedule upstream work |
-| Q3 | **`pane.search` priority** | same as Q2 — out of fork-only scope |
-| Q6 | **`ci16-fix`/`ci17-fix` cleanup verification** | verify against `ccfa79f2a`/`6da47d0c2` then delete; OR rebase onto current `main` |
-| Q7 | **Lift G3 Windows GUI deferral?** | stay deferred; lift and start 3-4w Windows GUI work |
-| Q8 | **Upstream drift cadence** | rebase cadence (none / weekly / per Phase); EGL BOTH-arms harness must re-run on every EGL-touching rebase |
-| Q9 | **Fork-discipline CI guard** | add `tools/check-fork-discipline.zig` + CI job; or accept silent regression risk |
+| #   | Question                                       | Options                                                                                                                 |
+| --- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Q1  | **Windowed-runtime for Phase 1**               | (a) Linux box with GTK; (b) `embedded.zig` surface-within-surface on macOS; (c) mock-only prototype, defer real runtime |
+| Q2  | **`pane.focus` priority**                      | ship without focus (defer to fork post-1.0); or schedule upstream work                                                  |
+| Q3  | **`pane.search` priority**                     | same as Q2 — out of fork-only scope                                                                                     |
+| Q6  | **`ci16-fix`/`ci17-fix` cleanup verification** | verify against `ccfa79f2a`/`6da47d0c2` then delete; OR rebase onto current `main`                                       |
+| Q7  | **Lift G3 Windows GUI deferral?**              | stay deferred; lift and start 3-4w Windows GUI work                                                                     |
+| Q8  | **Upstream drift cadence**                     | rebase cadence (none / weekly / per Phase); EGL BOTH-arms harness must re-run on every EGL-touching rebase              |
+| Q9  | **Fork-discipline CI guard**                   | add `tools/check-fork-discipline.zig` + CI job; or accept silent regression risk                                        |
 
 ### Operator-pending (no action needed now)
 
-| # | Item | Note |
-|---|---|---|
-| — | WSL `kooshapari-desk` r4 sync | Tailscale offline 2026-10-15; per binding, no further probes |
-| — | Dependabot #1 (pytest CVE-2025-71176) | 3.10+ lane already patched; 3.8/3.9 lane deliberately left open |
+| #   | Item                                  | Note                                                            |
+| --- | ------------------------------------- | --------------------------------------------------------------- |
+| —   | WSL `kooshapari-desk` r4 sync         | Tailscale offline 2026-10-15; per binding, no further probes    |
+| —   | Dependabot #1 (pytest CVE-2025-71176) | 3.10+ lane already patched; 3.8/3.9 lane deliberately left open |
 
 ---
 
 ## §7. What is explicitly OUT of scope (per operator)
 
-| Excluded | Reason | Source |
-|---|---|---|
-| **Scaling** (multi-host, federation, cloud) | operator-excluded | operator 2026-10-17 |
-| **Sunset** (deprecation, EOL signaling) | operator-excluded | operator 2026-10-17; SUNSET arc complete 2026-10-16T22:31Z |
-| **User feedback** (after-launch telemetry, in-app surveys) | operator-excluded | operator 2026-10-17 |
-| **Intent evolution** (new features beyond the existing G0-G10 scope) | operator-excluded | operator 2026-10-17 |
-| Windows GUI expansion (G3) | program-deferred | `ROADMAP.md` |
-| `bench/` (G8) | out of scope per `ROADMAP.md` | `ROADMAP.md` |
-| Upstream-core API changes (focus-by-id, synchronous scan) | FORK-ONLY binding | operator 2026-10-15 |
-| Publishing to `ghostty-org/ghostty` | FORK-ONLY binding | operator 2026-10-15 |
-| Phase 2 (durable sessions + `pane.execute`) | not designed yet | state §9 #10 |
-| Pytest 3.8/3.9 CVE-2025-71176 fix | 3.10+ patched; 3.9 left open by triage 2026-09-29 | state §5 #7 |
+| Excluded                                                             | Reason                                            | Source                                                     |
+| -------------------------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------- |
+| **Scaling** (multi-host, federation, cloud)                          | operator-excluded                                 | operator 2026-10-17                                        |
+| **Sunset** (deprecation, EOL signaling)                              | operator-excluded                                 | operator 2026-10-17; SUNSET arc complete 2026-10-16T22:31Z |
+| **User feedback** (after-launch telemetry, in-app surveys)           | operator-excluded                                 | operator 2026-10-17                                        |
+| **Intent evolution** (new features beyond the existing G0-G10 scope) | operator-excluded                                 | operator 2026-10-17                                        |
+| Windows GUI expansion (G3)                                           | program-deferred                                  | `ROADMAP.md`                                               |
+| `bench/` (G8)                                                        | out of scope per `ROADMAP.md`                     | `ROADMAP.md`                                               |
+| Upstream-core API changes (focus-by-id, synchronous scan)            | FORK-ONLY binding                                 | operator 2026-10-15                                        |
+| Publishing to `ghostty-org/ghostty`                                  | FORK-ONLY binding                                 | operator 2026-10-15                                        |
+| Phase 2 (durable sessions + `pane.execute`)                          | not designed yet                                  | state §9 #10                                               |
+| Pytest 3.8/3.9 CVE-2025-71176 fix                                    | 3.10+ patched; 3.9 left open by triage 2026-09-29 | state §5 #7                                                |
 
 ---
 
 ## §8. Effort budget for the operator's "as close to finish as possible" goal
 
-| Phase | Effort | Operator blocks | Net available work |
-|---|---:|---|---|
-| Phase A — polish batch | **3h** | none | 7 low-risk tasks |
-| Phase B — G4 wire-up | **5d** | GTK/Linux host (B1, B2, B4, B5) | 4h no-GTK + 4d GTK |
-| Phase C — Phase 1 design | **2d** | none (audit + docs only) | 5 design tasks |
-| Phase D — Phase 1 implementation | **1w+** | Q1 (windowed-runtime) + Linux box | blocked on Q1 |
-| Phase E — upstream-core APIs | 1d + 1w+ | Q2, Q3 (out of fork scope) | blocked on operator commitment |
-| Phase F — Windows GUI | 3-4w | Q7 (lift G3 deferral) | out of fwd-path scope |
+| Phase                            |   Effort | Operator blocks                   | Net available work             |
+| -------------------------------- | -------: | --------------------------------- | ------------------------------ |
+| Phase A — polish batch           |   **3h** | none                              | 7 low-risk tasks               |
+| Phase B — G4 wire-up             |   **5d** | GTK/Linux host (B1, B2, B4, B5)   | 4h no-GTK + 4d GTK             |
+| Phase C — Phase 1 design         |   **2d** | none (audit + docs only)          | 5 design tasks                 |
+| Phase D — Phase 1 implementation |  **1w+** | Q1 (windowed-runtime) + Linux box | blocked on Q1                  |
+| Phase E — upstream-core APIs     | 1d + 1w+ | Q2, Q3 (out of fork scope)        | blocked on operator commitment |
+| Phase F — Windows GUI            |     3-4w | Q7 (lift G3 deferral)             | out of fwd-path scope          |
 
 ### "As close to finish as possible" — minimum-viable completion
 
 **Required:**
+
 - Phase A (3h)
 - Phase B non-GTK parts: B3 (1h) + B6 (1h) = **2h**
 - Phase C design (2d, ~16h)
@@ -411,17 +416,17 @@ Per state §3.2 + stubs §2: Windows GUI expansion is **deliberately deferred** 
 
 ## §10. Risks and mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Phase 0 "green" is shallower than it looks (signatures prove, not behavior) | Phase B1 GTK-on-Linux validation is the only true e2e |
-| `pane.write` race fires the moment B1 lands | B2 must be co-shipped (state §6 + stubs MVP-LAZY #1) |
-| Upstream EGL moves break the fork (`e37bee08a`-class) | EGL BOTH-arms synthetic harness (`69e955cfc`/`5055d2c17`) must re-run on every EGL-touching rebase (state §8 #8) |
-| Fork-discipline is silent (a `src/terminal/` mod regresses upstream-merge-cheap property) | Carry-forward #24 — fork-discipline CI guard |
-| `ci/zig-fork-tests` cannot fire on tag push (binding rule #6) | by design; PR-trigger is the safety net |
-| `main` drift vs operator host inability to run GTK | `ci/zig-fork-tests.yml` covers Linux; `ci/test` runs on every push |
-| PyPI v1 publish failure after trusted-publisher setup | Pre-flighted `publish-pypi.yml`; if it fails, operator-visible error |
-| Build host at 96-98% disk (state §7) | `zig build` cold-cache is 27-30m; only one in flight at a time |
-| Tailscale `kooshapari-desk` offline | r4 sync blocked; Linux box should be a different host (operator's call) |
+| Risk                                                                                      | Mitigation                                                                                                       |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Phase 0 "green" is shallower than it looks (signatures prove, not behavior)               | Phase B1 GTK-on-Linux validation is the only true e2e                                                            |
+| `pane.write` race fires the moment B1 lands                                               | B2 must be co-shipped (state §6 + stubs MVP-LAZY #1)                                                             |
+| Upstream EGL moves break the fork (`e37bee08a`-class)                                     | EGL BOTH-arms synthetic harness (`69e955cfc`/`5055d2c17`) must re-run on every EGL-touching rebase (state §8 #8) |
+| Fork-discipline is silent (a `src/terminal/` mod regresses upstream-merge-cheap property) | Carry-forward #24 — fork-discipline CI guard                                                                     |
+| `ci/zig-fork-tests` cannot fire on tag push (binding rule #6)                             | by design; PR-trigger is the safety net                                                                          |
+| `main` drift vs operator host inability to run GTK                                        | `ci/zig-fork-tests.yml` covers Linux; `ci/test` runs on every push                                               |
+| PyPI v1 publish failure after trusted-publisher setup                                     | Pre-flighted `publish-pypi.yml`; if it fails, operator-visible error                                             |
+| Build host at 96-98% disk (state §7)                                                      | `zig build` cold-cache is 27-30m; only one in flight at a time                                                   |
+| Tailscale `kooshapari-desk` offline                                                       | r4 sync blocked; Linux box should be a different host (operator's call)                                          |
 
 ---
 

@@ -1,6 +1,21 @@
+# =============================================================================
+# FORK: DISABLED for automatic triggers. Manual dispatch only.
+# =============================================================================
+# `vouch` is upstream Ghostty's contributor-trust bot, and every job in this
+# workflow targets `namespace-profile-ghostty-xsm` -- a Namespace Cloud
+# self-hosted runner profile that this fork does not have. The VOUCH_APP_ID /
+# VOUCH_APP_PRIVATE_KEY secrets are likewise upstream-only.
+#
+# Observed on KooshaPari/Khostty: these runs never do work; they queue against
+# a nonexistent runner and then cancel, occupying queue capacity that the real
+# checks need. A single-owner fork has no external contributors to vouch for,
+# so the function is not applicable here either.
+#
+# Nothing is deleted: the file is preserved and can be dispatched by hand.
+# =============================================================================
+
 on:
-  pull_request_target:
-    types: [opened, reopened]
+  workflow_dispatch: {}
 
 name: "Vouch - Check PR"
 

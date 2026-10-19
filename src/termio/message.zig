@@ -97,6 +97,17 @@ pub const Message = union(enum) {
     /// Write where the data is allocated and must be freed.
     write_alloc: WriteReq.Alloc,
 
+    /// Feed bytes into the terminal parser exactly as if the child process's
+    /// pty output had produced them. This is the agent-IPC `pane.write` path.
+    ///
+    /// The parser is owned by the IO thread, so a connection thread must
+    /// deliver through the surface mailbox (`CoreSurface.queueIo`) rather than
+    /// calling `nextSlice` directly. `data` is allocated and is freed by the IO
+    /// thread after it is consumed.
+    ///
+    /// FORK: added for KooshaPari/Khostty#48 (agent-IPC parser ownership).
+    parser_write: WriteReq.Alloc,
+
     /// The payload of the kitty_clipboard_grant_* messages. The
     /// password is allocated and must be freed.
     pub const KittyClipboardGrant = struct {
@@ -124,6 +135,7 @@ pub const Message = union(enum) {
                 v.alloc.destroy(v.ptr);
             },
             .write_alloc => |v| v.alloc.free(v.data),
+            .parser_write => |v| v.alloc.free(v.data),
             .kitty_clipboard_grant_read,
             .kitty_clipboard_grant_write,
             => |v| v.alloc.free(v.pw),
