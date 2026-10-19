@@ -1,4 +1,4 @@
-name: 'Install Zig (pinned + checksum-verified)'
+name: "Install Zig (pinned + checksum-verified)"
 description: >-
   Installs a pinned Zig release directly from ziglang.org and verifies its
   SHA-256 before use. Exists because `mlugg/setup-zig` resolves through a chain
@@ -9,15 +9,15 @@ description: >-
 
 inputs:
   version:
-    description: 'Zig version to install, e.g. 0.16.0'
+    description: "Zig version to install, e.g. 0.16.0"
     required: true
   shasum:
-    description: 'Expected SHA-256 of the linux-x86_64 tarball, lowercase hex'
+    description: "Expected SHA-256 of the linux-x86_64 tarball, lowercase hex"
     required: true
 
 outputs:
   version:
-    description: 'The version that was installed'
+    description: "The version that was installed"
     value: ${{ steps.pin.outputs.version }}
 
 runs:

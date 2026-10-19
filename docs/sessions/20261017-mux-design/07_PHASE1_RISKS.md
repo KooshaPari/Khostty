@@ -9,6 +9,7 @@
 **Binding (operator 2026-10-15):** FORK-ONLY. No `gh pr/issue/discussion create` or `gh api POST/PATCH/DELETE` against `ghostty-org/ghostty`. Reading, copying, `zig build` against upstream: fine. Push to `KooshaPari/*`: fine.
 
 **Companion documents:**
+
 - `00_SESSION_OVERVIEW.md` — session scope
 - `04_MUX_ARCHITECTURE.md` — Phase 1 architecture (C4) — **NOT YET ON DISK at write time** (see §10 dependency note)
 - `05_PHASE_B_GTK_WIREUP.md` — Phase B (G4 finish) wire-up spec
@@ -22,11 +23,11 @@
 
 ## 1. TL;DR — Top 3 Risks (Ranked)
 
-| Rank | Risk | Severity (Phase C) | "If this fires, here's what we do" |
-|------|------|--------------------|------------------------------------|
-| **R1** | **Lock-ordering contract breach.** Phase 1 introduces a new lock layer above the existing `Manager → Broker` ordering (`pane.zig:17-24`) without a documented composition. If the mock skeleton's tests are written against the wrong ordering, every future Phase D implementation inherits a deadlock that only fires under load. | **High** (load-bearing even in mock scope) | **Stop, write a 1-pager** in `04_MUX_ARCHITECTURE.md` §"Lock Ordering" specifying the additional `MuxRouter → Manager → Broker` ordering and a "no reentrancy" rule mirroring `pane.zig:17-24`. Land it before any routing-table unit test compiles. |
-| **R2** | **Socket-ownership ambiguity.** `khostty-mux.sock` is a parallel socket to per-instance `khostty.sock`. Race between two `khostty-mux` processes binding the same path is undefined. Stale-socket stale-file pattern in `server.zig:154-156` (`replace_existing=true` default + `deinit` `deleteFile`) works for 1:1 mux↔host but is not specified for N:1 (many hosts behind one mux). | **Medium** (mock scope: routing-table test only; full Phase D: high) | **Document the contract in C4:** exactly one mux process owns `khostty-mux.sock`; instance sockets are N:1 with the mux as the only client. Add a `mux.list` test that proves double-bind refuses. |
-| **R3** | **C4 (architecture doc) does not yet exist.** The Phase 1 architecture was due before mock skeleton (FWD-PATH §4 C4), and the lock-ordering decision (§2 below) is the single highest-risk design decision per `mux.md §5 risk #2`. C4 absence blocks the Phase C5 mock skeleton's compile-time invariants. | **Medium** | **This doc publishes alongside** a 1-pager to `04_MUX_ARCHITECTURE.md`; the analyst session writes both. If 04 does not land within 24h, escalate to operator — without it, Phase C5's lock-ordering tests cannot be authored. |
+| Rank   | Risk                                                                                                                                                                                                                                                                                                                                                                                     | Severity (Phase C)                                                   | "If this fires, here's what we do"                                                                                                                                                                                                                   |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **R1** | **Lock-ordering contract breach.** Phase 1 introduces a new lock layer above the existing `Manager → Broker` ordering (`pane.zig:17-24`) without a documented composition. If the mock skeleton's tests are written against the wrong ordering, every future Phase D implementation inherits a deadlock that only fires under load.                                                      | **High** (load-bearing even in mock scope)                           | **Stop, write a 1-pager** in `04_MUX_ARCHITECTURE.md` §"Lock Ordering" specifying the additional `MuxRouter → Manager → Broker` ordering and a "no reentrancy" rule mirroring `pane.zig:17-24`. Land it before any routing-table unit test compiles. |
+| **R2** | **Socket-ownership ambiguity.** `khostty-mux.sock` is a parallel socket to per-instance `khostty.sock`. Race between two `khostty-mux` processes binding the same path is undefined. Stale-socket stale-file pattern in `server.zig:154-156` (`replace_existing=true` default + `deinit` `deleteFile`) works for 1:1 mux↔host but is not specified for N:1 (many hosts behind one mux). | **Medium** (mock scope: routing-table test only; full Phase D: high) | **Document the contract in C4:** exactly one mux process owns `khostty-mux.sock`; instance sockets are N:1 with the mux as the only client. Add a `mux.list` test that proves double-bind refuses.                                                   |
+| **R3** | **C4 (architecture doc) does not yet exist.** The Phase 1 architecture was due before mock skeleton (FWD-PATH §4 C4), and the lock-ordering decision (§2 below) is the single highest-risk design decision per `mux.md §5 risk #2`. C4 absence blocks the Phase C5 mock skeleton's compile-time invariants.                                                                              | **Medium**                                                           | **This doc publishes alongside** a 1-pager to `04_MUX_ARCHITECTURE.md`; the analyst session writes both. If 04 does not land within 24h, escalate to operator — without it, Phase C5's lock-ordering tests cannot be authored.                       |
 
 **Other risks (Phase C-scope, ranked):** Routing-table contention under load (§4), cross-instance keyboard routing latency/ordering (§5), detach/reattach durability across `khostty-mux` restart (§6), upstream rebase surviving through Phase 1 (§7), test-coverage gaps (§8), operator-decision blocking items (§9). None of these block Phase C; all become critical at Phase D.
 
@@ -38,13 +39,14 @@
 
 `src/apprt/ipc/pane.zig:17-24` documents a strict, non-reentrant contract:
 
-> Locking: one manager mutex serializes registry access *and* host calls […] Consequences, both documented rather than accidental:
->   * a host call must never call back into the same `Manager` (no reentrancy);
->   * `Manager` -> `events.Broker` is the only lock ordering used, and nothing under the broker lock calls back into the manager.
+> Locking: one manager mutex serializes registry access _and_ host calls […] Consequences, both documented rather than accidental:
+>
+> - a host call must never call back into the same `Manager` (no reentrancy);
+> - `Manager` -> `events.Broker` is the only lock ordering used, and nothing under the broker lock calls back into the manager.
 
 The Manager mutex (`pane.zig:335`) and the Broker mutex (`events.zig:264`) are the only two locks in the IPC plane today. Every public `Manager` method (create/close/focus/write/snapshot/resize/equalize/zoom/search/list) takes the manager lock around its body, and `events.Broker.publish` (the only fan-out from the manager path) takes the broker lock without reentering the manager. The protocol is **load-bearing** for correctness: a researcher added an in-the-loop fan-out in the Phase 0 review and it would have deadlocked instantly.
 
-The `AppHost` adds a third mutex (`app_host.zig:98`) — but this is **outside** the IPC fan-out path. `app_host.zig:36-38` is explicit: "this only serializes *IPC* callers; it does not make concurrent access from the app thread safe." The mailbox hop (`CoreSurface.queueIo`, `app_host.zig:42-43`) is the uncompleted contract that bridges IPC threads and the app thread without a third lock in the IPC plane.
+The `AppHost` adds a third mutex (`app_host.zig:98`) — but this is **outside** the IPC fan-out path. `app_host.zig:36-38` is explicit: "this only serializes _IPC_ callers; it does not make concurrent access from the app thread safe." The mailbox hop (`CoreSurface.queueIo`, `app_host.zig:42-43`) is the uncompleted contract that bridges IPC threads and the app thread without a third lock in the IPC plane.
 
 ### What Phase 1 changes
 
@@ -63,11 +65,11 @@ MuxRouter → Manager → events.Broker   (per instance, never reversed)
 
 **Invariant:** a thread holding the `MuxRouter` lock may NOT call `Manager.*` methods, because doing so would create two paths into `Manager` (one from another mux thread, one from a per-instance IPC thread) and reintroduce reentrancy. Instead, the mux routes messages into the per-instance `khostty.sock` connection as opaque frames; the per-instance manager deals with them on its own thread. The mux does **not** issue `pane.create`/`pane.focus` against an instance's Manager directly — it forwards the wire-level command and waits for the response.
 
-**Effect:** the mux remains free of any lock call into Manager; Manager's "no reentrancy" guarantee survives; Broker's per-event lock order survives; the only new lock is `MuxRouter`, which sits *above* both and never participates in the existing order.
+**Effect:** the mux remains free of any lock call into Manager; Manager's "no reentrancy" guarantee survives; Broker's per-event lock order survives; the only new lock is `MuxRouter`, which sits _above_ both and never participates in the existing order.
 
 ### If C4 does not address this
 
-The mock skeleton's routing-table tests will encode *some* ordering — and future Phase D implementers will copy that ordering into the real binary. If the encoded ordering is wrong, the bug is invisible in tests because fake host doesn't take any of the three locks; it manifests only when Phase D lands against real GTK/AppKit runtimes, where the runtime's own mutex (e.g., GTK's `gdk_threads_enter`) participates in the ordering chain.
+The mock skeleton's routing-table tests will encode _some_ ordering — and future Phase D implementers will copy that ordering into the real binary. If the encoded ordering is wrong, the bug is invisible in tests because fake host doesn't take any of the three locks; it manifests only when Phase D lands against real GTK/AppKit runtimes, where the runtime's own mutex (e.g., GTK's `gdk_threads_enter`) participates in the ordering chain.
 
 **Action gate:** `04_MUX_ARCHITECTURE.md` MUST contain a "Lock Ordering" section naming the extended `MuxRouter → Manager → Broker` ordering and citing `pane.zig:17-24` as the precedent. If the analyst cannot satisfy this gate, treat Phase C5 as blocked.
 
@@ -88,14 +90,14 @@ The mock skeleton's routing-table tests will encode *some* ordering — and futu
 
 `khostty-mux.sock` at `$XDG_RUNTIME_DIR/khostty/mux.sock` (path TBD by C4). Properties:
 
-| Property | Expected | Source for the value | Risk |
-|----------|----------|----------------------|------|
-| Owner process | Exactly one `khostty-mux` per host | Design brief, mux §5 | High — race between two muxes binding the same path |
-| Re-bind on stale file | Yes (mirror `replace_existing`) | server.zig precedent | Low — copy pattern |
-| Reap on clean shutdown | Yes (mirror `deinit`) | server.zig:212 | Low |
-| Reap on crash | Optional — second mux should be able to take over | operator decision | **Medium** — design unclear |
-| Auth model | Reuse `auth.zig` token | mux §5 (reuses protocol + auth) | Low — already implemented |
-| Per-instance clients | N | Design brief | Low — same as today's per-instance server |
+| Property               | Expected                                          | Source for the value            | Risk                                                |
+| ---------------------- | ------------------------------------------------- | ------------------------------- | --------------------------------------------------- |
+| Owner process          | Exactly one `khostty-mux` per host                | Design brief, mux §5            | High — race between two muxes binding the same path |
+| Re-bind on stale file  | Yes (mirror `replace_existing`)                   | server.zig precedent            | Low — copy pattern                                  |
+| Reap on clean shutdown | Yes (mirror `deinit`)                             | server.zig:212                  | Low                                                 |
+| Reap on crash          | Optional — second mux should be able to take over | operator decision               | **Medium** — design unclear                         |
+| Auth model             | Reuse `auth.zig` token                            | mux §5 (reuses protocol + auth) | Low — already implemented                           |
+| Per-instance clients   | N                                                 | Design brief                    | Low — same as today's per-instance server           |
 
 ### Race conditions to enumerate
 
@@ -129,12 +131,12 @@ At 100 panes × 10 instances × 2 events/sec/pane = **2,000 lookups/sec.** A sin
 
 Partition when **any** of:
 
-| Signal | Threshold |
-|--------|-----------|
-| Lookup latency p99 | > 500 µs (single-threaded budget) |
-| `MuxRouter` lock queue depth | > 32 waiting threads (rule of thumb) |
+| Signal                        | Threshold                                   |
+| ----------------------------- | ------------------------------------------- |
+| Lookup latency p99            | > 500 µs (single-threaded budget)           |
+| `MuxRouter` lock queue depth  | > 32 waiting threads (rule of thumb)        |
 | Live `(instance, pane)` pairs | > 65,536 (one mux binary's natural ceiling) |
-| Operator's user count | > 50 simultaneous agents |
+| Operator's user count         | > 50 simultaneous agents                    |
 
 Partitioning design (deferred to Phase 2 if even needed): shard by `instance_id % K` for K = core count, each shard owns a sub-table and a sub-mutex. Keep the broker fan-out routing through the same shard (broker→shard by instance_id) so the lock domains don't multiply.
 
@@ -188,12 +190,12 @@ The same or different agent reconnects, calls `mux.attach(instance, pane)`, and 
 
 ### What needs to be persisted (per design brief, mux §5)
 
-| State | Persisted? | Where | Risk |
-|-------|-----------|-------|------|
-| `(instance_id, pane_id) → client_handle` | No — runtime-resident; lost on mux restart | Mux RAM | **High if mux restarts**: routing table rebuild requires re-`mux.attach` from every agent |
-| `mux.layout` (saved layout tree) | **Yes** (Phase 1 design brief says `mux.layout.save` / `mux.layout.restore`) | A file in `XDG_DATA_HOME/khostty/mux/` (path TBD) | Low — same write-once/read-once as a config file |
-| Event backlog for detached panes | **No** today; design brief does not specify replay | — | Medium — agents that re-attach may miss events |
-| Per-instance per-pane "should be alive" | **No** | — | **High** — if a per-instance restarts and its mux knows about its panes, but the mux restarts, the mux forgets the panes were ever registered |
+| State                                    | Persisted?                                                                   | Where                                             | Risk                                                                                                                                          |
+| ---------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `(instance_id, pane_id) → client_handle` | No — runtime-resident; lost on mux restart                                   | Mux RAM                                           | **High if mux restarts**: routing table rebuild requires re-`mux.attach` from every agent                                                     |
+| `mux.layout` (saved layout tree)         | **Yes** (Phase 1 design brief says `mux.layout.save` / `mux.layout.restore`) | A file in `XDG_DATA_HOME/khostty/mux/` (path TBD) | Low — same write-once/read-once as a config file                                                                                              |
+| Event backlog for detached panes         | **No** today; design brief does not specify replay                           | —                                                 | Medium — agents that re-attach may miss events                                                                                                |
+| Per-instance per-pane "should be alive"  | **No**                                                                       | —                                                 | **High** — if a per-instance restarts and its mux knows about its panes, but the mux restarts, the mux forgets the panes were ever registered |
 
 ### Risk focus: mux process restart
 
@@ -233,13 +235,13 @@ Carry-forward #24 (`state.md §8 #10`): `tools/check-fork-discipline.zig` should
 
 ### Most likely regression surfaces
 
-| Surface | Risk | Mitigation |
-|---------|------|------------|
-| `pane.zig` lock-ordering doc | **Low** — Phase 1 doesn't touch `pane.zig`, but the contract extension in §2 needs to be documented in C4 with a pointer to `pane.zig:17-24`. Upstream edits to the doc must be detected and the pointer updated. | Add a `pane.zig` "Mux layer addition" comment that survives rebase. |
-| `server.zig` `replace_existing` default | **Low** — Phase 1 mirrors it, no shared code. | — |
-| `build.zig` for the new executable | Medium — additive but the spec is verbose. Use the existing `test-agent-ipc` step as a template. | Document the pattern in C4. |
-| `app_host.zig` threading note | Low — Phase 1 mock doesn't use `app_host.zig`. | — |
-| `protocol.md §6.2` event surface | Low — Phase 1 reuses existing events. New `mux.*` events are documented in C4, not in `protocol.md`. | — |
+| Surface                                 | Risk                                                                                                                                                                                                              | Mitigation                                                          |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `pane.zig` lock-ordering doc            | **Low** — Phase 1 doesn't touch `pane.zig`, but the contract extension in §2 needs to be documented in C4 with a pointer to `pane.zig:17-24`. Upstream edits to the doc must be detected and the pointer updated. | Add a `pane.zig` "Mux layer addition" comment that survives rebase. |
+| `server.zig` `replace_existing` default | **Low** — Phase 1 mirrors it, no shared code.                                                                                                                                                                     | —                                                                   |
+| `build.zig` for the new executable      | Medium — additive but the spec is verbose. Use the existing `test-agent-ipc` step as a template.                                                                                                                  | Document the pattern in C4.                                         |
+| `app_host.zig` threading note           | Low — Phase 1 mock doesn't use `app_host.zig`.                                                                                                                                                                    | —                                                                   |
+| `protocol.md §6.2` event surface        | Low — Phase 1 reuses existing events. New `mux.*` events are documented in C4, not in `protocol.md`.                                                                                                              | —                                                                   |
 
 ### EGL / OpenGL surface
 
@@ -253,32 +255,32 @@ Phase C is "design + mock skeleton". The minimum test surface to call Phase C do
 
 ### Required (mock skeleton)
 
-| Test | What it proves | File |
-|------|----------------|------|
-| `routing: insert/lookup/delete round-trip` | Data structure is correct | `src/apprt/ipc/mux_shell.zig` |
-| `routing: concurrent insert + lookup from 8 threads` | No torn reads, no lost writes | `src/apprt/ipc/mux_shell.zig` |
-| `routing: memory bound at 1M entries` | No allocator runaway | `src/apprt/ipc/mux_shell.zig` |
-| `mux.list returns all instances + their panes` | Wire-format parity with `protocol.md` | `src/apprt/ipc/mux_shell.zig` |
-| `mux.focus updates routing table (mock delivery)` | Routing-table update path works; mock returns synthetic event | `src/apprt/ipc/mux_shell.zig` |
-| `mux.attach + mux.detach round-trip` | Detach removes entry; attach re-inserts | `src/apprt/ipc/mux_shell.zig` |
-| `mux.layout.save + mux.layout.restore across processes` | Layout file format is forward-compatible | `src/apprt/ipc/mux_shell.zig` |
-| `mux restart clears routing table` | Detach implicit on restart | `src/apprt/ipc/mux_shell.zig` |
-| `lock ordering: MuxRouter never holds Manager` | Compile-time property checked via test, mirroring `pane.zig:565-588` | `src/apprt/ipc/mux_shell.zig` |
-| `auth: same token works on mux socket and per-instance socket` | Reuse `auth.zig` end-to-end | `src/apprt/ipc/mux_shell.zig` |
-| `fork-discipline: mux_shell.zig does not import App.zig` | Mock skeleton stays mock | `tools/check-fork-discipline.zig` (regression test) |
+| Test                                                           | What it proves                                                       | File                                                |
+| -------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------- |
+| `routing: insert/lookup/delete round-trip`                     | Data structure is correct                                            | `src/apprt/ipc/mux_shell.zig`                       |
+| `routing: concurrent insert + lookup from 8 threads`           | No torn reads, no lost writes                                        | `src/apprt/ipc/mux_shell.zig`                       |
+| `routing: memory bound at 1M entries`                          | No allocator runaway                                                 | `src/apprt/ipc/mux_shell.zig`                       |
+| `mux.list returns all instances + their panes`                 | Wire-format parity with `protocol.md`                                | `src/apprt/ipc/mux_shell.zig`                       |
+| `mux.focus updates routing table (mock delivery)`              | Routing-table update path works; mock returns synthetic event        | `src/apprt/ipc/mux_shell.zig`                       |
+| `mux.attach + mux.detach round-trip`                           | Detach removes entry; attach re-inserts                              | `src/apprt/ipc/mux_shell.zig`                       |
+| `mux.layout.save + mux.layout.restore across processes`        | Layout file format is forward-compatible                             | `src/apprt/ipc/mux_shell.zig`                       |
+| `mux restart clears routing table`                             | Detach implicit on restart                                           | `src/apprt/ipc/mux_shell.zig`                       |
+| `lock ordering: MuxRouter never holds Manager`                 | Compile-time property checked via test, mirroring `pane.zig:565-588` | `src/apprt/ipc/mux_shell.zig`                       |
+| `auth: same token works on mux socket and per-instance socket` | Reuse `auth.zig` end-to-end                                          | `src/apprt/ipc/mux_shell.zig`                       |
+| `fork-discipline: mux_shell.zig does not import App.zig`       | Mock skeleton stays mock                                             | `tools/check-fork-discipline.zig` (regression test) |
 
 **Total:** ~10-12 tests, ~300-500 LOC of test code. Phase C scope.
 
 ### Deferred to Phase D (real implementation; out of Phase C)
 
-| Test | When |
-|------|------|
-| Two muxes racing to bind `khostty-mux.sock` — second wins | Phase D |
-| Mux dies mid-`mux.focus` — partial fan-out recovery | Phase D |
-| Per-instance restart — mux routing-table stale entry reaping | Phase D |
-| `mux.focus` with real keyboard delivery (Phase 2) | Phase 2 |
-| Event replay across `mux.attach` after detach | Phase 2 (requires persistence layer) |
-| `max_connections` + rate limit on mux socket (B3) | Phase B |
+| Test                                                         | When                                 |
+| ------------------------------------------------------------ | ------------------------------------ |
+| Two muxes racing to bind `khostty-mux.sock` — second wins    | Phase D                              |
+| Mux dies mid-`mux.focus` — partial fan-out recovery          | Phase D                              |
+| Per-instance restart — mux routing-table stale entry reaping | Phase D                              |
+| `mux.focus` with real keyboard delivery (Phase 2)            | Phase 2                              |
+| Event replay across `mux.attach` after detach                | Phase 2 (requires persistence layer) |
+| `max_connections` + rate limit on mux socket (B3)            | Phase B                              |
 
 ### Coverage target
 

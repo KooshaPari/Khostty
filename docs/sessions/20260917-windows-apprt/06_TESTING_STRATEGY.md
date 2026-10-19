@@ -6,19 +6,19 @@ Use `zig build -Dtarget=x86_64-windows-gnu -Dapp-runtime=windows`.
 Windows remains opt-in. macOS retains `none`, Linux retains `gtk`.
 The scaffold does not provide a working Windows terminal or native event loop.
 
-| Check | Observation |
-|---|---|
-| Window unit test | 1/1 passed |
-| Surface association test plus Window | 2/2 passed, Surface owned by separate worker |
-| Runtime enum/defaults tests | 2/2 passed |
-| Surface cross-compilation | x86_64-windows-gnu, `zig test ... -fno-emit-bin` passed |
-| App and interface syntax | `zig ast-check` passed |
-| Interface standalone semantic test | Blocked by imports outside standalone module root |
-| Changed-file formatting | `zig fmt --check` passed |
-| Windows target build graph / --help | Passed, lists windows enum option |
-| Non-Windows target with windows option | Correctly rejects with InvalidAppRuntimeTarget |
+| Check                                                     | Observation                                                                                                                |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Window unit test                                          | 1/1 passed                                                                                                                 |
+| Surface association test plus Window                      | 2/2 passed, Surface owned by separate worker                                                                               |
+| Runtime enum/defaults tests                               | 2/2 passed                                                                                                                 |
+| Surface cross-compilation                                 | x86_64-windows-gnu, `zig test ... -fno-emit-bin` passed                                                                    |
+| App and interface syntax                                  | `zig ast-check` passed                                                                                                     |
+| Interface standalone semantic test                        | Blocked by imports outside standalone module root                                                                          |
+| Changed-file formatting                                   | `zig fmt --check` passed                                                                                                   |
+| Windows target build graph / --help                       | Passed, lists windows enum option                                                                                          |
+| Non-Windows target with windows option                    | Correctly rejects with InvalidAppRuntimeTarget                                                                             |
 | Full Windows executable (ghostty-vt.dll + ghostty-vt.pdb) | Compiled and linked; exe link failed on concurrent src/cli/new_window.zig:249 error.IPCFailed not in destination error set |
-| Hosted and native GUI acceptance | NOT RUN |
+| Hosted and native GUI acceptance                          | NOT RUN                                                                                                                    |
 
 Full build first found the missing windows SharedDeps switch, now fixed.
 Old cache then reported missing uucode. A fresh cache under Jcode scratch

@@ -66,17 +66,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: true
-    # 2026-10-15: the guard was `if: ${{ env.SONAR_TOKEN != '' }}`, but
-    # `env.SONAR_TOKEN` is only defined at STEP level below, so the job-level
-    # `env` context is undefined and the comparison is `'' != ''` -- which is
-    # FALSE. The job therefore skipped unconditionally, and setting
-    # SONAR_TOKEN in repo secrets would have silently done nothing.
-    # Fix: gate on the secrets context, which IS available at job level.
-    # `secrets` cannot be used directly in a top-level `if`, hence the
-    # job-level `env` shim below plus the explicit `env.` reference here.
+    # 2026-10-19: TWO previous attempts at this guard were both always-false.
+    #
+    #   1. `if: ${{ env.SONAR_TOKEN != '' }}` -- `env.SONAR_TOKEN` is set only
+    #      at step level, so this compared `'' != ''` and was always false.
+    #   2. A job-level `env: { SONAR_TOKEN_PRESENT: ... }` shim read back as
+    #      `if: ${{ env.SONAR_TOKEN_PRESENT == 'true' }}`. That is also
+    #      invalid: `env` is NOT an available context in a job-level `if`.
+    #      `actionlint` states the permitted set: github, inputs, needs, vars.
+    #      The condition was therefore always false as well, so adding
+    #      SONAR_TOKEN to the repository secrets would still have silently
+    #      done nothing -- exactly the failure mode attempt 1 set out to fix.
+    #
+    # Correct pattern: a job-level `env:` may reference `secrets`, and a
+    # step-level `if:` may read `env`. So compute presence once here, read it
+    # in the scan step, and let the job itself always run.
     env:
       SONAR_TOKEN_PRESENT: ${{ secrets.SONAR_TOKEN != '' }}
-    if: ${{ env.SONAR_TOKEN_PRESENT == 'true' }}
 
     steps:
       - name: Checkout
@@ -88,6 +94,12 @@ jobs:
           fetch-depth: 0
 
       - name: SonarCloud Scan
+        # `secrets` is not a permitted context in any `if:` -- not at job level
+        # (github, inputs, needs, vars) and not at step level either (env,
+        # github, inputs, job, matrix, needs, runner, steps, strategy, vars).
+        # It IS permitted in a job-level `env:`, and `env` IS permitted in a
+        # step-level `if:`. So: compute presence once at job level, read it here.
+        if: ${{ env.SONAR_TOKEN_PRESENT == 'true' }}
         uses: sonarsource/sonarqube-scan-action@884b79409bbd464b2a59edc326a4b77dc56b2195 # v3.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
