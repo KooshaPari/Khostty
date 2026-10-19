@@ -53,6 +53,18 @@ pub const Config = struct {
     event_poll_ms: u64 = 25,
     /// Events written per push.
     push_batch: usize = 32,
+    /// Maximum number of concurrent connections the server will hold open. New
+    /// accepts are closed without spawning a handler thread once this cap is
+    /// reached. The cap protects against trivial DoS by a hostile local user
+    /// spawning thousands of socket connects per second.
+    max_connections: u32 = 32,
+    /// Per-connection token-bucket rate limit (tokens per second). The bucket
+    /// starts full at `rate_limit_per_sec` tokens; a frame consumes one token
+    /// and the bucket refills at the configured rate. When the bucket is empty
+    /// the frame is rejected with `ErrorCode.rate_limited` (B3 wire extension).
+    /// Set to 0 to disable the rate limit. Defaults to 100 tokens/sec, which is
+    /// ~10x the headroom of a normal interactive user.
+    rate_limit_per_sec: u32 = 100,
 };
 
 /// Everything the server needs from the rest of the IPC layer.
@@ -81,6 +93,17 @@ pub const Conn = struct {
     pusher: ?std.Thread = null,
     /// Events written to this connection (observability + tests).
     events_sent: usize = 0,
+    /// Token-bucket rate limit state. The bucket starts full at
+    /// `server.config.rate_limit_per_sec` tokens and is lazily refilled by
+    /// `tryConsumeToken` based on elapsed monotonic time. Fields are mutable
+    /// from a single connection (no cross-thread access), so no atomics here.
+    rate_tokens: f32 = 0,
+    /// Last monotonic-nanosecond timestamp used for bucket refill. 0 means
+    /// "first call" and the bucket is initialised to full at that point.
+    rate_last_ns: i96 = 0,
+    /// Frames rejected by the per-connection rate limit. Incremented on the
+    /// calling thread; observed by tests only after the connection settles.
+    rate_limited_frames: std.atomic.Value(usize) = .init(0),
 
     fn writeLine(self: *Conn, bytes: []const u8) !void {
         const io = self.server.io;
@@ -108,6 +131,40 @@ pub const Conn = struct {
         message: []const u8,
     ) !void {
         try self.respond(protocol.Response.failure(id, code, message));
+    }
+
+    /// Try to consume one rate-limit token. Lazily refills the bucket based on
+    /// elapsed time since the last update. Returns false if the bucket is empty
+    /// (the caller should reject the frame with `rate_limited`).
+    fn tryConsumeToken(self: *Conn) bool {
+        const capacity_f = @as(f32, @floatFromInt(self.server.config.rate_limit_per_sec));
+        if (capacity_f <= 0) return true; // No rate limit configured.
+        // `std.Io.Clock.now` replaces the removed `std.time.Instant.now()` from
+        // older Zig; the result is non-fallible on every supported backend.
+        // The 0.16 Clock enum exposes `awake` (monotonic, excludes suspend) and
+        // `boot` (monotonic, includes suspend). `awake` is the right one for a
+        // rate-limit bucket: we want the time the system has been awake, not
+        // wall-clock, and we don't want suspended time credited as refill.
+        const now_ns = std.Io.Clock.now(.awake, self.server.io).nanoseconds;
+        if (self.rate_last_ns == 0) {
+            // First call on this connection: bucket starts full at capacity.
+            self.rate_tokens = capacity_f;
+            self.rate_last_ns = now_ns;
+            return true;
+        }
+        const elapsed_ns = now_ns - self.rate_last_ns;
+        if (elapsed_ns > 0) {
+            const refill = @as(f32, @floatFromInt(elapsed_ns)) /
+                @as(f32, 1_000_000_000.0) * capacity_f;
+            self.rate_tokens = @min(capacity_f, self.rate_tokens + refill);
+            self.rate_last_ns = now_ns;
+        }
+        if (self.rate_tokens >= 1.0) {
+            self.rate_tokens -= 1.0;
+            return true;
+        }
+        _ = self.rate_limited_frames.fetchAdd(1, .monotonic);
+        return false;
     }
 
     fn startPusher(self: *Conn) void {
@@ -244,6 +301,21 @@ pub const Server = struct {
                 return;
             }
 
+            // Enforce the connection cap BEFORE counting this accept. The
+            // kernel still completed the connect(2), so from the client side
+            // this looks like the server accepted and then immediately hung up.
+            // We deliberately do not increment `connections_accepted` here: the
+            // counter is for "connections we actually started serving", and an
+            // over-cap accept never gets that far.
+            if (self.live_connections.load(.acquire) >= self.config.max_connections) {
+                log.debug("rejecting accept: live_connections={d} >= cap={d}", .{
+                    self.live_connections.load(.acquire),
+                    self.config.max_connections,
+                });
+                stream.close(self.io);
+                continue;
+            }
+
             _ = self.connections_accepted.fetchAdd(1, .monotonic);
             _ = self.live_connections.fetchAdd(1, .monotonic);
 
@@ -330,6 +402,19 @@ pub const Server = struct {
 
     /// Parse and answer one frame, then deliver any events that are pending.
     pub fn handleFrame(self: *Server, conn: *Conn, frame: []const u8) void {
+        // Per-connection rate limit. Reject the frame before parsing to keep
+        // the contract cheap: a flooded client never gets to spend our CPU on
+        // JSON parsing or handler dispatch. The id is null because we have
+        // not parsed the frame yet and cannot know if it carried one.
+        if (!conn.tryConsumeToken()) {
+            conn.respondFailure(
+                null,
+                .rate_limited,
+                "per-connection rate limit exceeded; slow down",
+            ) catch {};
+            return;
+        }
+
         var arena = std.heap.ArenaAllocator.init(self.gpa);
         defer arena.deinit();
 
@@ -496,6 +581,14 @@ const Harness = struct {
         event_pusher: bool = false,
         event_poll_ms: u64 = 5,
         max_frame_bytes: usize = protocol.max_frame_bytes,
+        /// Override the per-server cap on simultaneous connections. Tests that
+        /// exercise the cap set this to a small value (2 or 3) so they do not
+        /// have to spawn dozens of real sockets.
+        max_connections: u32 = 32,
+        /// Override the per-connection rate limit. Tests that exercise the
+        /// limit set this to a small value (2 or 3 tokens/sec) so the burst
+        /// window is small and the test is fast.
+        rate_limit_per_sec: u32 = 100,
     };
 
     fn init(gpa: Allocator, options: Options) !*Harness {
@@ -528,6 +621,8 @@ const Harness = struct {
             .event_pusher = options.event_pusher,
             .event_poll_ms = options.event_poll_ms,
             .max_frame_bytes = options.max_frame_bytes,
+            .max_connections = options.max_connections,
+            .rate_limit_per_sec = options.rate_limit_per_sec,
         }, .{
             .manager = &self.manager,
             .broker = &self.broker,
@@ -1125,6 +1220,99 @@ test "lifecycle: stop is idempotent and deinit drains connections" {
     h.server.stop();
     h.server.stop();
     try testing.expectEqual(false, h.server.running.load(.acquire));
+}
+
+test "max_connections: an over-cap accept is dropped without spawning a thread" {
+    // Use a small cap so the test runs fast; the contract is the same as for
+    // any other N (accept loop checks live_connections against the cap).
+    var h = try Harness.init(testing.allocator, .{ .max_connections = 2 });
+    defer h.deinit();
+
+    var keep_open_a = try h.connect();
+    var keep_open_b = try h.connect();
+    defer keep_open_a.deinit();
+    defer keep_open_b.deinit();
+
+    // The two held clients have made it through acceptMain; live_connections
+    // should be at or near the cap. We do not sleep here: acceptMain's gate is
+    // checked synchronously before the spawn, so by the time `connect()`
+    // returns the held connections have already been counted.
+    try testing.expect(h.server.live_connections.load(.acquire) >= 2);
+
+    // Drive a ping on the held connections so the test is a real round trip,
+    // not just a connect.
+    try keep_open_a.send(.{ .cmd = .ping });
+    try keep_open_b.send(.{ .cmd = .ping });
+    {
+        const a = try keep_open_a.readResponse(testing.allocator);
+        defer a.deinit();
+        try testing.expect(a.value.object.get("ok").?.bool);
+    }
+    {
+        const b = try keep_open_b.readResponse(testing.allocator);
+        defer b.deinit();
+        try testing.expect(b.value.object.get("ok").?.bool);
+    }
+
+    // The next accept must be rejected: the kernel still completes the
+    // connect(2), but acceptMain's gate sees live_connections >= max_connections
+    // and closes the stream before spawning a thread. From the client's side
+    // this looks like the server hung up on the connection.
+    var over_cap = try h.connect();
+    defer over_cap.deinit();
+    try over_cap.send(.{ .cmd = .ping });
+
+    if (over_cap.readResponse(testing.allocator)) |parsed| {
+        defer parsed.deinit();
+        try testing.expectEqual(false, parsed.value.object.get("ok").?.bool);
+    } else |err| {
+        try testing.expect(err == error.EndOfStream or err == error.ReadFailed);
+    }
+
+    // The over-cap client never counted as live, so live_connections is still 2
+    // (the two held clients). The connections_accepted counter incremented by
+    // 3 for the three connect() calls, but only 2 became live.
+    try testing.expectEqual(@as(usize, 2), h.server.live_connections.load(.acquire));
+    try testing.expect(h.server.connections_accepted.load(.acquire) >= 3);
+}
+
+test "rate_limit: a burst beyond the bucket is rejected with rate_limited" {
+    // Bucket capacity = 2 tokens, refill rate = 2 tokens/sec. Drain the
+    // bucket with two valid pings, then the third frame in the same burst
+    // window is refused.
+    var h = try Harness.init(testing.allocator, .{ .rate_limit_per_sec = 2 });
+    defer h.deinit();
+
+    var client = try h.connect();
+    defer client.deinit();
+
+    // First two pings must succeed; the bucket starts full at 2.
+    try client.send(.{ .cmd = .ping });
+    {
+        const ok1 = try client.readResponse(testing.allocator);
+        defer ok1.deinit();
+        try testing.expect(ok1.value.object.get("ok").?.bool);
+    }
+    try client.send(.{ .cmd = .ping });
+    {
+        const ok2 = try client.readResponse(testing.allocator);
+        defer ok2.deinit();
+        try testing.expect(ok2.value.object.get("ok").?.bool);
+    }
+
+    // Third ping in the same instant must be rate-limited. The bucket refills
+    // at 2 tokens/sec, so we have a 500ms window of confidence that the third
+    // ping is rejected; in practice the test completes in well under that.
+    try client.send(.{ .cmd = .ping });
+    {
+        const limited = try client.readResponse(testing.allocator);
+        defer limited.deinit();
+        try testing.expectEqual(false, limited.value.object.get("ok").?.bool);
+        try testing.expectEqualStrings(
+            "rate_limited",
+            limited.value.object.get("error").?.object.get("code").?.string,
+        );
+    }
 }
 
 /// One agent's request sequence, used by the concurrency test. Returns the
