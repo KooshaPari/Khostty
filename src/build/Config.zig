@@ -364,8 +364,28 @@ pub fn init(b: *std.Build, appVersion: []const u8, libVersion: []const u8) !Conf
 
     config.lib_version = if (lib_version_string) |v|
         try std.SemanticVersion.parse(v)
-    else
-        try std.SemanticVersion.parse(libVersion);
+    else blk: {
+        var parsed = try std.SemanticVersion.parse(libVersion);
+
+        // FORK: stamp the git revision as semver build metadata.
+        //
+        // `libVersion` is a bare constant (`build.zig`: "0.1.0-dev") with no
+        // build metadata, and lib artifacts take their version from
+        // `config.lib_version` (see the `.lib => self.lib_version` arm below).
+        // Consequence: every lib artifact's C type manifest reported
+        // `"commit": null`, so a `.dylib`/`.so`/wasm module could not name the
+        // source that produced it. That is why evidence in the audit had to be
+        // bound by artifact hash rather than by revision.
+        //
+        // Git detection is best-effort and must never fail the build: a source
+        // tarball, a vendored dep checkout, or a CI job without history has no
+        // revision to report. On failure the version stays exactly as before.
+        if (GitVersion.detect(b)) |vsn| {
+            parsed.build = try b.allocator.dupe(u8, vsn.short_hash);
+        } else |_| {}
+
+        break :blk parsed;
+    };
 
     //---------------------------------------------------------------
     // Binary Properties
