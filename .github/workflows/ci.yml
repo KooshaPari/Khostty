@@ -145,6 +145,34 @@ jobs:
         run: |
           cargo test --workspace --no-fail-fast 2>&1 || echo "::warning::test failures (advisory)"
 
+  # The generated Rust binding must match the C headers.
+  #
+  # REQUIRED, and deliberately NOT advisory. The `rust` job is
+  # `continue-on-error: true` and wraps `cargo test` in
+  # `|| echo "::warning::test failures (advisory)"`, so a stale binding could
+  # not fail CI there — and it did not. khostty-vt 0.1.0 shipped with
+  # `src/ffi.rs` stale against `include/`: 198 functions / 179 types /
+  # 794 constants versus 199 / 196 / 884 after regeneration, with
+  # `ghostty_osc_set` (include/ghostty/vt/osc.h:330) absent from the binding
+  # entirely. `cargo test --test ffi_coverage` does catch this, but only if it
+  # is allowed to fail the build.
+  #
+  # This check needs only Python 3 and the source headers: no Zig build, no
+  # Rust toolchain, no linked library. It runs in about two seconds, so there
+  # is no reason for it to be advisory.
+  binding-freshness:
+    name: Rust binding freshness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: gen_ffi.py --check
+        working-directory: khostty-vt
+        run: |
+          set -euo pipefail
+          python3 tools/gen_ffi.py --check
+
   cargo-deny:
     name: Cargo Deny (Advisories + Licenses)
     needs: detect
