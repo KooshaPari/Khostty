@@ -173,6 +173,29 @@ jobs:
           set -euo pipefail
           python3 tools/gen_ffi.py --check
 
+  # The consolidated wasm header must be in sync with the real headers.
+  #
+  # Same defect class as the Rust binding above: both files are generated from
+  # `include/ghostty/`, and both were stale because the upstream sync landed
+  # after they were last generated. `wasm/include/ghostty-vt.h` was missing the
+  # whole OSC section, `ghostty_osc_set` included.
+  #
+  # `verify-header.sh` regenerates the consolidated header and fails if the
+  # committed file differs, so it is a real drift gate. It also type-checks the
+  # header standalone with clang, and with `zig cc` when zig is present.
+  wasm-header-freshness:
+    name: WASM header freshness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: verify-header.sh
+        run: wasm/tools/verify-header.sh
+
   cargo-deny:
     name: Cargo Deny (Advisories + Licenses)
     needs: detect
