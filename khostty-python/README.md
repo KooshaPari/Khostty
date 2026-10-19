@@ -3,7 +3,7 @@
 Python bindings for **libghostty-vt**, the virtual-terminal emulation library
 extracted from [Ghostty](https://ghostty.org).
 
-This is not a terminal widget. It is for tooling that needs to *understand*
+This is not a terminal widget. It is for tooling that needs to _understand_
 terminal output rather than display it: agent harnesses that read a pane's state
 as data, log scrapers that want the screen without escape-sequence noise, test
 helpers that assert on what a program actually drew.
@@ -132,16 +132,16 @@ with MouseEncoder() as mouse, MouseEvent() as click:
 Three behaviours are worth knowing, because each makes an encode produce
 nothing rather than raising:
 
-* A printable key needs its text. A physical key code does not say which
-  character was produced, so ``set_utf8`` is required for anything that types.
-* Kitty encoding additionally needs the unshifted codepoint.
-* An Alt prefix needs both the DEC 1036 mode and option-as-alt.
+- A printable key needs its text. A physical key code does not say which
+  character was produced, so `set_utf8` is required for anything that types.
+- Kitty encoding additionally needs the unshifted codepoint.
+- An Alt prefix needs both the DEC 1036 mode and option-as-alt.
 
 And an empty result from the mouse encoder is a valid outcome, not a failure:
 motion with no button held is not reportable under
-``MouseTrackingMode.NORMAL``. The same empty result appears for a less obvious
-reason, so it is worth stating: the encoder needs the *surface* dimensions as
-well as the cell size, and a zero ``screen_width`` or ``screen_height`` makes
+`MouseTrackingMode.NORMAL`. The same empty result appears for a less obvious
+reason, so it is worth stating: the encoder needs the _surface_ dimensions as
+well as the cell size, and a zero `screen_width` or `screen_height` makes
 every event unreportable.
 
 ## Design notes

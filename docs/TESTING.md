@@ -10,33 +10,33 @@ document carries the date it was observed.
 
 ## 1. Test inventory
 
-| Suite | Command | Scope | Cases | Status |
-|---|---|---|---|---|
-| **Conformance** | `conformance/build.sh` | VT/ANSI behaviour via the C library | **84** | **PASSED 2026-09-17; re-verified 2026-09-18 (84 passed / 0 failed, exit 0)** |
-| Zig unit tests | `zig build test` | Upstream core (289 files contain tests) | many | Not run in this session |
-| libghostty-vt tests | `zig build test-lib-vt` | The C library's own tests | — | Not run in this session |
-| ABI type manifest | `zig build test-lib-vt-schema` | The type manifest the wrappers consume | — | Not run in this session |
-| Rust integration | `cd khostty-vt && cargo test` | Safe wrappers against the real library | — | Not run in this session |
-| Rust ABI layout | `cd khostty-vt && cargo test` (`tests/abi_layout.rs`) | Struct layout vs the manifest | — | Not run in this session |
-| Rust FFI drift | `cargo test --features bindgen` | Hand-written bindings vs bindgen output | — | Requires libclang |
-| WASM runtime + ABI | `cd wasm && npm test` | JS API against the built `.wasm` | 52 | Not run in this session |
-| WASM header sync | `cd wasm && npm run test:header` | Consolidated header vs real headers | — | Not run in this session |
-| WASM types | `cd wasm && npm run typecheck` | `.d.ts` covers the real surface | — | Not run in this session |
-| Fuzz corpus | `test/fuzz-libghostty/` | Parser crash-freedom (AFL++) | 4,002 seed files | Not run in this session |
-| Benchmarks | `bench/run.sh` | VT throughput, snapshot, search, memory, resize | 5 sections | **Captured once 2026-09-17, no upstream baseline** |
+| Suite               | Command                                               | Scope                                           | Cases            | Status                                                                       |
+| ------------------- | ----------------------------------------------------- | ----------------------------------------------- | ---------------- | ---------------------------------------------------------------------------- |
+| **Conformance**     | `conformance/build.sh`                                | VT/ANSI behaviour via the C library             | **84**           | **PASSED 2026-09-17; re-verified 2026-09-18 (84 passed / 0 failed, exit 0)** |
+| Zig unit tests      | `zig build test`                                      | Upstream core (289 files contain tests)         | many             | Not run in this session                                                      |
+| libghostty-vt tests | `zig build test-lib-vt`                               | The C library's own tests                       | —                | Not run in this session                                                      |
+| ABI type manifest   | `zig build test-lib-vt-schema`                        | The type manifest the wrappers consume          | —                | Not run in this session                                                      |
+| Rust integration    | `cd khostty-vt && cargo test`                         | Safe wrappers against the real library          | —                | Not run in this session                                                      |
+| Rust ABI layout     | `cd khostty-vt && cargo test` (`tests/abi_layout.rs`) | Struct layout vs the manifest                   | —                | Not run in this session                                                      |
+| Rust FFI drift      | `cargo test --features bindgen`                       | Hand-written bindings vs bindgen output         | —                | Requires libclang                                                            |
+| WASM runtime + ABI  | `cd wasm && npm test`                                 | JS API against the built `.wasm`                | 52               | Not run in this session                                                      |
+| WASM header sync    | `cd wasm && npm run test:header`                      | Consolidated header vs real headers             | —                | Not run in this session                                                      |
+| WASM types          | `cd wasm && npm run typecheck`                        | `.d.ts` covers the real surface                 | —                | Not run in this session                                                      |
+| Fuzz corpus         | `test/fuzz-libghostty/`                               | Parser crash-freedom (AFL++)                    | 4,002 seed files | Not run in this session                                                      |
+| Benchmarks          | `bench/run.sh`                                        | VT throughput, snapshot, search, memory, resize | 5 sections       | **Captured once 2026-09-17, no upstream baseline**                           |
 
 `bench/` exists as of 2026-09-17: a C harness linked against the shipped library,
 covering VT ingest throughput, snapshot latency, search latency, memory footprint,
 and resize cost, with both text and JSON output carrying machine spec, toolchain,
 library build info, git revision, and load average.
 
-It is not usable as an *absolute* claim **[corrected 2026-09-19]**:
+It is not usable as an _absolute_ claim **[corrected 2026-09-19]**:
 
-| Problem | Detail |
-|---|---|
-| Baseline is a different vintage | The upstream library is dated 2026-08-05, 41 days older than Khostty's 2026-09-15 merge base; only directional, within-pass readings are defensible |
-| Measured under extreme load | 1-minute load averages of 548, 572, 599 and 674 across the four passes on a 10-core machine. `bench/README.md` states medians moved >3x between loaded and idle windows. |
-| Dirty tree | The JSON records `git_status: dirty` at `git_head` `fc0aea2bc` / `d7ec3a36e`, so no revision-pinned result |
+| Problem                         | Detail                                                                                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Baseline is a different vintage | The upstream library is dated 2026-08-05, 41 days older than Khostty's 2026-09-15 merge base; only directional, within-pass readings are defensible                      |
+| Measured under extreme load     | 1-minute load averages of 548, 572, 599 and 674 across the four passes on a 10-core machine. `bench/README.md` states medians moved >3x between loaded and idle windows. |
+| Dirty tree                      | The JSON records `git_status: dirty` at `git_head` `fc0aea2bc` / `d7ec3a36e`, so no revision-pinned result                                                               |
 
 Also note: `-Demit-bench` builds **upstream's** bench tooling, which is a different
 thing from this harness; do not cite it as G8 evidence.
@@ -78,17 +78,17 @@ What the script does:
 
 84 cases across 8 categories:
 
-| Category | Cases | Focus |
-|---|---:|---|
-| `sgr` | 17 | bold/dim/italic/underline/blink/reverse/strike; RGB; 256-colour; combined; resets |
-| `cursor` | 10 | up/down/left/right; CUP; home; DECSC/DECRC; default-parameter CSI |
-| `osc` | 9 | OSC 0/2 title; OSC 10/11/12 colours; OSC 7 cwd; OSC 8 hyperlinks; OSC 52 clipboard |
-| `charset` | 8 | SCS G0/G1 (UK, US, line-drawing, British); SS2/SS3; locking shifts |
-| `mode` | 12 | DECCKM, DECOM, DECSCNM, DECAWM, DECTCEM, DECARM, and others |
-| `scroll` | 7 | DECSTBM margins; IND/RI; SU/SD |
-| `kitty-gfx` | 5 | APC init/progress/end/reset/transparency |
-| `edge` | 16 | incomplete escapes, invalid params, unicode, wide chars, CR/LF, bell, BS, DEL |
-| **Total** | **84** | |
+| Category    |  Cases | Focus                                                                              |
+| ----------- | -----: | ---------------------------------------------------------------------------------- |
+| `sgr`       |     17 | bold/dim/italic/underline/blink/reverse/strike; RGB; 256-colour; combined; resets  |
+| `cursor`    |     10 | up/down/left/right; CUP; home; DECSC/DECRC; default-parameter CSI                  |
+| `osc`       |      9 | OSC 0/2 title; OSC 10/11/12 colours; OSC 7 cwd; OSC 8 hyperlinks; OSC 52 clipboard |
+| `charset`   |      8 | SCS G0/G1 (UK, US, line-drawing, British); SS2/SS3; locking shifts                 |
+| `mode`      |     12 | DECCKM, DECOM, DECSCNM, DECAWM, DECTCEM, DECARM, and others                        |
+| `scroll`    |      7 | DECSTBM margins; IND/RI; SU/SD                                                     |
+| `kitty-gfx` |      5 | APC init/progress/end/reset/transparency                                           |
+| `edge`      |     16 | incomplete escapes, invalid params, unicode, wide chars, CR/LF, bell, BS, DEL      |
+| **Total**   | **84** |                                                                                    |
 
 ### Methodology
 
@@ -184,12 +184,12 @@ run the full suite before claiming completion.
 
 If you changed a `libghostty-vt` file, use the library-scoped steps:
 
-| Step | Purpose |
-|---|---|
-| `zig build test-lib-vt` | Run the library's tests |
-| `zig build test-lib-vt-build` | Compile them without running (fast signal) |
-| `zig build test-lib-vt-schema` | Validate the ABI type manifest |
-| `zig build test-valgrind` | Run tests under Valgrind (requires Valgrind) |
+| Step                           | Purpose                                      |
+| ------------------------------ | -------------------------------------------- |
+| `zig build test-lib-vt`        | Run the library's tests                      |
+| `zig build test-lib-vt-build`  | Compile them without running (fast signal)   |
+| `zig build test-lib-vt-schema` | Validate the ABI type manifest               |
+| `zig build test-valgrind`      | Run tests under Valgrind (requires Valgrind) |
 
 `valgrind.supp` at the repository root supplies the suppression list.
 
@@ -250,12 +250,12 @@ written from the binary-format spec; `typecheck` fetches TypeScript on demand.
 
 ### What each test proves
 
-| Test | Proves |
-|---|---|
-| `test/smoke.test.mjs` | The object model works end to end: write, read text/html, snapshot, search |
-| `test/abi-exports.test.mjs` | The exported function set equals the consolidated header minus an explicit reasoned list (currently only the 16 `ghostty_kitty_graphics_*`) |
-| `test/types.test-d.ts` | Every declared method is visible to a strict-mode TypeScript consumer |
-| `test:header` | Regenerating the consolidated header changes nothing, it compiles under clang and `zig cc`, and its function set matches the union of the real headers (203 functions) |
+| Test                        | Proves                                                                                                                                                                 |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test/smoke.test.mjs`       | The object model works end to end: write, read text/html, snapshot, search                                                                                             |
+| `test/abi-exports.test.mjs` | The exported function set equals the consolidated header minus an explicit reasoned list (currently only the 16 `ghostty_kitty_graphics_*`)                            |
+| `test/types.test-d.ts`      | Every declared method is visible to a strict-mode TypeScript consumer                                                                                                  |
+| `test:header`               | Regenerating the consolidated header changes nothing, it compiles under clang and `zig cc`, and its function set matches the union of the real headers (203 functions) |
 
 Because the module is freestanding and the bindings are plain ESM, Node exercises
 the same code path a browser would. There is no jsdom or headless-browser
@@ -275,11 +275,11 @@ real gap for the G7 "browser smoke test" criterion.
 `test/fuzz-libghostty/` runs [AFL++](https://aflplus.plus/) harnesses against
 three targets:
 
-| Target | Binary | Coverage |
-|---|---|---|
-| `osc` | `fuzz-osc` | OSC parser with allocator; seeds cover OSC 52, 66, 133, 3008, 1337, 5522 |
-| `parser` | `fuzz-parser` | VT parser only, byte at a time |
-| `stream` | `fuzz-stream` | Full terminal stream through the readonly handler |
+| Target   | Binary        | Coverage                                                                 |
+| -------- | ------------- | ------------------------------------------------------------------------ |
+| `osc`    | `fuzz-osc`    | OSC parser with allocator; seeds cover OSC 52, 66, 133, 3008, 1337, 5522 |
+| `parser` | `fuzz-parser` | VT parser only, byte at a time                                           |
+| `stream` | `fuzz-stream` | Full terminal stream through the readonly handler                        |
 
 4,002 seed files are present in `corpus/`. `replay-crashes.nu` replays recorded
 crashes. G2's acceptance criterion is "fuzz corpus produces zero new crashes" —
@@ -292,19 +292,19 @@ that requires running the harness, which was not done in this session.
 Tests exist to close gates, not for their own sake. Each gate has its own
 acceptance criteria and its own evidence.
 
-| Gate | Objective | Primary evidence | Status (2026-09-17) |
-|---|---|---|---|
-| G0 | Fork hygiene | CI present and fork-appropriate | DONE |
-| G1 | Native build validation | Artifacts produced (static, shared, xcframework, wasm) | DONE |
-| G2 | Conformance evidence | 84/84 conformance pass, dated | **DONE** |
-| G3 | Windows app runtime | Cross-compile + run on Windows/Wine | IN PROGRESS (scaffold only) |
-| G4 | Agent/IPC surface | Pane commands + concurrency test + auth | IN PROGRESS |
-| G5 | Rust FFI | `cargo test` green, RAII wrappers, clippy clean | IN PROGRESS |
-| G6 | Go + Python FFI | `go test ./...`, `pytest` | IN PROGRESS (Go implemented, Python scaffold) |
-| G7 | WASM cross-compilation | WASM builds, JS API works, browser smoke test | IN PROGRESS |
-| G8 | Improvements + benchmarks | Benchmark JSON + `bench/results/` with date | IN PROGRESS — no upstream baseline |
-| G9 | Docs + packaging | Docs committed, installers verified | IN PROGRESS |
-| G10 | Release artifacts | Tagged release, checksums, smoke tests | NOT STARTED |
+| Gate | Objective                 | Primary evidence                                       | Status (2026-09-17)                           |
+| ---- | ------------------------- | ------------------------------------------------------ | --------------------------------------------- |
+| G0   | Fork hygiene              | CI present and fork-appropriate                        | DONE                                          |
+| G1   | Native build validation   | Artifacts produced (static, shared, xcframework, wasm) | DONE                                          |
+| G2   | Conformance evidence      | 84/84 conformance pass, dated                          | **DONE**                                      |
+| G3   | Windows app runtime       | Cross-compile + run on Windows/Wine                    | IN PROGRESS (scaffold only)                   |
+| G4   | Agent/IPC surface         | Pane commands + concurrency test + auth                | IN PROGRESS                                   |
+| G5   | Rust FFI                  | `cargo test` green, RAII wrappers, clippy clean        | IN PROGRESS                                   |
+| G6   | Go + Python FFI           | `go test ./...`, `pytest`                              | IN PROGRESS (Go implemented, Python scaffold) |
+| G7   | WASM cross-compilation    | WASM builds, JS API works, browser smoke test          | IN PROGRESS                                   |
+| G8   | Improvements + benchmarks | Benchmark JSON + `bench/results/` with date            | IN PROGRESS — no upstream baseline            |
+| G9   | Docs + packaging          | Docs committed, installers verified                    | IN PROGRESS                                   |
+| G10  | Release artifacts         | Tagged release, checksums, smoke tests                 | NOT STARTED                                   |
 
 ### Gate-closing rules
 
@@ -325,12 +325,12 @@ acceptance criteria and its own evidence.
 
 Where evidence goes:
 
-| Evidence | Location |
-|---|---|
-| Gate pass/fail matrix | `docs/sessions/<date>-<name>/` |
-| Conformance run output | The session folder, with the library build timestamp |
-| Benchmark JSON + report | `bench/results/` (once G8 exists) |
-| Claimed status in `docs/` | An `Observed: <date>` line at the top of the doc |
+| Evidence                  | Location                                             |
+| ------------------------- | ---------------------------------------------------- |
+| Gate pass/fail matrix     | `docs/sessions/<date>-<name>/`                       |
+| Conformance run output    | The session folder, with the library build timestamp |
+| Benchmark JSON + report   | `bench/results/` (once G8 exists)                    |
+| Claimed status in `docs/` | An `Observed: <date>` line at the top of the doc     |
 
 Rules:
 
@@ -344,16 +344,16 @@ Rules:
 
 ## 9. Verified results log
 
-| Date | Check | Result | Notes |
-|---|---|---|---|
-| 2026-09-17 | `conformance/build.sh run` | **PASS** 84/84, 100% | Against the dylib built 2026-09-16 16:46 |
-| 2026-09-17 | `zig build -Demit-lib-vt` (repo cache) | **FAIL** | Stale build runner, `uucode` `FileNotFound` |
-| 2026-09-17 | `zig build -Demit-lib-vt` (fresh cache), working tree | **FAIL** | Unhandled `Runtime.windows` arm in `src/build/SharedDeps.zig` |
-| 2026-09-17 | `zig build -Demit-lib-vt`, detached worktree at `a4bf9e98f` | **FAIL** | `src/apprt/ipc/mod.zig` relative imports resolve to missing files; 50/64 steps succeeded, 2 compile errors |
-| 2026-09-17 | WASM artifact | Present | 813,670 bytes, sha256 `08ac8ed8…`, mtime 2026-09-16 04:35 |
-| 2026-09-17 | `bench/run.sh` (Khostty label) | **CAPTURED, NOT USABLE FOR ABSOLUTE CLAIMS** | `bench/results/khostty-20260917.{txt,json}`; load 548, tree dirty |
-| 2026-09-17 | `bench/run.sh --upstream` | **CAPTURED** | `bench/results/upstream-20260917.{txt,json}` (7,561 B, load 572). An earlier pass produced no output; the four-pass run recorded here supersedes it **[corrected 2026-09-19]** |
-| 2026-09-17 | `cargo test`, `npm run check`, `zig build test` | **NOT RUN** | Not executed in this session |
+| Date       | Check                                                       | Result                                       | Notes                                                                                                                                                                          |
+| ---------- | ----------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-09-17 | `conformance/build.sh run`                                  | **PASS** 84/84, 100%                         | Against the dylib built 2026-09-16 16:46                                                                                                                                       |
+| 2026-09-17 | `zig build -Demit-lib-vt` (repo cache)                      | **FAIL**                                     | Stale build runner, `uucode` `FileNotFound`                                                                                                                                    |
+| 2026-09-17 | `zig build -Demit-lib-vt` (fresh cache), working tree       | **FAIL**                                     | Unhandled `Runtime.windows` arm in `src/build/SharedDeps.zig`                                                                                                                  |
+| 2026-09-17 | `zig build -Demit-lib-vt`, detached worktree at `a4bf9e98f` | **FAIL**                                     | `src/apprt/ipc/mod.zig` relative imports resolve to missing files; 50/64 steps succeeded, 2 compile errors                                                                     |
+| 2026-09-17 | WASM artifact                                               | Present                                      | 813,670 bytes, sha256 `08ac8ed8…`, mtime 2026-09-16 04:35                                                                                                                      |
+| 2026-09-17 | `bench/run.sh` (Khostty label)                              | **CAPTURED, NOT USABLE FOR ABSOLUTE CLAIMS** | `bench/results/khostty-20260917.{txt,json}`; load 548, tree dirty                                                                                                              |
+| 2026-09-17 | `bench/run.sh --upstream`                                   | **CAPTURED**                                 | `bench/results/upstream-20260917.{txt,json}` (7,561 B, load 572). An earlier pass produced no output; the four-pass run recorded here supersedes it **[corrected 2026-09-19]** |
+| 2026-09-17 | `cargo test`, `npm run check`, `zig build test`             | **NOT RUN**                                  | Not executed in this session                                                                                                                                                   |
 
 ### Consequence for this document
 

@@ -2,14 +2,14 @@
 
 **Observed:** 2026-09-17 · Read the status line before building on any surface.
 
-| Surface | Entry point | Stability | Status |
-|---|---|---|---|
-| C ABI | `include/ghostty/vt.h` | Explicitly unstable upstream ("work-in-progress") | DONE (G1/G2) |
-| Rust | `khostty-vt/` crate | Pre-1.0; wrappers added incrementally | IN PROGRESS (G5) |
-| JS/TS (WASM) | `wasm/js/` package | Pre-1.0 (`version: 0.0.0`) | IN PROGRESS (G7) |
-| IPC | `src/apprt/ipc.zig` (3 actions) | Stable but narrow | DONE, narrow |
-| IPC (agent protocol) | `src/apprt/ipc/` | **No server yet — not reachable** | IN PROGRESS (G4) |
-| CLI | `khostty +<command>` | Follows upstream | DONE |
+| Surface              | Entry point                     | Stability                                         | Status           |
+| -------------------- | ------------------------------- | ------------------------------------------------- | ---------------- |
+| C ABI                | `include/ghostty/vt.h`          | Explicitly unstable upstream ("work-in-progress") | DONE (G1/G2)     |
+| Rust                 | `khostty-vt/` crate             | Pre-1.0; wrappers added incrementally             | IN PROGRESS (G5) |
+| JS/TS (WASM)         | `wasm/js/` package              | Pre-1.0 (`version: 0.0.0`)                        | IN PROGRESS (G7) |
+| IPC                  | `src/apprt/ipc.zig` (3 actions) | Stable but narrow                                 | DONE, narrow     |
+| IPC (agent protocol) | `src/apprt/ipc/`                | **No server yet — not reachable**                 | IN PROGRESS (G4) |
+| CLI                  | `khostty +<command>`            | Follows upstream                                  | DONE             |
 
 **Not available, do not code against:** the JSON agent IPC protocol (v1) has an
 implemented wire layer and a spec at
@@ -30,32 +30,32 @@ The umbrella header includes 30 module headers and declares **203 `GHOSTTY_API`
 functions**. `GHOSTTY_API` expands to `__declspec(dllexport/dllimport)` on Windows
 and `__attribute__((visibility("default")))` elsewhere.
 
-The header's own warning, quoted because it is the contract: *"This is an
+The header's own warning, quoted because it is the contract: _"This is an
 incomplete, work-in-progress API. It is not yet stable and is definitely going to
-change."* Pin a revision; do not assume ABI compatibility across versions.
+change."_ Pin a revision; do not assume ABI compatibility across versions.
 
 ### Linking
 
-| Artifact | Flag | File |
-|---|---|---|
-| Shared | default for lib targets | `libghostty-vt.0.1.0.dylib` / `.so` |
-| Static | `-Demit-lib-vt` | `libghostty-vt.a` |
-| Apple multi-platform | `-Demit-xcframework` | `.xcframework` |
-| WebAssembly | `-Dtarget=wasm32-freestanding` | `ghostty-vt.wasm` |
+| Artifact             | Flag                           | File                                |
+| -------------------- | ------------------------------ | ----------------------------------- |
+| Shared               | default for lib targets        | `libghostty-vt.0.1.0.dylib` / `.so` |
+| Static               | `-Demit-lib-vt`                | `libghostty-vt.a`                   |
+| Apple multi-platform | `-Demit-xcframework`           | `.xcframework`                      |
+| WebAssembly          | `-Dtarget=wasm32-freestanding` | `ghostty-vt.wasm`                   |
 
 Full commands: [BUILD.md](BUILD.md).
 
 ### Result codes
 
-| Code | Value | Meaning |
-|---|---:|---|
-| `GHOSTTY_SUCCESS` | 0 | Success |
-| `GHOSTTY_OUT_OF_MEMORY` | −1 | Allocation failure |
-| `GHOSTTY_INVALID_VALUE` | −2 | Invalid argument |
-| `GHOSTTY_OUT_OF_SPACE` | −3 | Buffer too small; required capacity returned |
-| `GHOSTTY_NO_VALUE` | −4 | Valid query, no value yet |
+| Code                    | Value | Meaning                                      |
+| ----------------------- | ----: | -------------------------------------------- |
+| `GHOSTTY_SUCCESS`       |     0 | Success                                      |
+| `GHOSTTY_OUT_OF_MEMORY` |    −1 | Allocation failure                           |
+| `GHOSTTY_INVALID_VALUE` |    −2 | Invalid argument                             |
+| `GHOSTTY_OUT_OF_SPACE`  |    −3 | Buffer too small; required capacity returned |
+| `GHOSTTY_NO_VALUE`      |    −4 | Valid query, no value yet                    |
 
-`GHOSTTY_OUT_OF_SPACE` is a *two-pass* signal, not a failure: the call reports the
+`GHOSTTY_OUT_OF_SPACE` is a _two-pass_ signal, not a failure: the call reports the
 required capacity so the caller can allocate and retry. The Rust `sys` module wraps
 that pattern.
 
@@ -93,20 +93,20 @@ Behaviour that matters when embedding:
 `ghostty_terminal_set` takes a `GhosttyTerminalOption` (40 defined, values 0–39),
 including:
 
-| Option group | Purpose |
-|---|---|
-| `…_USERDATA` | Opaque pointer handed back to callbacks |
-| `…_WRITE_PTY` | Receives query responses (DSR, DA, …) the terminal would normally write back to the PTY |
-| `…_BELL` | Bell notification |
-| `…_TITLE`, `…_PWD`, `…_TITLE_CHANGED`, `…_PWD_CHANGED` | Programmatic title / working directory and their change notifications |
-| `…_COLOR_FOREGROUND`, `…_BACKGROUND`, `…_CURSOR`, `…_COLOR_PALETTE` | Theme injection |
-| `…_SELECTION` | Selection state |
-| `…_SCROLLBACK_MAX_BYTES`, `…_MAX_LINES` | Scrollback bounds |
-| `…_KITTY_IMAGE_*` | Image storage limits and media policy |
-| `…_MODE_DEFAULT`, `…_MODE` | DEC private mode defaults |
-| `…_TERMINFO_NAME` | Reported terminfo name |
-| `…_CLIPBOARD_READ`, `…_CLIPBOARD_WRITE` | Clipboard bridge |
-| `…_DESKTOP_NOTIFICATION`, `…_PROGRESS_REPORT` | Host notifications |
+| Option group                                                        | Purpose                                                                                 |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `…_USERDATA`                                                        | Opaque pointer handed back to callbacks                                                 |
+| `…_WRITE_PTY`                                                       | Receives query responses (DSR, DA, …) the terminal would normally write back to the PTY |
+| `…_BELL`                                                            | Bell notification                                                                       |
+| `…_TITLE`, `…_PWD`, `…_TITLE_CHANGED`, `…_PWD_CHANGED`              | Programmatic title / working directory and their change notifications                   |
+| `…_COLOR_FOREGROUND`, `…_BACKGROUND`, `…_CURSOR`, `…_COLOR_PALETTE` | Theme injection                                                                         |
+| `…_SELECTION`                                                       | Selection state                                                                         |
+| `…_SCROLLBACK_MAX_BYTES`, `…_MAX_LINES`                             | Scrollback bounds                                                                       |
+| `…_KITTY_IMAGE_*`                                                   | Image storage limits and media policy                                                   |
+| `…_MODE_DEFAULT`, `…_MODE`                                          | DEC private mode defaults                                                               |
+| `…_TERMINFO_NAME`                                                   | Reported terminfo name                                                                  |
+| `…_CLIPBOARD_READ`, `…_CLIPBOARD_WRITE`                             | Clipboard bridge                                                                        |
+| `…_DESKTOP_NOTIFICATION`, `…_PROGRESS_REPORT`                       | Host notifications                                                                      |
 
 All 40 option names are prefixed `GHOSTTY_TERMINAL_OPT_`.
 
@@ -130,14 +130,14 @@ ghostty_terminal_get(term, GHOSTTY_TERMINAL_DATA_CURSOR_X, &cursor_x);
 ghostty_terminal_get(term, GHOSTTY_TERMINAL_DATA_CURSOR_Y, &cursor_y);
 ```
 
-| Key group | Keys |
-|---|---|
-| Geometry | `COLS`, `ROWS`, `WIDTH_PX`, `HEIGHT_PX`, `TOTAL_ROWS`, `SCROLLBACK_ROWS` |
-| Cursor | `CURSOR_X`, `CURSOR_Y`, `CURSOR_STYLE`, `CURSOR_VISIBLE`, `CURSOR_PENDING_WRAP` |
-| Screen | `ACTIVE_SCREEN`, `SCROLLBAR`, `MOUSE_TRACKING`, `KITTY_KEYBOARD_FLAGS` |
-| Identity | `TITLE`, `PWD` |
-| Theme | `COLOR_FOREGROUND`, `COLOR_BACKGROUND`, `COLOR_CURSOR`, `COLOR_PALETTE`, plus `*_DEFAULT` variants |
-| Kitty images | `KITTY_IMAGE_STORAGE_LIMIT`, `…_MEDIUM_FILE`, `…_MEDIUM_TEMP_FILE`, `…_MEDIUM_SHARED_MEM` |
+| Key group    | Keys                                                                                               |
+| ------------ | -------------------------------------------------------------------------------------------------- |
+| Geometry     | `COLS`, `ROWS`, `WIDTH_PX`, `HEIGHT_PX`, `TOTAL_ROWS`, `SCROLLBACK_ROWS`                           |
+| Cursor       | `CURSOR_X`, `CURSOR_Y`, `CURSOR_STYLE`, `CURSOR_VISIBLE`, `CURSOR_PENDING_WRAP`                    |
+| Screen       | `ACTIVE_SCREEN`, `SCROLLBAR`, `MOUSE_TRACKING`, `KITTY_KEYBOARD_FLAGS`                             |
+| Identity     | `TITLE`, `PWD`                                                                                     |
+| Theme        | `COLOR_FOREGROUND`, `COLOR_BACKGROUND`, `COLOR_CURSOR`, `COLOR_PALETTE`, plus `*_DEFAULT` variants |
+| Kitty images | `KITTY_IMAGE_STORAGE_LIMIT`, `…_MEDIUM_FILE`, `…_MEDIUM_TEMP_FILE`, `…_MEDIUM_SHARED_MEM`          |
 
 `ghostty_terminal_get_multi` fetches several keys in one call. Because the
 out-parameter type depends on the key, a binding cannot guess it: the header
@@ -154,20 +154,20 @@ raw row/column indices in anything long-lived.
 
 ### Other API groups
 
-| Group | Header(s) | What it gives you |
-|---|---|---|
-| Snapshot / render state | `snapshot.h`, `render.h` | Encode terminal state with an incremental decoder; dirty-tracked render state with row/cell iteration |
-| Output | `formatter.h` | Export as plain text, VT, or HTML |
-| Search | `search.h` | Find in screen + scrollback; match iteration for highlight drawing |
-| Standalone parsers | `osc.h`, `sgr.h` | Parse OSC and SGR independently of a terminal |
-| Input encoding | `key/event.h` + `key/encoder.h`, `mouse/event.h` + `mouse/encoder.h`, `focus.h` | Key (Kitty protocol), mouse (SGR format), and focus in/out → escape sequences |
-| Paste / selection | `paste.h`, `selection.h` | Safety check, unsafe-paste confirmation flow, bracketed encoding; synthetic gesture events → selection snapshots |
-| Grid refs | `grid_ref.h`, `grid_ref_tracked.h` | Stable cell and row handles that survive scrolling |
-| Text metrics / colour | `unicode.h`, `color.h` | Codepoint and grapheme width; RGB, X11 name parsing, palette generation, luminance, contrast |
-| Reports | `modes.h`, `size_report.h`, `color_scheme.h` | Mode, in-band size, and colour-scheme report encoding |
-| Build info | `build_info.h` | Compile-time feature queries (SIMD, Kitty graphics, tmux) |
-| Host plumbing | `allocator.h`, `io.h`, `sys.h`, `wasm.h` | `alloc`/`free`, reader/writer callbacks, host `set`/`log_stderr`, WASM handle helpers |
-| ABI manifest | `types.h` | `ghostty_type_json` |
+| Group                   | Header(s)                                                                       | What it gives you                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Snapshot / render state | `snapshot.h`, `render.h`                                                        | Encode terminal state with an incremental decoder; dirty-tracked render state with row/cell iteration            |
+| Output                  | `formatter.h`                                                                   | Export as plain text, VT, or HTML                                                                                |
+| Search                  | `search.h`                                                                      | Find in screen + scrollback; match iteration for highlight drawing                                               |
+| Standalone parsers      | `osc.h`, `sgr.h`                                                                | Parse OSC and SGR independently of a terminal                                                                    |
+| Input encoding          | `key/event.h` + `key/encoder.h`, `mouse/event.h` + `mouse/encoder.h`, `focus.h` | Key (Kitty protocol), mouse (SGR format), and focus in/out → escape sequences                                    |
+| Paste / selection       | `paste.h`, `selection.h`                                                        | Safety check, unsafe-paste confirmation flow, bracketed encoding; synthetic gesture events → selection snapshots |
+| Grid refs               | `grid_ref.h`, `grid_ref_tracked.h`                                              | Stable cell and row handles that survive scrolling                                                               |
+| Text metrics / colour   | `unicode.h`, `color.h`                                                          | Codepoint and grapheme width; RGB, X11 name parsing, palette generation, luminance, contrast                     |
+| Reports                 | `modes.h`, `size_report.h`, `color_scheme.h`                                    | Mode, in-band size, and colour-scheme report encoding                                                            |
+| Build info              | `build_info.h`                                                                  | Compile-time feature queries (SIMD, Kitty graphics, tmux)                                                        |
+| Host plumbing           | `allocator.h`, `io.h`, `sys.h`, `wasm.h`                                        | `alloc`/`free`, reader/writer callbacks, host `set`/`log_stderr`, WASM handle helpers                            |
+| ABI manifest            | `types.h`                                                                       | `ghostty_type_json`                                                                                              |
 
 ### ABI manifest
 
@@ -199,19 +199,19 @@ Crate metadata: version `0.1.0`, edition 2021, MSRV 1.75, MIT.
 
 ### Features
 
-| Feature | Default | Effect |
-|---|---|---|
-| `link` | yes | Emit linker directives for a prebuilt `libghostty-vt`. `--no-default-features` typechecks without the native library. |
-| `bindgen` | no | Regenerate `$OUT_DIR/bindings.rs` and diff it against `src/ffi.rs` (drift check). Requires libclang. |
+| Feature   | Default | Effect                                                                                                                |
+| --------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| `link`    | yes     | Emit linker directives for a prebuilt `libghostty-vt`. `--no-default-features` typechecks without the native library. |
+| `bindgen` | no      | Regenerate `$OUT_DIR/bindings.rs` and diff it against `src/ffi.rs` (drift check). Requires libclang.                  |
 
 ### Build-time discovery
 
-| Variable | Meaning |
-|---|---|
-| `GHOSTTY_VT_LIB_DIR` | Directory containing `libghostty-vt.{dylib,so,a}` |
-| `GHOSTTY_VT_LIB` | Explicit full path to the library |
-| `GHOSTTY_VT_INCLUDE_DIR` | Directory containing `ghostty/vt.h` |
-| `GHOSTTY_VT_LINK_KIND` | Force `dylib` or `static` |
+| Variable                 | Meaning                                           |
+| ------------------------ | ------------------------------------------------- |
+| `GHOSTTY_VT_LIB_DIR`     | Directory containing `libghostty-vt.{dylib,so,a}` |
+| `GHOSTTY_VT_LIB`         | Explicit full path to the library                 |
+| `GHOSTTY_VT_INCLUDE_DIR` | Directory containing `ghostty/vt.h`               |
+| `GHOSTTY_VT_LINK_KIND`   | Force `dylib` or `static`                         |
 
 Defaults probe `../zig-out/lib`, `../build/lib`, `../dist/lib`. If nothing is
 found the build warns and links nothing, so `cargo check` still succeeds without a
@@ -228,17 +228,17 @@ term.vt_write(b"hello\r\n");
 assert_eq!(term.cursor_position()?, (7, 1));
 ```
 
-| Area | Methods |
-|---|---|
-| Construct | `new(cols, rows)`, `with_allocator(..)`, `as_raw()` |
-| Mutate | `vt_write(bytes)`, `vt_write_until_ground(..)`, `resize(cols, rows, cw_px, ch_px)`, `reset()`, `scroll_viewport(..)` |
-| Scrollback | `compress(..)`, `compression_activity(..)`, `scrollback_max_bytes()`, `scrollback_max_lines()` |
-| Callbacks | `set_write_pty<F>(..)`, `set_bell<F>(..)`, `bell_count()` |
-| Geometry | `cols`, `rows`, `size_px`, `total_rows`, `scrollback_rows`, `scrollbar` |
-| Cursor | `cursor_x`, `cursor_y`, `cursor_position`, `cursor_pending_wrap`, `cursor_visible`, `cursor_at_prompt`, `cursor_sgr_style` |
-| Screen / modes | `active_screen`, `viewport_active`, `mouse_tracking`, `kitty_keyboard_flags` |
-| Parser state / text | `vt_ground`, `has_vt_processing_error`, `title`, `pwd` |
-| Theme | `foreground`, `background`, `cursor_color`, `palette`, `default_palette` |
+| Area                | Methods                                                                                                                    |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Construct           | `new(cols, rows)`, `with_allocator(..)`, `as_raw()`                                                                        |
+| Mutate              | `vt_write(bytes)`, `vt_write_until_ground(..)`, `resize(cols, rows, cw_px, ch_px)`, `reset()`, `scroll_viewport(..)`       |
+| Scrollback          | `compress(..)`, `compression_activity(..)`, `scrollback_max_bytes()`, `scrollback_max_lines()`                             |
+| Callbacks           | `set_write_pty<F>(..)`, `set_bell<F>(..)`, `bell_count()`                                                                  |
+| Geometry            | `cols`, `rows`, `size_px`, `total_rows`, `scrollback_rows`, `scrollbar`                                                    |
+| Cursor              | `cursor_x`, `cursor_y`, `cursor_position`, `cursor_pending_wrap`, `cursor_visible`, `cursor_at_prompt`, `cursor_sgr_style` |
+| Screen / modes      | `active_screen`, `viewport_active`, `mouse_tracking`, `kitty_keyboard_flags`                                               |
+| Parser state / text | `vt_ground`, `has_vt_processing_error`, `title`, `pwd`                                                                     |
+| Theme               | `foreground`, `background`, `cursor_color`, `palette`, `default_palette`                                                   |
 
 Supporting modules: `error` (`GhosttyError`, mapping every `GhosttyResult`),
 `sys` (allocator, owned buffers, two-pass encode helper), `color`, `style`
@@ -247,15 +247,15 @@ here).
 
 Safe RAII wrappers re-exported from the crate root (observed 2026-09-17 03:52 PT):
 
-| Export | Module | Wraps |
-|---|---|---|
-| `Terminal`, `Viewport` | `terminal` | Terminal lifecycle, queries, mutation |
-| `SnapshotDecoder`, `encode_snapshot` | `snapshot` | Snapshot encode/decode with lifetime-enforced rules |
-| `RenderState`, `Dirty` | `render` | Render state with borrow-checked row/cell access |
-| `Search`, `SearchStatus` | `search` | Scrollback search |
-| `Key`, `KeyEncoder`, `KeyEvent`, `Mods` | `key` | Key encoding |
-| `MouseEncoder`, `MouseEvent` | `mouse` | Mouse encoding |
-| `Selection`, `GridRef` | `selection` | Selection and stable grid references |
+| Export                                  | Module      | Wraps                                               |
+| --------------------------------------- | ----------- | --------------------------------------------------- |
+| `Terminal`, `Viewport`                  | `terminal`  | Terminal lifecycle, queries, mutation               |
+| `SnapshotDecoder`, `encode_snapshot`    | `snapshot`  | Snapshot encode/decode with lifetime-enforced rules |
+| `RenderState`, `Dirty`                  | `render`    | Render state with borrow-checked row/cell access    |
+| `Search`, `SearchStatus`                | `search`    | Scrollback search                                   |
+| `Key`, `KeyEncoder`, `KeyEvent`, `Mods` | `key`       | Key encoding                                        |
+| `MouseEncoder`, `MouseEvent`            | `mouse`     | Mouse encoding                                      |
+| `Selection`, `GridRef`                  | `selection` | Selection and stable grid references                |
 
 Integration tests mirror these: `tests/terminal.rs`, `snapshot.rs`, `render.rs`,
 `search.rs`, `key_encoding.rs`, plus `abi_layout.rs` for the layout guard.
@@ -308,8 +308,8 @@ import { Terminal } from "@khostty/libghostty-vt-wasm/api";
 
 using term = await Terminal.open({ cols: 80, rows: 24 });
 term.write("Hello\r\n\x1b[1;32mgreen\x1b[0m");
-term.text();   // "Hello\ngreen"
-term.html();   // HTML with inline styles
+term.text(); // "Hello\ngreen"
+term.html(); // HTML with inline styles
 ```
 
 ### Package exports
@@ -333,11 +333,11 @@ still works.
 
 ### `Terminal`
 
-| Kind | Members |
-|---|---|
-| Methods | `write(data)`, `resize(cols, rows)`, `reset()`, `text(opts?)`, `unwrappedText(opts?)`, `html(opts?)`, `vtText(opts?)`, `format(opts?)`, `snapshot()`, `search(needle)`, `close()` |
-| Getters | `cols`, `cursorX`, `cursorY`, `screen`, `cursorVisible`, `totalRows`, `scrollbackRows`, `title` |
-| Escape hatch | `handle` (raw wasm handle for low-level use) |
+| Kind         | Members                                                                                                                                                                           |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Methods      | `write(data)`, `resize(cols, rows)`, `reset()`, `text(opts?)`, `unwrappedText(opts?)`, `html(opts?)`, `vtText(opts?)`, `format(opts?)`, `snapshot()`, `search(needle)`, `close()` |
+| Getters      | `cols`, `cursorX`, `cursorY`, `screen`, `cursorVisible`, `totalRows`, `scrollbackRows`, `title`                                                                                   |
+| Escape hatch | `handle` (raw wasm handle for low-level use)                                                                                                                                      |
 
 `close()` is idempotent and each class implements `Symbol.dispose`, so `using`
 works and nothing leaks.
@@ -362,13 +362,13 @@ vt.abi.fn("ghostty_terminal_reset")(handle);
 
 ### Correctness guarantees
 
-| Risk | Mitigation |
-|---|---|
-| Target-dependent struct layout | Layout read from `ghostty_type_json()` at runtime |
-| Data-key → type mapping drift | `tools/gen-terminal-data.mjs` extracts it from the header's `Output type:` lines |
-| Linear-memory growth invalidating views | `js/memory.js` reacquires views when buffer identity or length changes |
-| Use-after-free on library-owned buffers | Copy before free in the shared helper |
-| Consolidated-header drift | Generated by the C preprocessor; `tools/verify-header.sh` fails on any diff or function-set mismatch |
+| Risk                                    | Mitigation                                                                                           |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Target-dependent struct layout          | Layout read from `ghostty_type_json()` at runtime                                                    |
+| Data-key → type mapping drift           | `tools/gen-terminal-data.mjs` extracts it from the header's `Output type:` lines                     |
+| Linear-memory growth invalidating views | `js/memory.js` reacquires views when buffer identity or length changes                               |
+| Use-after-free on library-owned buffers | Copy before free in the shared helper                                                                |
+| Consolidated-header drift               | Generated by the C preprocessor; `tools/verify-header.sh` fails on any diff or function-set mismatch |
 
 ### Limits
 
@@ -472,15 +472,15 @@ See [SECURITY.md](SECURITY.md#4-windows-transport-weakness-scaffold).
 Invoked as `khostty +<command>`. Defined by `Action` in `src/cli/ghostty.zig`;
 one module per command under `src/cli/`.
 
-| Group | Commands | Backing modules |
-|---|---|---|
-| Version / help | `+version` (also `--version`), `+help` | `version.zig`, `help.zig` |
-| Introspection | `+list-fonts`, `+list-keybinds`, `+list-themes`, `+list-colors`, `+list-actions` | `list_fonts.zig`, `list_keybinds.zig`, `list_themes.zig`, `list_colors.zig`, `list_actions.zig` |
-| Configuration | `+edit-config`, `+show-config`, `+explain-config`, `+validate-config` | `edit_config.zig`, `show_config.zig`, `explain_config.zig`, `validate_config.zig` |
-| Diagnostics | `+show-face` (which font face serves a codepoint), `+crash-report` | `show_face.zig`, `crash_report.zig` |
-| Remote integration | `+ssh`, `+ssh-cache` | `ssh.zig`, `ssh_cache.zig` |
-| Drive a running instance (IPC) | `+new-window`, `+new-tab`, `+toggle-quick-terminal` | `new_window.zig`, `new_tab.zig`, `toggle_quick_terminal.zig` |
-| Easter egg | `+boo` | `boo.zig` |
+| Group                          | Commands                                                                         | Backing modules                                                                                 |
+| ------------------------------ | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Version / help                 | `+version` (also `--version`), `+help`                                           | `version.zig`, `help.zig`                                                                       |
+| Introspection                  | `+list-fonts`, `+list-keybinds`, `+list-themes`, `+list-colors`, `+list-actions` | `list_fonts.zig`, `list_keybinds.zig`, `list_themes.zig`, `list_colors.zig`, `list_actions.zig` |
+| Configuration                  | `+edit-config`, `+show-config`, `+explain-config`, `+validate-config`            | `edit_config.zig`, `show_config.zig`, `explain_config.zig`, `validate_config.zig`               |
+| Diagnostics                    | `+show-face` (which font face serves a codepoint), `+crash-report`               | `show_face.zig`, `crash_report.zig`                                                             |
+| Remote integration             | `+ssh`, `+ssh-cache`                                                             | `ssh.zig`, `ssh_cache.zig`                                                                      |
+| Drive a running instance (IPC) | `+new-window`, `+new-tab`, `+toggle-quick-terminal`                              | `new_window.zig`, `new_tab.zig`, `toggle_quick_terminal.zig`                                    |
+| Easter egg                     | `+boo`                                                                           | `boo.zig`                                                                                       |
 
 Parsing notes (`src/cli/args.zig`): `+command` flags may be interleaved with
 config overrides; `-e` terminates command scanning so `khostty -e khostty

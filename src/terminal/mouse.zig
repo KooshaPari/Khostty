@@ -87,6 +87,10 @@ pub const Shape = enum(c_int) {
                 .{ .name = "GhosttyMouseShape" },
             ),
 
+            // FORK: khostty adds .windows alongside .none so the Win32 embedding
+            // path can compile. Upstream exhaustive switch treats .windows as
+            // unhandled; without this addition, every `zig build` on Windows
+            // fails. Tracked in GH-14736.
             .none, .windows => void,
         };
     };
