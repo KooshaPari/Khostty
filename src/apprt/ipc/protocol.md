@@ -393,12 +393,16 @@ Threading, as implemented:
 
 Known limits, stated rather than implied:
 
-1. **The app-thread hop is not wired yet.** The terminal is owned by the app's IO
-   thread; `app_host.zig` holds a mutex but that only serializes IPC callers. The
-   server is therefore not yet started from the app, and `pane.write` must become
-   a surface-mailbox message (`CoreSurface.queueIo`) before the surface is
-   touched from a connection thread. Event publication belongs next to the
-   runtime's existing title/exit/resize/bell callbacks.
+1. **The app-thread hop is wired for `pane.write`, but the server is still not
+   started from the app.** The terminal is owned by the app's IO thread;
+   `app_host.zig` holds a mutex but that only serializes IPC callers.
+   `pane.write` no longer touches the parser from a connection thread: it copies
+   the bytes and hands them to the IO thread through the surface mailbox
+   (`CoreSurface.writeToParser` -> `queueIo` -> `termio.Message.parser_write`),
+   so the parser is only ever mutated from the thread that owns it. What remains
+   is (a) starting `server.zig` from a runtime (tracked as Phase B / B1), and
+   (b) publishing events next to the runtime's existing title/exit/resize/bell
+   callbacks. Until (a) lands, the socket is still never created.
 2. **`pane.focus` and `pane.search` return `host_unsupported` on the real
    runtime.** No core or apprt API focuses a surface by id, and upstream search
    is an asynchronous UI flow (`start_search` plus `search_total` /
