@@ -58,6 +58,12 @@ on:
       - "include/**"
       - "wasm/**"
       - "khostty-vt/**"
+      # GTK runtime: the only app_runtime for which `windowed` is true, so the
+      # only place B1 (bind the IPC server from the runtime) can be verified.
+      - "src/apprt/gtk/**"
+      - "src/build/**"
+      - "flake.nix"
+      - "nix/**"
   # Keep `merge_group` out of the trigger list for now: this fork's
   # default branch is not configured for merge queues, and an
   # unhandled event type silently swallows the trigger.
@@ -169,3 +175,42 @@ jobs:
       - name: Header + data table + ABI + tests
         working-directory: wasm
         run: npm run check
+
+  gtk-build:
+    name: GTK runtime build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # THE job that matters for agent IPC.
+    #
+    # `windowed` in src/apprt/ipc/app_host.zig:71-77 is true ONLY for
+    # (artifact == .exe && app_runtime == .gtk). Every other build - including
+    # every macOS build - discards the windowed vtable at comptime, so the
+    # 7,230-LOC IPC surface compiles and tests green while nothing ever
+    # type-checks the code path that would actually serve an agent. That is how
+    # it sat dormant: not broken, just never compiled.
+    #
+    # This job is the only place that compiles it. Without it, B1 (binding the
+    # server from the GTK runtime) cannot be verified anywhere.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install GTK4 build dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          # Mirrors nix/devShell.nix. libgtk4-layer-shell-dev is not packaged on
+          # every Ubuntu release, so it is installed opportunistically.
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libgtk-4-dev libadwaita-1-dev blueprint-compiler \
+            libonig-dev libxml2-dev libglib2.0-dev \
+            libharfbuzz-dev libfontconfig1-dev \
+            libwayland-dev wayland-protocols libx11-dev
+          sudo apt-get install -y --no-install-recommends libgtk4-layer-shell-dev || true
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          shasum: "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+      - name: Build with the GTK runtime
+        run: zig build -Dapp-runtime=gtk
