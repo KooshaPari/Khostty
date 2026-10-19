@@ -41,7 +41,7 @@ extern "C" {
 #endif
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/types.h */
+/* from include/ghostty/vt/types.h                                    */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
     GHOSTTY_SUCCESS = 0,
@@ -94,7 +94,7 @@ typedef struct {
 GHOSTTY_API const char *ghostty_type_json(void);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/allocator.h */
+/* from include/ghostty/vt/allocator.h                                */
 /* ------------------------------------------------------------------ */
 typedef struct {
     void* (*alloc)(void *ctx, size_t len, uint8_t alignment, uintptr_t ret_addr);
@@ -110,7 +110,7 @@ GHOSTTY_API uint8_t* ghostty_alloc(const GhosttyAllocator* allocator, size_t len
 GHOSTTY_API void ghostty_free(const GhosttyAllocator* allocator, uint8_t* ptr, size_t len);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/build_info.h */
+/* from include/ghostty/vt/build_info.h                               */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
   GHOSTTY_OPTIMIZE_DEBUG = 0,
@@ -136,7 +136,7 @@ typedef enum : int {
 GHOSTTY_API GhosttyResult ghostty_build_info(GhosttyBuildInfo data, void *out);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/color.h */
+/* from include/ghostty/vt/color.h                                    */
 /* ------------------------------------------------------------------ */
 typedef struct {
   uint8_t r;
@@ -184,7 +184,7 @@ GHOSTTY_API const GhosttyColorX11Entry* ghostty_color_x11_names(void);
 GHOSTTY_API size_t ghostty_color_x11_name_count(void);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/device.h */
+/* from include/ghostty/vt/device.h                                   */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
     GHOSTTY_COLOR_SCHEME_LIGHT = 0,
@@ -211,7 +211,7 @@ typedef struct {
 } GhosttyDeviceAttributes;
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/color_scheme.h */
+/* from include/ghostty/vt/color_scheme.h                             */
 /* ------------------------------------------------------------------ */
 GHOSTTY_API GhosttyResult ghostty_color_scheme_report_encode(
     GhosttyColorScheme scheme,
@@ -220,7 +220,7 @@ GHOSTTY_API GhosttyResult ghostty_color_scheme_report_encode(
     size_t* out_written);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/focus.h */
+/* from include/ghostty/vt/focus.h                                    */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
     GHOSTTY_FOCUS_GAINED = 0,
@@ -234,7 +234,7 @@ GHOSTTY_API GhosttyResult ghostty_focus_encode(
     size_t* out_written);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/io.h */
+/* from include/ghostty/vt/io.h                                       */
 /* ------------------------------------------------------------------ */
 typedef _Bool (*GhosttyReaderFn)(
     void* userdata,
@@ -263,7 +263,7 @@ typedef struct {
 } GhosttyMimeReader;
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/screen.h */
+/* from include/ghostty/vt/screen.h                                   */
 /* ------------------------------------------------------------------ */
 typedef uint64_t GhosttyCell;
 typedef uint64_t GhosttyRow;
@@ -342,7 +342,7 @@ GHOSTTY_API GhosttyResult ghostty_row_get_multi(GhosttyRow row,
                                     size_t* out_written);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/style.h */
+/* from include/ghostty/vt/style.h                                    */
 /* ------------------------------------------------------------------ */
 typedef uint16_t GhosttyStyleId;
 typedef enum : int {
@@ -379,7 +379,7 @@ GHOSTTY_API void ghostty_style_default(GhosttyStyle* style);
 GHOSTTY_API _Bool ghostty_style_is_default(const GhosttyStyle* style);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/grid_ref.h */
+/* from include/ghostty/vt/grid_ref.h                                 */
 /* ------------------------------------------------------------------ */
 typedef struct {
   size_t size;
@@ -404,7 +404,7 @@ GHOSTTY_API GhosttyResult ghostty_grid_ref_style(const GhosttyGridRef *ref,
                                      GhosttyStyle *out_style);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/point.h */
+/* from include/ghostty/vt/point.h                                    */
 /* ------------------------------------------------------------------ */
 typedef struct {
   uint16_t x;
@@ -427,7 +427,7 @@ typedef struct {
 } GhosttyPoint;
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/selection.h */
+/* from include/ghostty/vt/selection.h                                */
 /* ------------------------------------------------------------------ */
 typedef struct GhosttySelectionGestureImpl* GhosttySelectionGesture;
 typedef struct GhosttySelectionGestureEventImpl* GhosttySelectionGestureEvent;
@@ -634,7 +634,7 @@ GHOSTTY_API GhosttyResult ghostty_terminal_selection_equal(
                                     _Bool* out_equal);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/modes.h */
+/* from include/ghostty/vt/modes.h                                    */
 /* ------------------------------------------------------------------ */
 typedef uint16_t GhosttyMode;
 static inline GhosttyMode ghostty_mode_new(uint16_t value, _Bool ansi) {
@@ -662,7 +662,7 @@ GHOSTTY_API GhosttyResult ghostty_mode_report_encode(
     size_t* out_written);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/osc.h */
+/* from include/ghostty/vt/osc.h                                      */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
   GHOSTTY_OSC_COMMAND_INVALID = 0,
@@ -725,7 +725,7 @@ GHOSTTY_API GhosttyOscCommandType ghostty_osc_command_type(GhosttyOscCommand com
 GHOSTTY_API _Bool ghostty_osc_command_data(GhosttyOscCommand command, GhosttyOscCommandData data, void *out);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/size_report.h */
+/* from include/ghostty/vt/size_report.h                              */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
     GHOSTTY_SIZE_REPORT_MODE_2048 = 0,
@@ -749,7 +749,7 @@ GHOSTTY_API GhosttyResult ghostty_size_report_encode(
     size_t* out_written);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/kitty_graphics.h */
+/* from include/ghostty/vt/kitty_graphics.h                           */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
   GHOSTTY_KITTY_GRAPHICS_DATA_INVALID = 0,
@@ -899,7 +899,7 @@ GHOSTTY_API GhosttyResult ghostty_kitty_graphics_placement_render_info(
     GhosttyKittyGraphicsPlacementRenderInfo* out_info);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/terminal.h */
+/* from include/ghostty/vt/terminal.h                                 */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
   GHOSTTY_TERMINAL_COMPRESSION_MODE_INCREMENTAL = 0,
@@ -1369,7 +1369,7 @@ GHOSTTY_API GhosttyResult ghostty_terminal_point_from_grid_ref(
     GhosttyPointCoordinate *out);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/formatter.h */
+/* from include/ghostty/vt/formatter.h                                */
 /* ------------------------------------------------------------------ */
 typedef struct {
   size_t size;
@@ -1417,7 +1417,7 @@ GHOSTTY_API GhosttyResult ghostty_formatter_format_alloc(GhosttyFormatter format
 GHOSTTY_API void ghostty_formatter_free(GhosttyFormatter formatter);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/render.h */
+/* from include/ghostty/vt/render.h                                   */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
   GHOSTTY_RENDER_STATE_DIRTY_FALSE = 0,
@@ -1583,7 +1583,7 @@ GHOSTTY_API GhosttyResult ghostty_render_state_row_cells_get_multi(
 GHOSTTY_API void ghostty_render_state_row_cells_free(GhosttyRenderStateRowCells cells);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/grid_ref_tracked.h */
+/* from include/ghostty/vt/grid_ref_tracked.h                         */
 /* ------------------------------------------------------------------ */
 GHOSTTY_API void ghostty_tracked_grid_ref_free(GhosttyTrackedGridRef ref);
 GHOSTTY_API _Bool ghostty_tracked_grid_ref_has_value(
@@ -1601,7 +1601,7 @@ GHOSTTY_API GhosttyResult ghostty_tracked_grid_ref_snapshot(
     GhosttyGridRef *out_ref);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/sgr.h */
+/* from include/ghostty/vt/sgr.h                                      */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
   GHOSTTY_SGR_ATTR_UNSET = 0,
@@ -1689,7 +1689,7 @@ GHOSTTY_API GhosttySgrAttributeValue* ghostty_sgr_attribute_value(
     GhosttySgrAttribute* attr);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/sys.h */
+/* from include/ghostty/vt/sys.h                                      */
 /* ------------------------------------------------------------------ */
 typedef struct {
     uint32_t width;
@@ -1738,7 +1738,7 @@ GHOSTTY_API void ghostty_sys_log_stderr(void* userdata,
                                          size_t message_len);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/key/event.h */
+/* from include/ghostty/vt/key/event.h                                */
 /* ------------------------------------------------------------------ */
 typedef struct GhosttyKeyEventImpl *GhosttyKeyEvent;
 typedef enum : int {
@@ -1945,7 +1945,7 @@ GHOSTTY_API void ghostty_key_event_set_unshifted_codepoint(GhosttyKeyEvent event
 GHOSTTY_API uint32_t ghostty_key_event_get_unshifted_codepoint(GhosttyKeyEvent event);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/key/encoder.h */
+/* from include/ghostty/vt/key/encoder.h                              */
 /* ------------------------------------------------------------------ */
 typedef struct GhosttyKeyEncoderImpl *GhosttyKeyEncoder;
 typedef uint8_t GhosttyKittyKeyFlags;
@@ -1974,7 +1974,7 @@ GHOSTTY_API void ghostty_key_encoder_setopt_from_terminal(GhosttyKeyEncoder enco
 GHOSTTY_API GhosttyResult ghostty_key_encoder_encode(GhosttyKeyEncoder encoder, GhosttyKeyEvent event, char *out_buf, size_t out_buf_size, size_t *out_len);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/mouse/event.h */
+/* from include/ghostty/vt/mouse/event.h                              */
 /* ------------------------------------------------------------------ */
 typedef struct GhosttyMouseEventImpl *GhosttyMouseEvent;
 typedef enum : int {
@@ -2021,7 +2021,7 @@ GHOSTTY_API void ghostty_mouse_event_set_position(GhosttyMouseEvent event,
 GHOSTTY_API GhosttyMousePosition ghostty_mouse_event_get_position(GhosttyMouseEvent event);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/mouse/encoder.h */
+/* from include/ghostty/vt/mouse/encoder.h                            */
 /* ------------------------------------------------------------------ */
 typedef struct GhosttyMouseEncoderImpl *GhosttyMouseEncoder;
 typedef enum : int {
@@ -2075,7 +2075,7 @@ GHOSTTY_API GhosttyResult ghostty_mouse_encoder_encode(GhosttyMouseEncoder encod
                                            size_t *out_len);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/mouse.h */
+/* from include/ghostty/vt/mouse.h                                    */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
   GHOSTTY_MOUSE_SHAPE_DEFAULT = 0,
@@ -2116,7 +2116,7 @@ typedef enum : int {
 } GhosttyMouseShape;
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/paste.h */
+/* from include/ghostty/vt/paste.h                                    */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
   GHOSTTY_PASTE_SOURCE_CLIPBOARD = 0,
@@ -2146,7 +2146,7 @@ GHOSTTY_API GhosttyResult ghostty_paste_encode(
     size_t* out_written);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/search.h */
+/* from include/ghostty/vt/search.h                                   */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
   GHOSTTY_SEARCH_STATUS_RUNNING = 0,
@@ -2203,7 +2203,7 @@ GHOSTTY_API GhosttyResult ghostty_search_get_multi(
                                     size_t* out_written);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/snapshot.h */
+/* from include/ghostty/vt/snapshot.h                                 */
 /* ------------------------------------------------------------------ */
 typedef enum : int {
   GHOSTTY_SNAPSHOT_DECODER_OPT_MAX_CONTINUATION_BYTES = 0,
@@ -2270,7 +2270,7 @@ GHOSTTY_API GhosttyResult ghostty_snapshot_decoder_get_multi(
     size_t* out_written);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/unicode.h */
+/* from include/ghostty/vt/unicode.h                                  */
 /* ------------------------------------------------------------------ */
 GHOSTTY_API uint8_t ghostty_unicode_codepoint_width(uint32_t cp);
 GHOSTTY_API size_t ghostty_unicode_grapheme_width(const uint32_t *cps,
@@ -2278,7 +2278,7 @@ GHOSTTY_API size_t ghostty_unicode_grapheme_width(const uint32_t *cps,
                                                   uint8_t *width);
 
 /* ------------------------------------------------------------------ */
-/* from Users/kooshapari/CodeProjects/Phenotype/repos/khostty/include/ghostty/vt/wasm.h */
+/* from include/ghostty/vt/wasm.h                                     */
 /* ------------------------------------------------------------------ */
 GHOSTTY_API void* ghostty_wasm_alloc(size_t len);
 GHOSTTY_API void ghostty_wasm_free(void *ptr, size_t len);
