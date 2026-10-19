@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links: []
+# Issue template chooser.
+# - "Get started" items appear as buttons on the New Issue page.
+# - "General" appears if a user clicks "Open a blank issue" (disabled here).
+# Add additional `type: ...` entries above to extend the chooser.

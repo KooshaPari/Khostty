@@ -33,7 +33,7 @@ and even there, two of thirteen commands (`pane.focus`, `pane.search`) return
 > follow-on, drive a hosted Ghostty instance from an AI agent over a JSON IPC
 > channel. The GUI terminal is upstream, not a Khostty product.
 
-That sentence is the *inferred* user. The repo never states a one-line intended
+That sentence is the _inferred_ user. The repo never states a one-line intended
 user. The closest evidence is the `package.json` /
 [`Cargo.toml`](../../khostty-vt/Cargo.toml) /
 [`pyproject.toml`](../../khostty-python/pyproject.toml) /
@@ -43,20 +43,20 @@ user. The closest evidence is the `package.json` /
 
 ## 2. User-facing surfaces
 
-| # | Surface | Artifact | Status today | Where |
-|---|---|---|---|---|
-| 1 | **C ABI / `libghostty-vt`** | `libghostty-vt.a`, `.dylib`, `.so` | DONE | [`src/lib_vt.zig`](../../src/lib_vt.zig), [`include/ghostty/vt.h`](../../include/ghostty/vt.h) |
-| 2 | **Rust crate `khostty-vt`** | `crates.io` 0.1.0 + local `khostty-vt/` | DONE (install+run) | [`khostty-vt/Cargo.toml`](../../khostty-vt/Cargo.toml) version `0.1.0` |
-| 3 | **Go module `khostty-go`** | local `khostty-go/` + examples | DONE (not on pkg.go.dev observed) | [`khostty-go/go.mod`](../../khostty-go/go.mod) |
-| 4 | **Python `khostty_vt`** | local `khostty-python/dist/` | DONE locally; **PyPI not yet published** | [`khostty-python/pyproject.toml`](../../khostty-python/pyproject.toml) |
-| 5 | **WASM + JS/TS bindings** | `khostty-vt.wasm` + `@khostty/libghostty-vt-wasm` on npm | DONE (npm 0.1.0); local `package.json` still `0.0.0` (drift) | [`wasm/package.json`](../../wasm/package.json) |
-| 6 | **macOS `.app`** | `Khostty-0.1.0-macos.zip` | DONE — built, signed, GUI-launched, interactive keystroke round-trip 2026-09-20; **not notarized** | [`docs/INSTALL.md` §1 row 3](../INSTALL.md) |
-| 7 | **Linux GTK `.deb`** | `khostty_0.1.0_amd64.deb` | DONE — install-verified on WSL Fedora 44, GUI-launch half-verified (Xvfb) | [`docs/INSTALL.md` §1 row 4](../INSTALL.md) |
-| 8 | **Windows `setup.exe`** | `Khostty-0.1.0-windows-x86_64-setup.exe` | BUILT + INSTALLED + UNINSTALLED on Windows runner; **GUI window not launched, only `+version` + `ghostty-vt.dll` ABI verified** | [`docs/INSTALL.md` §1 rows 6–7](../INSTALL.md) |
-| 9 | **Windows `ghostty.exe` runtime** | the artifact the installer drops | SCAFFOLD — `app runtime: .windows` reports OK, but the runtime is `error.Unimplemented` for all windowing + IPC operations | [`docs/ARCHITECTURE.md` §2](../ARCHITECTURE.md), [`docs/AGENT.md` §5](../AGENT.md) |
-| 10 | **CLI: `+new-window` / `+new-tab` / `+toggle-quick-term`** | upstream IPC | DONE (narrow) | [`src/cli/ghostty.zig`](../../src/cli/ghostty.zig), [`src/apprt/ipc.zig`](../../src/apprt/ipc.zig) |
-| 11 | **Agent IPC v1 (JSON over Unix socket, 13 commands)** | `src/apprt/ipc/` modules + `app_host.zig` + `server.zig` | IN PROGRESS on `test/agent-ipc-phase0`; **NOT REACHABLE on `main`** | [`docs/AGENT.md` §4](../AGENT.md), [`docs/audits/20261017-mux.md`](20261017-mux.md) |
-| 12 | **Upstream terminal experience** (everything else) | full upstream | DONE (upstream) | `src/terminal/`, `src/renderer/`, `src/font/`, `src/config/` — explicitly unmodified per [`docs/ARCHITECTURE.md` §9](../ARCHITECTURE.md) |
+| #   | Surface                                                    | Artifact                                                 | Status today                                                                                                                    | Where                                                                                                                                    |
+| --- | ---------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **C ABI / `libghostty-vt`**                                | `libghostty-vt.a`, `.dylib`, `.so`                       | DONE                                                                                                                            | [`src/lib_vt.zig`](../../src/lib_vt.zig), [`include/ghostty/vt.h`](../../include/ghostty/vt.h)                                           |
+| 2   | **Rust crate `khostty-vt`**                                | `crates.io` 0.1.0 + local `khostty-vt/`                  | DONE (install+run)                                                                                                              | [`khostty-vt/Cargo.toml`](../../khostty-vt/Cargo.toml) version `0.1.0`                                                                   |
+| 3   | **Go module `khostty-go`**                                 | local `khostty-go/` + examples                           | DONE (not on pkg.go.dev observed)                                                                                               | [`khostty-go/go.mod`](../../khostty-go/go.mod)                                                                                           |
+| 4   | **Python `khostty_vt`**                                    | local `khostty-python/dist/`                             | DONE locally; **PyPI not yet published**                                                                                        | [`khostty-python/pyproject.toml`](../../khostty-python/pyproject.toml)                                                                   |
+| 5   | **WASM + JS/TS bindings**                                  | `khostty-vt.wasm` + `@khostty/libghostty-vt-wasm` on npm | DONE (npm 0.1.0); local `package.json` still `0.0.0` (drift)                                                                    | [`wasm/package.json`](../../wasm/package.json)                                                                                           |
+| 6   | **macOS `.app`**                                           | `Khostty-0.1.0-macos.zip`                                | DONE — built, signed, GUI-launched, interactive keystroke round-trip 2026-09-20; **not notarized**                              | [`docs/INSTALL.md` §1 row 3](../INSTALL.md)                                                                                              |
+| 7   | **Linux GTK `.deb`**                                       | `khostty_0.1.0_amd64.deb`                                | DONE — install-verified on WSL Fedora 44, GUI-launch half-verified (Xvfb)                                                       | [`docs/INSTALL.md` §1 row 4](../INSTALL.md)                                                                                              |
+| 8   | **Windows `setup.exe`**                                    | `Khostty-0.1.0-windows-x86_64-setup.exe`                 | BUILT + INSTALLED + UNINSTALLED on Windows runner; **GUI window not launched, only `+version` + `ghostty-vt.dll` ABI verified** | [`docs/INSTALL.md` §1 rows 6–7](../INSTALL.md)                                                                                           |
+| 9   | **Windows `ghostty.exe` runtime**                          | the artifact the installer drops                         | SCAFFOLD — `app runtime: .windows` reports OK, but the runtime is `error.Unimplemented` for all windowing + IPC operations      | [`docs/ARCHITECTURE.md` §2](../ARCHITECTURE.md), [`docs/AGENT.md` §5](../AGENT.md)                                                       |
+| 10  | **CLI: `+new-window` / `+new-tab` / `+toggle-quick-term`** | upstream IPC                                             | DONE (narrow)                                                                                                                   | [`src/cli/ghostty.zig`](../../src/cli/ghostty.zig), [`src/apprt/ipc.zig`](../../src/apprt/ipc.zig)                                       |
+| 11  | **Agent IPC v1 (JSON over Unix socket, 13 commands)**      | `src/apprt/ipc/` modules + `app_host.zig` + `server.zig` | IN PROGRESS on `test/agent-ipc-phase0`; **NOT REACHABLE on `main`**                                                             | [`docs/AGENT.md` §4](../AGENT.md), [`docs/audits/20261017-mux.md`](20261017-mux.md)                                                      |
+| 12  | **Upstream terminal experience** (everything else)         | full upstream                                            | DONE (upstream)                                                                                                                 | `src/terminal/`, `src/renderer/`, `src/font/`, `src/config/` — explicitly unmodified per [`docs/ARCHITECTURE.md` §9](../ARCHITECTURE.md) |
 
 ## 3. CVP (Customer Value Proposition)
 
@@ -85,19 +85,19 @@ not just promised.
 Scored per [`docs/AGENT.md` §1](../AGENT.md) and the
 [`docs/PLATFORMS.md`](../PLATFORMS.md) honest matrix.
 
-| G | Workstream | MVP claim | Reality on `main` | Reality on `test/agent-ipc-phase0` |
-|---|---|---|---|---|
-| G0 | Repo & docs | DONE | DONE | DONE |
-| G1 | Conformance corpus | DONE | DONE | DONE |
-| G2 | Conformance corpus (`conformance/`) | DONE | DONE | DONE |
-| G3 | Windows runtime | SCAFFOLD | SCAFFOLD — `app_host.zig:79` reports `windowed = false` for `.windows`; all windowing + IPC ops `error.Unimplemented` | same |
-| G4 | Agent IPC v1 | IN PROGRESS | 6 modules + `protocol.md` written; **no `Server.bind` caller anywhere in the tree**; `app_host.zig:79` only `windowed = true` for `.gtk` | modules wired; `pane.focus` and `pane.search` return `error.Unsupported` against the real app runtime; `pane.write` is parser-direct not pty-direct; verified only on GTK |
-| G5 | Rust `khostty-vt` | IN PROGRESS | DONE per packaging: 0.1.0 on crates.io, install+test evidence 2026-09-18; gap: no safe `text()`/`html()` formatter wrapper | same |
-| G6 | Go + Python | IN PROGRESS | Local trees present; `khostty-python/dist/` builds; **PyPI publish not made** | same |
-| G7 | WASM | IN PROGRESS | DONE per packaging: tarball verified, npm `0.1.0`; local `wasm/package.json` is `0.0.0` (drift) | same |
-| G8 | Benchmarks | NOT STARTED | no `bench/` in tree; `-Demit-bench` is upstream's bench, not the G8 deliverable | same |
-| G9 | Docs | IN PROGRESS | 8 hand-curated docs (HANDOFF, ROADMAP, README, API, INSTALL, ARCH, FORK, UPSTREAM-DELTA, AGENT, PLATFORMS, BUILD, TESTING, SECURITY, GLOSSARY) | same |
-| G10 | Releases | DONE for 0.1.0 | `v0.1.0` published; PyPI pre-flighted but unpublished | same |
+| G   | Workstream                          | MVP claim      | Reality on `main`                                                                                                                              | Reality on `test/agent-ipc-phase0`                                                                                                                                        |
+| --- | ----------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| G0  | Repo & docs                         | DONE           | DONE                                                                                                                                           | DONE                                                                                                                                                                      |
+| G1  | Conformance corpus                  | DONE           | DONE                                                                                                                                           | DONE                                                                                                                                                                      |
+| G2  | Conformance corpus (`conformance/`) | DONE           | DONE                                                                                                                                           | DONE                                                                                                                                                                      |
+| G3  | Windows runtime                     | SCAFFOLD       | SCAFFOLD — `app_host.zig:79` reports `windowed = false` for `.windows`; all windowing + IPC ops `error.Unimplemented`                          | same                                                                                                                                                                      |
+| G4  | Agent IPC v1                        | IN PROGRESS    | 6 modules + `protocol.md` written; **no `Server.bind` caller anywhere in the tree**; `app_host.zig:79` only `windowed = true` for `.gtk`       | modules wired; `pane.focus` and `pane.search` return `error.Unsupported` against the real app runtime; `pane.write` is parser-direct not pty-direct; verified only on GTK |
+| G5  | Rust `khostty-vt`                   | IN PROGRESS    | DONE per packaging: 0.1.0 on crates.io, install+test evidence 2026-09-18; gap: no safe `text()`/`html()` formatter wrapper                     | same                                                                                                                                                                      |
+| G6  | Go + Python                         | IN PROGRESS    | Local trees present; `khostty-python/dist/` builds; **PyPI publish not made**                                                                  | same                                                                                                                                                                      |
+| G7  | WASM                                | IN PROGRESS    | DONE per packaging: tarball verified, npm `0.1.0`; local `wasm/package.json` is `0.0.0` (drift)                                                | same                                                                                                                                                                      |
+| G8  | Benchmarks                          | NOT STARTED    | no `bench/` in tree; `-Demit-bench` is upstream's bench, not the G8 deliverable                                                                | same                                                                                                                                                                      |
+| G9  | Docs                                | IN PROGRESS    | 8 hand-curated docs (HANDOFF, ROADMAP, README, API, INSTALL, ARCH, FORK, UPSTREAM-DELTA, AGENT, PLATFORMS, BUILD, TESTING, SECURITY, GLOSSARY) | same                                                                                                                                                                      |
+| G10 | Releases                            | DONE for 0.1.0 | `v0.1.0` published; PyPI pre-flighted but unpublished                                                                                          | same                                                                                                                                                                      |
 
 **Scoring.** Of the 11 gates, **3 are DONE** (G0, G1, G2; plus G5/G7 are
 install-verified and shippable). **5 are IN PROGRESS** with concrete artifacts
@@ -190,18 +190,18 @@ Ordered by impact on a developer who integrates today.
 Listed in priority order — what the user was promised that is not in any
 working build today.
 
-| Feature | Where it lives | State | Why it matters |
-|---|---|---|---|
-| **Windows GUI app** | `src/apprt/windows/` | SCAFFOLD | The fork's third CVP pillar. Currently no GUI window launched. |
-| **Windows named-pipe IPC** | `src/apprt/windows/ipc.zig` | SCAFFOLD — all `error.Unimplemented`; the wrong pipe prefix is hard-coded | Prevents the same `pane.*` story on Windows. |
-| **macOS agent IPC** | runtime would need to call `Server.bind` from the embedded (AppKit) App | **Not implemented; explicitly out of scope on macOS** per `app_host.zig:79` | Operator on macOS cannot use the agent IPC at all today. |
-| **`pane.focus` and `pane.search` on the real runtime** | upstream lacks a "focus surface by id" and a synchronous search API | DESIGNED but UNSUPPORTED — `error.Unsupported` per `app_host.zig:30` | 2 of 13 protocol commands can't be served; users hitting the API get a stable, honest error rather than a fake. |
-| **Mailbox-hop `pane.write`** | surface mailbox `CoreSurface.queueIo` | named in `app_host.zig:46-60`; not wired | Race-free shell injection. Today's parser-direct `pane.write` interleaves with user keystrokes. |
-| **Async event hooks (title/child-exit/resize/bell)** | the matching runtime callbacks | named in `app_host.zig:54-58`; not wired | `events.subscribe` has no producer side beyond the broker. |
-| **PyPI publication** | `publish-pypi.yml` | committed, pre-flighted, **awaiting operator's publisher registration** ([`docs/INSTALL.md` §0](../INSTALL.md)) | Python binding is the only one not on a registry. |
-| **Benchmark harness** | `bench/` | NOT STARTED in tree ([`docs/ARCHITECTURE.md` §8](../ARCHITECTURE.md)) | G8 deliverable absent. |
-| **Safe Rust `text()` / `html()` formatter** | `khostty-vt/src/formatter.rs` (does not exist) | not implemented ([`docs/AGENT.md` §2](../AGENT.md)) | Forces Rust users to `unsafe`-call `ghostty_formatter_*` or switch to the WASM package. |
-| **Bump `wasm/package.json` to `0.1.0`** | `wasm/package.json` | local file `0.0.0` while npm published `0.1.0` | Prevents accidental downgrade publish on next local `npm publish`. |
+| Feature                                                | Where it lives                                                          | State                                                                                                           | Why it matters                                                                                                  |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Windows GUI app**                                    | `src/apprt/windows/`                                                    | SCAFFOLD                                                                                                        | The fork's third CVP pillar. Currently no GUI window launched.                                                  |
+| **Windows named-pipe IPC**                             | `src/apprt/windows/ipc.zig`                                             | SCAFFOLD — all `error.Unimplemented`; the wrong pipe prefix is hard-coded                                       | Prevents the same `pane.*` story on Windows.                                                                    |
+| **macOS agent IPC**                                    | runtime would need to call `Server.bind` from the embedded (AppKit) App | **Not implemented; explicitly out of scope on macOS** per `app_host.zig:79`                                     | Operator on macOS cannot use the agent IPC at all today.                                                        |
+| **`pane.focus` and `pane.search` on the real runtime** | upstream lacks a "focus surface by id" and a synchronous search API     | DESIGNED but UNSUPPORTED — `error.Unsupported` per `app_host.zig:30`                                            | 2 of 13 protocol commands can't be served; users hitting the API get a stable, honest error rather than a fake. |
+| **Mailbox-hop `pane.write`**                           | surface mailbox `CoreSurface.queueIo`                                   | named in `app_host.zig:46-60`; not wired                                                                        | Race-free shell injection. Today's parser-direct `pane.write` interleaves with user keystrokes.                 |
+| **Async event hooks (title/child-exit/resize/bell)**   | the matching runtime callbacks                                          | named in `app_host.zig:54-58`; not wired                                                                        | `events.subscribe` has no producer side beyond the broker.                                                      |
+| **PyPI publication**                                   | `publish-pypi.yml`                                                      | committed, pre-flighted, **awaiting operator's publisher registration** ([`docs/INSTALL.md` §0](../INSTALL.md)) | Python binding is the only one not on a registry.                                                               |
+| **Benchmark harness**                                  | `bench/`                                                                | NOT STARTED in tree ([`docs/ARCHITECTURE.md` §8](../ARCHITECTURE.md))                                           | G8 deliverable absent.                                                                                          |
+| **Safe Rust `text()` / `html()` formatter**            | `khostty-vt/src/formatter.rs` (does not exist)                          | not implemented ([`docs/AGENT.md` §2](../AGENT.md))                                                             | Forces Rust users to `unsafe`-call `ghostty_formatter_*` or switch to the WASM package.                         |
+| **Bump `wasm/package.json` to `0.1.0`**                | `wasm/package.json`                                                     | local file `0.0.0` while npm published `0.1.0`                                                                  | Prevents accidental downgrade publish on next local `npm publish`.                                              |
 
 ## 7. Documentation gaps
 
@@ -213,7 +213,7 @@ The docs are unusually honest for a 0.1.0 release. The gaps are concrete.
    "this is for you if you want to embed a terminal parser in X."
 2. **The CLI `+new-window` / `+new-tab` actions are upstream-only.** A user
    reading [`docs/AGENT.md` §3](../AGENT.md) learns that the v1 protocol is
-   *additive*, but nothing in the doc says "on macOS or Windows, there is no
+   _additive_, but nothing in the doc says "on macOS or Windows, there is no
    server, so don't expect `khostty +list-panes` to work." The `+list-actions`
    introspection command will list upstream actions, hiding the gap.
 3. **`docs/API.md` lists 9 surfaces** (C ABI, Rust, JS/TS, Zig, Go, C#,
@@ -291,7 +291,7 @@ collapses.
   `docs/PLATFORMS.md`, `docs/FORK.md`, `docs/ARCHITECTURE.md`, `docs/AGENT.md`,
   `docs/INSTALL.md` (head), `docs/UPSTREAM-DELTA.md` (head + §1 freshness
   notes). Targeted verifications: `rg 'Server.bind' src/`, `wc -l
-  src/apprt/ipc/*.zig`, `head -50` of `src/apprt/ipc/{server,app_host}.zig`,
+src/apprt/ipc/*.zig`, `head -50` of `src/apprt/ipc/{server,app_host}.zig`,
   `head -40` of `wasm/package.json` and `khostty-vt/Cargo.toml`.
 - **Not done:** no `zig build` was executed. No G4 server was started. The
   mtime of `src/apprt/ipc/{server,app_host,mod}.zig` is **2026-10-16**,

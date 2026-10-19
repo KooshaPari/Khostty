@@ -33,6 +33,7 @@ conformance/build.sh
 ```
 
 This will:
+
 1. Locate the prebuilt `zig-out/lib/libghostty-vt.dylib` (from G1).
 2. Compile `conformance/harness.c` against it with `cc`.
 3. Run the test binary with `DYLD_LIBRARY_PATH` set so it can find the
@@ -157,16 +158,16 @@ For a brand-new category:
 
 ## Current coverage at a glance
 
-| Category   | Cases | Coverage focus                                          |
-|------------|------:|---------------------------------------------------------|
-| sgr        | 17    | bold/dim/italic/underline/blink/reverse/strike; RGB; 256-color; combined; resets |
-| cursor     | 10    | up/down/left/right; CUP; home; DECSC/DECRC; default-param CSI |
-| osc        |  9    | OSC 0/2 (title), OSC 10/11/12 (colors), OSC 7 (cwd), OSC 8 (hyperlinks), OSC 52 (clipboard) |
-| charset    |  8    | SCS G0/G1 (UK, US, line-drawing, British); SS2/SS3; locking shifts |
-| mode       | 12    | DECCKM, DECOM, DECSCNM, DECAWM, DECTCEM, DECARM, etc.  |
-| scroll     |  7    | DECSTBM margins; IND/RI; SU/SD                          |
-| kitty-gfx  |  5    | APC init/progress/end/reset/transparency                |
-| edge       | 16    | incomplete escapes, invalid params, unicode, wide chars, CR/LF, bell, BS, DEL, etc. |
+| Category  | Cases | Coverage focus                                                                              |
+| --------- | ----: | ------------------------------------------------------------------------------------------- |
+| sgr       |    17 | bold/dim/italic/underline/blink/reverse/strike; RGB; 256-color; combined; resets            |
+| cursor    |    10 | up/down/left/right; CUP; home; DECSC/DECRC; default-param CSI                               |
+| osc       |     9 | OSC 0/2 (title), OSC 10/11/12 (colors), OSC 7 (cwd), OSC 8 (hyperlinks), OSC 52 (clipboard) |
+| charset   |     8 | SCS G0/G1 (UK, US, line-drawing, British); SS2/SS3; locking shifts                          |
+| mode      |    12 | DECCKM, DECOM, DECSCNM, DECAWM, DECTCEM, DECARM, etc.                                       |
+| scroll    |     7 | DECSTBM margins; IND/RI; SU/SD                                                              |
+| kitty-gfx |     5 | APC init/progress/end/reset/transparency                                                    |
+| edge      |    16 | incomplete escapes, invalid params, unicode, wide chars, CR/LF, bell, BS, DEL, etc.         |
 
 ## What this suite does NOT cover (future work)
 

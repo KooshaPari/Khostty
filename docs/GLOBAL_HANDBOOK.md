@@ -63,13 +63,13 @@ all Phenotype repositories. Every repo should carry this as its handbook section
 
 ### 3.1 Coverage Floors (Independent, Non-Averaged)
 
-| Family | Floor | Denominator |
-|--------|-------|-------------|
-| Unit (structural + behavioral) | >= 85% | Reviewed eligible inventory |
-| Integration | >= 85% | Boundary/contract denominator |
-| E2E | >= 85% | Declared journeys |
-| Mutation | >= 85% | Non-equivalent mutants |
-| Critical obligations | 100% | All selected checks run and pass |
+| Family                         | Floor  | Denominator                      |
+| ------------------------------ | ------ | -------------------------------- |
+| Unit (structural + behavioral) | >= 85% | Reviewed eligible inventory      |
+| Integration                    | >= 85% | Boundary/contract denominator    |
+| E2E                            | >= 85% | Declared journeys                |
+| Mutation                       | >= 85% | Non-equivalent mutants           |
+| Critical obligations           | 100%   | All selected checks run and pass |
 
 ### 3.2 What Does NOT Count as Pass
 
@@ -141,12 +141,12 @@ Track independently: `WORKING`, `PUBLISHED`, `INTEGRATED`, `VERIFIED`, `PACKAGED
 
 ### 5.3 Consumer Classification
 
-| Tier | Required Evidence |
-|------|-------------------|
+| Tier               | Required Evidence                                             |
+| ------------------ | ------------------------------------------------------------- |
 | Current, supported | Real entrypoints, versions, platforms, compatibility envelope |
-| Committed/planned | Accepted requirement, sponsor, bounded near-term use |
-| Plausible future | Use case, assumptions, inexpensive seam |
-| Unknown/external | Incomplete reachability, public policy, risk-based rollout |
+| Committed/planned  | Accepted requirement, sponsor, bounded near-term use          |
+| Plausible future   | Use case, assumptions, inexpensive seam                       |
+| Unknown/external   | Incomplete reachability, public policy, risk-based rollout    |
 
 ### 5.4 Write Coordination
 
@@ -161,6 +161,7 @@ and prepare a cross-repo improvement without write access everywhere.
 ### 6.1 Do Not Stop at Build
 
 For a macOS GUI CVP:
+
 - Build a real `.app` from clean checkout
 - Install outside source repo (`~/Applications` for internal)
 - Verify bundle ID, version, icon, architecture, platform data paths
@@ -274,6 +275,7 @@ and OS permissions must enforce policy independently of documents.
 ### 10.1 Cross-System Control Plane
 
 Reconciles four coupled systems:
+
 1. BytePort/local-cloud lifecycle
 2. Assessment Dossier convergence
 3. Emergent Garden/ResearchLedger continuation
@@ -322,23 +324,23 @@ verify remote signatures, or execute product tests.
 
 ## Appendix A: Source Inventory
 
-| # | Source | Version | Key Contribution |
-|---|--------|---------|------------------|
-| 1 | docs-5 | rev 1.4 | Atlas, assurance, ecosystem-first, specification, federation, proof grading, 33 product dossiers (strict superset of docs-3) |
-| 2 | docs-3 | rev 1.1 | Archived atlas (superseded by docs-5; preserved at `docs/_archive/docs-3/`) |
-| 3 | docs-2 | — | Prior atlas version (superseded by docs-3) |
-| 4 | portfolio-delivery-readiness-v3 | v3 | Delivery contracts, audit findings, work packages |
-| 5 | portfolio-assurance-v2 | v2 | Independent coverage, 85% floors, negative controls |
-| 6 | product-evaluation-protocol-v0.2 | v0.2 | Agent evaluation/improvement loop |
-| 7 | agent-lab-assessment-dossiers-v1.1 | v1.1 | Dossier protocol, assessment kit |
-| 8 | phenotype_control_systems_docset_v0.3 | v0.3 | Cross-system control plane |
-| 9 | storage-agent-toolkit | — | Multi-host storage workflows |
-| 10 | phenodesign-scene-experiences-v3 | v3 | Scene direction, specimen, 18 skills |
-| 11 | phenoDesign-visual-production-v2 | v2 | Cross-media authoring, 26 workflows |
-| 12 | frontend-3d-agent-kit | — | 3D/interaction, 18 skills, Blender |
-| 13 | phenotype-cvp-audit-2026-09-14 | — | Fresh GitHub CVP pass, execution addendum |
-| 14 | docs-5/CHANGELOG-V1.{2,3,4}.md | 1.2/1.3/1.4 | Federation protocol, proof grading, 29 new product dossiers |
-| 15 | docs-3/REVISION-1.1.md | 1.1 | Historical: ecosystem-first delta, consumer impact |
+| #   | Source                                | Version     | Key Contribution                                                                                                             |
+| --- | ------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1   | docs-5                                | rev 1.4     | Atlas, assurance, ecosystem-first, specification, federation, proof grading, 33 product dossiers (strict superset of docs-3) |
+| 2   | docs-3                                | rev 1.1     | Archived atlas (superseded by docs-5; preserved at `docs/_archive/docs-3/`)                                                  |
+| 3   | docs-2                                | —           | Prior atlas version (superseded by docs-3)                                                                                   |
+| 4   | portfolio-delivery-readiness-v3       | v3          | Delivery contracts, audit findings, work packages                                                                            |
+| 5   | portfolio-assurance-v2                | v2          | Independent coverage, 85% floors, negative controls                                                                          |
+| 6   | product-evaluation-protocol-v0.2      | v0.2        | Agent evaluation/improvement loop                                                                                            |
+| 7   | agent-lab-assessment-dossiers-v1.1    | v1.1        | Dossier protocol, assessment kit                                                                                             |
+| 8   | phenotype_control_systems_docset_v0.3 | v0.3        | Cross-system control plane                                                                                                   |
+| 9   | storage-agent-toolkit                 | —           | Multi-host storage workflows                                                                                                 |
+| 10  | phenodesign-scene-experiences-v3      | v3          | Scene direction, specimen, 18 skills                                                                                         |
+| 11  | phenoDesign-visual-production-v2      | v2          | Cross-media authoring, 26 workflows                                                                                          |
+| 12  | frontend-3d-agent-kit                 | —           | 3D/interaction, 18 skills, Blender                                                                                           |
+| 13  | phenotype-cvp-audit-2026-09-14        | —           | Fresh GitHub CVP pass, execution addendum                                                                                    |
+| 14  | docs-5/CHANGELOG-V1.{2,3,4}.md        | 1.2/1.3/1.4 | Federation protocol, proof grading, 29 new product dossiers                                                                  |
+| 15  | docs-3/REVISION-1.1.md                | 1.1         | Historical: ecosystem-first delta, consumer impact                                                                           |
 
 ## Appendix B: Quick Reference Commands
 
@@ -367,10 +369,10 @@ python integration/install.py --repo /path/to/repo --apply
 
 ## Appendix C: Revision History
 
-| Date | Change | Author |
-|------|--------|--------|
+| Date       | Change                                | Author        |
+| ---------- | ------------------------------------- | ------------- |
 | 2026-09-16 | Initial consolidation from 13 sources | Jcode (agent) |
 
 ---
 
-*This document is pinned. Subsequent changes require explicit revision and re-pinning.*
+_This document is pinned. Subsequent changes require explicit revision and re-pinning._

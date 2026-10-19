@@ -1,6 +1,6 @@
 {
   "name": "@khostty/libghostty-vt-wasm",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "WebAssembly bindings for libghostty-vt (Khostty fork of Ghostty)",
   "type": "module",
@@ -22,7 +22,7 @@
   },
   "scripts": {
     "build": "./build.sh",
-    "test": "node --test test/",
+    "test": "node --test test/*.test.mjs",
     "test:header": "./tools/verify-header.sh",
     "typecheck": "npx --yes -p typescript@5 tsc -p tsconfig.json",
     "check": "npm run test:header && npm run typecheck && npm test && npm run exports",
