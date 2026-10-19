@@ -71,6 +71,7 @@ test {
     // type-checked here; the actual server bind is TODO(phase-1). See
     // docs/sessions/20261017-mux-design/04_MUX_ARCHITECTURE.md §3.
     _ = @import("apprt/ipc/mux_shell.zig");
+    _ = @import("apprt/ipc/tests_pane_write_race.zig");
 
     // Compile-time reach of the real-runtime bridge: the reason this root
     // exists. `app_host.zig` has no tests of its own, so this line is what
