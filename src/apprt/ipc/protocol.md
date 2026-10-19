@@ -8,18 +8,18 @@ additive, agent-facing surface.
 
 Implementation map:
 
-| File            | Responsibility                                     | Verified by                               |
-| --------------- | -------------------------------------------------- | ----------------------------------------- |
-| `protocol.md`   | this document: the normative schema                | sections 4 and 7 match the code           |
-| `protocol.zig`  | wire types, request parsing, response/JSON writers | 30 tests                                  |
-| `auth.zig`      | token resolution, constant-time verification       | 12 tests                                  |
-| `state.zig`     | `pane.state` snapshot + JSON                       | 5 tests                                   |
-| `events.zig`    | event types, subscription broker, drop accounting  | 13 tests                                  |
-| `pane.zig`      | pane registry, `Host` vtable, payload writers      | 34 tests                                  |
-| `handler.zig`   | command dispatch, error mapping, event polling     | 22 tests                                  |
-| `server.zig`    | Unix socket server, framing, client, event pusher  | 14 tests                                  |
-| `app_host.zig`  | `Host` implementation over the real app runtime    | not yet in the build graph, see section 7 |
-| `fake_host.zig` | in-memory VT used as the `Host` for tests          | exercised by all of the above             |
+| File            | Responsibility                                     | Verified by                                                                                                             |
+| --------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `protocol.md`   | this document: the normative schema                | sections 4 and 7 match the code                                                                                         |
+| `protocol.zig`  | wire types, request parsing, response/JSON writers | 30 tests                                                                                                                |
+| `auth.zig`      | token resolution, constant-time verification       | 12 tests                                                                                                                |
+| `state.zig`     | `pane.state` snapshot + JSON                       | 5 tests                                                                                                                 |
+| `events.zig`    | event types, subscription broker, drop accounting  | 13 tests                                                                                                                |
+| `pane.zig`      | pane registry, `Host` vtable, payload writers      | 34 tests                                                                                                                |
+| `handler.zig`   | command dispatch, error mapping, event polling     | 22 tests                                                                                                                |
+| `server.zig`    | Unix socket server, framing, client, event pusher  | 14 tests                                                                                                                |
+| `app_host.zig`  | `Host` implementation over the real app runtime    | wired into the `test-agent-ipc` build step at `build.zig:79-508`; runtime wiring (GTK `Server.bind`) still pending (§7) |
+| `fake_host.zig` | in-memory VT used as the `Host` for tests          | exercised by all of the above                                                                                           |
 
 Run everything with:
 
@@ -30,6 +30,13 @@ for f in protocol state events auth pane handler server; do zig test src/apprt/i
 ---
 
 ## 1. Goals
+
+> **Fork-only disclosure (G4 limitation):** the v1 protocol as specified here is
+> implemented at the module level and is wired into the in-process `test-agent-ipc`
+> build step (`build.zig:79-508`). What is **not** yet wired is the GTK runtime
+> calling `Server.bind`. In that runtime, `pane.focus` and `pane.search` return
+> `error.Unsupported` (`app_host.zig:177-178, 208-232`) and the agent protocol maps
+> it to `host_unsupported`. See §3 and §7 for the surface detail.
 
 The upstream IPC surface is command-line shaped: an external process asks a running
 instance to open a window, open a tab, or toggle the quick terminal. It cannot:
@@ -70,6 +77,13 @@ Non-goals (v1):
 the JSON parser before the bytes reach the terminal parser.
 
 ## 3. Message shapes
+
+> **Command-availability note:** `pane.focus` and `pane.search` (§4) return
+> `host_unsupported` against the real GTK runtime. `app_host.zig:177-178`
+> (`focusUnsupported`) and `app_host.zig:208-232` (`searchUnsupported`) refuse the
+> call because no core or apprt API focuses a surface by id and there is no
+> synchronous "scan and return matches" core API. The full message shapes below
+> still apply; the difference is that the host refuses rather than answering.
 
 ### 3.1 Request (agent -> khostty)
 
@@ -393,16 +407,12 @@ Threading, as implemented:
 
 Known limits, stated rather than implied:
 
-1. **The app-thread hop is wired for `pane.write`, but the server is still not
-   started from the app.** The terminal is owned by the app's IO thread;
-   `app_host.zig` holds a mutex but that only serializes IPC callers.
-   `pane.write` no longer touches the parser from a connection thread: it copies
-   the bytes and hands them to the IO thread through the surface mailbox
-   (`CoreSurface.writeToParser` -> `queueIo` -> `termio.Message.parser_write`),
-   so the parser is only ever mutated from the thread that owns it. What remains
-   is (a) starting `server.zig` from a runtime (tracked as Phase B / B1), and
-   (b) publishing events next to the runtime's existing title/exit/resize/bell
-   callbacks. Until (a) lands, the socket is still never created.
+1. **The app-thread hop is not wired yet.** The terminal is owned by the app's IO
+   thread; `app_host.zig` holds a mutex but that only serializes IPC callers. The
+   server is therefore not yet started from the app, and `pane.write` must become
+   a surface-mailbox message (`CoreSurface.queueIo`) before the surface is
+   touched from a connection thread. Event publication belongs next to the
+   runtime's existing title/exit/resize/bell callbacks.
 2. **`pane.focus` and `pane.search` return `host_unsupported` on the real
    runtime.** No core or apprt API focuses a surface by id, and upstream search
    is an asynchronous UI flow (`start_search` plus `search_total` /
