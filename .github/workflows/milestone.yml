@@ -14,7 +14,12 @@ jobs:
     # Ignore bot-authored pull requests (dependabot, app bots, etc)
     # and CI-only PRs.
     if: github.event_name == 'issues' || (github.event.pull_request.user.type != 'Bot' && !startsWith(github.event.pull_request.title, 'ci:'))
-    runs-on: namespace-profile-ghostty-sm
+    # FORK: was `namespace-profile-ghostty-sm` (upstream Ghostty's
+    # Namespace Cloud runner, absent here), so this never executed - history
+    # was 1 skipped and 4 cancelled. The job only uses
+    # `hustcer/milestone-action`, which is runner-agnostic, so ubuntu-latest
+    # makes it actually work.
+    runs-on: ubuntu-latest
     name: Milestone Update
     steps:
       - name: Set Milestone for PR

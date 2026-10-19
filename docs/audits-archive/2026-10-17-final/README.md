@@ -5,14 +5,14 @@ frozen at the point of the orchestrator's synthesis pass.
 
 ## What's here
 
-| File | Lines | Purpose |
-|---|---:|---|
-| `FINAL-AUDIT.md` | ~270 | Synthesis: executive TL;DR, current state, what's done, what's unfinished, runtime gaps, shippability verdict |
-| `FWD-PATH.md` | ~445 | Forward-path roadmap: Phases A/B/C/D + open operator decisions + effort budget |
-| `state.md` | ~258 | Canonical current state — author of truth where reports conflict |
-| `mux.md` | ~262 | Phase 0/1 detail; **stale on Phase 0 merge — Phase 0 is now on `main`** |
-| `stubs.md` | ~217 | 61 findings; **stale on Phase 0 merge** |
-| `usability.md` | ~302 | CVP / MVP / intended user |
+| File             | Lines | Purpose                                                                                                       |
+| ---------------- | ----: | ------------------------------------------------------------------------------------------------------------- |
+| `FINAL-AUDIT.md` |  ~270 | Synthesis: executive TL;DR, current state, what's done, what's unfinished, runtime gaps, shippability verdict |
+| `FWD-PATH.md`    |  ~445 | Forward-path roadmap: Phases A/B/C/D + open operator decisions + effort budget                                |
+| `state.md`       |  ~258 | Canonical current state — author of truth where reports conflict                                              |
+| `mux.md`         |  ~262 | Phase 0/1 detail; **stale on Phase 0 merge — Phase 0 is now on `main`**                                       |
+| `stubs.md`       |  ~217 | 61 findings; **stale on Phase 0 merge**                                                                       |
+| `usability.md`   |  ~302 | CVP / MVP / intended user                                                                                     |
 
 ## Stale-on-merge caveat
 

@@ -9,6 +9,12 @@
 //! it just draws and responds to events. The events come from the application
 //! runtime so the runtime can determine when and how those are delivered
 //! (i.e. with focus, without focus, and so on).
+//!
+//! FORK: KooshaPari/Khostty adds one public entry point here,
+//! `writeToParser`, so the agent-IPC server can feed the terminal parser from a
+//! connection thread without touching the parser directly. The parser is owned
+//! by the IO thread, so the bytes are delivered through the existing mailbox
+//! hop (`queueIo`). Tracking issue: KooshaPari/Khostty#48.
 const Surface = @This();
 
 const apprt = @import("apprt.zig");
@@ -897,6 +903,32 @@ fn queueIo(
     }
 
     self.io.queueMessage(msg, mutex);
+}
+
+/// Feed bytes into the terminal parser as if the child process had written
+/// them, without touching the parser from the calling thread.
+///
+/// The parser is owned by the IO thread. `pane.write` reaches this from an IPC
+/// connection thread, so the bytes are copied and handed to the IO thread
+/// through `queueIo`; the IO thread frees the copy after `nextSlice`. This is
+/// the app-thread hop that `src/apprt/ipc/app_host.zig` and `protocol.md`
+/// section 7 both call for.
+///
+/// The copy is required because the caller's slice is only valid for the
+/// duration of the call. Allocation failure is reported to the caller; the
+/// queued message owns the memory from then on.
+///
+/// FORK: added for KooshaPari/Khostty#48 (agent-IPC parser ownership).
+pub fn writeToParser(self: *Surface, data: []const u8) Allocator.Error!void {
+    if (data.len == 0) return;
+
+    const buf = try self.alloc.dupe(u8, data);
+    errdefer self.alloc.free(buf);
+
+    self.queueIo(.{ .parser_write = .{
+        .alloc = self.alloc,
+        .data = buf,
+    } }, .unlocked);
 }
 
 /// Forces the surface to render. This is useful for when the surface

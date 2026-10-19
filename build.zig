@@ -53,6 +53,28 @@ pub fn build(b: *std.Build) !void {
         "Filter for test. Only applies to Zig tests.",
     ) orelse &[0][]const u8{};
 
+    // Quarantined tests are compiled and type-checked by default but return
+    // `error.SkipZigTest` before they run, so they cannot redden a required
+    // check. They are not deleted: the body, the repro, and the reason they
+    // are parked all stay in the tree, and this flag is how you run them.
+    //
+    //   zig build test-agent-ipc -Dtest-quarantine=write-parser-race
+    //
+    // The value is a `[]const u8` rather than a bool so the list of quarantined
+    // tests stays visible in `zig build --help` instead of living only in
+    // comments. See src/apprt/ipc/tests_pane_write_race.zig for the first
+    // entry and its tracking issue.
+    //
+    // `b.option` returns `null` when the flag is absent, so this collapses to
+    // the empty string by default: no quarantined test runs unless asked for by
+    // name.
+    const quarantine = b.option(
+        []const u8,
+        "test-quarantine",
+        "Run a quarantined (parked, known-invalid) test by name. Default: none run. " ++
+            "Known: write-parser-race (see src/apprt/ipc/tests_pane_write_race.zig)",
+    ) orelse "";
+
     // Ghostty dependencies used by many artifacts.
     const deps = try buildpkg.SharedDeps.init(b, &config);
 
@@ -100,6 +122,40 @@ pub fn build(b: *std.Build) !void {
         "update-translations",
         "Update translation files",
     );
+
+    // ---- fork-discipline guard ---------------------------------------------
+    // Run the tools/check-fork-discipline.zig checker against the working tree.
+    // This is a fork-only tool: it flags any modification to upstream-owned
+    // surfaces (src/terminal/, src/Surface.zig, src/Command.zig, src/runner.zig)
+    // that isn't documented in docs/FORK.md and bracketed by a // FORK: block.
+    // Default mode is advisory (exit 0). Pass `-Dfork-discipline-strict=true`
+    // to make the step fail on violations.
+    const fork_discipline_step = b.step(
+        "check-fork-discipline",
+        "Run the fork-discipline guard over upstream-owned files (advisory by default)",
+    );
+    {
+        const strict = b.option(bool, "fork-discipline-strict", "Exit non-zero on fork-discipline violations") orelse false;
+        const upstream = b.option([]const u8, "fork-discipline-upstream", "Upstream git ref to diff against") orelse "upstream/main";
+
+        // Ensure artifacts/ exists so the tool can write its report.
+        const mkdir_step = b.addSystemCommand(&.{ "sh", "-c", "mkdir -p artifacts" });
+        mkdir_step.setCwd(b.path("."));
+
+        const check = b.addSystemCommand(&.{
+            "zig", "run", "tools/check-fork-discipline.zig", "--",
+        });
+        if (strict) {
+            check.addArg("--strict");
+        }
+        check.addArg("--upstream");
+        check.addArg(upstream);
+        check.addArg("--output");
+        check.addArg("artifacts/fork-discipline.md");
+        check.setCwd(b.path("."));
+        check.step.dependOn(&mkdir_step.step);
+        fork_discipline_step.dependOn(&check.step);
+    }
 
     // Ghostty resources like terminfo, shell integration, themes, etc.
     const resources = try buildpkg.GhosttyResources.init(b, &config, &deps);
@@ -502,6 +558,16 @@ pub fn build(b: *std.Build) !void {
         // module. Without this the module is missing and every containing test
         // fails to compile.
         addGhosttyH(b, agent_ipc_test.root_module, config.baselineTarget(b.graph.io), .Debug);
+
+        // The quarantine selector is threaded in as its own module rather than
+        // as a field on `build_options`: `SharedDeps.add` above already owns
+        // `build_options` for this root module, and overwriting it would drop
+        // every option that module carries.
+        //
+        // The field is named `name` so the test reads `quarantine.name`.
+        const quarantine_options = b.addOptions();
+        quarantine_options.addOption([]const u8, "name", quarantine);
+        agent_ipc_test.root_module.addOptions("test_quarantine", quarantine_options);
 
         const agent_ipc_run = b.addRunArtifact(agent_ipc_test);
         config.addPatchElf(agent_ipc_test, &agent_ipc_run.step);

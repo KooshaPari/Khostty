@@ -9,16 +9,16 @@
 
 ## 1. Current Revision and Artifact Profile
 
-| Item | Value |
-|------|-------|
-| Zig version | 0.16.0 (required by build.zig.zon) |
-| Upstream commit | ghostty-org/ghostty main |
-| Fork commits | 14 ahead, 0 behind |
-| Build target | aarch64-macos.13.0 (native) |
-| Full app build | BLOCKED: Xcode 26 beta missing MetalToolchain component |
-| libghostty-vt build | PASS: static + dynamic + xcframework |
-| WASM build | PASS: 795KB MVP binary, 40+ function signatures |
-| zig fmt | PASS |
+| Item                | Value                                                   |
+| ------------------- | ------------------------------------------------------- |
+| Zig version         | 0.16.0 (required by build.zig.zon)                      |
+| Upstream commit     | ghostty-org/ghostty main                                |
+| Fork commits        | 14 ahead, 0 behind                                      |
+| Build target        | aarch64-macos.13.0 (native)                             |
+| Full app build      | BLOCKED: Xcode 26 beta missing MetalToolchain component |
+| libghostty-vt build | PASS: static + dynamic + xcframework                    |
+| WASM build          | PASS: 795KB MVP binary, 40+ function signatures         |
+| zig fmt             | PASS                                                    |
 
 ### Build Commands
 
@@ -42,30 +42,33 @@ zig fmt --check src/ build.zig
 ## 2. Indexed Paths and Unknowns
 
 ### Owned Paths (fork delta)
-| Path | Category | Status |
-|------|----------|--------|
-| `.github/workflows/ci.yml` | CI | Zig-aware, macOS runner |
-| `.github/workflows/trunk-check.yml` | CI | DELETED (generic template) |
-| `.github/workflows/infisical.yml` | CI | DELETED (generic template) |
-| `.github/workflows/scorecard.yml` | CI | DELETED (generic template) |
-| `.circleci/config.yml` | CI | DELETED (generic template) |
-| `.mergify.yml` | CI | DELETED (generic template) |
-| `renovate.json` | CI | DELETED (generic template) |
-| `trunk.yaml` | CI | DELETED (generic template) |
-| `README.md` | Docs | Khostty branding |
-| `docs/sessions/` | Docs | Session docs |
+
+| Path                                | Category | Status                     |
+| ----------------------------------- | -------- | -------------------------- |
+| `.github/workflows/ci.yml`          | CI       | Zig-aware, macOS runner    |
+| `.github/workflows/trunk-check.yml` | CI       | DELETED (generic template) |
+| `.github/workflows/infisical.yml`   | CI       | DELETED (generic template) |
+| `.github/workflows/scorecard.yml`   | CI       | DELETED (generic template) |
+| `.circleci/config.yml`              | CI       | DELETED (generic template) |
+| `.mergify.yml`                      | CI       | DELETED (generic template) |
+| `renovate.json`                     | CI       | DELETED (generic template) |
+| `trunk.yaml`                        | CI       | DELETED (generic template) |
+| `README.md`                         | Docs     | Khostty branding           |
+| `docs/sessions/`                    | Docs     | Session docs               |
 
 ### Upstream Paths (read-only, tracked via rebase)
-| Path | Role |
-|------|------|
-| `src/` | Shared Zig core (terminal, renderer, VT parser) |
-| `src/renderer/` | GPU rendering (Metal, OpenGL) |
-| `src/apprt/gtk/` | GTK app (Linux/FreeBSD) |
-| `macos/` | macOS native app (Swift) |
-| `build.zig` | Build system entry |
-| `build.zig.zon` | Package dependencies |
+
+| Path             | Role                                            |
+| ---------------- | ----------------------------------------------- |
+| `src/`           | Shared Zig core (terminal, renderer, VT parser) |
+| `src/renderer/`  | GPU rendering (Metal, OpenGL)                   |
+| `src/apprt/gtk/` | GTK app (Linux/FreeBSD)                         |
+| `macos/`         | macOS native app (Swift)                        |
+| `build.zig`      | Build system entry                              |
+| `build.zig.zon`  | Package dependencies                            |
 
 ### Unknowns
+
 - WASM build outcome (in progress)
 - VT conformance test results (not yet run)
 - Metal Toolchain availability timeline (Xcode beta issue)
@@ -73,13 +76,13 @@ zig fmt --check src/ build.zig
 
 ## 3. Accepted Obligations
 
-| Obligation | Status |
-|------------|--------|
-| Keep fork rebased on upstream | DONE (0 behind) |
-| Maintain CI that actually builds/tests | DONE (Zig-aware) |
-| Prove embedding improvement with no correctness regression | NOT STARTED |
-| Run conformance corpus | NOT STARTED |
-| Comparative benchmarks | NOT STARTED |
+| Obligation                                                 | Status           |
+| ---------------------------------------------------------- | ---------------- |
+| Keep fork rebased on upstream                              | DONE (0 behind)  |
+| Maintain CI that actually builds/tests                     | DONE (Zig-aware) |
+| Prove embedding improvement with no correctness regression | NOT STARTED      |
+| Run conformance corpus                                     | NOT STARTED      |
+| Comparative benchmarks                                     | NOT STARTED      |
 
 ## 4. Two Strongest Dissatisfaction Records
 
@@ -93,13 +96,13 @@ zig fmt --check src/ build.zig
 
 ## 6. Comparative Plan
 
-| Subject | Correctness | Latency | Memory | Effort |
-|---------|-------------|---------|--------|--------|
-| Khostty (libghostty-vt) | TBD | TBD | TBD | TBD |
-| Upstream Ghostty | Reference | Reference | Reference | N/A |
-| WezTerm | TBD | TBD | TBD | TBD |
-| Kitty | TBD | TBD | TBD | TBD |
-| Native terminal | TBD | TBD | TBD | TBD |
+| Subject                 | Correctness | Latency   | Memory    | Effort |
+| ----------------------- | ----------- | --------- | --------- | ------ |
+| Khostty (libghostty-vt) | TBD         | TBD       | TBD       | TBD    |
+| Upstream Ghostty        | Reference   | Reference | Reference | N/A    |
+| WezTerm                 | TBD         | TBD       | TBD       | TBD    |
+| Kitty                   | TBD         | TBD       | TBD       | TBD    |
+| Native terminal         | TBD         | TBD       | TBD       | TBD    |
 
 Metrics to measure: VT conformance failures, render frame pacing, memory after long sessions, integration effort.
 

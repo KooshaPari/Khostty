@@ -35,8 +35,13 @@ jobs:
 
   build:
     name: Build (macOS)
-    # Billed macOS runners are disabled by repository policy.
-    if: ${{ false }}
+    # Billed macOS runners are disabled by repository policy, so this job is
+    # opt-in rather than unconditionally dead. `vars` IS a permitted context in
+    # a job-level `if`; set repository variable ENABLE_MACOS_BUILD=true to run
+    # it. Previously this was `if: ${{ false }}`, which triggered actionlint's
+    # `constant expression "false" in condition` and could never be flipped
+    # without editing the file.
+    if: ${{ vars.ENABLE_MACOS_BUILD == 'true' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,8 +51,11 @@ jobs:
           shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
       - name: Select Xcode
         run: |
-          # Use latest available Xcode (macos-latest ships with the newest)
-          sudo xcode-select -s /Applications/Xcode_$(ls /Applications/ | grep Xcode | sort -V | tail -1 | sed 's/Xcode_//' | sed 's/.app//').app || true
+          # Use latest available Xcode (macos-latest ships with the newest).
+          # Glob rather than `ls | grep` (SC2010) and quote the substitution
+          # (SC2046) so a path with spaces cannot split the argument.
+          newest="$(printf '%s\n' /Applications/Xcode_*.app | sort -V | tail -1)"
+          sudo xcode-select -s "${newest}" || true
       - run: zig build -Doptimize=ReleaseSafe -Demit-macos-app=false
 
   detect:
@@ -69,29 +77,32 @@ jobs:
       - id: detect
         run: |
           set +e
-          # Initialize all outputs to false (critical: every output must be set)
-          echo "has_rust=false" >> $GITHUB_OUTPUT
-          echo "has_deny=false" >> $GITHUB_OUTPUT
-          echo "has_python=false" >> $GITHUB_OUTPUT
-          echo "has_go=false" >> $GITHUB_OUTPUT
-          echo "has_typescript=false" >> $GITHUB_OUTPUT
-          echo "has_security=false" >> $GITHUB_OUTPUT
-          echo "has_trunk=false" >> $GITHUB_OUTPUT
+          # Initialize all outputs to false (critical: every output must be set).
+          # One grouped redirect rather than seven (SC2129).
+          {
+            echo "has_rust=false"
+            echo "has_deny=false"
+            echo "has_python=false"
+            echo "has_go=false"
+            echo "has_typescript=false"
+            echo "has_security=false"
+            echo "has_trunk=false"
+          } >> "$GITHUB_OUTPUT"
 
           # Rust: a Cargo.toml anywhere in the tree (khostty-vt/Cargo.toml).
           # The previous `[ -f "**/Cargo.toml" ]` was a literal string test — `sh`
           # does not glob-expand inside quotes — so it never matched and the Rust
           # job was silently skipped on every run.
           if find . -name Cargo.toml -not -path '*/node_modules/*' -type f 2>/dev/null | head -1 | grep -q .; then
-            echo "has_rust=true" >> $GITHUB_OUTPUT
+            echo "has_rust=true" >> "$GITHUB_OUTPUT"
             if find . -name deny.toml -not -path '*/node_modules/*' -type f 2>/dev/null | head -1 | grep -q .; then
-              echo "has_deny=true" >> $GITHUB_OUTPUT
+              echo "has_deny=true" >> "$GITHUB_OUTPUT"
             fi
           fi
 
           # Python: needs pyproject.toml, setup.py, requirements.txt, or *.py
           if [ -f "pyproject.toml" ] || [ -f "setup.py" ] || [ -f "requirements.txt" ] || find . -maxdepth 3 -name "*.py" -type f 2>/dev/null | head -1 | grep -q .; then
-            echo "has_python=true" >> $GITHUB_OUTPUT
+            echo "has_python=true" >> "$GITHUB_OUTPUT"
           fi
 
           # Python TEST suite, tracked separately from has_python. The Python
@@ -100,30 +111,30 @@ jobs:
           # ever collected, so a regression in the bindings shipped silently
           # to PyPI. Linting green is not testing green.
           if find . -maxdepth 3 -type d -name tests -not -path '*/node_modules/*' 2>/dev/null | head -1 | grep -q .; then
-            echo "has_python_tests=true" >> $GITHUB_OUTPUT
+            echo "has_python_tests=true" >> "$GITHUB_OUTPUT"
           fi
 
           # Go: a go.mod anywhere in the tree (khostty-go/go.mod).
           if find . -name go.mod -not -path '*/node_modules/*' -type f 2>/dev/null | head -1 | grep -q .; then
-            echo "has_go=true" >> $GITHUB_OUTPUT
+            echo "has_go=true" >> "$GITHUB_OUTPUT"
           fi
 
           # TypeScript / JS: a package.json anywhere in the tree (wasm/, khostty-vt-wasm).
           if find . -name package.json -not -path '*/node_modules/*' -type f 2>/dev/null | head -1 | grep -q .; then
-            echo "has_typescript=true" >> $GITHUB_OUTPUT
+            echo "has_typescript=true" >> "$GITHUB_OUTPUT"
           fi
 
           # Security: always run (bandit/gitleaks/dependency-review)
-          echo "has_security=true" >> $GITHUB_OUTPUT
+          echo "has_security=true" >> "$GITHUB_OUTPUT"
 
           # Trunk: only if trunk.yaml exists
           if [ -f "trunk.yaml" ]; then
-            echo "has_trunk=true" >> $GITHUB_OUTPUT
+            echo "has_trunk=true" >> "$GITHUB_OUTPUT"
           fi
 
           echo ""
           echo "=== Detected ==="
-          echo "rust=${{ steps.detect.outputs.has_rust }} deny=${{ steps.detect.outputs.has_deny }} python=${{ steps.detect.outputs.has_python }} go=${{ steps.detect.outputs.has_go }} typescript=${{ steps.detect.outputs.has_typescript }} security=${{ steps.detect.outputs.has_security }} trunk=${{ steps.detect.outputs.has_trunk }}"
+          echo "rust=$has_rust deny=$has_deny python=$has_python go=$has_go typescript=$has_typescript security=$has_security trunk=$has_trunk"
 
   rust:
     name: Rust
@@ -144,6 +155,94 @@ jobs:
       - name: cargo test
         run: |
           cargo test --workspace --no-fail-fast 2>&1 || echo "::warning::test failures (advisory)"
+
+  # The generated Rust binding must match the C headers.
+  #
+  # REQUIRED, and deliberately NOT advisory. The `rust` job is
+  # `continue-on-error: true` and wraps `cargo test` in
+  # `|| echo "::warning::test failures (advisory)"`, so a stale binding could
+  # not fail CI there — and it did not. khostty-vt 0.1.0 shipped with
+  # `src/ffi.rs` stale against `include/`: 198 functions / 179 types /
+  # 794 constants versus 199 / 196 / 884 after regeneration, with
+  # `ghostty_osc_set` (include/ghostty/vt/osc.h:330) absent from the binding
+  # entirely. `cargo test --test ffi_coverage` does catch this, but only if it
+  # is allowed to fail the build.
+  #
+  # This check needs only Python 3 and the source headers: no Zig build, no
+  # Rust toolchain, no linked library. It runs in about two seconds, so there
+  # is no reason for it to be advisory.
+  binding-freshness:
+    name: Rust binding freshness
+    # REQUIRED, deliberately not advisory: the `rust` job is
+    # `continue-on-error: true` and wraps `cargo test` in
+    # `|| echo "::warning::..."`, so a stale binding could not fail CI there -
+    # and it did not. khostty-vt 0.1.0 shipped with src/ffi.rs stale against
+    # include/: 198/179/794 versus 199/196/884 after regeneration, with
+    # ghostty_osc_set (include/ghostty/vt/osc.h:330) absent entirely.
+    # Needs only Python 3 and the source headers: ~2 s.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: gen_ffi.py --check
+        working-directory: khostty-vt
+        run: |
+          set -euo pipefail
+          python3 tools/gen_ffi.py --check
+
+  # NOTE: the consolidated wasm header check is NOT duplicated here.
+  #
+  # `wasm/tools/gen-consolidated-header.mjs` shells out to `zig` to preprocess
+  # the umbrella header, so the check needs a Zig toolchain. This workflow has
+  # no Zig install, and adding one for a two-second check would be the wrong
+  # trade. The check runs in `zig-fork-tests.yml` instead, as part of the
+  # `wasm-abi` job's `npm run check`, next to the Zig install it already needs.
+  # That workflow's `pull_request.paths` covers `include/**` and `wasm/**`,
+  # which is what makes the generated artifacts stale in the first place.
+
+  # Workflow YAML is code and nothing was checking it.
+  #
+  # Adding this gate immediately found two real defects: sonar.yml gated its
+  # job on `env.SONAR_TOKEN_PRESENT`, but `env` is not a permitted context in a
+  # job-level `if` (permitted: github, inputs, needs, vars), so the job skipped
+  # unconditionally and adding SONAR_TOKEN would have silently done nothing;
+  # and ci.yml's `detect` step echoed `steps.detect.outputs.*` from inside the
+  # very step that sets them, so the summary was always blank.
+  #
+  # Scope is the FORK-MAINTAINED workflows only. The inherited upstream files
+  # carry 165 findings purely because they target Ghostty's Namespace Cloud
+  # runners; actionlint cannot know those labels, and remediating upstream's
+  # infrastructure is not this fork's problem.
+  actionlint:
+    name: Workflow lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Install actionlint
+        run: |
+          set -euo pipefail
+          version="1.7.7"
+          # sha256 of actionlint_1.7.7_linux_amd64.tar.gz, verified locally.
+          sha256="023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757"
+          curl -fsSL -o actionlint.tar.gz \
+            "https://github.com/rhysd/actionlint/releases/download/v${version}/actionlint_${version}_linux_amd64.tar.gz"
+          echo "${sha256}  actionlint.tar.gz" | sha256sum -c -
+          tar -xzf actionlint.tar.gz actionlint
+          ./actionlint --version
+      - name: actionlint (fork-maintained workflows)
+        run: |
+          set -euo pipefail
+          ./actionlint \
+            .github/workflows/ci.yml \
+            .github/workflows/zig-fork-tests.yml \
+            .github/workflows/trunk-check.yml \
+            .github/workflows/sonar.yml \
+            .github/workflows/go-windows.yml \
+            .github/workflows/clean-artifacts.yml \
+            .github/workflows/milestone.yml
 
   cargo-deny:
     name: Cargo Deny (Advisories + Licenses)
