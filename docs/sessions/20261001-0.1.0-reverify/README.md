@@ -8,16 +8,16 @@ this re-verify).
 
 ## Check results (8 checks)
 
-| # | Check | Observed | Verdict |
-|---|---|---|---|
-| 1 | `shasum -a 256 -c dist-release/CHECKSUMS.txt` | **9/9 OK** | PASS |
-| 2 | `git ls-remote --tags origin v0.1.0` | `7e1684f60e2ab03cca3e0b653c65b1b4e1247d10` (peels to `202aad543`) | PASS |
-| 3 | crates.io API `khostty-vt` | `newest=0.1.0`, `yanked=False` (UA header required; bare curl gets rejected) | PASS |
-| 4 | PyPI JSON probe | **`404`** — still credential-blocked; `khostty-vt` unpublished | BLOCKED (expected) |
-| 5 | npm `khostty-libghostty-vt-wasm` | `dist-tags.latest = 0.1.0`, integrity `sha512-+hPNpxxFA4ZERHmfDDx5/qKvUQCH9Ub4DHKcalugX+RYCM54M3uQ8…` | PASS |
-| 6 | `gh release view v0.1.0` | draft=false, **exactly 6 assets**: CHECKSUMS.txt 4,273 / macos.zip 35,953,098 / setup.exe 19,766,307 / wasm tarball 680,598 / lib `.deb` 2,320,612 / GTK `.deb` 18,143,964 — byte sizes match §7 expectations | PASS |
-| 7 | WSL mirror / desk | `kooshapari-desk` **offline, last seen 6d** (Tailscale); host no longer resolves via MagicDNS. Per rule: noted, **no retry, no reschedule**; r4 stays pending. | BLOCKED (hardware) |
-| 8 | Evidence doc + commit + push | this file | DONE |
+| #   | Check                                         | Observed                                                                                                                                                                                                      | Verdict            |
+| --- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| 1   | `shasum -a 256 -c dist-release/CHECKSUMS.txt` | **9/9 OK**                                                                                                                                                                                                    | PASS               |
+| 2   | `git ls-remote --tags origin v0.1.0`          | `7e1684f60e2ab03cca3e0b653c65b1b4e1247d10` (peels to `202aad543`)                                                                                                                                             | PASS               |
+| 3   | crates.io API `khostty-vt`                    | `newest=0.1.0`, `yanked=False` (UA header required; bare curl gets rejected)                                                                                                                                  | PASS               |
+| 4   | PyPI JSON probe                               | **`404`** — still credential-blocked; `khostty-vt` unpublished                                                                                                                                                | BLOCKED (expected) |
+| 5   | npm `khostty-libghostty-vt-wasm`              | `dist-tags.latest = 0.1.0`, integrity `sha512-+hPNpxxFA4ZERHmfDDx5/qKvUQCH9Ub4DHKcalugX+RYCM54M3uQ8…`                                                                                                         | PASS               |
+| 6   | `gh release view v0.1.0`                      | draft=false, **exactly 6 assets**: CHECKSUMS.txt 4,273 / macos.zip 35,953,098 / setup.exe 19,766,307 / wasm tarball 680,598 / lib `.deb` 2,320,612 / GTK `.deb` 18,143,964 — byte sizes match §7 expectations | PASS               |
+| 7   | WSL mirror / desk                             | `kooshapari-desk` **offline, last seen 6d** (Tailscale); host no longer resolves via MagicDNS. Per rule: noted, **no retry, no reschedule**; r4 stays pending.                                                | BLOCKED (hardware) |
+| 8   | Evidence doc + commit + push                  | this file                                                                                                                                                                                                     | DONE               |
 
 `docs/RELEASE.md` §7 status table matches observed reality after these checks —
 no reconciliation edits required (PyPI row already states the credential block).
@@ -30,13 +30,13 @@ first post-enable run `36628566922` on `882d6cd4a` executed all 12 jobs).
 Run `36628566922` (2026-09-29, 1h23m — runner queue was saturated by a parallel
 session's PR storms; 52 runs cancelled repo-wide that day):
 
-| Job | Result | Root cause |
-|---|---|---|
-| Zig Fmt | failure | `install-zig` step ran `zig version` in the same step that wrote `GITHUB_PATH`; PATH only applies to later steps → `command not found` (exit 127). **Fixed 10-01:** inline `export PATH`. |
-| Security Scan | failure | gitleaks SARIF (artifact 11064598652) = 2 findings: `src/input/Binding.zig:4886` secret `chain=close_surface` (a test keybinding literal) and `src/terminal/snapshot/terminal.zig:1035` secret `header.modify_other_keys_2` (a struct field). The 09-29 allowlist comment mischaracterized both. **Fixed 10-01:** two secret-anchored regexes; local gitleaks 8.30.0 rescan → `no leaks found` on both files. |
-| TS/JS | failure | `setup-node` `cache: 'npm'` hard-fails because **no lockfile exists anywhere in the tree** and the job ran at repo root (root has no package.json; TS project is `wasm/`). **Fixed 10-01:** dropped cache input, `defaults.run.working-directory: wasm`, plain `npm install`. |
-| ci / lint | failure | aggregate: only `zig-fmt: failure` gated it; `typescript`/`security` reported `success` because `continue-on-error: true` absorbs them into the needs context. |
-| Detect, Rust, Go, Python, ci / test | **success** | ecosystem-detection fix from 09-29 confirmed working — nested Rust/Go/TS jobs now run. |
+| Job                                 | Result      | Root cause                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zig Fmt                             | failure     | `install-zig` step ran `zig version` in the same step that wrote `GITHUB_PATH`; PATH only applies to later steps → `command not found` (exit 127). **Fixed 10-01:** inline `export PATH`.                                                                                                                                                                                                                     |
+| Security Scan                       | failure     | gitleaks SARIF (artifact 11064598652) = 2 findings: `src/input/Binding.zig:4886` secret `chain=close_surface` (a test keybinding literal) and `src/terminal/snapshot/terminal.zig:1035` secret `header.modify_other_keys_2` (a struct field). The 09-29 allowlist comment mischaracterized both. **Fixed 10-01:** two secret-anchored regexes; local gitleaks 8.30.0 rescan → `no leaks found` on both files. |
+| TS/JS                               | failure     | `setup-node` `cache: 'npm'` hard-fails because **no lockfile exists anywhere in the tree** and the job ran at repo root (root has no package.json; TS project is `wasm/`). **Fixed 10-01:** dropped cache input, `defaults.run.working-directory: wasm`, plain `npm install`.                                                                                                                                 |
+| ci / lint                           | failure     | aggregate: only `zig-fmt: failure` gated it; `typescript`/`security` reported `success` because `continue-on-error: true` absorbs them into the needs context.                                                                                                                                                                                                                                                |
+| Detect, Rust, Go, Python, ci / test | **success** | ecosystem-detection fix from 09-29 confirmed working — nested Rust/Go/TS jobs now run.                                                                                                                                                                                                                                                                                                                        |
 
 Note: despite the 4 job failures, `ci / lint` failing on zig-fmt was the only
 gating failure; fixes above are all three root causes.
@@ -79,8 +79,8 @@ watched separately.
 ## Post-verify developments (2026-10-01 21:00Z – 2026-10-02 08:39Z)
 
 - **Tag push executed (21:16Z):** pushing `khostty-v0.1.0` produced **zero**
-  `publish-pypi.yml` runs — GitHub sources tag-push workflow files *from the
-  tagged commit*, and `202aad543` (09-19) predates `publish-pypi.yml` (~09-29).
+  `publish-pypi.yml` runs — GitHub sources tag-push workflow files _from the
+  tagged commit_, and `202aad543` (09-19) predates `publish-pypi.yml` (~09-29).
   It instead fired old-ref phantom runs (ci.yml + scorecard on `202aad543`,
   instant failure, 0 jobs, non-gating; Nix skipped; Test queued). Remote
   `main` verified intact. The earlier tag side-effect audit in RELEASE.md
@@ -116,7 +116,7 @@ watched separately.
    re-runnable. PyPI API still 404; zero publish runs exist.
 2. **r4 / WSL mirror** — desk hardware offline 6d; sole backstop consumed; no
    further probes scheduled per rule. Origin authoritative.
-   *Final probe logged 2026-10-01 18:17Z (the `sched_5acd3225` "LAST desk
+   \*Final probe logged 2026-10-01 18:17Z (the `sched_5acd3225` "LAST desk
    probe", delivered late by the scheduler): Tailscale reports
    `kooshapari-desk` offline (last seen 6d) and
    `ssh desk true` to 100.96.135.160:22 timed out (exit 255). Per the
