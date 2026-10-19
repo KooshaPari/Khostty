@@ -50,4 +50,6 @@ export const TERMINAL_DATA = Object.freeze({
   VT_GROUND: Object.freeze({ value: 38, kind: "scalar", type: "bool" }),  // bool *
   CURSOR_AT_PROMPT: Object.freeze({ value: 39, kind: "scalar", type: "bool" }),  // bool *
   CLIPBOARD_WRITE_MAX_BYTES: Object.freeze({ value: 40, kind: "scalar", type: "usize" }),  // size_t *
+  MOUSE_SHAPE: Object.freeze({ value: 41, kind: "named", type: "GhosttyMouseShape" }),  // GhosttyMouseShape *
+  MEMORY_USAGE: Object.freeze({ value: 42, kind: "named", type: "GhosttyTerminalMemoryUsage" }),  // GhosttyTerminalMemoryUsage *
 });
