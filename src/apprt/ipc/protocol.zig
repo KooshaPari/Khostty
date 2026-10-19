@@ -59,6 +59,10 @@ pub const ErrorCode = enum {
     too_many_panes,
     /// `events.unsubscribe` with no active subscription.
     not_subscribed,
+    /// Per-connection token-bucket exhausted. The frame was rejected without
+    /// being parsed or dispatched. The client should back off; this is not
+    /// a bug in the request.
+    rate_limited,
     /// Unexpected host failure.
     internal,
 

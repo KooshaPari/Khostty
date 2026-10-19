@@ -11,13 +11,13 @@ rewrite.
 
 Status vocabulary used throughout `docs/`:
 
-| Label | Meaning |
-|---|---|
-| **DONE** | Merged, built, and observed passing with the date recorded |
-| **IN PROGRESS** | Code exists and compiles; the gate's acceptance criteria are not all met |
-| **SCAFFOLD** | Files and interfaces exist; every operation returns `error.Unimplemented` |
-| **NOT STARTED** | No implementation in the tree |
-| **UNKNOWN** | Not observed in this session; do not infer |
+| Label           | Meaning                                                                   |
+| --------------- | ------------------------------------------------------------------------- |
+| **DONE**        | Merged, built, and observed passing with the date recorded                |
+| **IN PROGRESS** | Code exists and compiles; the gate's acceptance criteria are not all met  |
+| **SCAFFOLD**    | Files and interfaces exist; every operation returns `error.Unimplemented` |
+| **NOT STARTED** | No implementation in the tree                                             |
+| **UNKNOWN**     | Not observed in this session; do not infer                                |
 
 ---
 
@@ -84,14 +84,14 @@ pub const runtime = switch (build_config.artifact) {
 };
 ```
 
-| Runtime | File | Platforms | Status |
-|---|---|---|---|
-| `embedded` | `src/apprt/embedded.zig` | macOS | DONE (upstream) |
-| `gtk` | `src/apprt/gtk.zig` + `src/apprt/gtk/` | Linux, FreeBSD | DONE (upstream) |
-| `browser` | `src/apprt/browser.zig` | wasm32 | DONE (upstream) |
-| `none` | `src/apprt/none.zig` | headless | DONE (upstream) |
-| `ipc` | `src/apprt/ipc.zig` | cross-platform | DONE, but narrow: 3 actions only |
-| **`windows`** | **`src/apprt/windows/`** | **Windows** | **SCAFFOLD — not wired into `src/apprt.zig`** |
+| Runtime       | File                                   | Platforms      | Status                                        |
+| ------------- | -------------------------------------- | -------------- | --------------------------------------------- |
+| `embedded`    | `src/apprt/embedded.zig`               | macOS          | DONE (upstream)                               |
+| `gtk`         | `src/apprt/gtk.zig` + `src/apprt/gtk/` | Linux, FreeBSD | DONE (upstream)                               |
+| `browser`     | `src/apprt/browser.zig`                | wasm32         | DONE (upstream)                               |
+| `none`        | `src/apprt/none.zig`                   | headless       | DONE (upstream)                               |
+| `ipc`         | `src/apprt/ipc.zig`                    | cross-platform | DONE, but narrow: 3 actions only              |
+| **`windows`** | **`src/apprt/windows/`**               | **Windows**    | **SCAFFOLD — not wired into `src/apprt.zig`** |
 
 `src/apprt/runtime.zig` defines the `Runtime` enum and its default:
 
@@ -106,17 +106,17 @@ else             => .none,   // lib-only; the macOS app is built by Xcode
 `src/apprt.zig`'s runtime switch today, so no build currently compiles it as a
 runtime.
 
-| File | Lines | Contents | Status |
-|---|---:|---|---|
-| `mod.zig` | 9 | Module root: `App`, `Window`, `Surface`, `resourcesDir` | SCAFFOLD |
-| `interface.zig` | 49 | The App/Surface method contract the runtime must satisfy | SCAFFOLD — documented signatures only |
-| `App.zig` | 19 | `init` / `registerWindowClass` / `run` / `terminate` | SCAFFOLD — all return `error.Unimplemented` |
-| `Window.zig` | 24 | HWND handle type | SCAFFOLD |
-| `surface.zig` | 112 | HWND surface; `WM_SIZE`, `WM_PAINT`, `WM_ERASEBKGND`, `WM_CLOSE`, `WM_DESTROY` routing | SCAFFOLD — messages routed, renderer delegated to a stub |
-| `renderer.zig` | 64 | Renderer adapter (`init`/`resize`/`renderFrame`/`invalidate`) | SCAFFOLD — `error.Unimplemented` |
-| `keyboard.zig` | 734 | Win32 keyboard/mouse message → Ghostty key event mapping | IN PROGRESS — **no `Unimplemented` stubs remain**, but unverified |
-| `win32api.zig` | 85 | Win32 type aliases and `user32`/`kernel32`/`dwmapi` declarations | SCAFFOLD |
-| `ipc.zig` | 100 | Named-pipe server/client | SCAFFOLD — `error.Unimplemented`; path constant and frame layout, no ACL design |
+| File            | Lines | Contents                                                                               | Status                                                                          |
+| --------------- | ----: | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `mod.zig`       |     9 | Module root: `App`, `Window`, `Surface`, `resourcesDir`                                | SCAFFOLD                                                                        |
+| `interface.zig` |    49 | The App/Surface method contract the runtime must satisfy                               | SCAFFOLD — documented signatures only                                           |
+| `App.zig`       |    19 | `init` / `registerWindowClass` / `run` / `terminate`                                   | SCAFFOLD — all return `error.Unimplemented`                                     |
+| `Window.zig`    |    24 | HWND handle type                                                                       | SCAFFOLD                                                                        |
+| `surface.zig`   |   112 | HWND surface; `WM_SIZE`, `WM_PAINT`, `WM_ERASEBKGND`, `WM_CLOSE`, `WM_DESTROY` routing | SCAFFOLD — messages routed, renderer delegated to a stub                        |
+| `renderer.zig`  |    64 | Renderer adapter (`init`/`resize`/`renderFrame`/`invalidate`)                          | SCAFFOLD — `error.Unimplemented`                                                |
+| `keyboard.zig`  |   734 | Win32 keyboard/mouse message → Ghostty key event mapping                               | IN PROGRESS — **no `Unimplemented` stubs remain**, but unverified               |
+| `win32api.zig`  |    85 | Win32 type aliases and `user32`/`kernel32`/`dwmapi` declarations                       | SCAFFOLD                                                                        |
+| `ipc.zig`       |   100 | Named-pipe server/client                                                               | SCAFFOLD — `error.Unimplemented`; path constant and frame layout, no ACL design |
 
 > **Known defects (observed 2026-09-17):**
 >
@@ -140,18 +140,18 @@ runtime.
 `src/terminal/` is upstream Ghostty's VT engine. Khostty does not modify it; that
 constraint is what keeps upstream merges cheap.
 
-| Concern | Files |
-|---|---|
-| Parser / state machine | `Parser.zig`, `parse_table.zig`, `stream.zig`, `stream_terminal.zig` |
-| Screen and scrollback | `Screen.zig`, `ScreenSet.zig`, `PageList.zig`, `page.zig` |
-| Escape dispatch | `csi.zig`, `osc.zig` + `osc/`, `apc.zig` + `apc/`, `dcs.zig`, `sgr.zig` |
-| Cursor / modes / focus | `cursor.zig`, `modes.zig`, `focus.zig` |
-| Selection | `Selection.zig`, `SelectionGesture.zig`, `selection_codepoints.zig` |
-| Search | `search.zig` + `search/` |
-| Snapshots | `snapshot/` |
-| Kitty graphics | `kitty.zig` + `kitty/` |
-| Text formatting | `formatter.zig` |
-| Shared data structures | `PageList.zig`, `StringMap.zig`, `ref_counted_set.zig` |
+| Concern                | Files                                                                   |
+| ---------------------- | ----------------------------------------------------------------------- |
+| Parser / state machine | `Parser.zig`, `parse_table.zig`, `stream.zig`, `stream_terminal.zig`    |
+| Screen and scrollback  | `Screen.zig`, `ScreenSet.zig`, `PageList.zig`, `page.zig`               |
+| Escape dispatch        | `csi.zig`, `osc.zig` + `osc/`, `apc.zig` + `apc/`, `dcs.zig`, `sgr.zig` |
+| Cursor / modes / focus | `cursor.zig`, `modes.zig`, `focus.zig`                                  |
+| Selection              | `Selection.zig`, `SelectionGesture.zig`, `selection_codepoints.zig`     |
+| Search                 | `search.zig` + `search/`                                                |
+| Snapshots              | `snapshot/`                                                             |
+| Kitty graphics         | `kitty.zig` + `kitty/`                                                  |
+| Text formatting        | `formatter.zig`                                                         |
+| Shared data structures | `PageList.zig`, `StringMap.zig`, `ref_counted_set.zig`                  |
 
 Two sibling libraries ship from the same core:
 
@@ -176,23 +176,23 @@ and 779 constants.
 
 Representative groups (see `include/ghostty/vt/`):
 
-| Group | Header | Example entry points |
-|---|---|---|
-| Terminal | `terminal.h` | `ghostty_terminal_new`, `_free`, `_reset`, `_resize`, `_set`, `_vt_write`, `_vt_write_until_ground` |
-| Snapshot | `snapshot.h` | encode / decoder lifecycle |
-| Render state | `render.h` | update + row iteration |
-| Formatter | `formatter.h` | terminal → plain text / VT / HTML |
-| Search | `search.h` | `new`/`feed`/`run`/`get` |
-| OSC parser | `osc.h` | standalone OSC command parsing |
-| SGR parser | `sgr.h` | standalone SGR attribute parsing |
-| Key / mouse / focus encoding | `key/encoder.h`, `mouse/encoder.h`, `focus.h` | event → escape sequence |
-| Selection | `selection.h` | gesture events, word/line/all selection |
-| Paste | `paste.h` | safety check + encoding |
-| Kitty graphics | `kitty_graphics.h` | image + placement iteration |
-| Color | `color.h` | RGB, X11 names, palette generation |
-| Grid refs | `grid_ref.h`, `grid_ref_tracked.h` | stable cell/row handles |
-| Unicode | `unicode.h` | codepoint and grapheme width |
-| Types / allocator / IO / wasm / sys | `types.h`, `allocator.h`, `io.h`, `wasm.h`, `sys.h` | ABI manifest, `alloc`/`free`, reader/writer, host callbacks |
+| Group                               | Header                                              | Example entry points                                                                                |
+| ----------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Terminal                            | `terminal.h`                                        | `ghostty_terminal_new`, `_free`, `_reset`, `_resize`, `_set`, `_vt_write`, `_vt_write_until_ground` |
+| Snapshot                            | `snapshot.h`                                        | encode / decoder lifecycle                                                                          |
+| Render state                        | `render.h`                                          | update + row iteration                                                                              |
+| Formatter                           | `formatter.h`                                       | terminal → plain text / VT / HTML                                                                   |
+| Search                              | `search.h`                                          | `new`/`feed`/`run`/`get`                                                                            |
+| OSC parser                          | `osc.h`                                             | standalone OSC command parsing                                                                      |
+| SGR parser                          | `sgr.h`                                             | standalone SGR attribute parsing                                                                    |
+| Key / mouse / focus encoding        | `key/encoder.h`, `mouse/encoder.h`, `focus.h`       | event → escape sequence                                                                             |
+| Selection                           | `selection.h`                                       | gesture events, word/line/all selection                                                             |
+| Paste                               | `paste.h`                                           | safety check + encoding                                                                             |
+| Kitty graphics                      | `kitty_graphics.h`                                  | image + placement iteration                                                                         |
+| Color                               | `color.h`                                           | RGB, X11 names, palette generation                                                                  |
+| Grid refs                           | `grid_ref.h`, `grid_ref_tracked.h`                  | stable cell/row handles                                                                             |
+| Unicode                             | `unicode.h`                                         | codepoint and grapheme width                                                                        |
+| Types / allocator / IO / wasm / sys | `types.h`, `allocator.h`, `io.h`, `wasm.h`, `sys.h` | ABI manifest, `alloc`/`free`, reader/writer, host callbacks                                         |
 
 `ghostty_type_json()` returns a JSON manifest of the library's own C ABI for the
 current target (pointer width, `size_t` width, endianness, maximum alignment, and
@@ -201,8 +201,8 @@ WASM bindings and the Rust ABI test consume it, so no language hardcodes a
 target-dependent number.
 
 > The header itself carries this warning, reproduced verbatim because it is the
-> current contract: *"This is an incomplete, work-in-progress API. It is not yet
-> stable and is definitely going to change."* Consumers must pin a revision.
+> current contract: _"This is an incomplete, work-in-progress API. It is not yet
+> stable and is definitely going to change."_ Consumers must pin a revision.
 
 ---
 
@@ -280,17 +280,17 @@ build against it yet.
 `src/cli/ghostty.zig` defines the command set. Commands are invoked as
 `khostty +<action>`.
 
-| Command | Purpose | Depends on |
-|---|---|---|
-| `+version`, `--version` | Print version | — |
-| `+help` | CLI or config help | — |
-| `+list-fonts`, `+list-keybinds`, `+list-themes`, `+list-colors`, `+list-actions` | Introspection | config / platform |
-| `+show-config`, `+explain-config`, `+validate-config`, `+edit-config` | Config tooling | config |
-| `+show-face` | Report which font face serves a codepoint | font backend |
-| `+ssh`, `+ssh-cache` | Remote terminfo integration | terminfo |
-| `+crash-report` | Inspect crash reports | crash handler |
-| `+new-window`, `+new-tab`, `+toggle-quick-terminal` | Drive a running instance | `src/apprt/ipc.zig` |
-| `+boo` | Easter egg | — |
+| Command                                                                          | Purpose                                   | Depends on          |
+| -------------------------------------------------------------------------------- | ----------------------------------------- | ------------------- |
+| `+version`, `--version`                                                          | Print version                             | —                   |
+| `+help`                                                                          | CLI or config help                        | —                   |
+| `+list-fonts`, `+list-keybinds`, `+list-themes`, `+list-colors`, `+list-actions` | Introspection                             | config / platform   |
+| `+show-config`, `+explain-config`, `+validate-config`, `+edit-config`            | Config tooling                            | config              |
+| `+show-face`                                                                     | Report which font face serves a codepoint | font backend        |
+| `+ssh`, `+ssh-cache`                                                             | Remote terminfo integration               | terminfo            |
+| `+crash-report`                                                                  | Inspect crash reports                     | crash handler       |
+| `+new-window`, `+new-tab`, `+toggle-quick-terminal`                              | Drive a running instance                  | `src/apprt/ipc.zig` |
+| `+boo`                                                                           | Easter egg                                | —                   |
 
 ---
 
@@ -298,15 +298,15 @@ build against it yet.
 
 `build.zig` composes artifacts from `src/build/`:
 
-| Artifact | Selected by | Output |
-|---|---|---|
-| `libghostty-vt` shared | default for lib targets | `libghostty-vt.0.1.0.dylib` / `.so` |
-| `libghostty-vt` static | `-Demit-lib-vt` | `libghostty-vt.a` |
-| xcframework | `-Demit-xcframework` (Apple only) | macOS + iOS slices |
-| WASM module | `-Dtarget=wasm32-freestanding` | `ghostty-vt.wasm` |
-| macOS app | `-Demit-macos-app` | Xcode-driven `.app` |
-| Docs / terminfo / themes / webdata | `-Demit-docs`, `-Demit-terminfo`, `-Demit-themes`, `-Demit-webdata` | `zig-out/share/` |
-| Bench | `-Demit-bench` | bench executables |
+| Artifact                           | Selected by                                                         | Output                              |
+| ---------------------------------- | ------------------------------------------------------------------- | ----------------------------------- |
+| `libghostty-vt` shared             | default for lib targets                                             | `libghostty-vt.0.1.0.dylib` / `.so` |
+| `libghostty-vt` static             | `-Demit-lib-vt`                                                     | `libghostty-vt.a`                   |
+| xcframework                        | `-Demit-xcframework` (Apple only)                                   | macOS + iOS slices                  |
+| WASM module                        | `-Dtarget=wasm32-freestanding`                                      | `ghostty-vt.wasm`                   |
+| macOS app                          | `-Demit-macos-app`                                                  | Xcode-driven `.app`                 |
+| Docs / terminfo / themes / webdata | `-Demit-docs`, `-Demit-terminfo`, `-Demit-themes`, `-Demit-webdata` | `zig-out/share/`                    |
+| Bench                              | `-Demit-bench`                                                      | bench executables                   |
 
 Gate G8 (benchmarks) has **no** `bench/` directory in the tree as of 2026-09-17.
 `-Demit-bench` selects upstream's bench tooling; it is not evidence of the G8
@@ -321,15 +321,15 @@ See [BUILD.md](BUILD.md) for commands and prerequisites.
 Khostty additions are confined to named locations. Everything else is upstream
 and should stay upstream-mergeable.
 
-| Kind | Location | Status |
-|---|---|---|
-| Windows runtime | `src/apprt/windows/` | SCAFFOLD (G3) |
-| Agent IPC protocol | `src/apprt/ipc/` | IN PROGRESS (G4) — modules exist, no server |
-| Rust crate | `khostty-vt/` | IN PROGRESS (G5) |
-| WASM package | `wasm/` | IN PROGRESS (G7) |
-| Conformance corpus | `conformance/` | DONE (G2) |
-| Benchmark harness | `bench/` *(planned)* | NOT STARTED (G8) |
-| Docs | `docs/` | IN PROGRESS (G9) |
+| Kind               | Location             | Status                                      |
+| ------------------ | -------------------- | ------------------------------------------- |
+| Windows runtime    | `src/apprt/windows/` | SCAFFOLD (G3)                               |
+| Agent IPC protocol | `src/apprt/ipc/`     | IN PROGRESS (G4) — modules exist, no server |
+| Rust crate         | `khostty-vt/`        | IN PROGRESS (G5)                            |
+| WASM package       | `wasm/`              | IN PROGRESS (G7)                            |
+| Conformance corpus | `conformance/`       | DONE (G2)                                   |
+| Benchmark harness  | `bench/` _(planned)_ | NOT STARTED (G8)                            |
+| Docs               | `docs/`              | IN PROGRESS (G9)                            |
 
 Explicitly **not** modified: `src/terminal/`, `src/renderer/`, `src/font/`,
 `src/config/`. Keeping that boundary is the whole point of the fork.

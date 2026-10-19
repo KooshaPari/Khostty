@@ -194,6 +194,16 @@ fn threadMain_(self: *Thread) !void {
         const s: *TerminalSearch = if (self.search) |*s| s else {
             // If we're not actively searching, we can block the loop
             // until it does some work.
+            //
+            // Guard against the kqueue teardown race: the test thread may
+            // close the kqueue FD via loop.deinit() while we are about to
+            // call kevent(), which inside libxev hits `.BADF => unreachable`
+            // (a panic, not a returned error — so it cannot be caught with
+            // `catch`; see docs/sessions/20261014-ghostty-native-mux/evidence/
+            // flake-investigation-20261015.md for the original repro). The
+            // `stopped()` check is our proxy for "loop is being torn down
+            // soon"; libxev's tick() also short-circuits on `flags.stopped`.
+            if (self.loop.stopped()) return;
             try self.loop.run(.once);
             continue;
         };
@@ -207,7 +217,11 @@ fn threadMain_(self: *Thread) !void {
 
         if (s.isComplete()) {
             // If our search is complete, there's no more work to do, we
-            // can block until we have an xev action.
+            // can block until we have an xev action. Same kqueue teardown-
+            // race guard as the path above: short-circuit on `stopped()`
+            // so we don't hit libxev's `.BADF => unreachable` panic when
+            // the test thread is closing the kqueue FD in parallel.
+            if (self.loop.stopped()) return;
             try self.loop.run(.once);
             continue;
         }

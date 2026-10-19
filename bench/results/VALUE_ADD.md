@@ -24,35 +24,35 @@ does not regress the engine it carries".
 
 From `git diff --name-only <merge-base>..HEAD`, grouped by directory:
 
-| Area | Files changed | Gate | What it is |
-|---|---|---|---|
-| `khostty-go/` | 21 | G6 | cgo bindings: terminal, render, search, snapshot, enums, integration tests |
-| `wasm/js/` | 20 | G7 | ESM/TypeScript bindings and tests for the WASM build |
-| `bench/` | 13 | G8 | This benchmark suite (5 sections, 156 metrics per run) |
-| `docs/` | 12 | G9 | ARCHITECTURE, API, AGENT, PLATFORMS, BUILD, CONTRIBUTING, TESTING, GLOSSARY |
-| `src/apprt/ipc/` | 8 | G4 | Agent IPC v1: protocol, auth, panes, events, state, fake host |
-| `khostty-vt/tests/` | 8 | G5 | Rust wrapper integration tests |
-| `src/apprt/windows/` | 7 | G3 | Windows app runtime: `App`, `Window`, `surface`, `renderer`, `interface`, `ipc`, `win32api`, input, keyboard, mouse |
-| `khostty-vt/src/` | 7 | G5 | Safe Rust wrappers: terminal, snapshot, search, render, key, mouse, selection |
-| `wasm/` | 5 | G7 | WASM build script, header export, package metadata |
-| `khostty-python/khostty_vt/` | 5 | G6 | cffi ABI-mode bindings with struct-size verification |
-| `conformance/` | 3 | G2 | C conformance harness, 84 cases in 8 categories |
+| Area                         | Files changed | Gate | What it is                                                                                                          |
+| ---------------------------- | ------------- | ---- | ------------------------------------------------------------------------------------------------------------------- |
+| `khostty-go/`                | 21            | G6   | cgo bindings: terminal, render, search, snapshot, enums, integration tests                                          |
+| `wasm/js/`                   | 20            | G7   | ESM/TypeScript bindings and tests for the WASM build                                                                |
+| `bench/`                     | 13            | G8   | This benchmark suite (5 sections, 156 metrics per run)                                                              |
+| `docs/`                      | 12            | G9   | ARCHITECTURE, API, AGENT, PLATFORMS, BUILD, CONTRIBUTING, TESTING, GLOSSARY                                         |
+| `src/apprt/ipc/`             | 8             | G4   | Agent IPC v1: protocol, auth, panes, events, state, fake host                                                       |
+| `khostty-vt/tests/`          | 8             | G5   | Rust wrapper integration tests                                                                                      |
+| `src/apprt/windows/`         | 7             | G3   | Windows app runtime: `App`, `Window`, `surface`, `renderer`, `interface`, `ipc`, `win32api`, input, keyboard, mouse |
+| `khostty-vt/src/`            | 7             | G5   | Safe Rust wrappers: terminal, snapshot, search, render, key, mouse, selection                                       |
+| `wasm/`                      | 5             | G7   | WASM build script, header export, package metadata                                                                  |
+| `khostty-python/khostty_vt/` | 5             | G6   | cffi ABI-mode bindings with struct-size verification                                                                |
+| `conformance/`               | 3             | G2   | C conformance harness, 84 cases in 8 categories                                                                     |
 
 ## Gate-by-gate, with re-runnable evidence
 
-| Gate | Status | Evidence |
-|---|---|---|
-| G0 Fork hygiene | DONE | Upstream boilerplate CI removed; Zig-aware CI added (`ci.yml`: fmt + build). WBS G0 tasks 0.1-0.4. |
-| G1 Native build | DONE | `zig build -Demit-lib-vt -Doptimize=ReleaseSafe` produces `.a`, `.dylib`, `.xcframework`. Re-runnable; the command in this repo is the same one the benchmarks used. |
-| G2 Conformance | DONE, 84/84 | `conformance/README.md` records 84 passed / 0 failed / 100%. Re-runnable with `conformance/build.sh`; it compiles a C harness against the same dylib the benchmarks use. |
-| G3 Windows app runtime | IN PROGRESS | `src/apprt/windows/{surface,interface,ipc}.zig`, named-pipe IPC stub, renderer adapter stub. |
-| G4 Agent IPC | IN PROGRESS | `src/apprt/ipc/{protocol,auth,pane,events,state,fake_host}.zig`; token auth is fail-closed. |
-| G5 Rust FFI | IN PROGRESS | `khostty-vt` crate: typed `GhosttyError` mapping, allocator/buffer integration, ABI layout guard, bindgen cross-check of hand-written bindings. |
-| G6 Go + Python FFI | IN PROGRESS | `khostty-go` (cgo, integration tests, examples) and `khostty-python` (cffi ABI mode; reproduces C struct layouts and validates them against the library's own type manifest). |
-| G7 WASM | DONE, 54 tests | `wasm/khostty-vt.wasm` is 813,670 B (795 KiB) built from `build.zig`; ESM loader, `Terminal`/`Snapshot`/`Search` API, complete `.d.ts` surface, smoke and ABI-export tests. |
-| G8 Improvements + benchmarks | THIS WORK | `bench/` suite; see `README.md` here. |
-| G9 Docs + packaging | IN PROGRESS | Per-platform docs landed; packaging tasks open. |
-| G10 Release artifacts | NOT STARTED | blocked on G9. |
+| Gate                         | Status         | Evidence                                                                                                                                                                      |
+| ---------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| G0 Fork hygiene              | DONE           | Upstream boilerplate CI removed; Zig-aware CI added (`ci.yml`: fmt + build). WBS G0 tasks 0.1-0.4.                                                                            |
+| G1 Native build              | DONE           | `zig build -Demit-lib-vt -Doptimize=ReleaseSafe` produces `.a`, `.dylib`, `.xcframework`. Re-runnable; the command in this repo is the same one the benchmarks used.          |
+| G2 Conformance               | DONE, 84/84    | `conformance/README.md` records 84 passed / 0 failed / 100%. Re-runnable with `conformance/build.sh`; it compiles a C harness against the same dylib the benchmarks use.      |
+| G3 Windows app runtime       | IN PROGRESS    | `src/apprt/windows/{surface,interface,ipc}.zig`, named-pipe IPC stub, renderer adapter stub.                                                                                  |
+| G4 Agent IPC                 | IN PROGRESS    | `src/apprt/ipc/{protocol,auth,pane,events,state,fake_host}.zig`; token auth is fail-closed.                                                                                   |
+| G5 Rust FFI                  | IN PROGRESS    | `khostty-vt` crate: typed `GhosttyError` mapping, allocator/buffer integration, ABI layout guard, bindgen cross-check of hand-written bindings.                               |
+| G6 Go + Python FFI           | IN PROGRESS    | `khostty-go` (cgo, integration tests, examples) and `khostty-python` (cffi ABI mode; reproduces C struct layouts and validates them against the library's own type manifest). |
+| G7 WASM                      | DONE, 54 tests | `wasm/khostty-vt.wasm` is 813,670 B (795 KiB) built from `build.zig`; ESM loader, `Terminal`/`Snapshot`/`Search` API, complete `.d.ts` surface, smoke and ABI-export tests.   |
+| G8 Improvements + benchmarks | THIS WORK      | `bench/` suite; see `README.md` here.                                                                                                                                         |
+| G9 Docs + packaging          | IN PROGRESS    | Per-platform docs landed; packaging tasks open.                                                                                                                               |
+| G10 Release artifacts        | NOT STARTED    | blocked on G9.                                                                                                                                                                |
 
 ## What the benchmarks prove about the fork
 
@@ -63,18 +63,18 @@ interleaved in two passes on the same machine. Full numbers and caveats in
 
 Consistent directional results in **both** passes:
 
-| Dimension | Khostty | Upstream snapshot | Direction |
-|---|---|---|---|
-| Snapshot encode, 80x24 | 0.222-0.255 ms | 0.828-0.932 ms | 3.4-4.1x faster |
-| Snapshot encode, 200x50 | 0.340-0.404 ms | 1.294-2.073 ms | 3.8-6.1x faster |
-| Resize, 200x50 + 10k lines | 5.2-11.0 ms | 22.4-26.4 ms | 2.0-5.0x faster |
-| Empty resize rate | 21,680-22,367 /s | 12,060-13,083 /s | 1.7-1.9x faster |
-| Library allocator bytes, 80x24 | 23,192 B | 29,906 B | 22.5% smaller |
-| Library allocator bytes, 200x50 | 48,744 B | 68,084 B | 28.4% smaller |
-| OSC-title ingest | 9.5-15.5 MiB/s | 6.3-6.9 MiB/s | 1.5-2.5x faster |
-| Plain-text ingest | 40.9-69.1 MiB/s | 43.3-65.4 MiB/s | no signal (order flips) |
-| Grid page memory | 13,648 / 34,000 KiB | 13,760-13,776 / 34,112 KiB | within 1% |
-| Snapshot size | 155,728 / 156,083 B | 155,792 / 156,147 B | within 0.04% |
+| Dimension                       | Khostty             | Upstream snapshot          | Direction               |
+| ------------------------------- | ------------------- | -------------------------- | ----------------------- |
+| Snapshot encode, 80x24          | 0.222-0.255 ms      | 0.828-0.932 ms             | 3.4-4.1x faster         |
+| Snapshot encode, 200x50         | 0.340-0.404 ms      | 1.294-2.073 ms             | 3.8-6.1x faster         |
+| Resize, 200x50 + 10k lines      | 5.2-11.0 ms         | 22.4-26.4 ms               | 2.0-5.0x faster         |
+| Empty resize rate               | 21,680-22,367 /s    | 12,060-13,083 /s           | 1.7-1.9x faster         |
+| Library allocator bytes, 80x24  | 23,192 B            | 29,906 B                   | 22.5% smaller           |
+| Library allocator bytes, 200x50 | 48,744 B            | 68,084 B                   | 28.4% smaller           |
+| OSC-title ingest                | 9.5-15.5 MiB/s      | 6.3-6.9 MiB/s              | 1.5-2.5x faster         |
+| Plain-text ingest               | 40.9-69.1 MiB/s     | 43.3-65.4 MiB/s            | no signal (order flips) |
+| Grid page memory                | 13,648 / 34,000 KiB | 13,760-13,776 / 34,112 KiB | within 1%               |
+| Snapshot size                   | 155,728 / 156,083 B | 155,792 / 156,147 B        | within 0.04%            |
 
 **Attribution caveat, stated plainly:** none of those improvements are fork
 work. Khostty does not touch the VT core, and the compared checkout is 41 days
@@ -98,12 +98,12 @@ rather than inventing a number.
 
 Measured on Khostty (10,000 records, ~20,000 retained rows):
 
-| Path | Cost |
-|---|---|
-| Cold full scan, fresh needle | 243-352 ms |
-| Full rescan with a changed needle | 301-310 ms |
+| Path                                        | Cost         |
+| ------------------------------------------- | ------------ |
+| Cold full scan, fresh needle                | 243-352 ms   |
+| Full rescan with a changed needle           | 301-310 ms   |
 | Warm re-run, same needle (results retained) | 0.51-0.53 ms |
-| Cost per retained row | 12.1-17.6 us |
+| Cost per retained row                       | 12.1-17.6 us |
 
 That split matters for embedders: a find bar that keeps its search object and
 needle pays half a millisecond per frame, but opening a new query costs a

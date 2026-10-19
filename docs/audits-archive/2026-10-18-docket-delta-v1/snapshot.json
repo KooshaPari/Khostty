@@ -1,0 +1,363 @@
+{
+  "schema_version": "1.0.0",
+  "record_class": "OPERATIONAL",
+  "snapshot_id": "kh-2026-10-18T00:15-0700-b51910e97",
+  "previous_snapshot_id": "kh-2026-10-17T15:27-0700-8e86ec93a",
+  "product_id": "khostty",
+  "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+  "baseline_id": "kh-2026-10-17T05:18Z-4c9e4c57a",
+  "as_of": "2026-10-18T00:15:00-07:00",
+  "evidence": [
+    {
+      "id": "E.main.rev",
+      "kind": "EXECUTED_PRODUCT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "git rev-parse main @ /Users/kooshapari/CodeProjects/Phenotype/repos/khostty :: main resolves to 8e86ec93a1fd0f0c18f39b5c2d9ad604c1ffbaca",
+      "sha256": "82235f53e75f770334b6362e33e3e8e1a58a11b7510ead9db2661ee31b05ad12"
+    },
+    {
+      "id": "E.main.head",
+      "kind": "EXECUTED_PRODUCT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "git log -1 main :: b51910e9734bc896dd9d3ebcb17e2589ed0fd678 ci(mergify): upgrade configuration to current format (#52)",
+      "sha256": "84da77249c70cd2876761a7774bee0d7270bf5d7c49a431bcf1a445de2f35603"
+    },
+    {
+      "id": "E.fork.delta",
+      "kind": "EXECUTED_PRODUCT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "git rev-list --left-right --count origin/main...upstream/main :: 307 ahead / 3 behind upstream/main",
+      "sha256": "2eb39a98f464be0e8bf843c1356256ee6c79c9489f0abe96b0723e55912ecba4"
+    },
+    {
+      "id": "E.fork.shortstat",
+      "kind": "EXECUTED_PRODUCT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "git diff --shortstat <merge-base> origin/main :: 352 files changed, 74959 insertions(+), 233 deletions(-)",
+      "sha256": "bedd722e9582b9ef6c3b998a8635157092f89363d04c0fc86fc97615552a25e5"
+    },
+    {
+      "id": "E.ipc.loc",
+      "kind": "EXECUTED_PRODUCT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "wc -l src/apprt/ipc/*.zig :: 7230 total lines across 10 files",
+      "sha256": "22a5d5feba6a135d5de692befa176fee7414bb57e223befe0073bf078b26d0d5"
+    },
+    {
+      "id": "E.ipc.bind",
+      "kind": "EXECUTED_PRODUCT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "grep -rn 'Server.bind' src/ --include=*.zig | grep -v '^src/apprt/ipc/' :: zero matches outside src/apprt/ipc/ -> no runtime calls Server.bind",
+      "sha256": "4b2a4a41db43a0dfc6220387932174abfefb84f3eebe227d00e06ba4cfad0b33"
+    },
+    {
+      "id": "E.win.files",
+      "kind": "EXECUTED_PRODUCT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "ls src/apprt/windows/ :: renderer.zig and win32api.zig still present on main (A3/A7 deletions pending in PR #41)",
+      "sha256": "f995a45b2b8f6d59a6e47ea6a938a1efd0f9b5d66766cdec82e51b4afa3a68e0"
+    },
+    {
+      "id": "E.prettier.main",
+      "kind": "EXECUTED_PRODUCT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "prettier --check over 211 tracked md/yml/json on main @ b51910e97 :: 56 files drifting (was 57 at 8e86ec93a)",
+      "sha256": "bcd372bddec77aff51bc754a012653f368e8d873cd95075904a683785dcdf13c"
+    },
+    {
+      "id": "E.prs.open",
+      "kind": "EXECUTED_PRODUCT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "gh pr list --state open --json number | length :: 11 open PRs at observation end",
+      "sha256": "a1fb50e6c86fae1679ef3351296fd6713411a08cf8dd1790a4fd05fae8688164"
+    },
+    {
+      "id": "E.issues.open",
+      "kind": "EXECUTED_PRODUCT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "gh issue list --state open --json number | length :: 10 open issues at observation end",
+      "sha256": "917df3320d778ddbaa5c5c7742bc4046bf803c36ed2b050f30844ed206783469"
+    },
+    {
+      "id": "S.audit.archive",
+      "kind": "SOURCE_REPORT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "docs/audits-archive/2026-10-17-final/ @ commit 869b9c75e :: Prior audit snapshot; inherited, not re-verified this session",
+      "sha256": "84da77249c70cd2876761a7774bee0d7270bf5d7c49a431bcf1a445de2f35603"
+    },
+    {
+      "id": "S.conf.8484",
+      "kind": "SOURCE_REPORT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "docs/changelog/0.1.0.md \u00a72.1 (conformance 84/84 @ b2c388c9b, 2026-09-17) :: Inherited claim; not re-run this session",
+      "sha256": "84da77249c70cd2876761a7774bee0d7270bf5d7c49a431bcf1a445de2f35603"
+    },
+    {
+      "id": "E.ci.main.forkzig",
+      "kind": "EXECUTED_PRODUCT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "gh run view 39116429486 --repo KooshaPari/Khostty :: Fork Zig Tests on main b51910e9734b: overall success; test-agent-ipc success; test-windows-apprt success",
+      "sha256": "60bd8438825a95533c0ba3497ad31e5bc23e5119784c6821316e3fdf5d7e288d"
+    },
+    {
+      "id": "E.ci.main.ciyml",
+      "kind": "EXECUTED_PRODUCT",
+      "subject_id": "khostty-main-b51910e9734bc896dd9d3ebcb17e2589ed0fd678",
+      "observed_at": "2026-10-18T00:15:00-07:00",
+      "valid_until": "2026-11-17T00:00:00-07:00",
+      "locator": "gh run view (latest ci.yml on main) --repo KooshaPari/Khostty :: overall success at b51910e9734b; 10 jobs success incl. ci / lint and ci / test",
+      "sha256": "737a6e277e680677e3e00c6bcfd55859f0b1850a86674be966311d50d23c56a3"
+    }
+  ],
+  "leaves": [
+    {
+      "id": "eng.main.revision",
+      "title": "main HEAD pinned and reproducible",
+      "axis": "engineering",
+      "weight": 1,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "PASS",
+      "review": "ACCEPTED",
+      "critical": false,
+      "evidence_ids": ["E.main.rev", "E.main.head"]
+    },
+    {
+      "id": "eng.fork.delta.measured",
+      "title": "Fork divergence measured against upstream",
+      "axis": "engineering",
+      "weight": 1,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "PASS",
+      "review": "ACCEPTED",
+      "critical": false,
+      "evidence_ids": ["E.fork.delta", "E.fork.shortstat"]
+    },
+    {
+      "id": "eng.ipc.modules.present",
+      "title": "Agent-IPC modules present in tree",
+      "axis": "engineering",
+      "weight": 1,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "PASS",
+      "review": "ACCEPTED",
+      "critical": false,
+      "evidence_ids": ["E.ipc.loc"]
+    },
+    {
+      "id": "eng.ipc.runtime.bound",
+      "title": "IPC server bound by a running runtime",
+      "axis": "engineering",
+      "weight": 3,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "FAIL",
+      "review": "ACCEPTED",
+      "critical": true,
+      "evidence_ids": ["E.ipc.bind"]
+    },
+    {
+      "id": "eng.windows.deadcode.removed",
+      "title": "Orphaned Windows files deleted",
+      "axis": "engineering",
+      "weight": 1,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "FAIL",
+      "review": "ACCEPTED",
+      "critical": false,
+      "evidence_ids": ["E.win.files"]
+    },
+    {
+      "id": "eng.prettier.main.clean",
+      "title": "main is prettier-clean for tracked files",
+      "axis": "engineering",
+      "weight": 1,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "FAIL",
+      "review": "ACCEPTED",
+      "critical": false,
+      "evidence_ids": ["E.prettier.main"]
+    },
+    {
+      "id": "eng.build.zig.tests",
+      "title": "zig build test passes at this SHA",
+      "axis": "engineering",
+      "weight": 2,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "PASS",
+      "review": "ACCEPTED",
+      "critical": false,
+      "evidence_ids": ["E.ci.main.forkzig", "E.ci.main.ciyml"]
+    },
+    {
+      "id": "eng.conformance.corpus",
+      "title": "84-case conformance corpus passes",
+      "axis": "engineering",
+      "weight": 2,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "UNKNOWN",
+      "review": "PROPOSED",
+      "critical": false,
+      "evidence_ids": ["S.conf.8484"]
+    },
+    {
+      "id": "eng.release.v010.assets",
+      "title": "v0.1.0 release assets verified",
+      "axis": "engineering",
+      "weight": 1,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "UNKNOWN",
+      "review": "PROPOSED",
+      "critical": false,
+      "evidence_ids": ["S.audit.archive"]
+    },
+    {
+      "id": "use.cvp.rust.parser",
+      "title": "Beneficiary parses a stream via cargo add khostty-vt",
+      "axis": "usable",
+      "weight": 2,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "UNKNOWN",
+      "review": "PROPOSED",
+      "critical": false,
+      "evidence_ids": []
+    },
+    {
+      "id": "use.cvp.wasm.parser",
+      "title": "Beneficiary parses a stream via npm wasm package",
+      "axis": "usable",
+      "weight": 1,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "UNKNOWN",
+      "review": "PROPOSED",
+      "critical": false,
+      "evidence_ids": []
+    },
+    {
+      "id": "use.journey.agent.ping",
+      "title": "Agent completes ping->pong against a live instance",
+      "axis": "usable",
+      "weight": 3,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "FAIL",
+      "review": "ACCEPTED",
+      "critical": true,
+      "evidence_ids": ["E.ipc.bind"]
+    },
+    {
+      "id": "use.journey.macos.app",
+      "title": "Operator launches macOS app and types",
+      "axis": "usable",
+      "weight": 1,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "UNKNOWN",
+      "review": "PROPOSED",
+      "critical": false,
+      "evidence_ids": []
+    },
+    {
+      "id": "use.journey.windows.gui",
+      "title": "Windows GUI window opens",
+      "axis": "usable",
+      "weight": 1,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "FAIL",
+      "review": "ACCEPTED",
+      "critical": false,
+      "evidence_ids": ["E.win.files"]
+    },
+    {
+      "id": "ass.ipc.auth.failclosed",
+      "title": "IPC auth is fail-closed on every command but ping",
+      "axis": "assurance",
+      "weight": 2,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "UNKNOWN",
+      "review": "PROPOSED",
+      "critical": false,
+      "evidence_ids": []
+    },
+    {
+      "id": "ass.prettier.gate.enforced",
+      "title": "A formatting gate is enforced on PRs",
+      "axis": "assurance",
+      "weight": 1,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "PASS",
+      "review": "ACCEPTED",
+      "critical": false,
+      "evidence_ids": ["E.prettier.main"]
+    },
+    {
+      "id": "ass.real.user.validation",
+      "title": "A person other than the operator has used it",
+      "axis": "assurance",
+      "weight": 2,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "FAIL",
+      "review": "ACCEPTED",
+      "critical": true,
+      "evidence_ids": ["E.prs.open"]
+    },
+    {
+      "id": "ass.independent.rerun",
+      "title": "Independent re-run of gates on the merged tree",
+      "axis": "assurance",
+      "weight": 1,
+      "applicability": "APPLICABLE",
+      "exclusion_authority": null,
+      "status": "UNKNOWN",
+      "review": "PROPOSED",
+      "critical": false,
+      "evidence_ids": []
+    }
+  ],
+  "limitations": [
+    "Zig-suite and test-agent-ipc credit come from main's own CI at b51910e9 (Fork Zig Tests + ci.yml), not a local run; this host could not complete a full Zig build.",
+    "Server.bind is still called from no runtime on main; the agent-IPC socket is still never created.",
+    "No GUI was launched; GUI status stays UNKNOWN except Windows, which has never opened a window.",
+    "No second person used the software; real-user validation remains zero.",
+    "main advanced to b51910e9 (#49/#52, CI-only); membership and weights are unchanged from the baseline, so this delta is like-for-like."
+  ]
+}
