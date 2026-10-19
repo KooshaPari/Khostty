@@ -13,17 +13,17 @@ Status vocabulary (as in `docs/README.md`): **DONE** · **IN PROGRESS** ·
 
 ## 1. Product identity
 
-| Field | Value | Evidence |
-|---|---|---|
-| Product name | **Khostty** | `docs/README.md` |
-| Khostty version | **0.1.0** (source value `0.1.0-dev`) | `build.zig` → `lib_version` |
-| ABI soname | `libghostty-vt.0.1.0.dylib` / `.so` / `.a` | `packaging/version.sh`, `zig-out/lib/` |
-| Upstream base | **Ghostty 1.3.2-dev** | `build.zig.zon` → `.version` |
-| Minimum Zig | 0.16.0 | `build.zig.zon` → `.minimum_zig_version` |
-| Version scheme | `<major>.<minor>.<patch>[-pre][+ghostty.<base>.<sha7>]` | `packaging/version.sh`, WBS 10.1 |
-| Manifest agreement | Rust `Cargo.toml` = 0.1.0 · Python `pyproject.toml` = 0.1.0 | observed 2026-09-18 |
-| Lifecycle | pre-1.0; **no release produced** — G10 NOT STARTED, nothing published | WBS gate index |
-| Upstream | fork of [`ghostty-org/ghostty`](https://github.com/ghostty-org/ghostty) | `docs/FORK.md` |
+| Field              | Value                                                                   | Evidence                                 |
+| ------------------ | ----------------------------------------------------------------------- | ---------------------------------------- |
+| Product name       | **Khostty**                                                             | `docs/README.md`                         |
+| Khostty version    | **0.1.0** (source value `0.1.0-dev`)                                    | `build.zig` → `lib_version`              |
+| ABI soname         | `libghostty-vt.0.1.0.dylib` / `.so` / `.a`                              | `packaging/version.sh`, `zig-out/lib/`   |
+| Upstream base      | **Ghostty 1.3.2-dev**                                                   | `build.zig.zon` → `.version`             |
+| Minimum Zig        | 0.16.0                                                                  | `build.zig.zon` → `.minimum_zig_version` |
+| Version scheme     | `<major>.<minor>.<patch>[-pre][+ghostty.<base>.<sha7>]`                 | `packaging/version.sh`, WBS 10.1         |
+| Manifest agreement | Rust `Cargo.toml` = 0.1.0 · Python `pyproject.toml` = 0.1.0             | observed 2026-09-18                      |
+| Lifecycle          | pre-1.0; **no release produced** — G10 NOT STARTED, nothing published   | WBS gate index                           |
+| Upstream           | fork of [`ghostty-org/ghostty`](https://github.com/ghostty-org/ghostty) | `docs/FORK.md`                           |
 
 Khostty deliberately does **not** take the version of the Ghostty release it
 tracks. `0.x` means the agent-facing surfaces (IPC v1, the polyglot bindings) are
@@ -80,14 +80,14 @@ superiority without a baseline; sending agent-authored PRs upstream. Details:
 A row is **VERIFIED** only where this fork holds a dated observation. Upstream
 capability and fork-verified capability are different claims.
 
-| Platform | VT library | Terminal app | Agent IPC | FFI | Renderer | Verified in this fork |
-|---|---|---|---|---|---|---|
-| **macOS** arm64/x86_64 | **VERIFIED** (`-Demit-lib-vt`, ReleaseSafe) | Upstream AppKit (Xcode-driven) | v1 modules; no server constructed | C, Rust, WASM | Metal, else **OpenGL fallback** (`9d32ffc4c`) | **YES** — 2026-09-16/17 |
-| **Linux** x86_64/arm64 | Upstream supported | Upstream GTK4 (`zig build run`) | same | C, Rust | OpenGL | **BUILT + INSTALL-VERIFIED 2026-09-19** — GTK app runtime + `.deb` built in WSL Fedora 44 on `kooshapari-desk`; `.deb` installed on the host (glibc 2.43, dpkg -s installed, +version exit 0, purge clean) with a bookworm negative control refusing on the derived 2.43 floor; no GUI launch, no arm64 |
-| **Windows** x86_64 | Cross-build **PASS** | **SCAFFOLD only** | Named-pipe stub (`error.Unimplemented`) | C, Rust (Go cgo untested) | OpenGL (unproven) | **PARTIAL** — cross-compile only, never executed |
-| **WASM** `wasm32-freestanding` | **VERIFIED** artifact | n/a (headless) | n/a | JS/TS | n/a | **YES** — Node tests; no browser run |
-| **iOS** | xcframework slice present | Not supported | n/a | C | Metal | Artifact only, never built/run |
-| **FreeBSD** | Upstream supported | Upstream GTK4 | same | C, Rust | OpenGL | **NO** |
+| Platform                       | VT library                                  | Terminal app                    | Agent IPC                               | FFI                       | Renderer                                      | Verified in this fork                                                                                                                                                                                                                                                                                   |
+| ------------------------------ | ------------------------------------------- | ------------------------------- | --------------------------------------- | ------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **macOS** arm64/x86_64         | **VERIFIED** (`-Demit-lib-vt`, ReleaseSafe) | Upstream AppKit (Xcode-driven)  | v1 modules; no server constructed       | C, Rust, WASM             | Metal, else **OpenGL fallback** (`9d32ffc4c`) | **YES** — 2026-09-16/17                                                                                                                                                                                                                                                                                 |
+| **Linux** x86_64/arm64         | Upstream supported                          | Upstream GTK4 (`zig build run`) | same                                    | C, Rust                   | OpenGL                                        | **BUILT + INSTALL-VERIFIED 2026-09-19** — GTK app runtime + `.deb` built in WSL Fedora 44 on `kooshapari-desk`; `.deb` installed on the host (glibc 2.43, dpkg -s installed, +version exit 0, purge clean) with a bookworm negative control refusing on the derived 2.43 floor; no GUI launch, no arm64 |
+| **Windows** x86_64             | Cross-build **PASS**                        | **SCAFFOLD only**               | Named-pipe stub (`error.Unimplemented`) | C, Rust (Go cgo untested) | OpenGL (unproven)                             | **PARTIAL** — cross-compile only, never executed                                                                                                                                                                                                                                                        |
+| **WASM** `wasm32-freestanding` | **VERIFIED** artifact                       | n/a (headless)                  | n/a                                     | JS/TS                     | n/a                                           | **YES** — Node tests; no browser run                                                                                                                                                                                                                                                                    |
+| **iOS**                        | xcframework slice present                   | Not supported                   | n/a                                     | C                         | Metal                                         | Artifact only, never built/run                                                                                                                                                                                                                                                                          |
+| **FreeBSD**                    | Upstream supported                          | Upstream GTK4                   | same                                    | C, Rust                   | OpenGL                                        | **NO**                                                                                                                                                                                                                                                                                                  |
 
 Windows cross-build evidence (2026-09-17): `zig build -Dtarget=x86_64-windows-gnu
 -Dapp-runtime=windows` exits 0 and produces `ghostty.exe`, `ghostty-vt.dll`,
@@ -102,13 +102,13 @@ WASM artifact: 813,670 bytes, sha256 `08ac8ed881ffdae68b9f96f9afa6c834e57ba7ea49
 
 ## 4. FFI surfaces
 
-| Surface | Artifact | Recorded test evidence | Notes |
-|---|---|---|---|
-| C | `libghostty-vt` — 203 `GHOSTTY_API` functions, 34 headers | conformance **84/84** (`conformance/build.sh`, 2026-09-17) | Header self-describes as work-in-progress and unstable; pin a revision |
-| Rust | `khostty-vt/` crate (bindgen: 198 functions, 179 types, 779 constants) | **199/199** (WBS G5 record, 2026-09-17); crate README records 195 = 65 unit + 130 integration at its own run | RAII `Terminal`, snapshot, render, search, key/mouse; `tests/abi_layout.rs` asserts layout against the type manifest |
-| Go | `khostty-go/` cgo module | **207** combined Go+Python (WBS G6 record) | Author-verified `go build` / `go vet`; 45 top-level `Test*` functions present |
-| Python | `khostty-python/` cffi package (v0.1.0) | same 207 figure; README records **98** pytest cases | Library discovery + bindings |
-| WASM / JS-TS | `@khostty/libghostty-vt-wasm` (ESM, `wasm/`) | **54/54** (WBS G7 record); `npm test` = 54 runtime + ABI tests | Node ≥ 20; Kitty graphics excluded by design (needs OS timestamps) |
+| Surface      | Artifact                                                               | Recorded test evidence                                                                                       | Notes                                                                                                                |
+| ------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| C            | `libghostty-vt` — 203 `GHOSTTY_API` functions, 34 headers              | conformance **84/84** (`conformance/build.sh`, 2026-09-17)                                                   | Header self-describes as work-in-progress and unstable; pin a revision                                               |
+| Rust         | `khostty-vt/` crate (bindgen: 198 functions, 179 types, 779 constants) | **199/199** (WBS G5 record, 2026-09-17); crate README records 195 = 65 unit + 130 integration at its own run | RAII `Terminal`, snapshot, render, search, key/mouse; `tests/abi_layout.rs` asserts layout against the type manifest |
+| Go           | `khostty-go/` cgo module                                               | **207** combined Go+Python (WBS G6 record)                                                                   | Author-verified `go build` / `go vet`; 45 top-level `Test*` functions present                                        |
+| Python       | `khostty-python/` cffi package (v0.1.0)                                | same 207 figure; README records **98** pytest cases                                                          | Library discovery + bindings                                                                                         |
+| WASM / JS-TS | `@khostty/libghostty-vt-wasm` (ESM, `wasm/`)                           | **54/54** (WBS G7 record); `npm test` = 54 runtime + ABI tests                                               | Node ≥ 20; Kitty graphics excluded by design (needs OS timestamps)                                                   |
 
 Design rule honoured by every wrapper (**wrap, do not reimplement**): no language
 reimplements parser logic, and none hardcodes a target-dependent number.
@@ -134,15 +134,15 @@ query, no event stream.
 **Khostty agent IPC v1 — IN PROGRESS (reachability).** Normative spec:
 [`src/apprt/ipc/protocol.md`](../../src/apprt/ipc/protocol.md).
 
-| Dimension | Value |
-|---|---|
-| Transport | Unix domain socket — macOS `~/Library/Caches/khostty/ipc.sock`; Linux/BSD `$XDG_RUNTIME_DIR/khostty/ipc.sock` (fallback `/tmp/khostty-$UID/ipc.sock`); override with `KHOSTTY_IPC_SOCKET` |
-| Windows transport | Named pipe, same framing: `\\.\pipe\khostty-{server_pid}` (SCAFFOLD, `error.Unimplemented`) |
-| Framing | one JSON value per line, UTF-8, `\n`-terminated; 1 MiB max frame; responses in request order; unsolicited events allowed |
-| Commands | 13 — `ping`; `pane.create` / `close` / `focus` / `list` / `write` / `state` / `search`; `resize_split`, `equalize`, `zoom`; `events.subscribe` / `unsubscribe` |
-| Auth | token, fail-closed, constant-time compare |
-| Modules | `protocol.zig`, `auth.zig`, `state.zig`, `events.zig`, `pane.zig`, `handler.zig`, `server.zig`, `app_host.zig`, `fake_host.zig` — 130 unit tests across the first seven per `protocol.md` |
-| Not yet true | Nothing in a running runtime constructs the server (`grep` finds no `Server.init` outside its own test), and the Windows frame header (`extern struct { action: u16, length: u32 }`) predates the JSON draft and needs reconciling |
+| Dimension         | Value                                                                                                                                                                                                                              |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transport         | Unix domain socket — macOS `~/Library/Caches/khostty/ipc.sock`; Linux/BSD `$XDG_RUNTIME_DIR/khostty/ipc.sock` (fallback `/tmp/khostty-$UID/ipc.sock`); override with `KHOSTTY_IPC_SOCKET`                                          |
+| Windows transport | Named pipe, same framing: `\\.\pipe\khostty-{server_pid}` (SCAFFOLD, `error.Unimplemented`)                                                                                                                                        |
+| Framing           | one JSON value per line, UTF-8, `\n`-terminated; 1 MiB max frame; responses in request order; unsolicited events allowed                                                                                                           |
+| Commands          | 13 — `ping`; `pane.create` / `close` / `focus` / `list` / `write` / `state` / `search`; `resize_split`, `equalize`, `zoom`; `events.subscribe` / `unsubscribe`                                                                     |
+| Auth              | token, fail-closed, constant-time compare                                                                                                                                                                                          |
+| Modules           | `protocol.zig`, `auth.zig`, `state.zig`, `events.zig`, `pane.zig`, `handler.zig`, `server.zig`, `app_host.zig`, `fake_host.zig` — 130 unit tests across the first seven per `protocol.md`                                          |
+| Not yet true      | Nothing in a running runtime constructs the server (`grep` finds no `Server.init` outside its own test), and the Windows frame header (`extern struct { action: u16, length: u32 }`) predates the JSON draft and needs reconciling |
 
 `pane.write` writes **VT bytes into the terminal parser**; it does not type into
 the child process. That is a documented v1 non-goal, not a defect.
@@ -195,7 +195,7 @@ toolchain is absent, **falls back to the OpenGL renderer with a warning**
 (commit `9d32ffc4c`); `-Drenderer=metal` still forces Metal, and `SharedDeps` only
 creates the metallib step when Metal is selected.
 
-**Correction, observed 2026-09-18:** the component *is* obtainable on this host, and the
+**Correction, observed 2026-09-18:** the component _is_ obtainable on this host, and the
 `.app` gate is not externally blocked. `xcodebuild -downloadComponent MetalToolchain`
 fails only because it is invoked **without** `-buildVersion`: Xcode 26.0 build `17B5050g`
 has no entry in `XcodeToMetalToolchainIndexMapping.plist`, so the catalog lookup has no
@@ -238,7 +238,7 @@ nothing created that path. Full command log, exit codes and durability caveat:
    control refuses on the derived libc6 2.43 floor); no GUI launch is recorded, and
    no CI job builds or tests Linux (the Ubuntu job runs `zig fmt --check`
    only). arm64 Linux is untouched.
-6. **No usable *absolute* benchmark comparison.** The `bench/` harness exists and two
+6. **No usable _absolute_ benchmark comparison.** The `bench/` harness exists and two
    paired Khostty/upstream passes were captured on 2026-09-17
    (`bench/results/README.md`), but every pass ran at load 548-674 on a dirty tree
    (`git_head` `fc0aea2bc` / `d7ec3a36e`), which the harness's own methodology says
@@ -267,19 +267,19 @@ nothing created that path. Full command log, exit codes and durability caveat:
 Gate record: [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](../sessions/20260916-fork-assessment/02_DEEP_WBS.md)
 (113 tasks; 96 DONE / 17 pending as of 2026-09-17).
 
-| Gate | Scope | Status | Evidence |
-|---|---|---|---|
-| G0 | Fork hygiene | **DONE** | Boilerplate CI stripped, Zig-aware `ci.yml`, Metal skip |
-| G1 | Native build validation | **DONE** | macOS artifacts in `zig-out/lib/` (2026-09-16) |
-| G2 | Conformance evidence | **DONE** | 84/84 across 8 categories, `conformance/build.sh` (2026-09-17) |
-| G3 | Windows app runtime | **DONE** (cross-build) / runtime SCAFFOLD | `2d11fcb3a`: exit 0, `ghostty.exe` + `ghostty-vt.dll`; 80/85 `test-windows-apprt` steps |
-| G4 | Agent/IPC surface | **DONE** | `src/apprt/ipc/`: 130 unit tests, spec `protocol.md`; reachability is the open item |
-| G5 | Polyglot FFI — Rust | **DONE** | 199/199 tests (WBS record) |
-| G6 | Polyglot FFI — Go + Python | **DONE** | 207 tests (WBS record) |
-| G7 | WASM cross-compilation | **DONE** | 54/54 tests, 189 exports, artifact hash above |
-| G8 | Improvements + benchmarks | **DONE** (measured, not comparable) | Harness built; upstream baseline empty — see limitation 6 |
-| G9 | Documentation + packaging | **DONE** (15/15) | `docs/` set, all 7 artifacts built (GTK `.deb` 2026-09-19 in WSL; library `.deb` Debian-12 verified; macOS `.app` signed+binary-exec; Windows installer compiled + install/uninstall-verified; WASM dist npm-verified); this dossier is 9.10. Install-verify halves open: macOS `.app` GUI launch, GTK `.deb` install/GUI launch (see §10) |
-| G10 | Release artifacts | **IN PROGRESS** | 10.1/10.3/10.4/10.7 DONE; 10.2 mostly DONE (Windows installer + GTK `.deb` built); 10.5/10.6/10.8 blocked on publish authorization |
+| Gate | Scope                      | Status                                    | Evidence                                                                                                                                                                                                                                                                                                                                   |
+| ---- | -------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| G0   | Fork hygiene               | **DONE**                                  | Boilerplate CI stripped, Zig-aware `ci.yml`, Metal skip                                                                                                                                                                                                                                                                                    |
+| G1   | Native build validation    | **DONE**                                  | macOS artifacts in `zig-out/lib/` (2026-09-16)                                                                                                                                                                                                                                                                                             |
+| G2   | Conformance evidence       | **DONE**                                  | 84/84 across 8 categories, `conformance/build.sh` (2026-09-17)                                                                                                                                                                                                                                                                             |
+| G3   | Windows app runtime        | **DONE** (cross-build) / runtime SCAFFOLD | `2d11fcb3a`: exit 0, `ghostty.exe` + `ghostty-vt.dll`; 80/85 `test-windows-apprt` steps                                                                                                                                                                                                                                                    |
+| G4   | Agent/IPC surface          | **DONE**                                  | `src/apprt/ipc/`: 130 unit tests, spec `protocol.md`; reachability is the open item                                                                                                                                                                                                                                                        |
+| G5   | Polyglot FFI — Rust        | **DONE**                                  | 199/199 tests (WBS record)                                                                                                                                                                                                                                                                                                                 |
+| G6   | Polyglot FFI — Go + Python | **DONE**                                  | 207 tests (WBS record)                                                                                                                                                                                                                                                                                                                     |
+| G7   | WASM cross-compilation     | **DONE**                                  | 54/54 tests, 189 exports, artifact hash above                                                                                                                                                                                                                                                                                              |
+| G8   | Improvements + benchmarks  | **DONE** (measured, not comparable)       | Harness built; upstream baseline empty — see limitation 6                                                                                                                                                                                                                                                                                  |
+| G9   | Documentation + packaging  | **DONE** (15/15)                          | `docs/` set, all 7 artifacts built (GTK `.deb` 2026-09-19 in WSL; library `.deb` Debian-12 verified; macOS `.app` signed+binary-exec; Windows installer compiled + install/uninstall-verified; WASM dist npm-verified); this dossier is 9.10. Install-verify halves open: macOS `.app` GUI launch, GTK `.deb` install/GUI launch (see §10) |
+| G10  | Release artifacts          | **IN PROGRESS**                           | 10.1/10.3/10.4/10.7 DONE; 10.2 mostly DONE (Windows installer + GTK `.deb` built); 10.5/10.6/10.8 blocked on publish authorization                                                                                                                                                                                                         |
 
 Verification rules the fork holds itself to: every status claim carries an
 observation date; a historical pass is not a fresh pass; a percentage needs an
@@ -304,13 +304,13 @@ fresher.
 
 ## 9. Top 5 risks
 
-| # | Risk | Evidence | Mitigation / next action |
-|---|---|---|---|
-| 1 | **The headline delta (Windows) never reaches runtime.** Spec, scaffold, cross-build and keyboard mapping exist, but no Windows binary has been launched on Windows hardware. | `docs/PLATFORMS.md` §5; G3 G3 exit criteria unmet (no window, no DirectWrite glyphs, no clipboard) | Run `ghostty.exe` on a Windows host or under Wine; record dated output; that result is what unblocks the value claim |
-| 2 | **Windows IPC authorization hole.** Malformed pipe path (single leading backslash) plus no DACL design; the unit test encodes the same wrong value, so it cannot catch it. | `docs/SECURITY.md` §4; `src/apprt/windows/ipc.zig` | Fix the constant and its test; design an explicit DACL before G3/G4 converge; do not ship an unauthenticated pipe |
-| 3 | **ABI/version drift across four language surfaces.** Upstream calls the C ABI unstable; a wrapper with a stale layout corrupts memory silently. | `include/ghostty/vt.h` warning; `docs/ARCHITECTURE.md` §4 | Keep `ghostty_type_json()` as the only layout source (already asserted by Rust/WASM); run `packaging/version.sh` agreement checks in CI; pin revisions |
-| 4 | **No defensible absolute performance claim.** A paired Khostty/upstream baseline exists, but every pass ran at load 548-674 on a dirty tree, so only directional readings are defensible. | `docs/FORK.md` §4 (2026-09-17 snapshot); `bench/results/README.md` | Re-run paired Khostty-vs-upstream on an idle machine, pinned to a committed revision; publish only then |
-| 5 | **Gate progress outruns verification, and CI cannot catch regressions.** Gate labels say DONE while runtime behaviour is unobserved; CI builds only macOS lint plus one macOS build, and 12 inherited upstream workflows are ungated. | `docs/README.md` status caveat; `docs/CONTRIBUTING.md` §9; `docs/BUILD.md` §11 (tree broken twice on 2026-09-17) | Add a Linux build+test job; guard or delete the ungated upstream workflows; keep the "SCAFFOLD vs DONE" distinction visible in every superseding doc |
+| #   | Risk                                                                                                                                                                                                                                  | Evidence                                                                                                         | Mitigation / next action                                                                                                                               |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | **The headline delta (Windows) never reaches runtime.** Spec, scaffold, cross-build and keyboard mapping exist, but no Windows binary has been launched on Windows hardware.                                                          | `docs/PLATFORMS.md` §5; G3 G3 exit criteria unmet (no window, no DirectWrite glyphs, no clipboard)               | Run `ghostty.exe` on a Windows host or under Wine; record dated output; that result is what unblocks the value claim                                   |
+| 2   | **Windows IPC authorization hole.** Malformed pipe path (single leading backslash) plus no DACL design; the unit test encodes the same wrong value, so it cannot catch it.                                                            | `docs/SECURITY.md` §4; `src/apprt/windows/ipc.zig`                                                               | Fix the constant and its test; design an explicit DACL before G3/G4 converge; do not ship an unauthenticated pipe                                      |
+| 3   | **ABI/version drift across four language surfaces.** Upstream calls the C ABI unstable; a wrapper with a stale layout corrupts memory silently.                                                                                       | `include/ghostty/vt.h` warning; `docs/ARCHITECTURE.md` §4                                                        | Keep `ghostty_type_json()` as the only layout source (already asserted by Rust/WASM); run `packaging/version.sh` agreement checks in CI; pin revisions |
+| 4   | **No defensible absolute performance claim.** A paired Khostty/upstream baseline exists, but every pass ran at load 548-674 on a dirty tree, so only directional readings are defensible.                                             | `docs/FORK.md` §4 (2026-09-17 snapshot); `bench/results/README.md`                                               | Re-run paired Khostty-vs-upstream on an idle machine, pinned to a committed revision; publish only then                                                |
+| 5   | **Gate progress outruns verification, and CI cannot catch regressions.** Gate labels say DONE while runtime behaviour is unobserved; CI builds only macOS lint plus one macOS build, and 12 inherited upstream workflows are ungated. | `docs/README.md` status caveat; `docs/CONTRIBUTING.md` §9; `docs/BUILD.md` §11 (tree broken twice on 2026-09-17) | Add a Linux build+test job; guard or delete the ungated upstream workflows; keep the "SCAFFOLD vs DONE" distinction visible in every superseding doc   |
 
 ---
 
@@ -320,19 +320,19 @@ Recorded 2026-09-18. This section exists because the docs-5 dossier template req
 ownership/next-handoff concern and the earlier revision had none. Nothing here is inferred
 from convention; where a name is absent, that absence is the finding.
 
-| Role | State |
-|------|-------|
-| Product owner | **UNASSIGNED.** No per-product owner is recorded in this repository. Commits carry `tx-agent` trailers identifying the tool (`jcode`, `human`), not a person accountable for the product. |
+| Role                        | State                                                                                                                                                                                                                                                                       |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Product owner               | **UNASSIGNED.** No per-product owner is recorded in this repository. Commits carry `tx-agent` trailers identifying the tool (`jcode`, `human`), not a person accountable for the product.                                                                                   |
 | Independent assurance owner | **UNASSIGNED.** The G2 conformance run (84/84) and the G3 apprt run (25/25) were produced in the same working session that produced the code under test. They are executed evidence, but they are **not independent verification** — no separate party has reproduced them. |
-| Release authority | **Not established.** WBS G10 (9 tasks) is NOT STARTED. Publishing, tagging, and artifact distribution have not been authorised or performed. |
+| Release authority           | **Not established.** WBS G10 (9 tasks) is NOT STARTED. Publishing, tagging, and artifact distribution have not been authorised or performed.                                                                                                                                |
 
 ### Named next bounded task
 
 **Run the macOS `.app` outside the source tree and record the result — then the `.app` half
 of the G9 acceptance criterion is closed.**
 
-Superseded task, now discharged (2026-09-18): the previous revision named *"Close WBS 9.11 on
-a host where the Metal toolchain is available"* and recorded the blocker as external and
+Superseded task, now discharged (2026-09-18): the previous revision named _"Close WBS 9.11 on
+a host where the Metal toolchain is available"_ and recorded the blocker as external and
 singular. **That was wrong, and the error is worth recording.** The blocker was two local
 defects, both fixable on this host:
 

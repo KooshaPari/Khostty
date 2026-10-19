@@ -2,25 +2,25 @@
 
 **Observed:** 2026-09-17 · How to drive, observe, and embed Khostty from an
 automated agent. Read the "Available today" section first; most of what an agent
-would want from *pane control* is still a design proposal, and building against
+would want from _pane control_ is still a design proposal, and building against
 it will not work.
 
 ---
 
 ## 1. What an agent can do right now
 
-| Capability | Status | How |
-|---|---|---|
-| Parse and observe terminal output | **Available** | `libghostty-vt` via C, Rust, or WASM |
-| Read screen text, styles, cursor, title, pwd | **Available** | `ghostty_terminal_get`, formatter, or `Terminal.text()` |
-| Search screen and scrollback | **Available** | `search.h` / `Terminal.search()` |
-| Snapshot and restore terminal state | **Available** | `snapshot.h` / `Terminal.snapshot()` |
-| Encode key / mouse / focus events | **Available** | `key/encoder.h`, `mouse/encoder.h`, `focus.h` |
-| Run the parser in a browser or Node | **Available** | `@khostty/libghostty-vt-wasm` |
+| Capability                                    | Status                 | How                                                         |
+| --------------------------------------------- | ---------------------- | ----------------------------------------------------------- |
+| Parse and observe terminal output             | **Available**          | `libghostty-vt` via C, Rust, or WASM                        |
+| Read screen text, styles, cursor, title, pwd  | **Available**          | `ghostty_terminal_get`, formatter, or `Terminal.text()`     |
+| Search screen and scrollback                  | **Available**          | `search.h` / `Terminal.search()`                            |
+| Snapshot and restore terminal state           | **Available**          | `snapshot.h` / `Terminal.snapshot()`                        |
+| Encode key / mouse / focus events             | **Available**          | `key/encoder.h`, `mouse/encoder.h`, `focus.h`               |
+| Run the parser in a browser or Node           | **Available**          | `@khostty/libghostty-vt-wasm`                               |
 | Open a new window / tab in a running instance | **Available (narrow)** | `khostty +new-window`, `+new-tab`, `+toggle-quick-terminal` |
-| Create, write to, focus, or query a **pane** | **Not reachable** | Modules implemented (G4); no `server.zig`, not wired |
-| Subscribe to terminal events over IPC | **Not reachable** | `events.zig` implemented (G4); no server |
-| Drive a Windows instance over IPC | **NOT AVAILABLE** | Named-pipe stub returns `error.Unimplemented` (G3) |
+| Create, write to, focus, or query a **pane**  | **Not reachable**      | Modules implemented (G4); no `server.zig`, not wired        |
+| Subscribe to terminal events over IPC         | **Not reachable**      | `events.zig` implemented (G4); no server                    |
+| Drive a Windows instance over IPC             | **NOT AVAILABLE**      | Named-pipe stub returns `error.Unimplemented` (G3)          |
 
 **The reliable agent path today is embedding, not IPC.** An agent that needs to
 understand terminal output should run `libghostty-vt` in-process (Rust, Go,
@@ -120,10 +120,10 @@ before you free or mutate. See [API.md](API.md#1-c-abi--libghostty-vt).
 Every language wrapper calls the same C entry points, so the conformance corpus
 describes them all. Pick by runtime, not by capability:
 
-| Runtime | Use |
-|---|---|
-| Rust service or agent | `khostty-vt` crate |
-| Node or browser | `@khostty/libghostty-vt-wasm` |
+| Runtime                              | Use                                                   |
+| ------------------------------------ | ----------------------------------------------------- |
+| Rust service or agent                | `khostty-vt` crate                                    |
+| Node or browser                      | `@khostty/libghostty-vt-wasm`                         |
 | Go, Python, anything with cgo/ctypes | `libghostty-vt.a` / `.so` directly (`example/c-vt-*`) |
 
 ---
@@ -158,32 +158,32 @@ This is a typed C ABI, not a text protocol. An agent that needs nothing more tha
 Read that file, not this section. It is maintained next to the code and is far
 more detailed than anything a summary should repeat.
 
-This section records only the *status*, so nobody builds against an interface that
+This section records only the _status_, so nobody builds against an interface that
 cannot yet answer.
 
 ### What exists (observed 2026-09-17 03:51 PT)
 
-| Path | Contents |
-|---|---|
-| `src/apprt/ipc/protocol.md` | v1 spec: transport, framing, message shapes, 13 commands, auth, versioning, limits, worked examples |
-| `src/apprt/ipc/protocol.zig` | Wire types and JSON codec |
-| `src/apprt/ipc/state.zig` | Machine-readable terminal state snapshot |
-| `src/apprt/ipc/events.zig` | Async event broker (title change, child exit, resize, bell) |
-| `src/apprt/ipc/auth.zig` | Token authentication, fail-closed |
-| `src/apprt/ipc/pane.zig` | Pane lifecycle and the `Host` vtable |
-| `src/apprt/ipc/fake_host.zig` | In-process host used by tests |
+| Path                          | Contents                                                                                            |
+| ----------------------------- | --------------------------------------------------------------------------------------------------- |
+| `src/apprt/ipc/protocol.md`   | v1 spec: transport, framing, message shapes, 13 commands, auth, versioning, limits, worked examples |
+| `src/apprt/ipc/protocol.zig`  | Wire types and JSON codec                                                                           |
+| `src/apprt/ipc/state.zig`     | Machine-readable terminal state snapshot                                                            |
+| `src/apprt/ipc/events.zig`    | Async event broker (title change, child exit, resize, bell)                                         |
+| `src/apprt/ipc/auth.zig`      | Token authentication, fail-closed                                                                   |
+| `src/apprt/ipc/pane.zig`      | Pane lifecycle and the `Host` vtable                                                                |
+| `src/apprt/ipc/fake_host.zig` | In-process host used by tests                                                                       |
 
 Upstream `src/apprt/ipc/mod.zig` (the three-action `new_window` / `new_tab` /
 `toggle_quick_terminal` channel) is unchanged. The v1 protocol is additive.
 
 ### What does not exist yet
 
-| Missing | Consequence |
-|---|---|
-| `src/apprt/ipc/server.zig` | **No accept loop. Nothing is listening.** The spec's §7 describes it; the file is not present. |
-| `src/apprt/ipc/app_host.zig` | No real app-backed `Host` implementation; only `fake_host.zig` for tests |
-| Re-export from `mod.zig` | The new modules are not reachable through the `apprt` interface |
-| Runtime wiring | No runtime constructs a server, so no running instance exposes the socket |
+| Missing                      | Consequence                                                                                    |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| `src/apprt/ipc/server.zig`   | **No accept loop. Nothing is listening.** The spec's §7 describes it; the file is not present. |
+| `src/apprt/ipc/app_host.zig` | No real app-backed `Host` implementation; only `fake_host.zig` for tests                       |
+| Re-export from `mod.zig`     | The new modules are not reachable through the `apprt` interface                                |
+| Runtime wiring               | No runtime constructs a server, so no running instance exposes the socket                      |
 
 **Conclusion:** the protocol is designed and partially implemented, but there is no
 end-to-end path. An agent cannot connect today. Do not build against it, and do not
@@ -193,25 +193,25 @@ report it as shipped.
 
 Command set per `protocol.md` §4:
 
-| `cmd` | Purpose |
-|---|---|
-| `ping` | Liveness and version; intentionally unauthenticated |
-| `pane.create` | Split a pane (`vertical`/`horizontal`, or explicit `dir`, plus `cwd`, `title`, `focus`) |
-| `pane.close` / `pane.focus` / `pane.list` | Pane lifecycle |
-| `pane.write` | Inject VT bytes into a pane's parser (not into the child process) |
-| `pane.state` | Cursor, title, pid, cwd, size, modes, bell count, scrollback rows |
-| `pane.search` | Search screen and scrollback |
-| `pane.resize_split` / `pane.equalize` / `pane.zoom` | Layout control |
-| `events.subscribe` / `events.unsubscribe` | Async event stream |
+| `cmd`                                               | Purpose                                                                                 |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `ping`                                              | Liveness and version; intentionally unauthenticated                                     |
+| `pane.create`                                       | Split a pane (`vertical`/`horizontal`, or explicit `dir`, plus `cwd`, `title`, `focus`) |
+| `pane.close` / `pane.focus` / `pane.list`           | Pane lifecycle                                                                          |
+| `pane.write`                                        | Inject VT bytes into a pane's parser (not into the child process)                       |
+| `pane.state`                                        | Cursor, title, pid, cwd, size, modes, bell count, scrollback rows                       |
+| `pane.search`                                       | Search screen and scrollback                                                            |
+| `pane.resize_split` / `pane.equalize` / `pane.zoom` | Layout control                                                                          |
+| `events.subscribe` / `events.unsubscribe`           | Async event stream                                                                      |
 
 Framing and transport, per `protocol.md` §2:
 
-| Item | Value |
-|---|---|
-| Transport | Unix domain socket (macOS/Linux); Windows named pipe is a stated follow-up |
+| Item         | Value                                                                                                                            |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Transport    | Unix domain socket (macOS/Linux); Windows named pipe is a stated follow-up                                                       |
 | Default path | macOS `~/Library/Caches/khostty/ipc.sock`; Linux/BSD `$XDG_RUNTIME_DIR/khostty/ipc.sock` (fallback `/tmp/khostty-$UID/ipc.sock`) |
-| Override | `KHOSTTY_IPC_SOCKET` |
-| Framing | Line-delimited JSON; integer version check, no negotiation |
+| Override     | `KHOSTTY_IPC_SOCKET`                                                                                                             |
+| Framing      | Line-delimited JSON; integer version check, no negotiation                                                                       |
 
 Authentication, per `protocol.md` §5:
 
@@ -227,13 +227,13 @@ Authentication, per `protocol.md` §5:
 
 Each command wraps something that already exists, rather than adding parser logic:
 
-| Command | Wraps |
-|---|---|
-| `pane.create` / `pane.focus` / `pane.close` | `apprt.Action.new_split`, `goto_split`, `close_tab` |
+| Command                                             | Wraps                                                               |
+| --------------------------------------------------- | ------------------------------------------------------------------- |
+| `pane.create` / `pane.focus` / `pane.close`         | `apprt.Action.new_split`, `goto_split`, `close_tab`                 |
 | `pane.resize_split` / `pane.equalize` / `pane.zoom` | `apprt.Action.resize_split`, `equalize_splits`, `toggle_split_zoom` |
-| `pane.write` | `ghostty_terminal_vt_write` |
-| `pane.state` | `ghostty_terminal_get` |
-| `pane.search` | `ghostty_search_*` |
+| `pane.write`                                        | `ghostty_terminal_vt_write`                                         |
+| `pane.state`                                        | `ghostty_terminal_get`                                              |
+| `pane.search`                                       | `ghostty_search_*`                                                  |
 
 One designed-in difficulty the spec calls out honestly: upstream `new_split` is
 fire-and-forget and returns nothing, so the host adapter resolves the new pane by
@@ -260,13 +260,13 @@ documentation criterion is met by `src/apprt/ipc/protocol.md`.
 `src/apprt/windows/ipc.zig` sketches the Windows equivalent of a Unix domain
 socket:
 
-| Item | Value |
-|---|---|
-| Pipe name | `\\.\pipe\khostty-{server_pid}` |
-| Mode flags | `PIPE_READMODE_MESSAGE \| PIPE_WAIT` |
-| Frame header | `extern struct { action: u16, length: u32 }` |
-| Payload | Packed immediately after the header |
-| Status | SCAFFOLD — `init`, `connect`, `acceptConnection`, `send`, `receive` all return `error.Unimplemented` |
+| Item         | Value                                                                                                |
+| ------------ | ---------------------------------------------------------------------------------------------------- |
+| Pipe name    | `\\.\pipe\khostty-{server_pid}`                                                                      |
+| Mode flags   | `PIPE_READMODE_MESSAGE \| PIPE_WAIT`                                                                 |
+| Frame header | `extern struct { action: u16, length: u32 }`                                                         |
+| Payload      | Packed immediately after the header                                                                  |
+| Status       | SCAFFOLD — `init`, `connect`, `acceptConnection`, `send`, `receive` all return `error.Unimplemented` |
 
 The frame header reuses the upstream action tag (`apprt/ipc.zig`) rather than
 introducing a second numbering. If G4 lands, the JSON protocol and this frame
@@ -276,15 +276,15 @@ layout need reconciling — the stub predates the draft.
 
 ## 6. Risks an agent integrator should know
 
-| Risk | Why it matters | Current mitigation |
-|---|---|---|
-| Draft mistaken for shipped | An agent built on `pane.create` fails at runtime with nothing to call | Marked DRAFT here and in [API.md](API.md) |
-| C API is unstable | Upstream says breaking changes are expected | Pin a revision; regenerate wrappers |
-| ABI layout drift | Hardcoded offsets corrupt memory silently | Read `ghostty_type_json()`; Rust and WASM both assert against it |
-| Borrowed buffers | Use-after-free looks like plausible data, not a crash | Copy-before-free helper; Rust RAII wrappers |
-| WASM memory growth | Stale `ArrayBuffer` views read/write garbage | Views reacquired on buffer identity/length change |
-| Unauthenticated IPC | Writing VT into a live shell is arbitrary code execution | Token auth is a G4 acceptance criterion, not yet built |
-| Kitty graphics absent in WASM | Agents driving image protocols in a browser get nothing | Sequences parsed and safely ignored; use native for images |
+| Risk                          | Why it matters                                                        | Current mitigation                                               |
+| ----------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Draft mistaken for shipped    | An agent built on `pane.create` fails at runtime with nothing to call | Marked DRAFT here and in [API.md](API.md)                        |
+| C API is unstable             | Upstream says breaking changes are expected                           | Pin a revision; regenerate wrappers                              |
+| ABI layout drift              | Hardcoded offsets corrupt memory silently                             | Read `ghostty_type_json()`; Rust and WASM both assert against it |
+| Borrowed buffers              | Use-after-free looks like plausible data, not a crash                 | Copy-before-free helper; Rust RAII wrappers                      |
+| WASM memory growth            | Stale `ArrayBuffer` views read/write garbage                          | Views reacquired on buffer identity/length change                |
+| Unauthenticated IPC           | Writing VT into a live shell is arbitrary code execution              | Token auth is a G4 acceptance criterion, not yet built           |
+| Kitty graphics absent in WASM | Agents driving image protocols in a browser get nothing               | Sequences parsed and safely ignored; use native for images       |
 
 ---
 

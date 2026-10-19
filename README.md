@@ -30,13 +30,13 @@ Ghostty ships `libghostty-vt`, a standalone C library with 12,285 lines of heade
 
 Khostty does not rebuild that engine or maintain a separate terminal user experience. It tracks upstream and focuses the fork delta on capabilities that upstream does not provide:
 
-| Value area | Upstream Ghostty | Khostty direction | Status |
-|---|---|---|---|
-| Embedding | `libghostty-vt` C ABI and examples | Prove the embedding path end to end with Khostty-specific tooling | **DONE (G1/G2)** — native builds + 84/84 conformance, 2026-09-16/17 |
-| Windows | Native macOS AppKit and Linux/BSD GTK runtimes; no Windows app runtime | Native Win32 and DirectWrite application in `src/apprt/windows/` | **DONE (build/exec) — G3**: exe + DLL built 2026-09-18, executed on real Windows 2026-09-19 (`+version`, DLL ABI 0 failures), installer install/uninstall-verified; GUI window still open |
-| Agent/IPC | `ipc.zig` supports `new_window`, `new_tab`, and `toggle_quick_terminal` | JSON command and event protocol for panes, state, and automation | **DONE (G4)** — 458/458 protocol tests across 7 modules |
-| Polyglot FFI | C and Zig APIs, with examples for other languages | Safe Rust, Go, Python, and hardened WASM wrappers | **DONE (G5–G7)** — Rust 199/199, Go+Python 207, WASM 54/54; `khostty-vt` published on crates.io |
-| Phenotype integration | General-purpose terminal and embeddable VT engine | Reusable terminal surfaces in the Phenotype Fabric graph | Planned |
+| Value area            | Upstream Ghostty                                                        | Khostty direction                                                 | Status                                                                                                                                                                                    |
+| --------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Embedding             | `libghostty-vt` C ABI and examples                                      | Prove the embedding path end to end with Khostty-specific tooling | **DONE (G1/G2)** — native builds + 84/84 conformance, 2026-09-16/17                                                                                                                       |
+| Windows               | Native macOS AppKit and Linux/BSD GTK runtimes; no Windows app runtime  | Native Win32 and DirectWrite application in `src/apprt/windows/`  | **DONE (build/exec) — G3**: exe + DLL built 2026-09-18, executed on real Windows 2026-09-19 (`+version`, DLL ABI 0 failures), installer install/uninstall-verified; GUI window still open |
+| Agent/IPC             | `ipc.zig` supports `new_window`, `new_tab`, and `toggle_quick_terminal` | JSON command and event protocol for panes, state, and automation  | **DONE (G4)** — 458/458 protocol tests across 7 modules                                                                                                                                   |
+| Polyglot FFI          | C and Zig APIs, with examples for other languages                       | Safe Rust, Go, Python, and hardened WASM wrappers                 | **DONE (G5–G7)** — Rust 199/199, Go+Python 207, WASM 54/54; `khostty-vt` published on crates.io                                                                                           |
+| Phenotype integration | General-purpose terminal and embeddable VT engine                       | Reusable terminal surfaces in the Phenotype Fabric graph          | Planned                                                                                                                                                                                   |
 
 If you want a finished desktop terminal today, use upstream Ghostty. Khostty is the integration and extension path for embedding a terminal, driving it from an agent, or bringing the upstream engine to Windows and additional language ecosystems.
 
@@ -46,30 +46,30 @@ If you want a finished desktop terminal today, use upstream Ghostty. Khostty is 
 
 The authoritative task decomposition is [`docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md`](docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md). The table below follows that WBS (115 tasks, 10m each).
 
-| Gate | Scope | Tasks | Estimate | Status |
-|---|---|---:|---:|---|
-| **G0** | Fork Hygiene | 4 | 40m | **DONE** |
-| **G1** | Native Build Validation | 3 | 30m | **DONE** |
-| **G2** | Conformance Evidence | 12 | 120m | **DONE** (84/84) |
-| **G3** | Windows App Runtime | 15 | 150m | **DONE** (cross-build + real Windows runner: `+version` exit 0, DLL ABI 0 failures) |
-| **G4** | Agent/IPC Surface Expansion | 14 | 140m | **DONE** |
-| **G5** | Polyglot FFI — Rust | 10 | 100m | **DONE** (199/199) |
-| **G6** | Polyglot FFI: Go and Python | 10 | 100m | **DONE** (207 tests) |
-| **G7** | WASM Cross-Compilation | 10 | 100m | **DONE** (54/54) |
-| **G8** | Khostty-Specific Improvements | 13 | 130m | **DONE** (measured) |
-| **G9** | Documentation and Packaging | 15 | 150m | **DONE** (all artifacts built + verified; macOS/GTK GUI launches observed) |
-| **G10** | Release Artifacts | 9 | 90m | **8/9 DONE** — tag `v0.1.0`, checksums (9/9), crates.io, npm, GitHub release (6 assets, 2026-09-27), announce docs done; PyPI (10.5) pending Trusted Publishing (registration + dispatch) |
+| Gate    | Scope                         | Tasks | Estimate | Status                                                                                                                                                                                    |
+| ------- | ----------------------------- | ----: | -------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **G0**  | Fork Hygiene                  |     4 |      40m | **DONE**                                                                                                                                                                                  |
+| **G1**  | Native Build Validation       |     3 |      30m | **DONE**                                                                                                                                                                                  |
+| **G2**  | Conformance Evidence          |    12 |     120m | **DONE** (84/84)                                                                                                                                                                          |
+| **G3**  | Windows App Runtime           |    15 |     150m | **DONE** (cross-build + real Windows runner: `+version` exit 0, DLL ABI 0 failures)                                                                                                       |
+| **G4**  | Agent/IPC Surface Expansion   |    14 |     140m | **DONE**                                                                                                                                                                                  |
+| **G5**  | Polyglot FFI — Rust           |    10 |     100m | **DONE** (199/199)                                                                                                                                                                        |
+| **G6**  | Polyglot FFI: Go and Python   |    10 |     100m | **DONE** (207 tests)                                                                                                                                                                      |
+| **G7**  | WASM Cross-Compilation        |    10 |     100m | **DONE** (54/54)                                                                                                                                                                          |
+| **G8**  | Khostty-Specific Improvements |    13 |     130m | **DONE** (measured)                                                                                                                                                                       |
+| **G9**  | Documentation and Packaging   |    15 |     150m | **DONE** (all artifacts built + verified; macOS/GTK GUI launches observed)                                                                                                                |
+| **G10** | Release Artifacts             |     9 |      90m | **8/9 DONE** — tag `v0.1.0`, checksums (9/9), crates.io, npm, GitHub release (6 assets, 2026-09-27), announce docs done; PyPI (10.5) pending Trusted Publishing (registration + dispatch) |
 
 The WBS records 115 tasks and approximately 19.2 hours of planned work. Status labels in this README follow that WBS and are not claims of shipped functionality.
 
 ## Platform Support
 
-| Platform | Status | Runtime or artifact |
-|---|---|---|
-| **macOS** | **DONE** | Upstream Swift/AppKit application runtime; G1 build validation; GUI launch verified 2026-09-20 (interactive keystroke round-trip) |
-| **Linux/BSD** | **DONE** | Upstream GTK application runtime; G1 build validation; `.deb` install + headless GUI launch verified 2026-09-19 |
-| **Windows** | **DONE** | Khostty's `src/apprt/windows/` runtime: `+version` executed on a real Windows host 2026-09-19, installer built + install/uninstall-verified |
-| **WASM** | **DONE** | Hardened `ghostty-vt.wasm` cross-compile; typed JS/TS package staged for npm under G7 |
+| Platform      | Status   | Runtime or artifact                                                                                                                         |
+| ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **macOS**     | **DONE** | Upstream Swift/AppKit application runtime; G1 build validation; GUI launch verified 2026-09-20 (interactive keystroke round-trip)           |
+| **Linux/BSD** | **DONE** | Upstream GTK application runtime; G1 build validation; `.deb` install + headless GUI launch verified 2026-09-19                             |
+| **Windows**   | **DONE** | Khostty's `src/apprt/windows/` runtime: `+version` executed on a real Windows host 2026-09-19, installer built + install/uninstall-verified |
+| **WASM**      | **DONE** | Hardened `ghostty-vt.wasm` cross-compile; typed JS/TS package staged for npm under G7                                                       |
 
 G1 separately verified a 795KB `ghostty-vt.wasm` cross-compile artifact with 40+ function signatures. That evidence is not a claim that the Khostty-hardened WASM product, typed JavaScript API, or package distribution is complete.
 
@@ -187,18 +187,18 @@ The planned IPC layer expands upstream's three commands into a versioned JSON co
 
 The planned command set includes:
 
-| Command or event | Planned purpose |
-|---|---|
-| `pane.create` | Create a pane with split and working-directory options |
-| `pane.close` | Close a pane by identifier |
-| `pane.focus` | Focus a pane by identifier |
-| `pane.list` | List live panes |
-| `pane.write` | Write a VT byte stream to a pane |
-| `pane.state` | Return cursor, title, size, and scrollback metadata |
-| `pane.search` | Search scrollback text |
-| `pane.resize` | Resize a pane grid |
-| `surface.list` and `window.list` | Enumerate surfaces and windows |
-| `title_change`, `pane_exit`, `resize`, `bell`, `osc_*` | Asynchronous events |
+| Command or event                                       | Planned purpose                                        |
+| ------------------------------------------------------ | ------------------------------------------------------ |
+| `pane.create`                                          | Create a pane with split and working-directory options |
+| `pane.close`                                           | Close a pane by identifier                             |
+| `pane.focus`                                           | Focus a pane by identifier                             |
+| `pane.list`                                            | List live panes                                        |
+| `pane.write`                                           | Write a VT byte stream to a pane                       |
+| `pane.state`                                           | Return cursor, title, size, and scrollback metadata    |
+| `pane.search`                                          | Search scrollback text                                 |
+| `pane.resize`                                          | Resize a pane grid                                     |
+| `surface.list` and `window.list`                       | Enumerate surfaces and windows                         |
+| `title_change`, `pane_exit`, `resize`, `bell`, `osc_*` | Asynchronous events                                    |
 
 G4 acceptance requires authenticated commands, pane lifecycle operations, state and scrollback queries, concurrent operation safety, protocol documentation, and examples. **G4 is accepted**: 14/14 tasks DONE, with 458/458 tests re-executed and reproduced 2026-09-18 (per-module breakdown in [docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md](docs/sessions/20260916-fork-assessment/02_DEEP_WBS.md)).
 
@@ -206,12 +206,12 @@ G4 acceptance requires authenticated commands, pane lifecycle operations, state 
 
 > **Status: DONE, G5–G7.** All four packages are built and tested; the Rust crate is published on crates.io as [`khostty-vt`](https://crates.io/crates/khostty-vt) (2026-09-20) and the WASM package on npm as [`khostty-libghostty-vt-wasm`](https://www.npmjs.com/package/khostty-libghostty-vt-wasm) (2026-09-24). Only the PyPI publish is still pending (Trusted-Publishing workflow committed and pre-flighted), tracked in [docs/RELEASE.md](docs/RELEASE.md) §7.
 
-| Language | Status | Package | Purpose |
-|---|---|---|---|
-| **Rust** | **DONE (G5) — PUBLISHED** | `khostty-vt` | Safe Rust wrapper with RAII handles, typed errors, and 199/199 integration tests |
-| **Go** | **DONE (G6)** | `khostty/vt` | cgo-based idiomatic Go wrapper with context and error handling |
-| **Python** | **DONE (G6)** | `khostty-vt` | cffi-based Python package for terminal automation and scripting (wheel + sdist built) |
-| **WASM** | **DONE (G7) — PUBLISHED** | [`khostty-libghostty-vt-wasm`](https://www.npmjs.com/package/khostty-libghostty-vt-wasm) | Hardened WASM package and typed JavaScript API; browser and sandbox consumption of the VT engine (54/54 tests; npm 0.1.0, 2026-09-24) |
+| Language   | Status                    | Package                                                                                  | Purpose                                                                                                                               |
+| ---------- | ------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Rust**   | **DONE (G5) — PUBLISHED** | `khostty-vt`                                                                             | Safe Rust wrapper with RAII handles, typed errors, and 199/199 integration tests                                                      |
+| **Go**     | **DONE (G6)**             | `khostty/vt`                                                                             | cgo-based idiomatic Go wrapper with context and error handling                                                                        |
+| **Python** | **DONE (G6)**             | `khostty-vt`                                                                             | cffi-based Python package for terminal automation and scripting (wheel + sdist built)                                                 |
+| **WASM**   | **DONE (G7) — PUBLISHED** | [`khostty-libghostty-vt-wasm`](https://www.npmjs.com/package/khostty-libghostty-vt-wasm) | Hardened WASM package and typed JavaScript API; browser and sandbox consumption of the VT engine (54/54 tests; npm 0.1.0, 2026-09-24) |
 
 The upstream C ABI and existing examples remain the baseline that these packages wrap. The Rust design calls for raw bindings isolated behind a documented unsafe boundary, safe `Terminal`, `Snapshot`, `RenderState`, `Search`, `KeyEncoder`, and `MouseEncoder` types, and an explicit `GhosttyError` result type. Go and Python follow the same wrap-over-handroll rule.
 

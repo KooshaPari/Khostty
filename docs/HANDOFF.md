@@ -2,7 +2,7 @@
 
 **Observed:** 2026-09-18 · **Version:** `0.1.0` · **Source revision:** `7fcb769`
 
-Who this is for: anyone outside this repository who wants to *consume* a Khostty
+Who this is for: anyone outside this repository who wants to _consume_ a Khostty
 artifact — as a library, a package, a binary, or a service. It answers three questions
 per artifact: how do I get it, what has been verified, and what has **not**.
 
@@ -24,15 +24,15 @@ has a script that reproduces it.
 
 ## 1. Pick-up matrix
 
-| Artifact | Path on this host | Published? | Build command | Reproducible? |
-|---|---|---|---|---|
-| macOS `.app` zip | `dist-release/macos/Khostty-0.1.0-macos.zip` | **yes** — GitHub release asset | `bash packaging/macos-app.sh` | yes, on macOS |
-| Linux library `.deb` | `dist/khostty-vt_0.1.0_amd64.deb` | **yes** — GitHub release asset | `bash packaging/linux/deb-libvt.sh` | yes, from macOS or Linux |
-| WASM npm-style tarball | `dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz` | **yes** — GitHub release asset, and on npm as `khostty-libghostty-vt-wasm@0.1.0` | `bash packaging/wasm-dist.sh` | yes, byte-identical from a cold cache |
-| Windows PE payload | `dist-release/stage/windows/Khostty-0.1.0-win64/payload/` (`.exe`, `.dll`) | **yes** — bundled into the release's `Khostty-0.1.0-windows-x86_64-setup.exe` | cross-build via `packaging/windows/installer.sh` | yes, cross-compile |
-| Rust crate | `khostty-vt/` | **yes** — crates.io `khostty-vt@0.1.0` | `cd khostty-vt && cargo test` | source tree, in-repo |
-| Go module | `khostty-go/` | no — scaffold only, no registry publish applies to 0.1.0 | `cd khostty-go && go test ./...` | source tree, in-repo |
-| Python package | `khostty-python/` | **no — PyPI publish awaits the operator's trusted-publisher registration** (`publish-pypi.yml` ready and pre-flighted); artifacts are prebuilt and `twine check`-clean | `pip install -e khostty-python` | source tree, in-repo |
+| Artifact               | Path on this host                                                          | Published?                                                                                                                                                             | Build command                                    | Reproducible?                         |
+| ---------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ------------------------------------- |
+| macOS `.app` zip       | `dist-release/macos/Khostty-0.1.0-macos.zip`                               | **yes** — GitHub release asset                                                                                                                                         | `bash packaging/macos-app.sh`                    | yes, on macOS                         |
+| Linux library `.deb`   | `dist/khostty-vt_0.1.0_amd64.deb`                                          | **yes** — GitHub release asset                                                                                                                                         | `bash packaging/linux/deb-libvt.sh`              | yes, from macOS or Linux              |
+| WASM npm-style tarball | `dist-release/wasm/khostty-libghostty-vt-wasm-0.1.0.tar.gz`                | **yes** — GitHub release asset, and on npm as `khostty-libghostty-vt-wasm@0.1.0`                                                                                       | `bash packaging/wasm-dist.sh`                    | yes, byte-identical from a cold cache |
+| Windows PE payload     | `dist-release/stage/windows/Khostty-0.1.0-win64/payload/` (`.exe`, `.dll`) | **yes** — bundled into the release's `Khostty-0.1.0-windows-x86_64-setup.exe`                                                                                          | cross-build via `packaging/windows/installer.sh` | yes, cross-compile                    |
+| Rust crate             | `khostty-vt/`                                                              | **yes** — crates.io `khostty-vt@0.1.0`                                                                                                                                 | `cd khostty-vt && cargo test`                    | source tree, in-repo                  |
+| Go module              | `khostty-go/`                                                              | no — scaffold only, no registry publish applies to 0.1.0                                                                                                               | `cd khostty-go && go test ./...`                 | source tree, in-repo                  |
+| Python package         | `khostty-python/`                                                          | **no — PyPI publish awaits the operator's trusted-publisher registration** (`publish-pypi.yml` ready and pre-flighted); artifacts are prebuilt and `twine check`-clean | `pip install -e khostty-python`                  | source tree, in-repo                  |
 
 Checksums for every built artifact are in
 [RELEASE.md §6](RELEASE.md) and `dist-release/CHECKSUMS.txt`. Verify before consuming:
@@ -50,17 +50,19 @@ shasum -a 256 -c dist-release/CHECKSUMS.txt     # 9/9 OK, exit 0, no warnings
 host with Xcode and the Metal Toolchain component.
 
 **Verified (2026-09-18):**
+
 - SHA-256 matches its sidecar `.sha256`, `shasum -c` OK.
-- `codesign --verify --deep --strict` → *valid on disk* / *satisfies its Designated
-  Requirement*.
+- `codesign --verify --deep --strict` → _valid on disk_ / _satisfies its Designated
+  Requirement_.
 - The bundled binary runs non-interactively:
   `Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0.
 - **GUI launch verified 2026-09-20:** opened from `zig-out/Ghostty.app` (PID 30796),
   two windows enumerated, and an interactive keystroke round-trip (`echo
-  SHELL_ECHO_TEST` → typed line + shell's echoed response read back from the
+SHELL_ECHO_TEST` → typed line + shell's echoed response read back from the
   AXTextArea) proves keyboard input executes in a live shell.
 
 **Unverified:**
+
 - **Not notarized.** A Developer ID Application identity signed the bundle, but no
   `notarytool` credentials are available, so it was never submitted to Apple. On
   another machine Gatekeeper will warn or block until overridden.
@@ -73,10 +75,10 @@ treat it as "an app someone has used."
 
 Two different packages exist in intent; only one exists on disk.
 
-| Package | Contents | State |
-|---|---|---|
+| Package                           | Contents                                             | State                                             |
+| --------------------------------- | ---------------------------------------------------- | ------------------------------------------------- |
 | `dist/khostty-vt_0.1.0_amd64.deb` | **the `libghostty-vt` library**, headers, pkg-config | **Exists.** 2,320,612 B, `sha256 3c080d13…d834cf` |
-| `khostty_0.1.0_amd64.deb` | the GTK **application** | **Does not exist.** Not buildable from macOS |
+| `khostty_0.1.0_amd64.deb`         | the GTK **application**                              | **Does not exist.** Not buildable from macOS      |
 
 **Get it:** the library `.deb` from this host, or
 `bash packaging/linux/deb-libvt.sh` (any host with `zig` and `dpkg-deb`).
@@ -89,6 +91,7 @@ the **installed** headers and **installed** `.so` and passed 4/4 VT assertions, 
 `dpkg -r` removed it cleanly.
 
 **Unverified:**
+
 - The container is emulated x86-64 userspace, not bare metal.
 - No desktop session was involved, so this says nothing about GUI behaviour.
 - No `apt`-repository install path was exercised; this is a local `dpkg -i`.
@@ -104,6 +107,7 @@ and GUI-launched headless (Xvfb, APP_ALIVE) the same day.
 `sha256 55cfc675…8604dc`), or `bash packaging/wasm-dist.sh`.
 
 **Verified (recorded 2026-09-18):**
+
 - Sidecar `.sha256` verified with `shasum -a 256 -c` → `OK`, exit 0.
 - Freshly extracted to a scratch directory; `node smoke.mjs --json` → 13/13 checks, exit 0.
 - A real ESM import of the extracted `js/api.js` opened a terminal and echoed text back.
@@ -115,6 +119,7 @@ and GUI-launched headless (Xvfb, APP_ALIVE) the same day.
 - `khostty-vt.wasm` (813,670 B) reproducible byte-identically from a cold cache.
 
 **Unverified:**
+
 - **Node-only.** No browser was ever run. The module is freestanding and
   dependency-free, so Node exercises the same code path a browser would, but
   WebView-specific behaviour is unverified.
@@ -140,11 +145,12 @@ headers (203 `GHOSTTY_API` + 3 `static inline`), with **0 exports undeclared**; 
 `__wasm__`-gated `ghostty_wasm_*` allocators.
 
 **Unverified — and this is the important part:**
+
 - **Never executed on Windows.** No Windows host, `wine` absent, wine casks
   Gatekeeper-disabled, no Rosetta. **Attempted 2026-09-18 via Docker x86_64 emulation:**
   `wine --version` returns `wine-11.0` (exit 0), but prefix creation fails immediately
   (`run_wineboot failed to start wineboot 1` → `could not load kernel32.dll, status
-  c0000135`), so the PE cannot be loaded. Emulation runs Wine but cannot build a prefix.
+c0000135`), so the PE cannot be loaded. Emulation runs Wine but cannot build a prefix.
 - **Installer: BUILT and verified 2026-09-19.** Inno Setup 6.7.1 was installed on the
   Windows runner `kooshapari-desk`; `ISCC.exe` compiled the staged `khostty.iss` into
   `Khostty-0.1.0-windows-x86_64-setup.exe` (19,766,307 B, `sha256 4070e89e…095546`).
@@ -153,9 +159,9 @@ headers (203 `GHOSTTY_API` + 3 `static inline`), with **0 exports undeclared**; 
 - The named-pipe IPC transport is a scaffold returning `error.Unimplemented`, and its
   pipe-path constant is known to be malformed.
 
-**Consumer advice:** you may consume `ghostty-vt.dll` as a *build product* for ABI
+**Consumer advice:** you may consume `ghostty-vt.dll` as a _build product_ for ABI
 planning. You may not consume anything here as a working Windows terminal. The ABI check
-proves the *shape* of the API, not runtime behaviour.
+proves the _shape_ of the API, not runtime behaviour.
 
 ## 6. Rust — `khostty-vt`
 
@@ -171,6 +177,7 @@ cd khostty-vt && cargo build && cargo test
 verification of the Rust gate's recorded figure.
 
 **Unverified / caveats:**
+
 - **Published 2026-09-20** at `0.1.0`, so a consumer no longer needs to vendor the
   directory. Re-verified 2026-09-29 against the crates.io API: `newest_version=0.1.0`,
   `yanked=false`, 12 downloads. A path/git dependency still works and still points at
@@ -178,7 +185,7 @@ verification of the Rust gate's recorded figure.
   **Publish-readiness checked 2026-09-18:** `cargo publish --dry-run` exits 0, packaging
   45 files / 503.0 KiB and verifying, ending with `aborting upload due to dry run` — the
   dry run was the last gate before the real upload, which succeeded the same week.
-  ⚠️ **Ordering hazard:** run the dry run *after* `cargo test`, not before. The dry run builds
+  ⚠️ **Ordering hazard:** run the dry run _after_ `cargo test`, not before. The dry run builds
   inside `target/package/khostty-vt-0.1.0/` where `../zig-out/lib` does not resolve, and cargo
   caches that build-script output, so a later plain `cargo test` fails at link with
   `Undefined symbols: _ghostty_alloc`. `cargo clean -p khostty-vt` clears it. A plain
@@ -186,7 +193,7 @@ verification of the Rust gate's recorded figure.
 - The crate depends on a built `libghostty-vt`; `build.rs` discovers it. The dry run
   surfaced exactly how: it searches `GHOSTTY_VT_LIB_DIR` then `../zig-out/lib`,
   `../build/lib`, `../dist/lib`, and warns `no prebuilt libghostty-vt found ... The crate
-  will typecheck but not link`. **So a consumer must supply the native library or set
+will typecheck but not link`. **So a consumer must supply the native library or set
   `GHOSTTY_VT_LIB_DIR`** — the crate alone is not a working dependency. See `packaging/`
   for producing the library.
 - Not part of a tagged release, so there is no versioned artifact to pin beyond the
@@ -218,7 +225,7 @@ invalidate the recorded 45-pass run**, but the claim is **not reproducible on th
 today** and must not be restated as current until it is re-run on a working toolchain.
 
 **Verified:** the failure is at link, after successful compilation of the cgo bindings —
-so the Go *source* compiles today.
+so the Go _source_ compiles today.
 **Unverified:** the 45-test pass itself, on this host, as of 2026-09-18.
 
 ## 8. Python — `khostty-python`
@@ -258,7 +265,7 @@ declared as `>=3.8` but only 3.12 was exercised here.
 Trust today:
 
 - **The WASM package** — extracted, smoke-tested, and imported through a real `npm
-  install` + bare-specifier path.
+install` + bare-specifier path.
 - **The `libghostty-vt` library `.deb`** — installed and exercised on x86-64 Debian 12.
 - **The Rust crate** — 199/199 tests re-verified 2026-09-18.
 - **The macOS `.app` bundle** — zip hash-verified, `codesign --verify --deep --strict`
@@ -268,7 +275,7 @@ Trust today:
   single 6 s check read 0 windows; the 30 s poll resolves that as a timing artifact, not
   a failure.) The build-time evidence file `dist-release/macos/EVIDENCE.txt` records
   `launch_verified: NO`, but it is generated by `macos-app.sh` at build time — 12:13 UTC,
-  *before* the 13:23 UTC launch test — so it cannot speak to the launch and is superseded
+  _before_ the 13:23 UTC launch test — so it cannot speak to the launch and is superseded
   on that point. **Notarization** remains the untested part; see below.
 - **The checksums** — recomputed 2026-09-18, all match, no discrepancy.
 
@@ -291,7 +298,7 @@ Do not trust today:
   not wired. Nothing listens in a running Khostty. Verified against the tree 2026-09-18,
   not assumed: `grep -rl 'apprt/ipc' src/` outside `src/apprt/ipc/` returns only
   `apprt.zig` (the import), the GTK/Windows/embedded/none runtimes (which use it for
-  *outgoing* performs, not a listener), and one test asserting
+  _outgoing_ performs, not a listener), and one test asserting
   `expectError(error.Unimplemented, Server.init(...))`. No call site constructs
   `ipc.Server` outside its own module, so the acceptance test "agent can talk to a
   running Khostty" has never been exercised.
