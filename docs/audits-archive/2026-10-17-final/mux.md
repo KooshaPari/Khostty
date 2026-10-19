@@ -18,11 +18,11 @@ Phase 0 is **DONE and verified** on `test/agent-ipc-phase0` — it wired `app_ho
 
 ### Files Changed (commit `9b9da76d9`)
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `build.zig` | +43 | New `test-agent-ipc` build step — wires `src/main_agent_ipc.zig` into the Zig build graph |
-| `src/main_agent_ipc.zig` | +89 (new) | Test root mirroring `main_windows_apprt.zig` — imports all `src/apprt/ipc/*.zig` modules + compiles `app_host.zig` |
-| `src/apprt/ipc/app_host.zig` | −7 | Remove 7 `_ = param;` discards that Zig 0.16 rejects as "pointless discard" |
+| File                         | Lines     | Purpose                                                                                                            |
+| ---------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------ |
+| `build.zig`                  | +43       | New `test-agent-ipc` build step — wires `src/main_agent_ipc.zig` into the Zig build graph                          |
+| `src/main_agent_ipc.zig`     | +89 (new) | Test root mirroring `main_windows_apprt.zig` — imports all `src/apprt/ipc/*.zig` modules + compiles `app_host.zig` |
+| `src/apprt/ipc/app_host.zig` | −7        | Remove 7 `_ = param;` discards that Zig 0.16 rejects as "pointless discard"                                        |
 
 ### Purpose Groups
 
@@ -46,18 +46,18 @@ Phase 0 is **DONE and verified** on `test/agent-ipc-phase0` — it wired `app_ho
 
 The `src/apprt/ipc/` directory (pre-existing, not Phase 0's work) is 1300+ lines of implemented, unit-tested Zig:
 
-| File | Responsibility | Tests |
-|------|---------------|-------|
-| `protocol.md` | 459-line normative schema | — |
-| `protocol.zig` | Wire types, JSON parsing, response writers | 30 |
-| `auth.zig` | Token resolution, constant-time SHA-256 verification | 12 |
-| `state.zig` | `pane.state` snapshot + JSON | 5 |
-| `events.zig` | Event types, subscription broker, drop accounting | 13 |
-| `pane.zig` | Pane registry, `Host` vtable, payload writers | 34 |
-| `handler.zig` | Command dispatch, error mapping, event polling | 22 |
-| `server.zig` | Unix socket server, framing, client, event pusher | 14 |
-| `app_host.zig` | `Host` impl over the real app runtime | **wired by Phase 0** |
-| `fake_host.zig` | In-memory VT, the `Host` for tests | exercised by above |
+| File            | Responsibility                                       | Tests                |
+| --------------- | ---------------------------------------------------- | -------------------- |
+| `protocol.md`   | 459-line normative schema                            | —                    |
+| `protocol.zig`  | Wire types, JSON parsing, response writers           | 30                   |
+| `auth.zig`      | Token resolution, constant-time SHA-256 verification | 12                   |
+| `state.zig`     | `pane.state` snapshot + JSON                         | 5                    |
+| `events.zig`    | Event types, subscription broker, drop accounting    | 13                   |
+| `pane.zig`      | Pane registry, `Host` vtable, payload writers        | 34                   |
+| `handler.zig`   | Command dispatch, error mapping, event polling       | 22                   |
+| `server.zig`    | Unix socket server, framing, client, event pusher    | 14                   |
+| `app_host.zig`  | `Host` impl over the real app runtime                | **wired by Phase 0** |
+| `fake_host.zig` | In-memory VT, the `Host` for tests                   | exercised by above   |
 
 Wire-level command surface (already implemented):
 
@@ -74,13 +74,13 @@ Wire-level command surface (already implemented):
 
 ### Build Results (commit `98cfbef20`, fresh verification 2026-10-15)
 
-| Metric | Baseline (Phase 0 build) | Verified Run | Delta |
-|--------|--------------------------|--------------|-------|
-| Wall clock | 30m 24s | 27m 29s | −2m 55s |
-| Build steps | 83/85 | 83/85 | same |
-| Tests passed | 3899/3925 | 3899/3925 | same |
-| Tests skipped | 25 | 25 | same |
-| Tests crashed | 1 | 1 | same |
+| Metric        | Baseline (Phase 0 build) | Verified Run | Delta   |
+| ------------- | ------------------------ | ------------ | ------- |
+| Wall clock    | 30m 24s                  | 27m 29s      | −2m 55s |
+| Build steps   | 83/85                    | 83/85        | same    |
+| Tests passed  | 3899/3925                | 3899/3925    | same    |
+| Tests skipped | 25                       | 25           | same    |
+| Tests crashed | 1                        | 1            | same    |
 
 ### The 1 Crash: Pre-existing Flake
 
@@ -94,13 +94,13 @@ Wire-level command surface (already implemented):
 
 ### Build Log Evidence
 
-| File | Content |
-|------|---------|
-| `evidence/agent-ipc-build-20261014.log` | Cold-cache build + 7-error first attempt + post-fix success (1183 lines) |
-| `evidence/agent-ipc-incremental-20261014.log` | First re-run (1 fail + 1 crash, flaky) |
-| `evidence/agent-ipc-cache-warm-20261014.log` | Second re-run (1 crash only) |
-| `evidence/phase0-verify-20261015.md` | Fresh verification report |
-| `evidence/flake-investigation-20261015.md` | Full flake characterization with stack trace |
+| File                                          | Content                                                                  |
+| --------------------------------------------- | ------------------------------------------------------------------------ |
+| `evidence/agent-ipc-build-20261014.log`       | Cold-cache build + 7-error first attempt + post-fix success (1183 lines) |
+| `evidence/agent-ipc-incremental-20261014.log` | First re-run (1 fail + 1 crash, flaky)                                   |
+| `evidence/agent-ipc-cache-warm-20261014.log`  | Second re-run (1 crash only)                                             |
+| `evidence/phase0-verify-20261015.md`          | Fresh verification report                                                |
+| `evidence/flake-investigation-20261015.md`    | Full flake characterization with stack trace                             |
 
 ### Honest Caveat (from `main_agent_ipc.zig` header)
 
@@ -116,12 +116,12 @@ It does **NOT** prove that `pane.create` really splits a surface, because the `w
 
 ## 4. Phase 0: Stubs/Mocks/TODOs
 
-| Location | What | Classification |
-|----------|------|----------------|
-| `app_host.zig:175,179,190,194` | `focusUnsupported`, `searchUnsupported` vtable entries | **Deliberate architectural pattern** — not a placeholder. `pane.focus` has no runtime API for surface-by-id focus; `pane.search` is async/UI-driven upstream. |
-| `app_host.zig:201,205,213,231,235,244,253,257,261` | Multiple methods return `error.Unsupported` | **Comptime-gated** — only fires when `windowed == false` (non-GTK builds). Under GTK, the `windowed_vtable` has real implementations. |
-| `fake_host.zig:8` | Comment: "stub that echoes its input back" | **Pre-existing** — the test backend, introduced at G4, not Phase 0. |
-| `server.zig:557` | Comment: "format placeholders" | **Documentation** — about `{` brace escaping in the wire format. |
+| Location                                           | What                                                   | Classification                                                                                                                                                |
+| -------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app_host.zig:175,179,190,194`                     | `focusUnsupported`, `searchUnsupported` vtable entries | **Deliberate architectural pattern** — not a placeholder. `pane.focus` has no runtime API for surface-by-id focus; `pane.search` is async/UI-driven upstream. |
+| `app_host.zig:201,205,213,231,235,244,253,257,261` | Multiple methods return `error.Unsupported`            | **Comptime-gated** — only fires when `windowed == false` (non-GTK builds). Under GTK, the `windowed_vtable` has real implementations.                         |
+| `fake_host.zig:8`                                  | Comment: "stub that echoes its input back"             | **Pre-existing** — the test backend, introduced at G4, not Phase 0.                                                                                           |
+| `server.zig:557`                                   | Comment: "format placeholders"                         | **Documentation** — about `{` brace escaping in the wire format.                                                                                              |
 
 **Search performed:** `rg "todo!|unimplemented!|TODO|FIXME|placeholder|mock|stub|we'll add"` across `src/apprt/ipc/` — 2 matches, both benign (see table above).
 
@@ -135,12 +135,12 @@ Source: `docs/sessions/20261014-ghostty-native-mux/00_SESSION_OVERVIEW.md` (the 
 
 ### Phase Summary Table
 
-| Phase | Goal | Acceptance (GTD/E2E) | Blocker | Status |
-|-------|------|---------------------|---------|--------|
-| **Phase 0** | Wire `app_host.zig` into build graph | `zig build test-agent-ipc` passes; 130+ IPC tests green; availability-contract test fires | None | ✅ DONE |
+| Phase       | Goal                                                                                                                                                                                                                                                                                                | Acceptance (GTD/E2E)                                                                                                                                               | Blocker                                                                                                                                                            | Status      |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| **Phase 0** | Wire `app_host.zig` into build graph                                                                                                                                                                                                                                                                | `zig build test-agent-ipc` passes; 130+ IPC tests green; availability-contract test fires                                                                          | None                                                                                                                                                               | ✅ DONE     |
 | **Phase 1** | Mux shell binary (new Zig executable): routing table `(instance, pane_id) → client`, single socket `khostty-mux.sock`, fans out to per-instance `khostty.sock`. New commands: `mux.list`, `mux.focus`, `mux.attach/detach`, `mux.layout.save/restore`. Reuses `protocol.zig` + `auth.zig` verbatim. | Agent connects to mux socket, `mux.list` returns multiple instances, `mux.focus` routes keyboard to pane across instances, `mux.attach` survives client disconnect | **GTK runtime** — operator is on macOS, only GTK is `windowed`. Can prototype with mock-only runtime paths; real GTK needs Linux box or alternative design choice. | NOT STARTED |
-| **Phase 2** | Durable sessions — persist pane registry + layout across host restart | Pane layout survives host restart; agents can re-attach to restored sessions | **pty input injection** (`pane.execute`, the v2 item) — without it, restore is layout-only, cannot re-run processes | NOT STARTED |
-| **Phase 3** | Beyond durable sessions (not detailed in design brief) | Not defined | Not defined | NOT DEFINED |
+| **Phase 2** | Durable sessions — persist pane registry + layout across host restart                                                                                                                                                                                                                               | Pane layout survives host restart; agents can re-attach to restored sessions                                                                                       | **pty input injection** (`pane.execute`, the v2 item) — without it, restore is layout-only, cannot re-run processes                                                | NOT STARTED |
+| **Phase 3** | Beyond durable sessions (not detailed in design brief)                                                                                                                                                                                                                                              | Not defined                                                                                                                                                        | Not defined                                                                                                                                                        | NOT DEFINED |
 
 ### Explicit Non-Goals (first cut)
 

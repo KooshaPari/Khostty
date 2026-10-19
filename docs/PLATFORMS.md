@@ -8,17 +8,17 @@ Khostty-verified support are different columns, because they are different claim
 
 ## 1. Summary matrix
 
-| Platform | VT library | Terminal app | Agent IPC | FFI | Renderer | Verified in this fork? |
-|---|---|---|---|---|---|---|
-| **macOS** (arm64/x86_64) | **VERIFIED** | `.app` built, signed, GUI-launched, keystroke round-trip verified | 3 actions | C, Rust, WASM | Metal / OpenGL | **YES** — library 2026-09-16/17; `.app` build 2026-09-18 + GUI launch 2026-09-20 |
-| **Linux** (x86_64/arm64) | Upstream supported | Upstream GTK4 | 3 actions | C, Rust, WASM | OpenGL | **BUILT + INSTALL-VERIFIED + GUI-LAUNCH-VERIFIED 2026-09-19** (x86_64, WSL Fedora 44; `.deb` installed on the host, +version exit 0, bookworm negative control refuses on the derived libc6 2.43 floor; headless GTK launch under Xvfb + dbus-run-session: APP_ALIVE, zero-error GTK init, then purged; xwininfo/xwd unavailable on Fedora 44 so no window-tree/screenshot evidence; no arm64) |
-| **Windows** (x86_64) | Upstream builds; **no default app runtime** (opt-in `-Dapp-runtime=windows` scaffold) | **CLI verified; GUI window not launched** | Named-pipe stub | C, Rust, Go | OpenGL (unproven) | **PARTIAL** — exe + DLL + installer verified 2026-09-18/19; no GUI window |
-| **WASM** (`wasm32-freestanding`) | **VERIFIED** | n/a (headless) | n/a | JS/TS | WebGL (n/a for VT-only) | **YES** — artifact verified |
-| **iOS** | Library only (xcframework slice) | Not supported | n/a | C | Metal | Artifact present, app not attempted |
-| **FreeBSD** | Upstream supported | Upstream GTK4 | 3 actions | C, Rust | OpenGL | **NO** |
+| Platform                         | VT library                                                                            | Terminal app                                                      | Agent IPC       | FFI           | Renderer                | Verified in this fork?                                                                                                                                                                                                                                                                                                                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------------- | ------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **macOS** (arm64/x86_64)         | **VERIFIED**                                                                          | `.app` built, signed, GUI-launched, keystroke round-trip verified | 3 actions       | C, Rust, WASM | Metal / OpenGL          | **YES** — library 2026-09-16/17; `.app` build 2026-09-18 + GUI launch 2026-09-20                                                                                                                                                                                                                                                                                                               |
+| **Linux** (x86_64/arm64)         | Upstream supported                                                                    | Upstream GTK4                                                     | 3 actions       | C, Rust, WASM | OpenGL                  | **BUILT + INSTALL-VERIFIED + GUI-LAUNCH-VERIFIED 2026-09-19** (x86_64, WSL Fedora 44; `.deb` installed on the host, +version exit 0, bookworm negative control refuses on the derived libc6 2.43 floor; headless GTK launch under Xvfb + dbus-run-session: APP_ALIVE, zero-error GTK init, then purged; xwininfo/xwd unavailable on Fedora 44 so no window-tree/screenshot evidence; no arm64) |
+| **Windows** (x86_64)             | Upstream builds; **no default app runtime** (opt-in `-Dapp-runtime=windows` scaffold) | **CLI verified; GUI window not launched**                         | Named-pipe stub | C, Rust, Go   | OpenGL (unproven)       | **PARTIAL** — exe + DLL + installer verified 2026-09-18/19; no GUI window                                                                                                                                                                                                                                                                                                                      |
+| **WASM** (`wasm32-freestanding`) | **VERIFIED**                                                                          | n/a (headless)                                                    | n/a             | JS/TS         | WebGL (n/a for VT-only) | **YES** — artifact verified                                                                                                                                                                                                                                                                                                                                                                    |
+| **iOS**                          | Library only (xcframework slice)                                                      | Not supported                                                     | n/a             | C             | Metal                   | Artifact present, app not attempted                                                                                                                                                                                                                                                                                                                                                            |
+| **FreeBSD**                      | Upstream supported                                                                    | Upstream GTK4                                                     | 3 actions       | C, Rust       | OpenGL                  | **NO**                                                                                                                                                                                                                                                                                                                                                                                         |
 
-Read this table as: *only the macOS and WASM rows have fresh evidence in this
-fork.* Everything else is upstream capability that Khostty has not independently
+Read this table as: _only the macOS and WASM rows have fresh evidence in this
+fork._ Everything else is upstream capability that Khostty has not independently
 exercised.
 
 ---
@@ -39,12 +39,12 @@ pub fn default(target: std.Target) Runtime {
 }
 ```
 
-| Target | Default runtime | Consequence |
-|---|---|---|
-| Linux, FreeBSD | `gtk` | Full app; requires GTK4 + wayland/x11 |
-| macOS | `none` | Library only; Xcode builds the `.app` |
-| **Windows** | **`none`** | **Library only — this is the gap G3 fills** |
-| wasm32 | `browser` (via `.wasm_module`) | Headless module |
+| Target         | Default runtime                | Consequence                                 |
+| -------------- | ------------------------------ | ------------------------------------------- |
+| Linux, FreeBSD | `gtk`                          | Full app; requires GTK4 + wayland/x11       |
+| macOS          | `none`                         | Library only; Xcode builds the `.app`       |
+| **Windows**    | **`none`**                     | **Library only — this is the gap G3 fills** |
+| wasm32         | `browser` (via `.wasm_module`) | Headless module                             |
 
 ### Renderer — `src/renderer/backend.zig`
 
@@ -58,18 +58,18 @@ Override with `-Drenderer=opengl|metal|webgl`.
 
 ### Fonts — `src/font/backend.zig`
 
-| Target | Default backend |
-|---|---|
-| macOS | `coretext` |
-| Linux, BSD | `fontconfig_freetype` |
-| Windows | `freetype_windows` (Windows font-directory scanner) |
-| wasm32 | `web_canvas` (not used by the VT-only library) |
+| Target     | Default backend                                     |
+| ---------- | --------------------------------------------------- |
+| macOS      | `coretext`                                          |
+| Linux, BSD | `fontconfig_freetype`                               |
+| Windows    | `freetype_windows` (Windows font-directory scanner) |
+| wasm32     | `web_canvas` (not used by the VT-only library)      |
 
 Override with `-Dfont-backend=…`. Note the Windows comment in-tree: fontconfig is
 avoided on Windows because its libxml2 dependency may not unpack correctly;
 a future DirectWrite backend may replace `freetype_windows`.
 
-> Windows having a default *font* backend does not mean Windows has an
+> Windows having a default _font_ backend does not mean Windows has an
 > application runtime. Font discovery and windowing are separate layers.
 
 ---
@@ -81,7 +81,7 @@ interactive keystroke round-trip (2026-09-20). Notarization absent (untested pat
 on a pristine machine).**
 
 > **Historical build blocker (observed 2026-09-17; FIXED by `cd1ed5c60`).** `zig
-> build -Demit-lib-vt` failed for every platform: commit `e1277bea2` renamed
+build -Demit-lib-vt` failed for every platform: commit `e1277bea2` renamed
 > `src/apprt/ipc.zig` to `src/apprt/ipc/mod.zig` without updating its relative
 > imports. The two-line import fix landed as `cd1ed5c60` ("correct relative import
 > depths"), after which the `.app` was rebuilt by `packaging/macos-app.sh` (exit 0,
@@ -89,13 +89,13 @@ on a pristine machine).**
 
 ### Verified artifacts (2026-09-16, still present)
 
-| Artifact | Size | Timestamp |
-|---|---|---|
-| `zig-out/lib/libghostty-vt.a` | 1,323,002 B | 2026-09-16 16:46 |
-| `zig-out/lib/libghostty-vt.0.1.0.dylib` | 2,215,792 B | 2026-09-16 16:46 |
-| `zig-out/lib/libghostty-vt.dylib` | symlink → `.0.dylib` → `.0.1.0.dylib` | 2026-09-16 04:31 |
-| `zig-out/lib/ghostty-vt.xcframework/` | 3 slices | 2026-09-16 04:31 |
-| `zig-out/bin/ghostty-vt.wasm` | 813,670 B | 2026-09-16 04:35 |
+| Artifact                                | Size                                  | Timestamp        |
+| --------------------------------------- | ------------------------------------- | ---------------- |
+| `zig-out/lib/libghostty-vt.a`           | 1,323,002 B                           | 2026-09-16 16:46 |
+| `zig-out/lib/libghostty-vt.0.1.0.dylib` | 2,215,792 B                           | 2026-09-16 16:46 |
+| `zig-out/lib/libghostty-vt.dylib`       | symlink → `.0.dylib` → `.0.1.0.dylib` | 2026-09-16 04:31 |
+| `zig-out/lib/ghostty-vt.xcframework/`   | 3 slices                              | 2026-09-16 04:31 |
+| `zig-out/bin/ghostty-vt.wasm`           | 813,670 B                             | 2026-09-16 04:35 |
 
 xcframework slices present: `macos-arm64_x86_64`, `ios-arm64`,
 `ios-arm64-simulator`.
@@ -115,10 +115,10 @@ bundle.
 
 Workarounds in use:
 
-| Workaround | Effect |
-|---|---|
-| `-Drenderer=opengl` | Build with the OpenGL renderer instead of Metal |
-| `-Demit-lib-vt` | Build only the VT library; no renderer at all |
+| Workaround               | Effect                                                      |
+| ------------------------ | ----------------------------------------------------------- |
+| `-Drenderer=opengl`      | Build with the OpenGL renderer instead of Metal             |
+| `-Demit-lib-vt`          | Build only the VT library; no renderer at all               |
 | `-Demit-macos-app=false` | Skip the Xcode-driven `.app` (does not by itself fix Metal) |
 
 CI reflects this: `.github/workflows/ci.yml` (the fork's own workflow) runs
@@ -136,7 +136,7 @@ builds or tests Linux. The Linux x86_64 build and `.deb` install-verify that do
 exist were run on the WSL Fedora 44 host (§4), not CI. See
 [CONTRIBUTING.md](CONTRIBUTING.md#9-continuous-integration).
 
-**Honest statement:** Khostty's macOS *library* and *application* paths are both
+**Honest statement:** Khostty's macOS _library_ and _application_ paths are both
 verified in this fork — the `.app` builds (the 2026-09-17 ipc-import breakage was
 fixed by `cd1ed5c60`), signs, verifies, and launched in a live GUI session with an
 interactive keystroke round-trip (2026-09-20). What remains untested is
@@ -153,13 +153,13 @@ notarized (`notarytool` credentials absent).
 Upstream provides a full GTK4 application runtime (`src/apprt/gtk.zig` plus
 `src/apprt/gtk/`, ~8000+ lines) that is the default for Linux and FreeBSD.
 
-| Item | Value |
-|---|---|
-| Runtime | `gtk` (default) |
-| Renderer | `opengl` |
-| Fonts | `fontconfig_freetype` |
-| Display backends | x11 and/or wayland (`-Dgtk-wayland`, `-Dgtk-x11`) |
-| Packaging | `flatpak/`, `snap/`, `dist/linux/`; the GTK app `.deb` built + install-verified |
+| Item             | Value                                                                           |
+| ---------------- | ------------------------------------------------------------------------------- |
+| Runtime          | `gtk` (default)                                                                 |
+| Renderer         | `opengl`                                                                        |
+| Fonts            | `fontconfig_freetype`                                                           |
+| Display backends | x11 and/or wayland (`-Dgtk-wayland`, `-Dgtk-x11`)                               |
+| Packaging        | `flatpak/`, `snap/`, `dist/linux/`; the GTK app `.deb` built + install-verified |
 
 What was verified here (2026-09-19): the GTK application `.deb`
 (`khostty_0.1.0_amd64.deb`, sha256 `63d4e615…de0`) was built natively in WSL
@@ -191,21 +191,21 @@ This is the fork's headline delta: upstream has no Windows application runtime.
 
 `src/apprt/windows/` — an isolated scaffold:
 
-| File | State |
-|---|---|
-| `mod.zig` | Module root; `resourcesDir` returns `null` |
-| `App.zig` | `init`, `registerWindowClass`, `run` all return `error.Unimplemented` |
-| `Window.zig` | HWND wrapper type |
-| `surface.zig` | Routes `WM_SIZE`, `WM_PAINT`, `WM_ERASEBKGND`, `WM_CLOSE`, `WM_DESTROY`; delegates rendering to the stub |
-| `renderer.zig` | `init`, `resize`, `renderFrame`, `invalidate` all return `error.Unimplemented` |
-| `win32api.zig` | Win32 type aliases and `user32`/`kernel32`/`dwmapi` declarations |
-| `ipc.zig` | Named-pipe transport; all operations return `error.Unimplemented` |
+| File           | State                                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------- |
+| `mod.zig`      | Module root; `resourcesDir` returns `null`                                                               |
+| `App.zig`      | `init`, `registerWindowClass`, `run` all return `error.Unimplemented`                                    |
+| `Window.zig`   | HWND wrapper type                                                                                        |
+| `surface.zig`  | Routes `WM_SIZE`, `WM_PAINT`, `WM_ERASEBKGND`, `WM_CLOSE`, `WM_DESTROY`; delegates rendering to the stub |
+| `renderer.zig` | `init`, `resize`, `renderFrame`, `invalidate` all return `error.Unimplemented`                           |
+| `win32api.zig` | Win32 type aliases and `user32`/`kernel32`/`dwmapi` declarations                                         |
+| `ipc.zig`      | Named-pipe transport; all operations return `error.Unimplemented`                                        |
 
 ### What now works (2026-09-18/19)
 
 - **Wiring + opt-in runtime.** `src/apprt.zig` exports and selects `windows`
   (`.windows => windows`); `build.zig` accepts `-Dtarget=x86_64-windows-gnu
-  -Dapp-runtime=windows` (documented as the opt-in scaffold, `build.zig:44`).
+-Dapp-runtime=windows` (documented as the opt-in scaffold, `build.zig:44`).
 - **Cross-build.** `ghostty.exe` (43.5 MB, `PE32+ executable (GUI) x86-64`) and
   `ghostty-vt.dll` (7.5 MB) built 2026-09-18 and hashed.
 - **Native run evidence (CLI).** Executed 2026-09-19 on `kooshapari-desk`
@@ -225,20 +225,16 @@ This is the fork's headline delta: upstream has no Windows application runtime.
 - **No real Win32 calls.** `win32api.zig` declares function pointers; no code
   invokes them.
 
-### Known defect (observed 2026-09-17)
-
-`src/apprt/windows/mod.zig` imports `"Surface.zig"`, but the tracked file is
-`surface.zig`. The import resolves only on a case-insensitive filesystem. Any
-case-sensitive build that pulls `mod.zig` into the graph will fail.
+| `mod.zig:4` now imports `surface.zig` (lowercase) — fixed |
 
 ### Windows IPC sketch
 
-| Item | Value |
-|---|---|
-| Pipe name | `\\.\pipe\khostty-{server_pid}` intended; **the constant currently has one leading backslash, which is not the pipe namespace** (observed 2026-09-17) |
-| Frame | `extern struct { action: u16, length: u32 }` + packed payload |
-| Security attributes | **None declared.** The earlier null-DACL / inheritable-handle declaration was removed without a replacement, so no ACL design exists. |
-| Status | SCAFFOLD, `error.Unimplemented` |
+| Item                | Value                                                                                                                                                 |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pipe name           | `\\.\pipe\khostty-{server_pid}` intended; **the constant currently has one leading backslash, which is not the pipe namespace** (observed 2026-09-17) |
+| Frame               | `extern struct { action: u16, length: u32 }` + packed payload                                                                                         |
+| Security attributes | **None declared.** The earlier null-DACL / inheritable-handle declaration was removed without a replacement, so no ACL design exists.                 |
+| Status              | SCAFFOLD, `error.Unimplemented`                                                                                                                       |
 
 Details and the security implication: [SECURITY.md](SECURITY.md#4-windows-transport-weakness-scaffold).
 
@@ -255,14 +251,14 @@ paste; the named pipe accepts agent commands. **Two are met**: cross-compile suc
 
 **Status: IN PROGRESS (G7); artifact verified.**
 
-| Item | Value |
-|---|---|
-| Target | `wasm32-freestanding` |
-| Build | `wasm/build.sh` (pins target, isolates cache, validates magic + version) |
-| Artifact | `813,670 bytes`, sha256 `08ac8ed881ffdae68b9f96f9afa6c834e57ba7ea49280d220e882938508e5bf6` |
-| Module shape | 0 imports, 189 exports (187 `ghostty_*` functions + memory) |
-| Runtime | Node ≥ 20; any browser with ESM + WebAssembly |
-| Package | `@khostty/libghostty-vt-wasm` (private, `version 0.0.0`) |
+| Item         | Value                                                                                      |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| Target       | `wasm32-freestanding`                                                                      |
+| Build        | `wasm/build.sh` (pins target, isolates cache, validates magic + version)                   |
+| Artifact     | `813,670 bytes`, sha256 `08ac8ed881ffdae68b9f96f9afa6c834e57ba7ea49280d220e882938508e5bf6` |
+| Module shape | 0 imports, 189 exports (187 `ghostty_*` functions + memory)                                |
+| Runtime      | Node ≥ 20; any browser with ESM + WebAssembly                                              |
+| Package      | `@khostty/libghostty-vt-wasm` (private, `version 0.0.0`)                                   |
 
 ### What works
 
@@ -273,12 +269,12 @@ entrypoint, and a 128 KB stack.
 
 ### What is excluded by design
 
-| Excluded | Reason |
-|---|---|
-| Kitty graphics (16 functions) | Needs OS timestamps, unavailable when freestanding. Sequences are parsed and safely ignored. |
-| PTY, filesystem, clock, timestamps | No OS |
-| Renderer | `libghostty-vt` models state only. Draw the grid yourself, or use `html()`. |
-| `web_canvas` font backend | Only relevant to the full browser app, not the VT-only library |
+| Excluded                           | Reason                                                                                       |
+| ---------------------------------- | -------------------------------------------------------------------------------------------- |
+| Kitty graphics (16 functions)      | Needs OS timestamps, unavailable when freestanding. Sequences are parsed and safely ignored. |
+| PTY, filesystem, clock, timestamps | No OS                                                                                        |
+| Renderer                           | `libghostty-vt` models state only. Draw the grid yourself, or use `html()`.                  |
+| `web_canvas` font backend          | Only relevant to the full browser app, not the VT-only library                               |
 
 ### Verification
 
@@ -301,21 +297,21 @@ the library is supported there). No iOS build or run is recorded.
 
 ## 7. Feature availability by platform
 
-| Feature | macOS | Linux | Windows | WASM |
-|---|---|---|---|---|
-| VT parsing / screen state | yes | yes | yes (library) | yes |
-| Scrollback + reflow | yes | yes | yes (library) | yes |
-| Snapshots | yes | yes | yes (library) | yes |
-| Search | yes | yes | yes (library) | yes |
-| Key / mouse / focus encoding | yes | yes | yes (library) | yes |
-| Kitty graphics | yes | yes | yes (library) | **no** |
-| C ABI | yes | yes | yes | via `wasm.h` |
-| Rust wrapper | yes | yes | untested | n/a |
-| JS/TS wrapper | n/a | n/a | n/a | yes |
-| Native window | yes (Xcode) | yes (GTK4) | **no** | n/a |
-| Clipboard integration | yes | yes | **no** | n/a |
-| Agent IPC (3 actions) | yes | yes | **no** | n/a |
-| Agent IPC (pane protocol) | **no server** | **no server** | **no server** | n/a |
+| Feature                      | macOS         | Linux         | Windows       | WASM         |
+| ---------------------------- | ------------- | ------------- | ------------- | ------------ |
+| VT parsing / screen state    | yes           | yes           | yes (library) | yes          |
+| Scrollback + reflow          | yes           | yes           | yes (library) | yes          |
+| Snapshots                    | yes           | yes           | yes (library) | yes          |
+| Search                       | yes           | yes           | yes (library) | yes          |
+| Key / mouse / focus encoding | yes           | yes           | yes (library) | yes          |
+| Kitty graphics               | yes           | yes           | yes (library) | **no**       |
+| C ABI                        | yes           | yes           | yes           | via `wasm.h` |
+| Rust wrapper                 | yes           | yes           | untested      | n/a          |
+| JS/TS wrapper                | n/a           | n/a           | n/a           | yes          |
+| Native window                | yes (Xcode)   | yes (GTK4)    | **no**        | n/a          |
+| Clipboard integration        | yes           | yes           | **no**        | n/a          |
+| Agent IPC (3 actions)        | yes           | yes           | **no**        | n/a          |
+| Agent IPC (pane protocol)    | **no server** | **no server** | **no server** | n/a          |
 
 "yes (library)" means the C library builds for that target and provides the
 behaviour; it does not mean a Khostty application runs there.
@@ -324,13 +320,13 @@ behaviour; it does not mean a Khostty application runs there.
 
 ## 8. What would change these verdicts
 
-| Row | Evidence needed to move it |
-|---|---|
-| macOS app | DONE — full build with Metal toolchain (2026-09-18), codesign verify, and a live GUI launch with keystroke round-trip (2026-09-20); notarization still open |
-| Linux | DONE — `zig build` on a Linux host (2026-09-19, WSL), `.deb` install-verify, and a headless GTK launch (Xvfb, APP_ALIVE) |
-| Windows | PARTIAL — cross-built exe executed natively (`+version`, DLL ABI0 failures) and installer install/uninstall-verified (2026-09-19); still missing: a GUI window run, DirectWrite render check, input encode check, named-pipe command acceptance |
-| WASM in a browser | A headless-Chromium smoke run (current tests are Node, exercising the same code path) |
-| iOS | A build and run of a host app linking the xcframework slice |
+| Row               | Evidence needed to move it                                                                                                                                                                                                                      |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| macOS app         | DONE — full build with Metal toolchain (2026-09-18), codesign verify, and a live GUI launch with keystroke round-trip (2026-09-20); notarization still open                                                                                     |
+| Linux             | DONE — `zig build` on a Linux host (2026-09-19, WSL), `.deb` install-verify, and a headless GTK launch (Xvfb, APP_ALIVE)                                                                                                                        |
+| Windows           | PARTIAL — cross-built exe executed natively (`+version`, DLL ABI0 failures) and installer install/uninstall-verified (2026-09-19); still missing: a GUI window run, DirectWrite render check, input encode check, named-pipe command acceptance |
+| WASM in a browser | A headless-Chromium smoke run (current tests are Node, exercising the same code path)                                                                                                                                                           |
+| iOS               | A build and run of a host app linking the xcframework slice                                                                                                                                                                                     |
 
 Record the observation date with each result. A pass is only a pass for the
 revision it was observed on.

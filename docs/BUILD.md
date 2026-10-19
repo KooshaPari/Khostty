@@ -9,17 +9,17 @@ repository has multiple agents editing it concurrently.
 
 ## 1. Prerequisites
 
-| Requirement | Version | Needed for |
-|---|---|---|
-| **Zig** | **0.16.0** (exact) | Everything. `build.zig.zon` sets `minimum_zig_version = "0.16.0"`. |
-| `git` | any recent | Checkout, submodule-free dependency fetch |
-| **Xcode** | current, with the **Metal toolchain** component | macOS app build, dylib SDK headers |
-| GTK4 + `libadwaita` dev packages | 4.x | Linux app runtime (`gtk`) |
-| Wayland and/or X11 dev headers | — | Linux windowing (`-Dgtk-wayland`, `-Dgtk-x11`) |
-| `fontconfig` + `freetype` | — | Linux/BSD font discovery |
-| Rust | ≥ 1.75 | `khostty-vt` crate (G5) |
-| Node.js | ≥ 20 | `wasm/` package (G7) |
-| `cc` / clang | — | `conformance/harness.c` |
+| Requirement                      | Version                                         | Needed for                                                         |
+| -------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------ |
+| **Zig**                          | **0.16.0** (exact)                              | Everything. `build.zig.zon` sets `minimum_zig_version = "0.16.0"`. |
+| `git`                            | any recent                                      | Checkout, submodule-free dependency fetch                          |
+| **Xcode**                        | current, with the **Metal toolchain** component | macOS app build, dylib SDK headers                                 |
+| GTK4 + `libadwaita` dev packages | 4.x                                             | Linux app runtime (`gtk`)                                          |
+| Wayland and/or X11 dev headers   | —                                               | Linux windowing (`-Dgtk-wayland`, `-Dgtk-x11`)                     |
+| `fontconfig` + `freetype`        | —                                               | Linux/BSD font discovery                                           |
+| Rust                             | ≥ 1.75                                          | `khostty-vt` crate (G5)                                            |
+| Node.js                          | ≥ 20                                            | `wasm/` package (G7)                                               |
+| `cc` / clang                     | —                                               | `conformance/harness.c`                                            |
 
 Check Zig first, because a version mismatch fails early and confusingly:
 
@@ -51,10 +51,10 @@ zig build -Demit-lib-vt -Doptimize=ReleaseSafe
 
 Outputs land in `zig-out/`:
 
-| Artifact | Path |
-|---|---|
-| Static library | `zig-out/lib/libghostty-vt.a` |
-| Shared library | `zig-out/lib/libghostty-vt.0.1.0.dylib` (or `.so`) |
+| Artifact             | Path                                                                          |
+| -------------------- | ----------------------------------------------------------------------------- |
+| Static library       | `zig-out/lib/libghostty-vt.a`                                                 |
+| Shared library       | `zig-out/lib/libghostty-vt.0.1.0.dylib` (or `.so`)                            |
 | Convenience symlinks | `libghostty-vt.0.dylib` → `libghostty-vt.0.1.0.dylib` → `libghostty-vt.dylib` |
 
 For the Apple multi-platform bundle:
@@ -102,47 +102,47 @@ set that matters for a fork build.
 
 ### Target and optimize
 
-| Flag | Values | Notes |
-|---|---|---|
-| `-Doptimize` | `Debug`, `ReleaseSafe`, `ReleaseFast`, `ReleaseSmall` | |
-| `-Dtarget` | any Zig target triple | Defaults to the host |
-| `-Dversion-string` | string | Overrides the app version |
-| `-Dlib-version-string` | string | Overrides the library version |
+| Flag                   | Values                                                | Notes                         |
+| ---------------------- | ----------------------------------------------------- | ----------------------------- |
+| `-Doptimize`           | `Debug`, `ReleaseSafe`, `ReleaseFast`, `ReleaseSmall` |                               |
+| `-Dtarget`             | any Zig target triple                                 | Defaults to the host          |
+| `-Dversion-string`     | string                                                | Overrides the app version     |
+| `-Dlib-version-string` | string                                                | Overrides the library version |
 
 ### What to emit
 
-| Flag | Default | Effect |
-|---|---|---|
-| `-Demit-lib-vt` | off | Build `libghostty-vt` static/shared |
-| `-Demit-exe` | on | Build the executable |
-| `-Demit-macos-app` | off | Build the macOS `.app` (Xcode path) |
-| `-Demit-xcframework` | off | Build the Apple xcframework |
-| `-Demit-docs` | on | Install man pages and docs |
-| `-Demit-terminfo` | on | Install terminfo |
-| `-Demit-termcap` | off | Install termcap |
-| `-Demit-themes` | on | Install themes |
-| `-Demit-webdata` | on | Install web assets |
-| `-Demit-bench` | off | Build bench tooling (upstream) |
-| `-Demit-test-exe` | on | Build the test executable |
-| `-Demit-unicode-table-gen` | off | Build the unicode table generator |
-| `-Demit-helpgen` | off | Build the help generator |
+| Flag                       | Default | Effect                              |
+| -------------------------- | ------- | ----------------------------------- |
+| `-Demit-lib-vt`            | off     | Build `libghostty-vt` static/shared |
+| `-Demit-exe`               | on      | Build the executable                |
+| `-Demit-macos-app`         | off     | Build the macOS `.app` (Xcode path) |
+| `-Demit-xcframework`       | off     | Build the Apple xcframework         |
+| `-Demit-docs`              | on      | Install man pages and docs          |
+| `-Demit-terminfo`          | on      | Install terminfo                    |
+| `-Demit-termcap`           | off     | Install termcap                     |
+| `-Demit-themes`            | on      | Install themes                      |
+| `-Demit-webdata`           | on      | Install web assets                  |
+| `-Demit-bench`             | off     | Build bench tooling (upstream)      |
+| `-Demit-test-exe`          | on      | Build the test executable           |
+| `-Demit-unicode-table-gen` | off     | Build the unicode table generator   |
+| `-Demit-helpgen`           | off     | Build the help generator            |
 
 ### Backends and platform features
 
-| Flag | Default | Values |
-|---|---|---|
-| `-Dapp-runtime` | per-platform | `none`, `gtk`, (`windows` once G3 lands) |
-| `-Drenderer` | per-platform | `opengl`, `metal`, `webgl` |
-| `-Dfont-backend` | per-platform | `freetype`, `coretext`, `fontconfig_freetype`, `freetype_windows`, `web_canvas`, … |
-| `-Dxcframework-target` | `universal` | Apple slice selection |
-| `-Dsimd` | on | SIMD acceleration |
-| `-Di18n` | on | Translations |
-| `-Dsentry` | on | Crash reporting |
-| `-Dgtk-wayland` / `-Dgtk-x11` | auto | Linux display backends |
-| `-Dflatpak` / `-Dsnap` | off | Packaging integration |
-| `-Dpie`, `-Dstrip` | off | Binary properties |
-| `-Dvt-features` | full | Comma-separated libghostty-vt feature gates |
-| `-Dtest-filter` | — | Filter Zig tests by name |
+| Flag                          | Default      | Values                                                                             |
+| ----------------------------- | ------------ | ---------------------------------------------------------------------------------- |
+| `-Dapp-runtime`               | per-platform | `none`, `gtk`, (`windows` once G3 lands)                                           |
+| `-Drenderer`                  | per-platform | `opengl`, `metal`, `webgl`                                                         |
+| `-Dfont-backend`              | per-platform | `freetype`, `coretext`, `fontconfig_freetype`, `freetype_windows`, `web_canvas`, … |
+| `-Dxcframework-target`        | `universal`  | Apple slice selection                                                              |
+| `-Dsimd`                      | on           | SIMD acceleration                                                                  |
+| `-Di18n`                      | on           | Translations                                                                       |
+| `-Dsentry`                    | on           | Crash reporting                                                                    |
+| `-Dgtk-wayland` / `-Dgtk-x11` | auto         | Linux display backends                                                             |
+| `-Dflatpak` / `-Dsnap`        | off          | Packaging integration                                                              |
+| `-Dpie`, `-Dstrip`            | off          | Binary properties                                                                  |
+| `-Dvt-features`               | full         | Comma-separated libghostty-vt feature gates                                        |
+| `-Dtest-filter`               | —            | Filter Zig tests by name                                                           |
 
 `--help` on the build prints the live list:
 `zig build --help`.
@@ -153,19 +153,19 @@ set that matters for a fork build.
 
 Named steps declared in `build.zig`:
 
-| Step | Purpose |
-|---|---|
-| `zig build` | Default: build everything the config allows |
-| `zig build run` | Build and run the app |
-| `zig build run-valgrind` | Run under Valgrind |
-| `zig build test` | Run the Zig test suite |
-| `zig build test-lib-vt` | Run libghostty-vt tests |
-| `zig build test-lib-vt-build` | Compile libghostty-vt tests without running them |
-| `zig build test-lib-vt-schema` | Validate the libghostty-vt ABI type manifest |
-| `zig build test-valgrind` | Run tests under Valgrind |
-| `zig build dist` | Build the dist tarball |
-| `zig build distcheck` | Install and validate the dist tarball |
-| `zig build update-translations` | Refresh translation catalogs |
+| Step                            | Purpose                                          |
+| ------------------------------- | ------------------------------------------------ |
+| `zig build`                     | Default: build everything the config allows      |
+| `zig build run`                 | Build and run the app                            |
+| `zig build run-valgrind`        | Run under Valgrind                               |
+| `zig build test`                | Run the Zig test suite                           |
+| `zig build test-lib-vt`         | Run libghostty-vt tests                          |
+| `zig build test-lib-vt-build`   | Compile libghostty-vt tests without running them |
+| `zig build test-lib-vt-schema`  | Validate the libghostty-vt ABI type manifest     |
+| `zig build test-valgrind`       | Run tests under Valgrind                         |
+| `zig build dist`                | Build the dist tarball                           |
+| `zig build distcheck`           | Install and validate the dist tarball            |
+| `zig build update-translations` | Refresh translation catalogs                     |
 
 ---
 
@@ -189,7 +189,7 @@ Named steps declared in `build.zig`:
     go test -v ./...
   ```
   The build emits non-fatal `ld: warning: object file (...) was built for
-  newer 'macOS' version (27.0) than being linked (26.0)` lines; the link
+newer 'macOS' version (27.0) than being linked (26.0)` lines; the link
   succeeds and all 45 tests pass in ~0.8s. CI on GitHub is unaffected
   (Linux runners, no SDK). Confirmed on this host 2026-10-12; see
   `docs/sessions/khostty-0.1.0-release/evidence/5-suite-rerun-20261012.txt`.
@@ -237,8 +237,8 @@ zig build -Demit-lib-vt -Dtarget=wasm32-freestanding -Doptimize="$opt" \
 then asserts the WebAssembly magic (`0061736d`) and version 1 (`01000000`)
 preamble, copies to `wasm/khostty-vt.wasm`, and prints size + sha256.
 
-| Variable | Effect |
-|---|---|
+| Variable             | Effect                           |
+| -------------------- | -------------------------------- |
 | `KHOSTTY_WASM_CACHE` | Relocate the isolated wasm cache |
 
 The isolated cache exists to avoid a stale-build-runner failure that is unrelated
@@ -264,10 +264,10 @@ The crate finds the library in this order:
 
 Related variables:
 
-| Variable | Purpose |
-|---|---|
+| Variable                 | Purpose                             |
+| ------------------------ | ----------------------------------- |
 | `GHOSTTY_VT_INCLUDE_DIR` | Directory containing `ghostty/vt.h` |
-| `GHOSTTY_VT_LINK_KIND` | Force `dylib` or `static` |
+| `GHOSTTY_VT_LINK_KIND`   | Force `dylib` or `static`           |
 
 Typecheck without a native library:
 
@@ -362,10 +362,10 @@ Root cause: commit `e1277bea2` contains an unrelated pure rename
 content). Adding one directory level moves the file deeper, so its relative
 imports are now wrong:
 
-| Import in `src/apprt/ipc/mod.zig` | Resolves to | Should resolve to |
-|---|---|---|
-| `../quirks.zig` | `src/apprt/quirks.zig` (absent) | `../../quirks.zig` |
-| `../lib/main.zig` | `src/apprt/lib/main.zig` (absent) | `../../lib/main.zig` |
+| Import in `src/apprt/ipc/mod.zig` | Resolves to                       | Should resolve to    |
+| --------------------------------- | --------------------------------- | -------------------- |
+| `../quirks.zig`                   | `src/apprt/quirks.zig` (absent)   | `../../quirks.zig`   |
+| `../lib/main.zig`                 | `src/apprt/lib/main.zig` (absent) | `../../lib/main.zig` |
 
 Verify it is this and nothing else:
 
@@ -418,12 +418,12 @@ git worktree add --detach /tmp/head-verify HEAD
 
 ### Other common failures
 
-| Symptom | Cause and fix |
-|---|---|
-| Zig version message from `requireZig` | `build.zig.zon` requires exactly 0.16.0. Install 0.16.0 (`mlugg/setup-zig@v1` in CI, or `nix develop`). |
+| Symptom                                                   | Cause and fix                                                                                                                                                                                                                      |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zig version message from `requireZig`                     | `build.zig.zon` requires exactly 0.16.0. Install 0.16.0 (`mlugg/setup-zig@v1` in CI, or `nix develop`).                                                                                                                            |
 | `unable to find utility "metal"` / missing MetalToolchain | Install the Xcode Metal toolchain component; or build the library only (`-Demit-lib-vt`); or use `-Drenderer=opengl`. `-Demit-macos-app=false` alone does **not** avoid this — Metal is in the core library's macOS renderer path. |
-| GTK not found on Linux | GTK4 dev headers missing. Check `pkg-config --modversion gtk4`. |
-| Test executable cannot find the library | Integration tests are separate executables. The Rust `build.rs` emits an rpath; for C harnesses set it yourself: `DYLD_LIBRARY_PATH=zig-out/lib` (macOS) or `LD_LIBRARY_PATH=zig-out/lib` (Linux). |
+| GTK not found on Linux                                    | GTK4 dev headers missing. Check `pkg-config --modversion gtk4`.                                                                                                                                                                    |
+| Test executable cannot find the library                   | Integration tests are separate executables. The Rust `build.rs` emits an rpath; for C harnesses set it yourself: `DYLD_LIBRARY_PATH=zig-out/lib` (macOS) or `LD_LIBRARY_PATH=zig-out/lib` (Linux).                                 |
 
 ---
 
@@ -450,13 +450,13 @@ is unreachable.
 All builds below were attempted on the observed date. Two distinct breakages were
 found, both introduced by concurrent work on other gates.
 
-| Build | Revision | Result |
-|---|---|---|
-| `zig build -Demit-lib-vt` (repo `.zig-cache`) | working tree | **FAIL** — stale build runner, `uucode` `FileNotFound` |
-| `zig build -Demit-lib-vt` (fresh cache) | working tree | **FAIL** — unhandled `Runtime.windows` arm in `src/build/SharedDeps.zig` |
-| `zig build -Demit-lib-vt -Demit-xcframework=false` (fresh cache, detached worktree) | `a4bf9e98f` | **FAIL** — `src/apprt/ipc/mod.zig` relative imports resolve to missing files (50/64 steps succeeded, 2 compile errors) |
-| `conformance/build.sh run` | artifacts from 2026-09-16 | **PASS** — 84/84, 100% |
-| WASM artifact present | 2026-09-16 04:35 | 813,670 bytes, sha256 `08ac8ed8…` |
+| Build                                                                               | Revision                  | Result                                                                                                                 |
+| ----------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `zig build -Demit-lib-vt` (repo `.zig-cache`)                                       | working tree              | **FAIL** — stale build runner, `uucode` `FileNotFound`                                                                 |
+| `zig build -Demit-lib-vt` (fresh cache)                                             | working tree              | **FAIL** — unhandled `Runtime.windows` arm in `src/build/SharedDeps.zig`                                               |
+| `zig build -Demit-lib-vt -Demit-xcframework=false` (fresh cache, detached worktree) | `a4bf9e98f`               | **FAIL** — `src/apprt/ipc/mod.zig` relative imports resolve to missing files (50/64 steps succeeded, 2 compile errors) |
+| `conformance/build.sh run`                                                          | artifacts from 2026-09-16 | **PASS** — 84/84, 100%                                                                                                 |
+| WASM artifact present                                                               | 2026-09-16 04:35          | 813,670 bytes, sha256 `08ac8ed8…`                                                                                      |
 
 ### What this means
 

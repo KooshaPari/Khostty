@@ -1,6 +1,6 @@
 {
   "name": "@khostty/libghostty-vt-wasm",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "WebAssembly bindings for libghostty-vt (Khostty fork of Ghostty)",
   "type": "module",

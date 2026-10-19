@@ -42,14 +42,14 @@ Publishing can be configured afterward as the durable follow-up.
 
 ## Verified preconditions
 
-| Check | Result |
-|---|---|
-| `GET /pypi/khostty-vt/json` | `404` — name free, unpublished |
-| `twine check` (wheel) | PASSED |
-| `twine check` (sdist) | PASSED |
-| twine version | 7.0.0 (installed via `uv tool install twine`) |
+| Check                        | Result                                                    |
+| ---------------------------- | --------------------------------------------------------- |
+| `GET /pypi/khostty-vt/json`  | `404` — name free, unpublished                            |
+| `twine check` (wheel)        | PASSED                                                    |
+| `twine check` (sdist)        | PASSED                                                    |
+| twine version                | 7.0.0 (installed via `uv tool install twine`)             |
 | Python pkg changes since tag | none — `git log v0.1.0..HEAD -- khostty-python/` is empty |
-| wheel contents | 26 entries, `khostty_vt/` package + dist-info |
+| wheel contents               | 26 entries, `khostty_vt/` package + dist-info             |
 
 ## Operator action required
 

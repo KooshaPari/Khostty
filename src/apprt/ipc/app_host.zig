@@ -292,8 +292,19 @@ pub const AppHost = struct {
         const core = self.findCore(id) orelse return error.PaneNotFound;
         // The same parser the pty output goes through, so escape sequences and
         // modes behave exactly as if the program had written them.
-        const stream = &core.io.terminal_stream;
-        stream.nextSlice(data);
+        //
+        // The parser is owned by the app's IO thread; this function runs on an
+        // IPC connection thread. Hand the bytes to the IO thread through the
+        // surface mailbox instead of calling `nextSlice` here, so the parser
+        // is only ever mutated from the thread that owns it. See
+        // `CoreSurface.writeToParser` and `protocol.md` section 7.
+        //
+        // The byte count is reported optimistically: the bytes are queued for
+        // the IO thread, which is the same guarantee the previous direct call
+        // gave (it always returned `data.len`).
+        //
+        // FORK: KooshaPari/Khostty#48.
+        try core.writeToParser(data);
         return data.len;
     }
 
