@@ -207,6 +207,8 @@ jobs:
             libonig-dev libxml2-dev libglib2.0-dev \
             libharfbuzz-dev libfontconfig1-dev \
             libwayland-dev wayland-protocols libx11-dev
+          # msgfmt: the build runs the i18n step, which needs gettext.
+          sudo apt-get install -y --no-install-recommends gettext
           sudo apt-get install -y --no-install-recommends libgtk4-layer-shell-dev || true
       - uses: ./.github/actions/install-zig
         with:
