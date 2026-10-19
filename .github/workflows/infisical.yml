@@ -1,22 +1,50 @@
 # Pull secrets from Infisical into CI
 # Requires: INFISICAL_TOKEN (machine identity service token) stored in repo secrets
 # Docs: https://infisical.com/docs/cli/usage
+#
+# =============================================================================
+# FORK: DISABLED for automatic triggers. Manual dispatch / reusable call only.
+# =============================================================================
+# The only job targets `blacksmith-2vcpu-ubuntu-2204`, a Blacksmith
+# self-hosted runner label that is NOT registered on the KooshaPari account.
+# Observed on KooshaPari/Khostty (2026-10-19): every `pull_request` and every
+# push to `main` created a run whose job sat in `queued` forever, because no
+# runner ever matched the label. Example evidence (gh api):
+#
+#   run 39331467527  queued  push          job "Pull secrets from Infisical"
+#                                             labels ["blacksmith-2vcpu-ubuntu-2204"]
+#   run 39331449859  queued  pull_request
+#   run 39331395245  queued  pull_request
+#   run 39331283597  queued  pull_request
+#   run 39331272353  queued  pull_request
+#
+# Consequence: a permanently non-resolving `Infisical Sync / Pull secrets
+# from Infisical` check was attached to every PR and to `main`, so no PR could
+# ever present an all-green check list. The runs also occupied workflow-queue
+# capacity that the real checks need. This is the same defect class that
+# commit 2d860e921 ("stop the unschedulable workflows that starve the queue")
+# fixed for test.yml and the vouch workflows.
+#
+# Nothing is deleted: the file is preserved and still callable by hand from
+# the Actions tab, or as a reusable workflow via `uses: ./.github/workflows/
+# infisical.yml`. `runs-on` is corrected to `ubuntu-latest` so a hand
+# dispatch actually schedules (previously it would queue forever even when
+# triggered deliberately).
+#
+# If Blacksmith runners are provisioned later, restore the automatic
+# triggers and revert `runs-on`.
+# =============================================================================
 
 name: Infisical Sync
 
 on:
   workflow_call:
   workflow_dispatch:
-  push:
-    branches: [main, master]
-    paths:
-      - ".github/workflows/infisical.yml"
-  pull_request:
 
 jobs:
   sync-secrets:
     name: Pull secrets from Infisical
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Checkout
