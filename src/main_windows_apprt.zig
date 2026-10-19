@@ -25,5 +25,4 @@ test {
     _ = @import("apprt/windows/mod.zig");
     _ = @import("apprt/windows/mouse.zig");
     _ = @import("apprt/windows/surface.zig");
-    _ = @import("apprt/windows/win32api.zig");
 }

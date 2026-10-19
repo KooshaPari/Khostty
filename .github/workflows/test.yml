@@ -1,6 +1,27 @@
+# =============================================================================
+# FORK: DISABLED for automatic triggers. Manual dispatch only.
+# =============================================================================
+# This is upstream Ghostty's test workflow. It defines 52 jobs, and 50 of them
+# target `namespace-profile-ghostty-*` runners -- Namespace Cloud self-hosted
+# profiles that this fork does not have. `skip` is also gated on
+# `github.repository == 'ghostty-org/ghostty'`.
+#
+# Observed consequence on KooshaPari/Khostty: 20 consecutive runs of this
+# workflow, 0 completed (6 pending, 14 queued). Every push and every PR adds
+# another unschedulable run, which occupies the workflow queue and starves the
+# checks that actually matter (ci.yml's `ci / lint` and `ci / test`, and
+# zig-fork-tests.yml).
+#
+# Fork CI lives in:
+#   .github/workflows/ci.yml             lint / test / rust / go / python / ts
+#   .github/workflows/zig-fork-tests.yml fork-only Zig steps + wasm ABI
+#   .github/workflows/trunk-check.yml    formatting
+#
+# Nothing is deleted: the file is preserved and can still be run by hand from
+# the Actions tab if Namespace Cloud runners are ever provisioned.
+# =============================================================================
+
 on:
-  push: {}
-  pull_request: {}
   workflow_dispatch: {}
 
 name: Test

@@ -11,25 +11,25 @@ dispatches were run by this audit.
 
 ## Current release identity
 
-| Item | Observation |
-|---|---|
-| `v0.1.0` tag object | `7e1684f60e2ab03cca3e0b653c65b1b4e1247d10` |
-| Peeled target | `202aad5438c24ae0c76122e5b446d3bd774a61ca` |
-| Tag form | Annotated; unsigned. `git verify-tag v0.1.0` reports `no signature found`. |
-| GitHub release | Published, not draft or prerelease; published `2026-09-27T16:18:40Z`; release ID `397718820`. |
-| Assets | Six, listed below with GitHub API SHA-256 and byte sizes. |
-| Open PRs | None observed in the parent checkpoint. |
-| Issues | Issue tracking is disabled; no issue count is inferred. |
-| Dependabot | One open pytest alert (see `docs/SECURITY.md` §8). |
+| Item                | Observation                                                                                   |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `v0.1.0` tag object | `7e1684f60e2ab03cca3e0b653c65b1b4e1247d10`                                                    |
+| Peeled target       | `202aad5438c24ae0c76122e5b446d3bd774a61ca`                                                    |
+| Tag form            | Annotated; unsigned. `git verify-tag v0.1.0` reports `no signature found`.                    |
+| GitHub release      | Published, not draft or prerelease; published `2026-09-27T16:18:40Z`; release ID `397718820`. |
+| Assets              | Six, listed below with GitHub API SHA-256 and byte sizes.                                     |
+| Open PRs            | None observed in the parent checkpoint.                                                       |
+| Issues              | Issue tracking is disabled; no issue count is inferred.                                       |
+| Dependabot          | One open pytest alert (see `docs/SECURITY.md` §8).                                            |
 
-| GitHub release asset | Size (bytes) | GitHub API SHA-256 |
-|---|---:|---|
-| `CHECKSUMS.txt` | 4,273 | `96bf0b556042b2feff0daaaf46dc7750f3fe80961f43053f3c07e86c72df381e` |
-| `Khostty-0.1.0-macos.zip` | 35,953,098 | `94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb` |
-| `Khostty-0.1.0-windows-x86_64-setup.exe` | 19,766,307 | `4070e89e8f693c44abda13da1b718dca4e53d73279f3d945854431d76f095546` |
-| `khostty-libghostty-vt-wasm-0.1.0.tar.gz` | 680,598 | `55cfc67572696db9eaf48cb69ae231ca99119aa1caf064e0c08c8c8c178604dc` |
-| `khostty-vt_0.1.0_amd64.deb` | 2,320,612 | `3c080d13a74d6bf6dca9d28dc2c685f6b4350ec3130f3f3fafa5cb4d77d834cf` |
-| `khostty_0.1.0_amd64.deb` | 18,143,964 | `63d4e6159d65e97db685b9eedbe19c37765f5f838279e9d5b0326ab5a7b80de0` |
+| GitHub release asset                      | Size (bytes) | GitHub API SHA-256                                                 |
+| ----------------------------------------- | -----------: | ------------------------------------------------------------------ |
+| `CHECKSUMS.txt`                           |        4,273 | `96bf0b556042b2feff0daaaf46dc7750f3fe80961f43053f3c07e86c72df381e` |
+| `Khostty-0.1.0-macos.zip`                 |   35,953,098 | `94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb` |
+| `Khostty-0.1.0-windows-x86_64-setup.exe`  |   19,766,307 | `4070e89e8f693c44abda13da1b718dca4e53d73279f3d945854431d76f095546` |
+| `khostty-libghostty-vt-wasm-0.1.0.tar.gz` |      680,598 | `55cfc67572696db9eaf48cb69ae231ca99119aa1caf064e0c08c8c8c178604dc` |
+| `khostty-vt_0.1.0_amd64.deb`              |    2,320,612 | `3c080d13a74d6bf6dca9d28dc2c685f6b4350ec3130f3f3fafa5cb4d77d834cf` |
+| `khostty_0.1.0_amd64.deb`                 |   18,143,964 | `63d4e6159d65e97db685b9eedbe19c37765f5f838279e9d5b0326ab5a7b80de0` |
 
 The local ignored `dist-release/CHECKSUMS.txt` verifies **9/9** entries with
 `shasum -a 256 -c`. The release API's five hash-covered assets plus the

@@ -12,7 +12,7 @@ Operator assessment of the status quo:
 - Khostty already has split panes, which **replaces the personal need for a
   separate mux** — but the GUI feels "good but bare."
 - tmux is **too mouse-unfriendly** and not keyboard-intuitive for this operator's
-  workflow. Whatever Khostty grows must be drivable both ways: mouse *and*
+  workflow. Whatever Khostty grows must be drivable both ways: mouse _and_
   discoverable keyboard paths.
 - herdr's use cases (persistent agent panes with visible state) are "great"; the
   goal is to adopt the patterns, not to wrap an external multiplexer.
@@ -21,14 +21,14 @@ Operator assessment of the status quo:
 
 ## Competitive feature survey (2026-09-24)
 
-| Tool | What it does well | Sources |
-|---|---|---|
-| **herdr** (herdr.dev) | Agent-aware multiplexer: real terminal panes per agent, sidebar that reports **blocked / working / done / idle** per pane without configuration; workspaces, tabs, panes; **mouse splitting**; detach/reattach; survives lid-close; SSH attach | herdr.dev, terminaltrove.com/herdr, github.com/SuperCodeAgents/herdr-terminal |
-| **Honeymux** (hmx.dev) | TUI wrapper over tmux: **hook-based agent monitoring**, Agents dialog tree (grouped by locality/team, color-coded provider), pane tabs, per-pane OS-native scrollback/search, layout profiles, Kitty keyboard protocol, remote-backed pane stitching, mobile UI | docs.hmx.dev, github.com/honeymux/honeymux |
-| **cmux** (cmux.com) | Native macOS terminal **built on Ghostty** (libghostty in Swift/AppKit): vertical tab sidebar with git branch / PR status / workdir, **notification rings** when agents need attention, split panes, programmable CLI | github.com/manaflow-ai/cmux, cmux.com |
-| **zellij** | Keyboard-first workspace UX: floating panes, layouts, plugins, collaboration. Mouse handling exists (`mouse_mode`, event routing) but pane-level mouse UX is partial — long-standing fragmented request (#175) and middle-click interception bug (#5074) | zellij.dev, github.com/zellij-org/zellij issues 175/5074 |
-| **tmux** (baseline) | Battle-tested persistence; rejected as the daily driver here: mouse-unfriendly, keybinding opacity | operator direction |
-| **upstream Ghostty** | multi-window, tabs, splits, scrollback search, native scrollbars (1.3), mouse reporting to applications | ghostty.org/docs/features |
+| Tool                   | What it does well                                                                                                                                                                                                                                               | Sources                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **herdr** (herdr.dev)  | Agent-aware multiplexer: real terminal panes per agent, sidebar that reports **blocked / working / done / idle** per pane without configuration; workspaces, tabs, panes; **mouse splitting**; detach/reattach; survives lid-close; SSH attach                  | herdr.dev, terminaltrove.com/herdr, github.com/SuperCodeAgents/herdr-terminal |
+| **Honeymux** (hmx.dev) | TUI wrapper over tmux: **hook-based agent monitoring**, Agents dialog tree (grouped by locality/team, color-coded provider), pane tabs, per-pane OS-native scrollback/search, layout profiles, Kitty keyboard protocol, remote-backed pane stitching, mobile UI | docs.hmx.dev, github.com/honeymux/honeymux                                    |
+| **cmux** (cmux.com)    | Native macOS terminal **built on Ghostty** (libghostty in Swift/AppKit): vertical tab sidebar with git branch / PR status / workdir, **notification rings** when agents need attention, split panes, programmable CLI                                           | github.com/manaflow-ai/cmux, cmux.com                                         |
+| **zellij**             | Keyboard-first workspace UX: floating panes, layouts, plugins, collaboration. Mouse handling exists (`mouse_mode`, event routing) but pane-level mouse UX is partial — long-standing fragmented request (#175) and middle-click interception bug (#5074)        | zellij.dev, github.com/zellij-org/zellij issues 175/5074                      |
+| **tmux** (baseline)    | Battle-tested persistence; rejected as the daily driver here: mouse-unfriendly, keybinding opacity                                                                                                                                                              | operator direction                                                            |
+| **upstream Ghostty**   | multi-window, tabs, splits, scrollback search, native scrollbars (1.3), mouse reporting to applications                                                                                                                                                         | ghostty.org/docs/features                                                     |
 
 Khostty's structural advantage: it already ships an **agent IPC surface** (JSON
 commands/events over a Unix socket: `new_window`, `new_tab`,
@@ -44,7 +44,7 @@ below builds on that surface instead of scraping other processes.
   macOS AppKit path needs the equivalent interaction).
 - Right-click context menu: new tab / new split / close.
 - Scrollbar + wheel scroll that behaves without modifier gymnastics.
-- *Acceptance:* every GUI operation reachable by mouse alone, and every mouse
+- _Acceptance:_ every GUI operation reachable by mouse alone, and every mouse
   action has a documented keyboard equivalent (the tmux grievance is the spec).
 
 ### M2 — Agent state visibility (herdr pattern, IPC-native)
@@ -53,14 +53,14 @@ below builds on that surface instead of scraping other processes.
   existing IPC event stream, not from terminal-output heuristics.
 - Sidebar or tab decoration showing state at a glance; notification ring
   (cmux pattern) when an agent finishes or blocks.
-- *Acceptance:* launch two IPC-driven sessions, induce a block and a completion,
+- _Acceptance:_ launch two IPC-driven sessions, induce a block and a completion,
   observe both states update in the GUI without polling the terminal content.
 
 ### M3 — Pane tabs + per-pane scrollback/search (honeymux pattern)
 
 - Pane tabs in the sidebar rather than only inline splits.
 - Per-pane scrollback history and search independent of the active pane.
-- *Acceptance:* search across a background pane's scrollback while a foreground
+- _Acceptance:_ search across a background pane's scrollback while a foreground
   process keeps running.
 
 ### M4 — Layouts, profiles, keyboard protocol
@@ -68,7 +68,7 @@ below builds on that surface instead of scraping other processes.
 - Saved layout profiles (restore a workspace arrangement by name via IPC).
 - Kitty keyboard protocol pass-through where the app supports it (honeymux
   advertises this; upstream Ghostty has partial support — verify before building).
-- *Acceptance:* save a 3-pane layout, tear it down, restore by name, byte-identical
+- _Acceptance:_ save a 3-pane layout, tear it down, restore by name, byte-identical
   arrangement.
 
 ### M5 — Mouse UX audit against zellij's pitfalls

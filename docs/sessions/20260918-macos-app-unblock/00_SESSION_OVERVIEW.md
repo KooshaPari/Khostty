@@ -6,17 +6,17 @@
 zipped and hash-checked on this host. The recorded blocker ("Metal Toolchain cannot be
 obtained on this host") was **wrong**, and is corrected here with executed evidence.
 
-| Item | Result |
-|---|---|
-| `packaging/macos-app.sh --probe` | `ok` — `metal compiler: usable` |
-| `bash packaging/macos-app.sh` | **exit 0** |
-| Bundle | `zig-out/Ghostty.app`, `CFBundleShortVersionString=0.1`, id `com.mitchellh.ghostty` |
-| Binary | Mach-O universal (x86_64 + arm64) |
-| Signature | Developer ID located by prefix; `codesign --verify --deep --strict` → *valid on disk*, *satisfies its Designated Requirement* |
-| Artifact | `dist-release/macos/Khostty-0.1.0-macos.zip`, 35,953,098 bytes |
-| `sha256` | `94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb` (`shasum -a 256 -c` → OK) |
-| Liveness (no GUI) | `./zig-out/Ghostty.app/Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0 |
-| Source commit | `41b24baad24227e22fefc35ae74ee5999f3591d1` |
+| Item                             | Result                                                                                                                        |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `packaging/macos-app.sh --probe` | `ok` — `metal compiler: usable`                                                                                               |
+| `bash packaging/macos-app.sh`    | **exit 0**                                                                                                                    |
+| Bundle                           | `zig-out/Ghostty.app`, `CFBundleShortVersionString=0.1`, id `com.mitchellh.ghostty`                                           |
+| Binary                           | Mach-O universal (x86_64 + arm64)                                                                                             |
+| Signature                        | Developer ID located by prefix; `codesign --verify --deep --strict` → _valid on disk_, _satisfies its Designated Requirement_ |
+| Artifact                         | `dist-release/macos/Khostty-0.1.0-macos.zip`, 35,953,098 bytes                                                                |
+| `sha256`                         | `94abd2a7e7d63e790bfffd3a6e6f4e08ae80a67fbf3dbe8227e754c6104317cb` (`shasum -a 256 -c` → OK)                                  |
+| Liveness (no GUI)                | `./zig-out/Ghostty.app/Contents/MacOS/ghostty --version` → `Ghostty 1.3.2-main-+41b24baad`, exit 0                            |
+| Source commit                    | `41b24baad24227e22fefc35ae74ee5999f3591d1`                                                                                    |
 
 `dist-release/` is gitignored, so the probe and evidence files are not committed. This
 session document is the committed record.
@@ -37,7 +37,7 @@ picture:
    `xcodeBuildUpdate` is `17B5050g`. Requesting that build therefore has no catalog target,
    which is what produces the "Failed fetching catalog" message.
 2. **Even once the asset is on disk, Xcode never links it into its toolchain.** `xcrun
-   metal` is a thin shim (libc++/libSystem only — it cannot read plists) that resolves
+metal` is a thin shim (libc++/libSystem only — it cannot read plists) that resolves
    `SDKROOT` → developer root → `XcodeDefault.xctoolchain/usr/metal/current/bin/metal`.
    `Metal.xctoolchain` was mounted as a cryptex but nothing created that path, so the shim
    still reported the toolchain missing.
@@ -102,7 +102,7 @@ A durable fix is to install an Xcode whose build appears in
 `xcodebuild -downloadComponent MetalToolchain` succeeds without `-buildVersion` and Xcode
 performs the graft itself.
 
-## What was deliberately *not* done
+## What was deliberately _not_ done
 
 - **No GUI launch.** The bundle was not started as an application: doing so would take
   focus on the operator's live desktop, and `packaging/macos-app.sh` itself declines to
@@ -121,7 +121,7 @@ the packaging script and this task forbade source edits:
 
 1. `dist-release/macos/EVIDENCE.txt` always writes
    `notarization_blocker: no Developer ID Application identity …`, which is untrue on this
-   host (a Developer ID identity *is* present). The line is unconditional in the script.
+   host (a Developer ID identity _is_ present). The line is unconditional in the script.
 2. On success the script still prints `ok ad-hoc signature verifies` while
    `EVIDENCE.txt` correctly records `signed: developer-id`. The success message is
    hardcoded.
@@ -133,8 +133,8 @@ the packaging script and this task forbade source edits:
   `docs/dossiers/KHOSTTY.md` (§3.3, §7, §8, §10). The dossier and the headline rows are
   updated by this session; the remaining narrative in `docs/INSTALL.md` §3.3 was left to
   that file's concurrent author to avoid clobbering in-flight work.
-- The G9 acceptance criterion *"macOS `.app` installs and runs (verified outside source
-  tree)"* is **partly** met: the bundle builds, verifies and executes, but it has **not**
+- The G9 acceptance criterion _"macOS `.app` installs and runs (verified outside source
+  tree)"_ is **partly** met: the bundle builds, verifies and executes, but it has **not**
   been copied outside the source tree and launched in a GUI session, and it is not
   notarized. Treat it as **NOT YET CLOSED** on the install/launch half.
 

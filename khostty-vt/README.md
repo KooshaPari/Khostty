@@ -23,12 +23,12 @@ assert!(term.vt_ground()?);
 
 ## Status
 
-| Area | State |
-|------|-------|
-| Raw bindings | All 198 exported functions across 34 `include/ghostty/vt/**` headers |
+| Area          | State                                                                                                                |
+| ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Raw bindings  | All 198 exported functions across 34 `include/ghostty/vt/**` headers                                                 |
 | Safe wrappers | `Terminal`, `RenderState` + row/cell iteration, `SnapshotDecoder` + encoders, `Search`, `KeyEncoder`, `MouseEncoder` |
-| Tests | 195 passing across 10 test binaries, all against the real library |
-| Verification | ABI layout checked against the C compiler; bindings checked against the headers in both directions |
+| Tests         | 195 passing across 10 test binaries, all against the real library                                                    |
+| Verification  | ABI layout checked against the C compiler; bindings checked against the headers in both directions                   |
 
 The upstream headers describe the C API as unstable, so this crate is versioned
 independently and every C enum keeps an `Unknown(..)` arm rather than pretending a
@@ -44,32 +44,32 @@ zig build -Dlibghostty-vt=true          # produces zig-out/lib/libghostty-vt.*
 
 `build.rs` then finds it automatically, searching in order:
 
-| Variable | Meaning |
-|----------|---------|
-| `GHOSTTY_VT_LIB` | Explicit path to the library file |
-| `GHOSTTY_VT_LIB_DIR` | Directory containing `libghostty-vt.{dylib,so,a}` |
-| `GHOSTTY_VT_INCLUDE_DIR` | Directory containing `ghostty/vt.h` |
-| `GHOSTTY_VT_LINK_KIND` | Force `dylib` (default) or `static` |
+| Variable                 | Meaning                                           |
+| ------------------------ | ------------------------------------------------- |
+| `GHOSTTY_VT_LIB`         | Explicit path to the library file                 |
+| `GHOSTTY_VT_LIB_DIR`     | Directory containing `libghostty-vt.{dylib,so,a}` |
+| `GHOSTTY_VT_INCLUDE_DIR` | Directory containing `ghostty/vt.h`               |
+| `GHOSTTY_VT_LINK_KIND`   | Force `dylib` (default) or `static`               |
 
 Without any of those it falls back to `../zig-out/lib` and `../include`, which is
 where a normal checkout has them.
 
 Two notes on linking:
 
-* On macOS the Zig-produced `libghostty-vt.a` is a fat archive that Apple's `ld`
+- On macOS the Zig-produced `libghostty-vt.a` is a fat archive that Apple's `ld`
   rejects ("archive member '/' not a mach-o file"), so shared linking is the
   supported path there. `build.rs` prefers the dylib and adds an rpath so the test
   and example binaries resolve it at run time.
-* If no library is found the build still succeeds: `build.rs` prints a warning and
+- If no library is found the build still succeeds: `build.rs` prints a warning and
   skips linking, so `cargo check` works on a machine that has not built Zig yet.
   Integration tests and examples then compile to nothing rather than failing.
 
 ## Features
 
-| Feature | Default | Effect |
-|---------|---------|--------|
-| `link` | yes | Emit the linker directives for a prebuilt `libghostty-vt` |
-| `bindgen` | no | Regenerate `$OUT_DIR/bindings.rs` with bindgen for the drift check |
+| Feature   | Default | Effect                                                             |
+| --------- | ------- | ------------------------------------------------------------------ |
+| `link`    | yes     | Emit the linker directives for a prebuilt `libghostty-vt`          |
+| `bindgen` | no      | Regenerate `$OUT_DIR/bindings.rs` with bindgen for the drift check |
 
 ```sh
 cargo check                              # links, if the library is present
@@ -88,17 +88,17 @@ after it finds the library.
 
 ## Modules
 
-| Module | Contents |
-|--------|----------|
-| `ffi` | Raw `extern "C"` declarations, generated from the C headers |
-| `error` | `GhosttyError`, mapping every `GhosttyResult` code |
-| `sys` | Allocator integration, `OwnedBuffer`, the two-pass buffer helper |
-| `color`, `style`, `selection` | `Color`, `Style`/`StyleColor`/`Underline`, `GridRef`/`Selection` |
-| `terminal` | `Terminal`: VT input, state queries, option setters, event callbacks |
-| `render` | `RenderState`, `RowIterator`, `Cells`, frame colours and cursor |
-| `snapshot` | Snapshot encode (buffer, alloc, streaming) and `SnapshotDecoder` |
-| `search` | `Search`: needle, feed/tick/run, matches as selections |
-| `key`, `mouse` | `KeyEncoder`/`KeyEvent`, `MouseEncoder`/`MouseEvent` |
+| Module                        | Contents                                                             |
+| ----------------------------- | -------------------------------------------------------------------- |
+| `ffi`                         | Raw `extern "C"` declarations, generated from the C headers          |
+| `error`                       | `GhosttyError`, mapping every `GhosttyResult` code                   |
+| `sys`                         | Allocator integration, `OwnedBuffer`, the two-pass buffer helper     |
+| `color`, `style`, `selection` | `Color`, `Style`/`StyleColor`/`Underline`, `GridRef`/`Selection`     |
+| `terminal`                    | `Terminal`: VT input, state queries, option setters, event callbacks |
+| `render`                      | `RenderState`, `RowIterator`, `Cells`, frame colours and cursor      |
+| `snapshot`                    | Snapshot encode (buffer, alloc, streaming) and `SnapshotDecoder`     |
+| `search`                      | `Search`: needle, feed/tick/run, matches as selections               |
+| `key`, `mouse`                | `KeyEncoder`/`KeyEvent`, `MouseEncoder`/`MouseEvent`                 |
 
 ## What the wrappers guarantee
 
@@ -116,13 +116,13 @@ in `ffi` (which is generated), or a thin call site in a wrapper. Each one carrie
 **Lifetime rules are typed, not documented.** The three upstream rules that are
 easy to get wrong are enforced by the borrow checker instead of by comments:
 
-| Upstream rule | How it is enforced |
-|---------------|--------------------|
-| Row and cell data are invalid once the render state is updated | `RenderState::rows` borrows the state; `update`/`clean` need `&mut self` |
-| The terminal from a snapshot READY must outlive the decoder's history replay | `ReadyTerminal` owns the terminal *and* holds the decoder borrow |
-| Snapshot source bytes must stay alive until FINISH or free | `SnapshotDecoder` borrows or owns its source |
-| One-shot decode may only run before decoding starts | `SnapshotDecoder::decode` consumes the decoder |
-| Search `feed`/`set_needle`/`select_*` need exclusive terminal access | Those methods take a `&Terminal` and check it is the right one |
+| Upstream rule                                                                | How it is enforced                                                       |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Row and cell data are invalid once the render state is updated               | `RenderState::rows` borrows the state; `update`/`clean` need `&mut self` |
+| The terminal from a snapshot READY must outlive the decoder's history replay | `ReadyTerminal` owns the terminal _and_ holds the decoder borrow         |
+| Snapshot source bytes must stay alive until FINISH or free                   | `SnapshotDecoder` borrows or owns its source                             |
+| One-shot decode may only run before decoding starts                          | `SnapshotDecoder::decode` consumes the decoder                           |
+| Search `feed`/`set_needle`/`select_*` need exclusive terminal access         | Those methods take a `&Terminal` and check it is the right one           |
 
 **Callbacks cannot corrupt the process.** Effect closures are called from C. Every
 trampoline catches panics so nothing unwinds across the FFI boundary, reentrancy is
@@ -227,17 +227,17 @@ state, so it must be dropped before the state is mutated. That is the header's
 
 Established by probing the linked library, not assumed. Each is pinned by a test.
 
-| Behaviour | Detail |
-|-----------|--------|
-| Unset colours are `None` | Every colour data key reports `GHOSTTY_NO_VALUE` until something sets it, so `Terminal::foreground()` is `Option<Color>`. `set_background` sets override *and* default; `OSC 11` sets only the override. |
-| Render-state theme colours are not derived | `RenderState::colors().background`/`foreground` were observed to stay at zero and to ignore both the terminal options and `OSC 11`. Use your own theme colours and take `palette` from the render state. |
-| Mouse reports outside the configured screen are dropped silently | `MouseEncoderSize` needs the real `screen_width`/`screen_height`, not just the cell size, or `encode` returns an empty sequence for everything but the origin. |
-| The Alt ESC prefix needs two options | `set_alt_esc_prefix(true)` *and* `set_option_as_alt(OptionAsAlt::True)`; either alone leaves Alt+a as plain `a`. Special keys report Alt through the CSI modifier parameter instead. |
-| `set_any_button_pressed` has no observed effect | Across all five formats it did not change the encoded bytes. What decides whether motion is reported is the tracking mode: X10/Normal none, Button drags only, Any everything. |
-| `sync_from_terminal` needs the full DECSET pair | Programs enable tracking (1000/1002/1003) and the SGR format (1006) separately; a terminal that only sets 1006 has tracking off and the encoder reports nothing. |
-| `MouseFormat::default()` is X10 | X10 is the zero value of `GhosttyMouseFormat`, so it is what an unconfigured encoder uses. It cannot express columns past 223. Reach SGR through 1006 or `set_format`. |
-| No `DECSCUSR` read-back | `GHOSTTY_TERMINAL_DATA_CURSOR_STYLE` is the *SGR text style* of the cursor, not its shape. The shape is read from the render state's `cursor().visual_style`. |
-| Motion dedup suppresses repeats | The encoder drops a motion report for the same cell as the previous one. `MouseEncoder::reset` clears it. |
+| Behaviour                                                        | Detail                                                                                                                                                                                                   |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unset colours are `None`                                         | Every colour data key reports `GHOSTTY_NO_VALUE` until something sets it, so `Terminal::foreground()` is `Option<Color>`. `set_background` sets override _and_ default; `OSC 11` sets only the override. |
+| Render-state theme colours are not derived                       | `RenderState::colors().background`/`foreground` were observed to stay at zero and to ignore both the terminal options and `OSC 11`. Use your own theme colours and take `palette` from the render state. |
+| Mouse reports outside the configured screen are dropped silently | `MouseEncoderSize` needs the real `screen_width`/`screen_height`, not just the cell size, or `encode` returns an empty sequence for everything but the origin.                                           |
+| The Alt ESC prefix needs two options                             | `set_alt_esc_prefix(true)` _and_ `set_option_as_alt(OptionAsAlt::True)`; either alone leaves Alt+a as plain `a`. Special keys report Alt through the CSI modifier parameter instead.                     |
+| `set_any_button_pressed` has no observed effect                  | Across all five formats it did not change the encoded bytes. What decides whether motion is reported is the tracking mode: X10/Normal none, Button drags only, Any everything.                           |
+| `sync_from_terminal` needs the full DECSET pair                  | Programs enable tracking (1000/1002/1003) and the SGR format (1006) separately; a terminal that only sets 1006 has tracking off and the encoder reports nothing.                                         |
+| `MouseFormat::default()` is X10                                  | X10 is the zero value of `GhosttyMouseFormat`, so it is what an unconfigured encoder uses. It cannot express columns past 223. Reach SGR through 1006 or `set_format`.                                   |
+| No `DECSCUSR` read-back                                          | `GHOSTTY_TERMINAL_DATA_CURSOR_STYLE` is the _SGR text style_ of the cursor, not its shape. The shape is read from the render state's `cursor().visual_style`.                                            |
+| Motion dedup suppresses repeats                                  | The encoder drops a motion report for the same cell as the previous one. `MouseEncoder::reset` clears it.                                                                                                |
 
 ## Verification
 
