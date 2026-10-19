@@ -37,12 +37,12 @@
 use core::ffi::{c_char, c_int, c_void};
 
 // ---------------------------------------------------------------------
-// Coverage: 198 functions, 179 types, 794 constants
-// declared across 34 headers (201 `GHOSTTY_API` declarations detected).
+// Coverage: 199 functions, 196 types, 884 constants
+// declared across 34 headers (202 `GHOSTTY_API` declarations detected).
 // ---------------------------------------------------------------------
 
 /// Number of `GHOSTTY_API` functions declared by this binding.
-pub const BINDING_FUNCTION_COUNT: usize = 198;
+pub const BINDING_FUNCTION_COUNT: usize = 199;
 
 // ---- Constants ---------------------------------------------------------
 
@@ -462,6 +462,41 @@ pub const GHOSTTY_MOUSE_FORMAT_SGR_PIXELS: GhosttyMouseFormat = 4;
 pub const GHOSTTY_MOUSE_FORMAT_URXVT: GhosttyMouseFormat = 3;
 pub const GHOSTTY_MOUSE_FORMAT_UTF8: GhosttyMouseFormat = 1;
 pub const GHOSTTY_MOUSE_FORMAT_X10: GhosttyMouseFormat = 0;
+pub const GHOSTTY_MOUSE_SHAPE_ALIAS: GhosttyMouseShape = 10;
+pub const GHOSTTY_MOUSE_SHAPE_ALL_SCROLL: GhosttyMouseShape = 17;
+pub const GHOSTTY_MOUSE_SHAPE_CELL: GhosttyMouseShape = 6;
+pub const GHOSTTY_MOUSE_SHAPE_COL_RESIZE: GhosttyMouseShape = 18;
+pub const GHOSTTY_MOUSE_SHAPE_CONTEXT_MENU: GhosttyMouseShape = 1;
+pub const GHOSTTY_MOUSE_SHAPE_COPY: GhosttyMouseShape = 11;
+pub const GHOSTTY_MOUSE_SHAPE_CROSSHAIR: GhosttyMouseShape = 7;
+pub const GHOSTTY_MOUSE_SHAPE_DEFAULT: GhosttyMouseShape = 0;
+pub const GHOSTTY_MOUSE_SHAPE_EW_RESIZE: GhosttyMouseShape = 28;
+pub const GHOSTTY_MOUSE_SHAPE_E_RESIZE: GhosttyMouseShape = 21;
+pub const GHOSTTY_MOUSE_SHAPE_GRAB: GhosttyMouseShape = 15;
+pub const GHOSTTY_MOUSE_SHAPE_GRABBING: GhosttyMouseShape = 16;
+pub const GHOSTTY_MOUSE_SHAPE_HELP: GhosttyMouseShape = 2;
+pub const GHOSTTY_MOUSE_SHAPE_MAX_VALUE: GhosttyMouseShape = c_int::MAX;
+pub const GHOSTTY_MOUSE_SHAPE_MOVE: GhosttyMouseShape = 12;
+pub const GHOSTTY_MOUSE_SHAPE_NESW_RESIZE: GhosttyMouseShape = 30;
+pub const GHOSTTY_MOUSE_SHAPE_NE_RESIZE: GhosttyMouseShape = 24;
+pub const GHOSTTY_MOUSE_SHAPE_NOT_ALLOWED: GhosttyMouseShape = 14;
+pub const GHOSTTY_MOUSE_SHAPE_NO_DROP: GhosttyMouseShape = 13;
+pub const GHOSTTY_MOUSE_SHAPE_NS_RESIZE: GhosttyMouseShape = 29;
+pub const GHOSTTY_MOUSE_SHAPE_NWSE_RESIZE: GhosttyMouseShape = 31;
+pub const GHOSTTY_MOUSE_SHAPE_NW_RESIZE: GhosttyMouseShape = 25;
+pub const GHOSTTY_MOUSE_SHAPE_N_RESIZE: GhosttyMouseShape = 20;
+pub const GHOSTTY_MOUSE_SHAPE_POINTER: GhosttyMouseShape = 3;
+pub const GHOSTTY_MOUSE_SHAPE_PROGRESS: GhosttyMouseShape = 4;
+pub const GHOSTTY_MOUSE_SHAPE_ROW_RESIZE: GhosttyMouseShape = 19;
+pub const GHOSTTY_MOUSE_SHAPE_SE_RESIZE: GhosttyMouseShape = 26;
+pub const GHOSTTY_MOUSE_SHAPE_SW_RESIZE: GhosttyMouseShape = 27;
+pub const GHOSTTY_MOUSE_SHAPE_S_RESIZE: GhosttyMouseShape = 22;
+pub const GHOSTTY_MOUSE_SHAPE_TEXT: GhosttyMouseShape = 8;
+pub const GHOSTTY_MOUSE_SHAPE_VERTICAL_TEXT: GhosttyMouseShape = 9;
+pub const GHOSTTY_MOUSE_SHAPE_WAIT: GhosttyMouseShape = 5;
+pub const GHOSTTY_MOUSE_SHAPE_W_RESIZE: GhosttyMouseShape = 23;
+pub const GHOSTTY_MOUSE_SHAPE_ZOOM_IN: GhosttyMouseShape = 32;
+pub const GHOSTTY_MOUSE_SHAPE_ZOOM_OUT: GhosttyMouseShape = 33;
 pub const GHOSTTY_MOUSE_TRACKING_ANY: GhosttyMouseTrackingMode = 4;
 pub const GHOSTTY_MOUSE_TRACKING_BUTTON: GhosttyMouseTrackingMode = 3;
 pub const GHOSTTY_MOUSE_TRACKING_MAX_VALUE: GhosttyMouseTrackingMode = c_int::MAX;
@@ -493,7 +528,7 @@ pub const GHOSTTY_OSC_COMMAND_CONEMU_SHOW_MESSAGE_BOX: GhosttyOscCommandType = 1
 pub const GHOSTTY_OSC_COMMAND_CONEMU_SLEEP: GhosttyOscCommandType = 12;
 pub const GHOSTTY_OSC_COMMAND_CONEMU_WAIT_INPUT: GhosttyOscCommandType = 16;
 pub const GHOSTTY_OSC_COMMAND_CONEMU_XTERM_EMULATION: GhosttyOscCommandType = 20;
-pub const GHOSTTY_OSC_COMMAND_CONTEXT_SIGNAL: GhosttyOscCommandType = 25;
+pub const GHOSTTY_OSC_COMMAND_HIERARCHICAL_CONTEXT: GhosttyOscCommandType = 25;
 pub const GHOSTTY_OSC_COMMAND_HYPERLINK_END: GhosttyOscCommandType = 11;
 pub const GHOSTTY_OSC_COMMAND_HYPERLINK_START: GhosttyOscCommandType = 10;
 pub const GHOSTTY_OSC_COMMAND_INVALID: GhosttyOscCommandType = 0;
@@ -503,13 +538,23 @@ pub const GHOSTTY_OSC_COMMAND_KITTY_DESKTOP_NOTIFICATION: GhosttyOscCommandType 
 pub const GHOSTTY_OSC_COMMAND_KITTY_DND_PROTOCOL: GhosttyOscCommandType = 24;
 pub const GHOSTTY_OSC_COMMAND_KITTY_TEXT_SIZING: GhosttyOscCommandType = 22;
 pub const GHOSTTY_OSC_COMMAND_MOUSE_SHAPE: GhosttyOscCommandType = 6;
+pub const GHOSTTY_OSC_COMMAND_PROGRAM_STATUS: GhosttyOscCommandType = 28;
 pub const GHOSTTY_OSC_COMMAND_REPORT_PWD: GhosttyOscCommandType = 5;
 pub const GHOSTTY_OSC_COMMAND_SEMANTIC_PROMPT: GhosttyOscCommandType = 3;
 pub const GHOSTTY_OSC_COMMAND_SHOW_DESKTOP_NOTIFICATION: GhosttyOscCommandType = 9;
 pub const GHOSTTY_OSC_COMMAND_TYPE_MAX_VALUE: GhosttyOscCommandType = c_int::MAX;
+pub const GHOSTTY_OSC_COMMAND_UNKNOWN: GhosttyOscCommandType = 27;
 pub const GHOSTTY_OSC_DATA_CHANGE_WINDOW_TITLE_STR: GhosttyOscCommandData = 1;
 pub const GHOSTTY_OSC_DATA_INVALID: GhosttyOscCommandData = 0;
 pub const GHOSTTY_OSC_DATA_MAX_VALUE: GhosttyOscCommandData = c_int::MAX;
+pub const GHOSTTY_OSC_DATA_UNKNOWN_CONTENT: GhosttyOscCommandData = 2;
+pub const GHOSTTY_OSC_DATA_UNKNOWN_TERMINATOR: GhosttyOscCommandData = 4;
+pub const GHOSTTY_OSC_DATA_UNKNOWN_TRUNCATED: GhosttyOscCommandData = 3;
+pub const GHOSTTY_OSC_OPT_MAX_VALUE: GhosttyOscOption = c_int::MAX;
+pub const GHOSTTY_OSC_OPT_UNKNOWN_MAX_BYTES: GhosttyOscOption = 0;
+pub const GHOSTTY_OSC_TERMINATOR_BEL: GhosttyOscTerminator = 1;
+pub const GHOSTTY_OSC_TERMINATOR_MAX_VALUE: GhosttyOscTerminator = c_int::MAX;
+pub const GHOSTTY_OSC_TERMINATOR_ST: GhosttyOscTerminator = 0;
 pub const GHOSTTY_OUT_OF_MEMORY: GhosttyResult = -1;
 pub const GHOSTTY_OUT_OF_SPACE: GhosttyResult = -3;
 pub const GHOSTTY_PASTE_SOURCE_CLIPBOARD: GhosttyPasteSource = 0;
@@ -520,6 +565,18 @@ pub const GHOSTTY_POINT_TAG_HISTORY: GhosttyPointTag = 3;
 pub const GHOSTTY_POINT_TAG_MAX_VALUE: GhosttyPointTag = c_int::MAX;
 pub const GHOSTTY_POINT_TAG_SCREEN: GhosttyPointTag = 2;
 pub const GHOSTTY_POINT_TAG_VIEWPORT: GhosttyPointTag = 1;
+pub const GHOSTTY_PROGRAM_STATUS_KIND_AUTH: GhosttyProgramStatusKind = 3;
+pub const GHOSTTY_PROGRAM_STATUS_KIND_MAX_VALUE: GhosttyProgramStatusKind = c_int::MAX;
+pub const GHOSTTY_PROGRAM_STATUS_KIND_NONE: GhosttyProgramStatusKind = 0;
+pub const GHOSTTY_PROGRAM_STATUS_KIND_PERMISSION: GhosttyProgramStatusKind = 1;
+pub const GHOSTTY_PROGRAM_STATUS_KIND_QUESTION: GhosttyProgramStatusKind = 2;
+pub const GHOSTTY_PROGRAM_STATUS_STATE_BLOCKED: GhosttyProgramStatusState = 3;
+pub const GHOSTTY_PROGRAM_STATUS_STATE_CLEAR: GhosttyProgramStatusState = 5;
+pub const GHOSTTY_PROGRAM_STATUS_STATE_DONE: GhosttyProgramStatusState = 2;
+pub const GHOSTTY_PROGRAM_STATUS_STATE_ERROR: GhosttyProgramStatusState = 4;
+pub const GHOSTTY_PROGRAM_STATUS_STATE_IDLE: GhosttyProgramStatusState = 0;
+pub const GHOSTTY_PROGRAM_STATUS_STATE_MAX_VALUE: GhosttyProgramStatusState = c_int::MAX;
+pub const GHOSTTY_PROGRAM_STATUS_STATE_WORKING: GhosttyProgramStatusState = 1;
 pub const GHOSTTY_REJECTED: GhosttyResult = -7;
 pub const GHOSTTY_RENDER_STATE_CURSOR_VISUAL_STYLE_BAR: GhosttyRenderStateCursorVisualStyle = 0;
 pub const GHOSTTY_RENDER_STATE_CURSOR_VISUAL_STYLE_BLOCK: GhosttyRenderStateCursorVisualStyle = 1;
@@ -545,6 +602,8 @@ pub const GHOSTTY_RENDER_STATE_DATA_CURSOR_VISUAL_STYLE: GhosttyRenderStateData 
 pub const GHOSTTY_RENDER_STATE_DATA_DIRTY: GhosttyRenderStateData = 3;
 pub const GHOSTTY_RENDER_STATE_DATA_INVALID: GhosttyRenderStateData = 0;
 pub const GHOSTTY_RENDER_STATE_DATA_MAX_VALUE: GhosttyRenderStateData = c_int::MAX;
+pub const GHOSTTY_RENDER_STATE_DATA_OVERSCAN: GhosttyRenderStateData = 20;
+pub const GHOSTTY_RENDER_STATE_DATA_OVERSCAN_REQUEST: GhosttyRenderStateData = 21;
 pub const GHOSTTY_RENDER_STATE_DATA_ROWS: GhosttyRenderStateData = 2;
 pub const GHOSTTY_RENDER_STATE_DATA_ROW_ITERATOR: GhosttyRenderStateData = 4;
 pub const GHOSTTY_RENDER_STATE_DIRTY_FALSE: GhosttyRenderStateDirty = 0;
@@ -553,6 +612,7 @@ pub const GHOSTTY_RENDER_STATE_DIRTY_MAX_VALUE: GhosttyRenderStateDirty = c_int:
 pub const GHOSTTY_RENDER_STATE_DIRTY_PARTIAL: GhosttyRenderStateDirty = 1;
 pub const GHOSTTY_RENDER_STATE_OPTION_DIRTY: GhosttyRenderStateOption = 0;
 pub const GHOSTTY_RENDER_STATE_OPTION_MAX_VALUE: GhosttyRenderStateOption = c_int::MAX;
+pub const GHOSTTY_RENDER_STATE_OPTION_OVERSCAN: GhosttyRenderStateOption = 1;
 pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_BG_COLOR: GhosttyRenderStateRowCellsData = 5;
 pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_FG_COLOR: GhosttyRenderStateRowCellsData = 6;
 pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_GRAPHEMES_BUF: GhosttyRenderStateRowCellsData = 4;
@@ -567,10 +627,12 @@ pub const GHOSTTY_RENDER_STATE_ROW_CELLS_DATA_STYLE: GhosttyRenderStateRowCellsD
 pub const GHOSTTY_RENDER_STATE_ROW_DATA_CELLS: GhosttyRenderStateRowData = 3;
 pub const GHOSTTY_RENDER_STATE_ROW_DATA_CELLS_RAW: GhosttyRenderStateRowData = 5;
 pub const GHOSTTY_RENDER_STATE_ROW_DATA_DIRTY: GhosttyRenderStateRowData = 1;
+pub const GHOSTTY_RENDER_STATE_ROW_DATA_ID: GhosttyRenderStateRowData = 7;
 pub const GHOSTTY_RENDER_STATE_ROW_DATA_INVALID: GhosttyRenderStateRowData = 0;
 pub const GHOSTTY_RENDER_STATE_ROW_DATA_MAX_VALUE: GhosttyRenderStateRowData = c_int::MAX;
 pub const GHOSTTY_RENDER_STATE_ROW_DATA_RAW: GhosttyRenderStateRowData = 2;
 pub const GHOSTTY_RENDER_STATE_ROW_DATA_SELECTION: GhosttyRenderStateRowData = 4;
+pub const GHOSTTY_RENDER_STATE_ROW_DATA_VIEWPORT_Y: GhosttyRenderStateRowData = 6;
 pub const GHOSTTY_RENDER_STATE_ROW_OPTION_DIRTY: GhosttyRenderStateRowOption = 0;
 pub const GHOSTTY_RENDER_STATE_ROW_OPTION_MAX_VALUE: GhosttyRenderStateRowOption = c_int::MAX;
 pub const GHOSTTY_RESULT_MAX_VALUE: GhosttyResult = c_int::MAX;
@@ -590,6 +652,7 @@ pub const GHOSTTY_ROW_SEMANTIC_PROMPT: GhosttyRowSemanticPrompt = 1;
 pub const GHOSTTY_ROW_SEMANTIC_PROMPT_CONTINUATION: GhosttyRowSemanticPrompt = 2;
 pub const GHOSTTY_SCROLL_VIEWPORT_BOTTOM: GhosttyTerminalScrollViewportTag = 1;
 pub const GHOSTTY_SCROLL_VIEWPORT_DELTA: GhosttyTerminalScrollViewportTag = 2;
+pub const GHOSTTY_SCROLL_VIEWPORT_DELTA_PROMPT: GhosttyTerminalScrollViewportTag = 4;
 pub const GHOSTTY_SCROLL_VIEWPORT_MAX_VALUE: GhosttyTerminalScrollViewportTag = c_int::MAX;
 pub const GHOSTTY_SCROLL_VIEWPORT_ROW: GhosttyTerminalScrollViewportTag = 3;
 pub const GHOSTTY_SCROLL_VIEWPORT_TOP: GhosttyTerminalScrollViewportTag = 0;
@@ -662,6 +725,17 @@ pub const GHOSTTY_SELECTION_ORDER_MAX_VALUE: GhosttySelectionOrder = c_int::MAX;
 pub const GHOSTTY_SELECTION_ORDER_MIRRORED_FORWARD: GhosttySelectionOrder = 2;
 pub const GHOSTTY_SELECTION_ORDER_MIRRORED_REVERSE: GhosttySelectionOrder = 3;
 pub const GHOSTTY_SELECTION_ORDER_REVERSE: GhosttySelectionOrder = 1;
+pub const GHOSTTY_SEMANTIC_PROMPT_COMMAND_END: GhosttySemanticPromptKind = 4;
+pub const GHOSTTY_SEMANTIC_PROMPT_INPUT_START: GhosttySemanticPromptKind = 2;
+pub const GHOSTTY_SEMANTIC_PROMPT_INVALID: GhosttySemanticPromptKind = 0;
+pub const GHOSTTY_SEMANTIC_PROMPT_MAX_VALUE: GhosttySemanticPromptKind = c_int::MAX;
+pub const GHOSTTY_SEMANTIC_PROMPT_OUTPUT_START: GhosttySemanticPromptKind = 3;
+pub const GHOSTTY_SEMANTIC_PROMPT_PROMPT_CONTINUATION: GhosttySemanticPromptPromptKind = 2;
+pub const GHOSTTY_SEMANTIC_PROMPT_PROMPT_MAX_VALUE: GhosttySemanticPromptPromptKind = c_int::MAX;
+pub const GHOSTTY_SEMANTIC_PROMPT_PROMPT_PRIMARY: GhosttySemanticPromptPromptKind = 0;
+pub const GHOSTTY_SEMANTIC_PROMPT_PROMPT_RIGHT: GhosttySemanticPromptPromptKind = 1;
+pub const GHOSTTY_SEMANTIC_PROMPT_PROMPT_SECONDARY: GhosttySemanticPromptPromptKind = 3;
+pub const GHOSTTY_SEMANTIC_PROMPT_PROMPT_START: GhosttySemanticPromptKind = 1;
 pub const GHOSTTY_SGR_ATTR_BG_256: GhosttySgrAttributeTag = 29;
 pub const GHOSTTY_SGR_ATTR_BG_8: GhosttySgrAttributeTag = 23;
 pub const GHOSTTY_SGR_ATTR_BLINK: GhosttySgrAttributeTag = 13;
@@ -704,8 +778,10 @@ pub const GHOSTTY_SGR_UNDERLINE_SINGLE: GhosttySgrUnderline = 1;
 pub const GHOSTTY_SIZE_REPORT_CSI_14_T: GhosttySizeReportStyle = 1;
 pub const GHOSTTY_SIZE_REPORT_CSI_16_T: GhosttySizeReportStyle = 2;
 pub const GHOSTTY_SIZE_REPORT_CSI_18_T: GhosttySizeReportStyle = 3;
+pub const GHOSTTY_SIZE_REPORT_CSI_19_T: GhosttySizeReportStyle = 4;
 pub const GHOSTTY_SIZE_REPORT_MODE_2048: GhosttySizeReportStyle = 0;
 pub const GHOSTTY_SIZE_REPORT_STYLE_MAX_VALUE: GhosttySizeReportStyle = c_int::MAX;
+pub const GHOSTTY_SNAPSHOT_DECODER_DATA_COMPRESS_HISTORY: GhosttySnapshotDecoderData = 9;
 pub const GHOSTTY_SNAPSHOT_DECODER_DATA_HISTORY_ROWS_ALTERNATE: GhosttySnapshotDecoderData = 4;
 pub const GHOSTTY_SNAPSHOT_DECODER_DATA_HISTORY_ROWS_PRIMARY: GhosttySnapshotDecoderData = 3;
 pub const GHOSTTY_SNAPSHOT_DECODER_DATA_INVALID: GhosttySnapshotDecoderData = 0;
@@ -716,6 +792,7 @@ pub const GHOSTTY_SNAPSHOT_DECODER_DATA_PROGRESS_ROWS: GhosttySnapshotDecoderDat
 pub const GHOSTTY_SNAPSHOT_DECODER_DATA_PROGRESS_SCREEN: GhosttySnapshotDecoderData = 5;
 pub const GHOSTTY_SNAPSHOT_DECODER_DATA_RETAIN_CONTINUATION: GhosttySnapshotDecoderData = 8;
 pub const GHOSTTY_SNAPSHOT_DECODER_DATA_SOURCE_OFFSET: GhosttySnapshotDecoderData = 2;
+pub const GHOSTTY_SNAPSHOT_DECODER_OPT_COMPRESS_HISTORY: GhosttySnapshotDecoderOption = 2;
 pub const GHOSTTY_SNAPSHOT_DECODER_OPT_MAX_CONTINUATION_BYTES: GhosttySnapshotDecoderOption = 0;
 pub const GHOSTTY_SNAPSHOT_DECODER_OPT_MAX_VALUE: GhosttySnapshotDecoderOption = c_int::MAX;
 pub const GHOSTTY_SNAPSHOT_DECODER_OPT_RETAIN_CONTINUATION: GhosttySnapshotDecoderOption = 1;
@@ -773,7 +850,9 @@ pub const GHOSTTY_TERMINAL_DATA_KITTY_IMAGE_MEDIUM_TEMP_FILE: GhosttyTerminalDat
 pub const GHOSTTY_TERMINAL_DATA_KITTY_IMAGE_STORAGE_LIMIT: GhosttyTerminalData = 26;
 pub const GHOSTTY_TERMINAL_DATA_KITTY_KEYBOARD_FLAGS: GhosttyTerminalData = 8;
 pub const GHOSTTY_TERMINAL_DATA_MAX_VALUE: GhosttyTerminalData = c_int::MAX;
+pub const GHOSTTY_TERMINAL_DATA_MEMORY_USAGE: GhosttyTerminalData = 42;
 pub const GHOSTTY_TERMINAL_DATA_MODE: GhosttyTerminalData = 37;
+pub const GHOSTTY_TERMINAL_DATA_MOUSE_SHAPE: GhosttyTerminalData = 41;
 pub const GHOSTTY_TERMINAL_DATA_MOUSE_TRACKING: GhosttyTerminalData = 11;
 pub const GHOSTTY_TERMINAL_DATA_PWD: GhosttyTerminalData = 13;
 pub const GHOSTTY_TERMINAL_DATA_ROWS: GhosttyTerminalData = 2;
@@ -813,12 +892,18 @@ pub const GHOSTTY_TERMINAL_OPT_KITTY_IMAGE_STORAGE_LIMIT: GhosttyTerminalOption 
 pub const GHOSTTY_TERMINAL_OPT_MAX_VALUE: GhosttyTerminalOption = c_int::MAX;
 pub const GHOSTTY_TERMINAL_OPT_MODE: GhosttyTerminalOption = 34;
 pub const GHOSTTY_TERMINAL_OPT_MODE_DEFAULT: GhosttyTerminalOption = 33;
+pub const GHOSTTY_TERMINAL_OPT_PROGRAM_STATUS: GhosttyTerminalOption = 46;
 pub const GHOSTTY_TERMINAL_OPT_PROGRESS_REPORT: GhosttyTerminalOption = 30;
 pub const GHOSTTY_TERMINAL_OPT_PWD: GhosttyTerminalOption = 10;
 pub const GHOSTTY_TERMINAL_OPT_PWD_CHANGED: GhosttyTerminalOption = 25;
+pub const GHOSTTY_TERMINAL_OPT_RENDER_HOLD: GhosttyTerminalOption = 41;
+pub const GHOSTTY_TERMINAL_OPT_RESET: GhosttyTerminalOption = 43;
+pub const GHOSTTY_TERMINAL_OPT_RESIZE_PULL_SCROLLBACK: GhosttyTerminalOption = 40;
+pub const GHOSTTY_TERMINAL_OPT_RESIZE_WINDOW: GhosttyTerminalOption = 47;
 pub const GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_BYTES: GhosttyTerminalOption = 27;
 pub const GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_LINES: GhosttyTerminalOption = 28;
 pub const GHOSTTY_TERMINAL_OPT_SELECTION: GhosttyTerminalOption = 21;
+pub const GHOSTTY_TERMINAL_OPT_SEMANTIC_PROMPT: GhosttyTerminalOption = 42;
 pub const GHOSTTY_TERMINAL_OPT_SIZE: GhosttyTerminalOption = 6;
 pub const GHOSTTY_TERMINAL_OPT_TERMINFO_NAME: GhosttyTerminalOption = 37;
 pub const GHOSTTY_TERMINAL_OPT_TITLE: GhosttyTerminalOption = 9;
@@ -829,17 +914,22 @@ pub const GHOSTTY_TERMINAL_OPT_UNKNOWN_SEQUENCE: GhosttyTerminalOption = 35;
 pub const GHOSTTY_TERMINAL_OPT_USERDATA: GhosttyTerminalOption = 0;
 pub const GHOSTTY_TERMINAL_OPT_WRITE_PTY: GhosttyTerminalOption = 1;
 pub const GHOSTTY_TERMINAL_OPT_XTVERSION: GhosttyTerminalOption = 4;
+pub const GHOSTTY_TERMINAL_OPT_XT_CHECKSUM_EXTENSION: GhosttyTerminalOption = 45;
+pub const GHOSTTY_TERMINAL_OPT_XT_CHECKSUM_REPORT: GhosttyTerminalOption = 44;
 pub const GHOSTTY_TERMINAL_PROGRESS_STATE_ERROR: GhosttyTerminalProgressState = 2;
 pub const GHOSTTY_TERMINAL_PROGRESS_STATE_INDETERMINATE: GhosttyTerminalProgressState = 3;
 pub const GHOSTTY_TERMINAL_PROGRESS_STATE_MAX_VALUE: GhosttyTerminalProgressState = c_int::MAX;
 pub const GHOSTTY_TERMINAL_PROGRESS_STATE_PAUSE: GhosttyTerminalProgressState = 4;
 pub const GHOSTTY_TERMINAL_PROGRESS_STATE_REMOVE: GhosttyTerminalProgressState = 0;
 pub const GHOSTTY_TERMINAL_PROGRESS_STATE_SET: GhosttyTerminalProgressState = 1;
+pub const GHOSTTY_TERMINAL_RESIZE_WINDOW_GRID: GhosttyTerminalResizeWindowTag = 0;
+pub const GHOSTTY_TERMINAL_RESIZE_WINDOW_MAX_VALUE: GhosttyTerminalResizeWindowTag = c_int::MAX;
 pub const GHOSTTY_TERMINAL_SCREEN_ALTERNATE: GhosttyTerminalScreen = 1;
 pub const GHOSTTY_TERMINAL_SCREEN_MAX_VALUE: GhosttyTerminalScreen = c_int::MAX;
 pub const GHOSTTY_TERMINAL_SCREEN_PRIMARY: GhosttyTerminalScreen = 0;
 pub const GHOSTTY_TERMINAL_UNKNOWN_SEQUENCE_APC: GhosttyTerminalUnknownSequenceTag = 0;
 pub const GHOSTTY_TERMINAL_UNKNOWN_SEQUENCE_MAX_VALUE: GhosttyTerminalUnknownSequenceTag = c_int::MAX;
+pub const GHOSTTY_TERMINAL_UNKNOWN_SEQUENCE_OSC: GhosttyTerminalUnknownSequenceTag = 1;
 
 // ---- Types -------------------------------------------------------------
 
@@ -1191,6 +1281,8 @@ pub struct GhosttyMousePosition {
     pub x: f32,
     pub y: f32,
 }
+/// C enum `GhosttyMouseShape` from `include/ghostty/vt/mouse.h` (int-backed, per the libghostty-vt ABI).
+pub type GhosttyMouseShape = c_int;
 /// C enum `GhosttyMouseTrackingMode` from `include/ghostty/vt/mouse/encoder.h` (int-backed, per the libghostty-vt ABI).
 pub type GhosttyMouseTrackingMode = c_int;
 /// C enum `GhosttyOptimizeMode` from `include/ghostty/vt/build_info.h` (int-backed, per the libghostty-vt ABI).
@@ -1208,6 +1300,8 @@ pub struct GhosttyOscCommandImpl {
 }
 /// C enum `GhosttyOscCommandType` from `include/ghostty/vt/osc.h` (int-backed, per the libghostty-vt ABI).
 pub type GhosttyOscCommandType = c_int;
+/// C enum `GhosttyOscOption` from `include/ghostty/vt/osc.h` (int-backed, per the libghostty-vt ABI).
+pub type GhosttyOscOption = c_int;
 pub type GhosttyOscParser = *mut GhosttyOscParserImpl;
 /// Opaque C type backing the `GhosttyOscParser` handle.
 #[derive(Clone, Copy)]
@@ -1215,6 +1309,8 @@ pub type GhosttyOscParser = *mut GhosttyOscParserImpl;
 pub struct GhosttyOscParserImpl {
     _private: [u8; 0],
 }
+/// C enum `GhosttyOscTerminator` from `include/ghostty/vt/osc.h` (int-backed, per the libghostty-vt ABI).
+pub type GhosttyOscTerminator = c_int;
 /// C struct `GhosttyPaste` from `include/ghostty/vt/paste.h`.
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -1252,6 +1348,10 @@ pub union GhosttyPointValue {
     pub coordinate: GhosttyPointCoordinate,
     pub _padding: [u64; 2],
 }
+/// C enum `GhosttyProgramStatusKind` from `include/ghostty/vt/terminal.h` (int-backed, per the libghostty-vt ABI).
+pub type GhosttyProgramStatusKind = c_int;
+/// C enum `GhosttyProgramStatusState` from `include/ghostty/vt/terminal.h` (int-backed, per the libghostty-vt ABI).
+pub type GhosttyProgramStatusState = c_int;
 /// C struct `GhosttyReader` from `include/ghostty/vt/io.h`.
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -1299,6 +1399,13 @@ pub struct GhosttyRenderStateImpl {
 }
 /// C enum `GhosttyRenderStateOption` from `include/ghostty/vt/render.h` (int-backed, per the libghostty-vt ABI).
 pub type GhosttyRenderStateOption = c_int;
+/// C struct `GhosttyRenderStateOverscan` from `include/ghostty/vt/render.h`.
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct GhosttyRenderStateOverscan {
+    pub above: u16,
+    pub below: u16,
+}
 pub type GhosttyRenderStateRowCells = *mut GhosttyRenderStateRowCellsImpl;
 /// C enum `GhosttyRenderStateRowCellsData` from `include/ghostty/vt/render.h` (int-backed, per the libghostty-vt ABI).
 pub type GhosttyRenderStateRowCellsData = c_int;
@@ -1310,6 +1417,12 @@ pub struct GhosttyRenderStateRowCellsImpl {
 }
 /// C enum `GhosttyRenderStateRowData` from `include/ghostty/vt/render.h` (int-backed, per the libghostty-vt ABI).
 pub type GhosttyRenderStateRowData = c_int;
+/// C struct `GhosttyRenderStateRowId` from `include/ghostty/vt/render.h`.
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct GhosttyRenderStateRowId {
+    pub bits: [u64; 2],
+}
 pub type GhosttyRenderStateRowIterator = *mut GhosttyRenderStateRowIteratorImpl;
 /// Opaque C type backing the `GhosttyRenderStateRowIterator` handle.
 #[derive(Clone, Copy)]
@@ -1411,6 +1524,10 @@ pub struct GhosttySelectionGestureImpl {
 }
 /// C enum `GhosttySelectionOrder` from `include/ghostty/vt/selection.h` (int-backed, per the libghostty-vt ABI).
 pub type GhosttySelectionOrder = c_int;
+/// C enum `GhosttySemanticPromptKind` from `include/ghostty/vt/terminal.h` (int-backed, per the libghostty-vt ABI).
+pub type GhosttySemanticPromptKind = c_int;
+/// C enum `GhosttySemanticPromptPromptKind` from `include/ghostty/vt/terminal.h` (int-backed, per the libghostty-vt ABI).
+pub type GhosttySemanticPromptPromptKind = c_int;
 /// C struct `GhosttySgrAttribute` from `include/ghostty/vt/sgr.h`.
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -1564,6 +1681,25 @@ pub struct GhosttyTerminalDesktopNotification {
 pub struct GhosttyTerminalImpl {
     _private: [u8; 0],
 }
+/// C struct `GhosttyTerminalMemoryUsage` from `include/ghostty/vt/terminal.h`.
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct GhosttyTerminalMemoryUsage {
+    pub size: usize,
+    pub compression_supported: bool,
+    pub primary_pages: u64,
+    pub primary_virtual_bytes: u64,
+    pub primary_resident_bytes: u64,
+    pub primary_compressed_pages: u64,
+    pub primary_compressed_bytes: u64,
+    pub primary_image_bytes: u64,
+    pub alternate_pages: u64,
+    pub alternate_virtual_bytes: u64,
+    pub alternate_resident_bytes: u64,
+    pub alternate_compressed_pages: u64,
+    pub alternate_compressed_bytes: u64,
+    pub alternate_image_bytes: u64,
+}
 /// C struct `GhosttyTerminalModeConfig` from `include/ghostty/vt/terminal.h`.
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -1573,6 +1709,19 @@ pub struct GhosttyTerminalModeConfig {
 }
 /// C enum `GhosttyTerminalOption` from `include/ghostty/vt/terminal.h` (int-backed, per the libghostty-vt ABI).
 pub type GhosttyTerminalOption = c_int;
+/// C struct `GhosttyTerminalProgramStatus` from `include/ghostty/vt/terminal.h`.
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct GhosttyTerminalProgramStatus {
+    pub size: usize,
+    pub state: GhosttyProgramStatusState,
+    pub kind: GhosttyProgramStatusKind,
+    pub progress: i8,
+    pub id: GhosttyString,
+    pub app: GhosttyString,
+    pub title: GhosttyString,
+    pub message: GhosttyString,
+}
 /// C struct `GhosttyTerminalProgressReport` from `include/ghostty/vt/terminal.h`.
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -1583,6 +1732,29 @@ pub struct GhosttyTerminalProgressReport {
 }
 /// C enum `GhosttyTerminalProgressState` from `include/ghostty/vt/terminal.h` (int-backed, per the libghostty-vt ABI).
 pub type GhosttyTerminalProgressState = c_int;
+/// C struct `GhosttyTerminalResizeWindow` from `include/ghostty/vt/terminal.h`.
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct GhosttyTerminalResizeWindow {
+    pub tag: GhosttyTerminalResizeWindowTag,
+    pub value: GhosttyTerminalResizeWindowValue,
+}
+/// C struct `GhosttyTerminalResizeWindowGrid` from `include/ghostty/vt/terminal.h`.
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct GhosttyTerminalResizeWindowGrid {
+    pub rows: u16,
+    pub columns: u16,
+}
+/// C enum `GhosttyTerminalResizeWindowTag` from `include/ghostty/vt/terminal.h` (int-backed, per the libghostty-vt ABI).
+pub type GhosttyTerminalResizeWindowTag = c_int;
+/// C union `GhosttyTerminalResizeWindowValue` from `include/ghostty/vt/terminal.h`.
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub union GhosttyTerminalResizeWindowValue {
+    pub grid: GhosttyTerminalResizeWindowGrid,
+    pub _padding: [u64; 2],
+}
 /// C enum `GhosttyTerminalScreen` from `include/ghostty/vt/terminal.h` (int-backed, per the libghostty-vt ABI).
 pub type GhosttyTerminalScreen = c_int;
 /// C struct `GhosttyTerminalScrollViewport` from `include/ghostty/vt/terminal.h`.
@@ -1600,6 +1772,7 @@ pub type GhosttyTerminalScrollViewportTag = c_int;
 pub union GhosttyTerminalScrollViewportValue {
     pub delta: isize,
     pub row: usize,
+    pub delta_prompt: isize,
     pub _padding: [u64; 2],
 }
 /// C struct `GhosttyTerminalScrollbar` from `include/ghostty/vt/terminal.h`.
@@ -1649,6 +1822,26 @@ pub struct GhosttyTerminalSelectionFormatOptions {
     pub trim: bool,
     pub selection: *const GhosttySelection,
 }
+/// C struct `GhosttyTerminalSemanticPrompt` from `include/ghostty/vt/terminal.h`.
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct GhosttyTerminalSemanticPrompt {
+    pub size: usize,
+    pub kind: GhosttySemanticPromptKind,
+    pub prompt_kind: GhosttySemanticPromptPromptKind,
+    pub has_exit_code: bool,
+    pub exit_code: i32,
+    pub command: GhosttyString,
+    pub error: GhosttyString,
+}
+/// C struct `GhosttyTerminalUnknownOscSequence` from `include/ghostty/vt/terminal.h`.
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct GhosttyTerminalUnknownOscSequence {
+    pub truncated: bool,
+    pub content: GhosttyString,
+    pub terminator: GhosttyOscTerminator,
+}
 /// C struct `GhosttyTerminalUnknownSequence` from `include/ghostty/vt/terminal.h`.
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -1663,6 +1856,7 @@ pub type GhosttyTerminalUnknownSequenceTag = c_int;
 #[repr(C)]
 pub union GhosttyTerminalUnknownSequenceValue {
     pub apc: GhosttyTerminalUnknownStringSequence,
+    pub osc: GhosttyTerminalUnknownOscSequence,
     pub _padding: [u64; 16],
 }
 /// C struct `GhosttyTerminalUnknownStringSequence` from `include/ghostty/vt/terminal.h`.
@@ -1703,8 +1897,13 @@ pub type GhosttyTerminalColorSchemeFn = Option<unsafe extern "C" fn(GhosttyTermi
 pub type GhosttyTerminalDesktopNotificationFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyTerminalDesktopNotification)>;
 pub type GhosttyTerminalDeviceAttributesFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *mut GhosttyDeviceAttributes) -> bool>;
 pub type GhosttyTerminalEnquiryFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void) -> GhosttyString>;
+pub type GhosttyTerminalProgramStatusFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyTerminalProgramStatus)>;
 pub type GhosttyTerminalProgressReportFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyTerminalProgressReport)>;
 pub type GhosttyTerminalPwdChangedFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void)>;
+pub type GhosttyTerminalRenderHoldFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, bool)>;
+pub type GhosttyTerminalResetFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void)>;
+pub type GhosttyTerminalResizeWindowFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyTerminalResizeWindow)>;
+pub type GhosttyTerminalSemanticPromptFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyTerminalSemanticPrompt)>;
 pub type GhosttyTerminalSizeFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *mut GhosttySizeReportSize) -> bool>;
 pub type GhosttyTerminalTitleChangedFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void)>;
 pub type GhosttyTerminalUnknownSequenceFn = Option<unsafe extern "C" fn(GhosttyTerminal, *mut c_void, *const GhosttyTerminalUnknownSequence)>;
@@ -1805,6 +2004,7 @@ extern "C" {
     pub fn ghostty_osc_new(allocator: *const GhosttyAllocator, parser: *mut GhosttyOscParser) -> GhosttyResult;
     pub fn ghostty_osc_next(parser: GhosttyOscParser, byte: u8);
     pub fn ghostty_osc_reset(parser: GhosttyOscParser);
+    pub fn ghostty_osc_set(parser: GhosttyOscParser, option: GhosttyOscOption, value: *const c_void) -> GhosttyResult;
     pub fn ghostty_paste_encode(data: *mut c_char, data_len: usize, bracketed: bool, buf: *mut c_char, buf_len: usize, out_written: *mut usize) -> GhosttyResult;
     pub fn ghostty_paste_is_safe(data: *const c_char, len: usize) -> bool;
     pub fn ghostty_render_state_begin_update(state: GhosttyRenderState, terminal: GhosttyTerminal) -> GhosttyResult;

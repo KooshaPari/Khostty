@@ -52,6 +52,12 @@ on:
       - "src/App.zig"
       - "src/Surface.zig"
       - "build.zig"
+      # The generated artifacts (khostty-vt/src/ffi.rs,
+      # wasm/include/ghostty-vt.h, wasm/js/terminal-data.js) are derived from
+      # include/ghostty/, so a header change is what makes them stale.
+      - "include/**"
+      - "wasm/**"
+      - "khostty-vt/**"
   # Keep `merge_group` out of the trigger list for now: this fork's
   # default branch is not configured for merge queues, and an
   # unhandled event type silently swallows the trigger.
@@ -123,3 +129,43 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run test-agent-ipc
         run: nix develop -c zig build test-agent-ipc
+
+  wasm-abi:
+    name: wasm ABI + data table
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Third and last member of the generated-artifact drift class. The two
+    # cheap gates in ci.yml (`binding-freshness`, `wasm-header-freshness`) need
+    # no Zig build, but they cannot see two things:
+    #
+    #   * wasm/js/terminal-data.js is generated from include/ghostty/vt/
+    #     terminal.h and was stale by two members (MOUSE_SHAPE 41,
+    #     MEMORY_USAGE 42);
+    #   * whether the built module actually exports what the headers declare.
+    #
+    # Both need a real wasm32-freestanding module, so this job builds one
+    # (~1 min warm) and runs the full wasm check. Not masked: same operator
+    # directive as the two jobs above.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          shasum: "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+      # Node 24, NOT 22. wasm/test/smoke.test.mjs uses `await using`
+      # (Explicit Resource Management), which lands unflagged in Node 24.
+      # Node 22 fails at parse time with
+      #   SyntaxError: Unexpected identifier 'term'
+      # and the file aborts before its assertions, so the suite silently runs
+      # 20 tests instead of 54. Verified: node 24.22.0 and 26.12.0 both give
+      # 54/54; node 22.23.3 fails.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Build the wasm module
+        run: ./wasm/build.sh
+      - name: Header + data table + ABI + tests
+        working-directory: wasm
+        run: npm run check
