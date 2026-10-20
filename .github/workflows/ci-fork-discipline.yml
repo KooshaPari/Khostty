@@ -20,6 +20,21 @@ on:
 
 permissions:
   contents: read
+  # The "Comment on PR" step calls github.rest.issues.listComments /
+  # createComment / updateComment on the PR's issue number. The API accepts
+  # EITHER `issues=write` OR `pull_requests=write` for that endpoint (the 403
+  # response advertises both in `x-accepted-github-permissions`), and this
+  # workflow only ever comments on pull requests - the step is gated on
+  # `github.event_name == 'pull_request'`. `pull_requests=write` is therefore
+  # the narrower grant, and it matches the pattern already used by this
+  # repo's fork-maintained workflows (update-colorschemes.yml).
+  #
+  # Without this the token only had `contents: read` (the repository default
+  # workflow permissions are read-only) and the step failed with:
+  #   RequestError [HttpError]: Resource not accessible by integration
+  #     status: 403,
+  #     'x-accepted-github-permissions': 'issues=write; pull_requests=write'
+  pull-requests: write
 
 concurrency:
   group: fork-discipline-${{ github.workflow }}-${{ github.ref }}
