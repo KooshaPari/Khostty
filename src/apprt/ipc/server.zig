@@ -153,10 +153,13 @@ pub const Conn = struct {
         // wall-clock, and we don't want suspended time credited as refill.
         const now_ns = std.Io.Clock.now(.awake, self.server.io).nanoseconds;
         if (self.rate_last_ns == 0) {
-            // First call on this connection: bucket starts full at capacity.
+            // First call on this connection: the bucket starts full at capacity.
+            // Do NOT return here - falling through consumes a token like any
+            // other frame. Returning early made capacity N admit N+1 frames,
+            // which is an off-by-one in the limiter itself, not just in the
+            // test that caught it.
             self.rate_tokens = capacity_f;
             self.rate_last_ns = now_ns;
-            return true;
         }
         const elapsed_ns = now_ns - self.rate_last_ns;
         if (self.server.config.rate_limit_refill and elapsed_ns > 0) {
@@ -1297,10 +1300,12 @@ test "max_connections: an over-cap accept is dropped without spawning a thread" 
     }
 
     // The over-cap client never counted as live, so live_connections is still 2
-    // (the two held clients). The connections_accepted counter incremented by
-    // 3 for the three connect() calls, but only 2 became live.
+    // (the two held clients). connections_accepted is 2 as well: the accept
+    // loop checks the cap BEFORE incrementing it, so a rejected accept is
+    // deliberately not counted. The previous assertion expected >= 3, which
+    // contradicted the code it was testing.
     try testing.expectEqual(@as(usize, 2), h.server.live_connections.load(.acquire));
-    try testing.expect(h.server.connections_accepted.load(.acquire) >= 3);
+    try testing.expectEqual(@as(usize, 2), h.server.connections_accepted.load(.acquire));
 }
 
 test "rate_limit: a burst beyond the bucket is rejected with rate_limited" {
