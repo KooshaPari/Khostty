@@ -1,0 +1,78 @@
+# =============================================================================
+# GTK runtime build - the ONLY place the agent-IPC windowed path is compiled
+# =============================================================================
+# `windowed` in src/apprt/ipc/app_host.zig:71-77 is true only for
+# (artifact == .exe && app_runtime == .gtk). Every other build, including every
+# macOS build, discards the windowed vtable at comptime - so the 7,230-LOC
+# agent IPC surface compiles and tests green while nothing ever type-checks the
+# code path that would serve an agent.
+#
+# Separate workflow on purpose: while it lives inside zig-fork-tests.yml its
+# failure log is only published when the whole run finishes, and the
+# test-agent-ipc job in that workflow takes ~17 minutes. Here the whole run is
+# a few minutes, so the log is available almost immediately - which is the
+# difference between a 4-minute and a 20-minute edit/test loop.
+# =============================================================================
+
+name: GTK Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/gtk-build.yml"
+      - "src/apprt/gtk/**"
+      - "src/apprt/ipc/**"
+      - "src/build/**"
+      - "include/**"
+      - "build.zig"
+      - "flake.nix"
+      - "nix/**"
+  pull_request:
+    paths:
+      - ".github/workflows/gtk-build.yml"
+      - "src/apprt/gtk/**"
+      - "src/apprt/ipc/**"
+      - "src/build/**"
+      - "include/**"
+      - "build.zig"
+      - "flake.nix"
+      - "nix/**"
+  workflow_dispatch:
+
+concurrency:
+  group: gtk-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gtk-build:
+    name: GTK runtime build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # Dependency resolution is delegated to Nix, matching every other
+    # toolchain-heavy job in this repo (`nix develop -c ...`).
+    #
+    # Why not apt: measured on ubuntu-24.04, the apt route fails twice -
+    #   * `libgtk4-layer-shell-dev` is not packaged, and the build needs
+    #     gtk4-layer-shell.h (fatal error: 'gtk4-layer-shell.h' not found);
+    #   * Ubuntu's blueprint-compiler is older than the .ui files require
+    #     (run blueprint-compiler transitive failure on 1.5/*.ui).
+    # flake.nix already pins GTK 4.22, libadwaita, blueprint-compiler,
+    # gtk4-layer-shell, oniguruma, harfbuzz, fontconfig and the rest, and the
+    # windows-apprt / agent-ipc jobs already prove that path works.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          shasum: "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build with the GTK runtime
+        run: nix develop -c zig build -Dapp-runtime=gtk

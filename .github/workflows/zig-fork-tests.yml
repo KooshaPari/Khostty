@@ -58,12 +58,24 @@ on:
       - "include/**"
       - "wasm/**"
       - "khostty-vt/**"
+      # GTK runtime: the only app_runtime for which `windowed` is true, so the
+      # only place B1 (bind the IPC server from the runtime) can be verified.
+      - "src/apprt/gtk/**"
+      - "src/build/**"
+      - "flake.nix"
+      - "nix/**"
   # Keep `merge_group` out of the trigger list for now: this fork's
   # default branch is not configured for merge queues, and an
   # unhandled event type silently swallows the trigger.
 
 concurrency:
-  group: zig-fork-tests
+  # Per-ref, NOT a single global group. The previous `group: zig-fork-tests`
+  # put every branch in one group, so a run on any branch cancelled the run on
+  # every other branch: re-running one PR silently killed another PR's build.
+  # Observed directly - a GTK build and a test-agent-ipc run destroyed each
+  # other twice. `cancel-in-progress` is still wanted, but only for the same
+  # ref, where a newer push genuinely supersedes an older run.
+  group: zig-fork-tests-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
