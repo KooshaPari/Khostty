@@ -65,6 +65,12 @@ pub const Config = struct {
     /// Set to 0 to disable the rate limit. Defaults to 100 tokens/sec, which is
     /// ~10x the headroom of a normal interactive user.
     rate_limit_per_sec: u32 = 100,
+    /// Whether the bucket refills with elapsed time. Production always wants
+    /// this. It exists so a test can assert "the Nth frame is rejected" without
+    /// depending on how fast the machine happens to run: with refill enabled
+    /// the assertion is only valid inside a (capacity / rate) window, which is
+    /// a timing assumption, not a contract.
+    rate_limit_refill: bool = true,
 };
 
 /// Everything the server needs from the rest of the IPC layer.
@@ -147,13 +153,16 @@ pub const Conn = struct {
         // wall-clock, and we don't want suspended time credited as refill.
         const now_ns = std.Io.Clock.now(.awake, self.server.io).nanoseconds;
         if (self.rate_last_ns == 0) {
-            // First call on this connection: bucket starts full at capacity.
+            // First call on this connection: the bucket starts full at capacity.
+            // Do NOT return here - falling through consumes a token like any
+            // other frame. Returning early made capacity N admit N+1 frames,
+            // which is an off-by-one in the limiter itself, not just in the
+            // test that caught it.
             self.rate_tokens = capacity_f;
             self.rate_last_ns = now_ns;
-            return true;
         }
         const elapsed_ns = now_ns - self.rate_last_ns;
-        if (elapsed_ns > 0) {
+        if (self.server.config.rate_limit_refill and elapsed_ns > 0) {
             const refill = @as(f32, @floatFromInt(elapsed_ns)) /
                 @as(f32, 1_000_000_000.0) * capacity_f;
             self.rate_tokens = @min(capacity_f, self.rate_tokens + refill);
@@ -589,6 +598,9 @@ const Harness = struct {
         /// limit set this to a small value (2 or 3 tokens/sec) so the burst
         /// window is small and the test is fast.
         rate_limit_per_sec: u32 = 100,
+        /// Defaults to false in the harness: tests want the deterministic
+        /// "Nth frame is rejected" contract, not a timing window.
+        rate_limit_refill: bool = false,
     };
 
     fn init(gpa: Allocator, options: Options) !*Harness {
@@ -623,6 +635,7 @@ const Harness = struct {
             .max_frame_bytes = options.max_frame_bytes,
             .max_connections = options.max_connections,
             .rate_limit_per_sec = options.rate_limit_per_sec,
+            .rate_limit_refill = options.rate_limit_refill,
         }, .{
             .manager = &self.manager,
             .broker = &self.broker,
@@ -1233,11 +1246,22 @@ test "max_connections: an over-cap accept is dropped without spawning a thread" 
     defer keep_open_a.deinit();
     defer keep_open_b.deinit();
 
-    // The two held clients have made it through acceptMain; live_connections
-    // should be at or near the cap. We do not sleep here: acceptMain's gate is
-    // checked synchronously before the spawn, so by the time `connect()`
-    // returns the held connections have already been counted.
-    try testing.expect(h.server.live_connections.load(.acquire) >= 2);
+    // `connect()` returns when the kernel completes the handshake into the
+    // listen backlog, which happens BEFORE the accept loop runs and increments
+    // live_connections. Asserting immediately therefore races the accept loop -
+    // observed as a CI failure. Poll with a bounded wait instead.
+    {
+        var waited_ms: usize = 0;
+        while (h.server.live_connections.load(.acquire) < 2 and waited_ms < 2000) {
+            // Zig 0.16 moved sleeping onto std.Io; the codebase uses
+            // `std.Io.sleep(io, duration, .awake)` everywhere, and a test's
+            // handle is `testing.io`.
+            try std.Io.sleep(testing.io, std.Io.Duration.fromMilliseconds(5), .awake);
+            waited_ms += 5;
+        }
+        // Fail with a useful message rather than asserting inside the loop.
+        try testing.expect(h.server.live_connections.load(.acquire) >= 2);
+    }
 
     // Drive a ping on the held connections so the test is a real round trip,
     // not just a connect.
@@ -1260,7 +1284,13 @@ test "max_connections: an over-cap accept is dropped without spawning a thread" 
     // this looks like the server hung up on the connection.
     var over_cap = try h.connect();
     defer over_cap.deinit();
-    try over_cap.send(.{ .cmd = .ping });
+    // The write itself may fail: the server has already closed the rejected
+    // connection, so netWritePosix can surface error.SocketUnconnected (or a
+    // broken pipe) before any response exists. That IS the behaviour under
+    // test - "the gate closed the stream" - so a write error is a pass
+    // condition, not a test failure. Previously this was `try`, which turned
+    // the successful rejection into a failure on loaded runners.
+    over_cap.send(.{ .cmd = .ping }) catch {};
 
     if (over_cap.readResponse(testing.allocator)) |parsed| {
         defer parsed.deinit();
@@ -1270,10 +1300,12 @@ test "max_connections: an over-cap accept is dropped without spawning a thread" 
     }
 
     // The over-cap client never counted as live, so live_connections is still 2
-    // (the two held clients). The connections_accepted counter incremented by
-    // 3 for the three connect() calls, but only 2 became live.
+    // (the two held clients). connections_accepted is 2 as well: the accept
+    // loop checks the cap BEFORE incrementing it, so a rejected accept is
+    // deliberately not counted. The previous assertion expected >= 3, which
+    // contradicted the code it was testing.
     try testing.expectEqual(@as(usize, 2), h.server.live_connections.load(.acquire));
-    try testing.expect(h.server.connections_accepted.load(.acquire) >= 3);
+    try testing.expectEqual(@as(usize, 2), h.server.connections_accepted.load(.acquire));
 }
 
 test "rate_limit: a burst beyond the bucket is rejected with rate_limited" {
@@ -1300,9 +1332,12 @@ test "rate_limit: a burst beyond the bucket is rejected with rate_limited" {
         try testing.expect(ok2.value.object.get("ok").?.bool);
     }
 
-    // Third ping in the same instant must be rate-limited. The bucket refills
-    // at 2 tokens/sec, so we have a 500ms window of confidence that the third
-    // ping is rejected; in practice the test completes in well under that.
+    // The third ping must be rate-limited. Refill is disabled in the harness
+    // (Options.rate_limit_refill defaults to false), so this is the bucket
+    // contract rather than a timing window: capacity 2, third frame rejected,
+    // regardless of how slow the runner is. The previous version relied on the
+    // test completing inside a 500ms refill window and failed on loaded CI
+    // runners with `expected false, found true`.
     try client.send(.{ .cmd = .ping });
     {
         const limited = try client.readResponse(testing.allocator);
