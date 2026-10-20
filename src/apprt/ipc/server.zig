@@ -1281,7 +1281,13 @@ test "max_connections: an over-cap accept is dropped without spawning a thread" 
     // this looks like the server hung up on the connection.
     var over_cap = try h.connect();
     defer over_cap.deinit();
-    try over_cap.send(.{ .cmd = .ping });
+    // The write itself may fail: the server has already closed the rejected
+    // connection, so netWritePosix can surface error.SocketUnconnected (or a
+    // broken pipe) before any response exists. That IS the behaviour under
+    // test - "the gate closed the stream" - so a write error is a pass
+    // condition, not a test failure. Previously this was `try`, which turned
+    // the successful rejection into a failure on loaded runners.
+    over_cap.send(.{ .cmd = .ping }) catch {};
 
     if (over_cap.readResponse(testing.allocator)) |parsed| {
         defer parsed.deinit();
