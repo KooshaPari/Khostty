@@ -41,6 +41,7 @@
   glslang,
   gtk4,
   gtk4-layer-shell,
+  xvfb,
   gobject-introspection,
   gst_all_1,
   libadwaita,
