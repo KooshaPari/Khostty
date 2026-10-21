@@ -63,6 +63,17 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+# Preflight: separate "the binary cannot run" from "the binary cannot get a
+# display". Exit status 1 with zero output is otherwise indistinguishable
+# between the two, and guessing costs a CI cycle each time.
+echo "--- preflight ---"
+if timeout 20 "$APP" --version 2>&1 | head -n 5; then
+  echo "  --version ok"
+else
+  echo "  warn: --version exited ${PIPESTATUS[0]:-?}"
+fi
+xvfb-run -a bash -c 'echo "  DISPLAY=$DISPLAY (xvfb-run works)"' 2>&1 | head -n 5
+
 if ! command -v xvfb-run >/dev/null 2>&1; then
   echo "error: xvfb-run is not on PATH; this script must run inside the dev shell" >&2
   exit 2
