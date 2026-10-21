@@ -42,6 +42,10 @@
   gtk4,
   gtk4-layer-shell,
   xvfb,
+  # llvmpipe: the GTK runtime forces `GDK_DEBUG=opengl` and renders through
+  # renderer.OpenGL, so it needs a working GL stack even on a virtual display
+  # with no GPU. Without it the app aborts right after Xkb init.
+  mesa,
   gobject-introspection,
   gst_all_1,
   libadwaita,
@@ -202,6 +206,7 @@ in
         # surface can be exercised against a *running* app rather than only
         # compiled. KooshaPari/Khostty#48 (Phase B1 verification).
         xvfb
+        mesa
         glib
         gobject-introspection
         wayland

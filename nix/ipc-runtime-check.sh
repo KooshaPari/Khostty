@@ -57,6 +57,12 @@ export GSK_RENDERER=cairo
 export GDK_BACKEND=x11
 export NO_AT_BRIDGE=1
 
+# The app renders through renderer.OpenGL and sets GDK_DEBUG=opengl itself, so
+# GSK_RENDERER alone is not enough: it needs a real GL stack. Point Mesa at
+# llvmpipe, which is software but complete.
+export LIBGL_ALWAYS_SOFTWARE=1
+export GALLIUM_DRIVER=llvmpipe
+
 # ReleaseSafe resolves resources through GHOSTTY_RESOURCES_DIR rather than the
 # debug sentinel walk; without it the GTK runtime cannot load its blueprint UI.
 if [ -d "$ROOT/zig-out/share/ghostty" ]; then
