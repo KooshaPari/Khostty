@@ -75,7 +75,10 @@ jobs:
           nix develop -c bash -c '
             set -euo pipefail
             zig build -Dapp-runtime=gtk
-            zig build-exe src/ipc_probe.zig -O ReleaseSafe \
+            # -lc is REQUIRED: auth.Env.process() falls back to noneGet when
+            # libc is not linked, so without it the probe reads no environment
+            # at all and reports KHOSTTY_IPC_SOCKET as unset.
+            zig build-exe src/ipc_probe.zig -O ReleaseSafe -lc \
               -femit-bin=zig-out/bin/ipc-probe
           '
 

@@ -9,6 +9,11 @@
 //!
 //! Usage: KHOSTTY_IPC_SOCKET=/path/to.sock ipc-probe
 //! Exits 0 on success; prints the failure and exits non-zero otherwise.
+//!
+//! MUST be built with `-lc`. `authpkg.Env.process()` resolves to a getter that
+//! returns nothing at all when libc is not linked, so a libc-free build reports
+//! every variable as unset - which reads like a missing env var, not a build
+//! configuration error.
 
 const std = @import("std");
 const ipc = @import("apprt/ipc/server.zig");
