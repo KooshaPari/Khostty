@@ -44,6 +44,16 @@ export GSK_RENDERER=cairo
 export GDK_BACKEND=x11
 export NO_AT_BRIDGE=1
 
+# ReleaseSafe closes the resources-dir search over GHOSTTY_RESOURCES_DIR rather
+# than the debug sentinel walk, so point it at the installed share tree. Without
+# it the GTK runtime cannot load its blueprint UI resources.
+if [ -d "$ROOT/zig-out/share/ghostty" ]; then
+  export GHOSTTY_RESOURCES_DIR="$ROOT/zig-out/share/ghostty"
+  echo "resources: $GHOSTTY_RESOURCES_DIR"
+else
+  echo "warning: $ROOT/zig-out/share/ghostty is missing; the app may fail to start" >&2
+fi
+
 APP_PID=""
 cleanup() {
   if [ -n "$APP_PID" ] && kill -0 "$APP_PID" 2>/dev/null; then
@@ -53,7 +63,14 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+if ! command -v xvfb-run >/dev/null 2>&1; then
+  echo "error: xvfb-run is not on PATH; this script must run inside the dev shell" >&2
+  exit 2
+fi
+
 echo "launching the GTK runtime under Xvfb"
+echo "  app:  $APP ($(stat -c%s "$APP") bytes)"
+echo "  Xvfb: $(command -v xvfb-run)"
 xvfb-run -a "$APP" >"$LOG" 2>&1 &
 APP_PID=$!
 
@@ -64,9 +81,14 @@ ready=""
 for _ in $(seq 1 90); do
   if [ -S "$SOCK" ]; then ready=1; break; fi
   if ! kill -0 "$APP_PID" 2>/dev/null; then
-    echo "error: the app exited before creating the socket" >&2
-    echo "--- app log ---" >&2
+    # Report the real exit status: "exited" alone cannot distinguish a crash,
+    # a usage error, and a clean exit because there was nothing to open.
+    wait "$APP_PID" 2>/dev/null && code=0 || code=$?
+    echo "error: the app exited before creating the socket (status $code)" >&2
+    echo "--- app log ($(stat -c%s "$LOG" 2>/dev/null || echo 0) bytes) ---" >&2
     cat "$LOG" >&2
+    echo "--- retry in the foreground, to surface anything buffered ---" >&2
+    timeout 10 xvfb-run -a "$APP" 2>&1 | head -n 60 >&2 || true
     exit 1
   fi
   sleep 1
