@@ -429,7 +429,9 @@ pub const AppHost = struct {
             _ = core.rt_app.performAction(
                 .{ .surface = core },
                 .set_title,
-                .{ .title = title },
+                // SetTitle carries a sentinel-terminated slice (the GTK
+                // window title path requires it), unlike PaneInfo.title.
+                .{ .title = try arena.dupeZ(u8, title) },
             ) catch |err| return mapActionError(err);
         }
 
