@@ -535,6 +535,12 @@ pub fn init(
         &derived_config.font,
         font_size,
     );
+    // FORK: release the ref if any remaining init step fails. Without this a
+    // failed surface init leaks a grid ref, and the app then aborts at shutdown
+    // on `assert(font_grid_set.count() == 0)` - which hides the original error
+    // behind an assertion failure. The second ref site below already has this.
+    // KooshaPari/Khostty#48.
+    errdefer app.font_grid_set.deref(font_grid_key);
 
     // Build our size struct which has all the sizes we need.
     const size: rendererpkg.Size = size: {
