@@ -177,7 +177,7 @@ fn startIpc(core_app: *CoreApp) !*IpcRuntime {
     // token is the documented "not configured" state - every command except
     // `ping` is refused, which is the fail-closed default. It is NOT an
     // unauthenticated server.
-    self.authenticator = try ipc_auth.Auth.init(gpa, try loadIpcToken(gpa, &self.paths));
+    self.authenticator = try ipc_auth.Auth.init(gpa, try loadIpcToken(gpa, io, &self.paths));
     errdefer self.authenticator.deinit();
 
     // The real pane host: the same windowed vtable the tests exercise, backed
@@ -216,16 +216,18 @@ fn startIpc(core_app: *CoreApp) !*IpcRuntime {
 /// FORK: resolve the IPC token for this process: `KHOSTTY_IPC_TOKEN`, else the
 /// token file, else null.
 ///
-/// Ownership: the returned slice is owned by the caller (freed via
-/// `Auth.deinit`, which copies it).
-fn loadIpcToken(gpa: Allocator, paths: *const ipc_auth.Paths) !?[]const u8 {
+/// Reuses `auth.readTokenFile` rather than re-implementing the read, so the
+/// token-file format stays defined in exactly one place.
+fn loadIpcToken(
+    gpa: Allocator,
+    io: std.Io,
+    paths: *const ipc_auth.Paths,
+) !?[]const u8 {
     if (ipc_auth.Env.process().get(ipc_auth.token_env)) |t| return try gpa.dupe(u8, t);
 
-    const file = std.fs.cwd().openFile(paths.token_file, .{}) catch |err| switch (err) {
-        error.FileNotFound, error.AccessDenied, error.NotDir => return null,
-        else => return err,
-    };
-    defer file.close();
-    const buf = try file.readToEndAlloc(gpa, ipc_auth.max_token_file_bytes);
-    return std.mem.trimEnd(u8, buf, &std.ascii.whitespace);
+    var loaded = (try ipc_auth.readTokenFile(gpa, io, paths.token_file)) orelse return null;
+    defer loaded.deinit();
+
+    // `Auth.init` copies; this copy exists only to outlive `loaded`.
+    return try gpa.dupe(u8, loaded.token);
 }
