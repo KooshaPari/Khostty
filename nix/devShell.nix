@@ -197,6 +197,10 @@ in
 
         # Only needed for GTK builds
         gtk4-layer-shell
+        # FORK: gives the GTK runtime a display in CI, so the agent IPC
+        # surface can be exercised against a *running* app rather than only
+        # compiled. KooshaPari/Khostty#48 (Phase B1 verification).
+        xvfb
         glib
         gobject-introspection
         wayland
