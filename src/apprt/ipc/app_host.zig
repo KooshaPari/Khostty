@@ -327,8 +327,16 @@ pub const AppHost = struct {
     ) pane.HostError!void {
         const self = ctxHost(ctx);
         const core = self.findCore(id) orelse return error.PaneNotFound;
-        const direction: apprt.action.ResizeSplit.Direction =
-            @field(apprt.action.ResizeSplit.Direction, @tagName(dir));
+        // Explicit switch, NOT @enumFromInt/@intFromEnum: protocol.Direction is
+        // {right, down, left, up} but ResizeSplit.Direction is
+        // {up, down, left, right}. Converting by integer would silently swap
+        // right and up.
+        const direction: apprt.action.ResizeSplit.Direction = switch (dir) {
+            .up => .up,
+            .down => .down,
+            .left => .left,
+            .right => .right,
+        };
         _ = core.rt_app.performAction(
             .{ .surface = core },
             .resize_split,
@@ -377,8 +385,12 @@ pub const AppHost = struct {
         defer before.deinit(self.gpa);
         try self.listWindowed(arena, &before);
 
-        const direction: apprt.action.SplitDirection =
-            @field(apprt.action.SplitDirection, @tagName(req.dir));
+        const direction: apprt.action.SplitDirection = switch (req.dir) {
+            .up => .up,
+            .down => .down,
+            .left => .left,
+            .right => .right,
+        };
         _ = parent.rt_app.performAction(
             .{ .surface = parent },
             .new_split,
@@ -417,7 +429,9 @@ pub const AppHost = struct {
             _ = core.rt_app.performAction(
                 .{ .surface = core },
                 .set_title,
-                .{ .title = title },
+                // SetTitle carries a sentinel-terminated slice (the GTK
+                // window title path requires it), unlike PaneInfo.title.
+                .{ .title = try arena.dupeZ(u8, title) },
             ) catch |err| return mapActionError(err);
         }
 
@@ -479,7 +493,16 @@ pub const AppHost = struct {
                 .row = @intCast(cursor.y),
                 .col = @intCast(cursor.x),
                 .visible = !cursor.style.flags.invisible,
-                .style = @field(state.CursorStyle, @tagName(cursor.cursor_style)),
+                // Explicit switch, NOT @enumFromInt: cursor.Style is
+                // {bar, block, underline, block_hollow} while state.CursorStyle
+                // is {block, bar, underline, block_hollow}. Converting by
+                // integer would report every bar cursor as a block.
+                .style = switch (cursor.cursor_style) {
+                    .bar => .bar,
+                    .block => .block,
+                    .underline => .underline,
+                    .block_hollow => .block_hollow,
+                },
                 .blinking = term.modes.get(.cursor_blinking),
             },
             .alt_screen = term.screens.active_key == .alternate,
