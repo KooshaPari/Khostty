@@ -28,7 +28,7 @@ alloc: Allocator,
 /// FORK: split requests queued from other threads, drained in `tick`.
 /// KooshaPari/Khostty#73.
 pending_splits: std.ArrayListUnmanaged(PendingSplit) = .empty,
-pending_splits_mutex: std.Thread.Mutex = .{},
+pending_splits_mutex: std.Io.Mutex = .init,
 
 /// The list of surfaces that are currently active.
 surfaces: SurfaceList,
