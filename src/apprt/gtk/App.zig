@@ -260,7 +260,7 @@ fn loadIpcToken(
 // `apprt/ipc/hook.zig` callbacks onto the GTK `AppHost`, which addresses
 // surfaces by `*CoreSurface` rather than by pane id.
 
-const CoreSurface = @import("../../Surface.zig").Surface;
+const CoreSurface = @import("../../Surface.zig");
 
 /// Resolve the surface for a pane id, or null if it has already gone away.
 /// A hook firing during teardown is normal, so this must not assert.
