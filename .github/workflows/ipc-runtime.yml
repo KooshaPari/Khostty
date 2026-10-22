@@ -87,13 +87,13 @@ jobs:
         # on any Linux box, and so this step stays inside `nix develop` where
         # `Xvfb` and GTK actually exist on PATH.
         #
-        # NON-BLOCKING WHILE THE EGL GAP IS OPEN. The IPC half of this check
-        # has already passed against a live app (socket appeared, client
-        # connected, `ping ok (server=khostty)`); what fails now is upstream of
-        # IPC: the GTK runtime cannot initialise a surface without an EGL
-        # driver, and then exits 0 silently via its quit timer. That is a real
-        # product finding for any headless or GPU-less Linux host, tracked
-        # separately, and it should not be allowed to hide the IPC result nor
-        # to block unrelated merges.
-        continue-on-error: true
+        # BLOCKING. This check now passes end to end against a live app:
+        # socket created, client connected, `ping ok (server=khostty)`, and
+        # `pane.list ok (1 pane(s))` through the windowed vtable. It was briefly
+        # `continue-on-error` while the GTK runtime could not initialise a
+        # surface without an EGL driver - that turned out to be a missing
+        # `__EGL_VENDOR_LIBRARY_FILENAMES` in the dev shell, fixed there.
+        #
+        # Note #65 is still open for the *product* case: a real host without
+        # EGL still exits 0 silently. This job no longer hides that.
         run: nix develop -c bash nix/ipc-runtime-check.sh
