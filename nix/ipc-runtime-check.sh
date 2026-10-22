@@ -147,8 +147,11 @@ fi
 
 echo "socket appeared: $SOCK"
 
-# The real assertion: a client handshake against the live app.
-if ! "$PROBE"; then
+# The real assertion: a client handshake against the live app, including an
+# event round trip (subscribe, write BEL, expect the bell back). Bounded so that
+# a runtime which never publishes fails here instead of stalling the job, since
+# the event read blocks until a frame arrives.
+if ! timeout 60 "$PROBE"; then
   echo "error: ipc-probe failed against the running app" >&2
   echo "--- app log ---" >&2
   cat "$LOG" >&2

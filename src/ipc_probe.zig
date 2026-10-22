@@ -18,6 +18,7 @@
 const std = @import("std");
 const ipc = @import("apprt/ipc/server.zig");
 const authpkg = @import("apprt/ipc/auth.zig");
+const protocol = @import("apprt/ipc/protocol.zig");
 
 pub fn main() !void {
     var gpa_state: std.heap.DebugAllocator(.{}) = .init;
@@ -90,18 +91,88 @@ pub fn main() !void {
     // failure - and check the tag before touching the union, because touching
     // the wrong arm panics rather than returning an error.
     const data_val = lobj.get("data") orelse return error.MalformedResponse;
-    const pane_count: usize = switch (data_val) {
-        .array => |a| a.items.len,
-        .object => |o| if (o.get("panes")) |p|
-            switch (p) {
-                .array => |a| a.items.len,
-                else => return error.MalformedResponse,
-            }
-        else
-            return error.MalformedResponse,
+    const panes_arr: []const std.json.Value = switch (data_val) {
+        .array => |a| a.items,
+        .object => |o| if (o.get("panes")) |p| switch (p) {
+            .array => |a| a.items,
+            else => return error.MalformedResponse,
+        } else return error.MalformedResponse,
         else => return error.MalformedResponse,
     };
-    std.debug.print("probe: pane.list ok ({d} pane(s))\n", .{pane_count});
+    std.debug.print("probe: pane.list ok ({d} pane(s))\n", .{panes_arr.len});
+
+    // ── events: a bell must actually arrive ──
+    //
+    // Everything above proves the command path. This proves the *event* path:
+    // subscribe, ring the bell through the real parser, and wait for the
+    // runtime to publish it back. Without it "events are wired" would be an
+    // untested claim, which is exactly the mistake this probe exists to stop.
+    if (panes_arr.len > 0) {
+        const pane_obj = panes_arr[0].object;
+        const id_val = pane_obj.get("pane_id") orelse return error.MalformedResponse;
+        const pane_id: protocol.PaneId = switch (id_val) {
+            .integer => |n| protocol.PaneId.init(@intCast(n)),
+            .string => |str| protocol.PaneId.parseString(str) orelse
+                return error.MalformedResponse,
+            else => return error.MalformedResponse,
+        };
+
+        try client.send(.{
+            .id = 3,
+            .cmd = .events_subscribe,
+            .auth = token,
+            .opts = .{ .events = &.{.bell} },
+        });
+        var sub = try client.readResponse(gpa);
+        defer sub.deinit();
+        if (sub.value.object.get("ok") == null or !sub.value.object.get("ok").?.bool) {
+            std.debug.print("probe: events.subscribe failed\n", .{});
+            return error.SubscribeFailed;
+        }
+
+        // BEL through the surface's own parser, the same bytes a program would
+        // write. This is what makes the test cover the hook rather than the
+        // broker in isolation.
+        try client.send(.{
+            .id = 4,
+            .cmd = .pane_write,
+            .auth = token,
+            .pane_id = pane_id,
+            .data = "\x07",
+        });
+        var wrote = try client.readResponse(gpa);
+        defer wrote.deinit();
+        if (wrote.value.object.get("ok") == null or !wrote.value.object.get("ok").?.bool) {
+            std.debug.print("probe: pane.write failed\n", .{});
+            return error.WriteFailed;
+        }
+
+        // Read frames until the bell arrives. The caller wraps this process in
+        // `timeout`, so a runtime that never publishes fails loudly here
+        // instead of hanging the job.
+        while (true) {
+            const msg = try client.readMessage(gpa);
+            defer msg.deinit();
+            const obj2 = msg.value.object;
+            const ev = obj2.get("event") orelse continue;
+            if (!std.mem.eql(u8, ev.string, "bell")) continue;
+
+            // A bell for a different pane is not the bell we asked for.
+            // The id may arrive as `"p-3"` or as a bare integer.
+            if (obj2.get("pane_id")) |pid| {
+                const got: ?protocol.PaneId = switch (pid) {
+                    .integer => |n| protocol.PaneId.init(@intCast(n)),
+                    .string => |str| protocol.PaneId.parseString(str),
+                    else => null,
+                };
+                if (got == null or !protocol.PaneId.eql(got.?, pane_id)) continue;
+            }
+            std.debug.print("probe: bell event received for p-{d}\n", .{pane_id.raw});
+            break;
+        }
+    } else {
+        std.debug.print("probe: no panes, skipping the bell event check\n", .{});
+    }
 
     std.debug.print("probe: PASS\n", .{});
 }
