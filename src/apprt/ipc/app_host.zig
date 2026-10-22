@@ -391,11 +391,25 @@ pub const AppHost = struct {
             .left => .left,
             .right => .right,
         };
-        // Routed through the surface mailbox, not `performAction` directly:
-        // this runs on an IPC connection thread and the GTK action is not
-        // thread-safe there. The polling below already tolerates the resulting
-        // asynchrony. KooshaPari/Khostty#71.
-        parent.splitPane(direction);
+        // REFUSED, deliberately. `performAction` dispatches straight into
+        // runtime widget code with no thread marshalling, and this runs on an
+        // IPC connection thread - so calling it here aborts the whole app,
+        // which is exactly what happened before this guard existed
+        // (KooshaPari/Khostty#71).
+        //
+        // Returning `Unsupported` is that issue's acceptance: a split request
+        // must either work or fail as a protocol error, never kill the
+        // terminal. Implementing it properly means marshalling the request onto
+        // the runtime's main thread (a queue drained from the GTK tick, or
+        // `glib.idleAdd`), which is its own change with its own verification -
+        // and not something to guess at from a thread that cannot verify it.
+        _ = direction;
+        std.log.scoped(.ipc_host).warn(
+            "agent pane.create is not implemented yet; refusing rather than " ++
+                "crossing threads (KooshaPari/Khostty#71)",
+            .{},
+        );
+        return error.Unsupported;
 
         const previous = try collectIds(self.gpa, before.items);
         defer self.gpa.free(previous);
