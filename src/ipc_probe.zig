@@ -62,11 +62,16 @@ pub fn main() !void {
     }
     std.debug.print("probe: ping ok (server={s})\n", .{server_name.string});
 
+    // `ping` is intentionally open, every other command needs the token, so
+    // this is also the first real exercise of the auth path rather than just
+    // of liveness.
+    const token = authpkg.Env.process().get(authpkg.token_env);
+
     // ── pane.list ──
     // Proves the windowed vtable is reachable and can enumerate the app's live
     // surfaces. An `Unsupported` the whole way down would still pass `ping`,
     // so this is what separates "socket alive" from "agent surface usable".
-    try client.send(.{ .id = 2, .cmd = .pane_list });
+    try client.send(.{ .id = 2, .cmd = .pane_list, .auth = token });
     var list = try client.readResponse(gpa);
     defer list.deinit();
 
