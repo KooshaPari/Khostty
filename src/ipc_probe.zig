@@ -104,12 +104,12 @@ pub fn main() !void {
     };
     std.debug.print("probe: pane.list ok ({d} pane(s))\n", .{panes_arr.len});
 
-    // ── events: bell and title must actually arrive ──
+    // ── events: all four must actually arrive ──
     //
-    // Everything above proves the command path. This proves the *event* path:
-    // subscribe, drive the surface through its own parser, and wait for the
-    // runtime to publish the results back. Without it "events are wired" would
-    // be an untested claim, which is the mistake this probe exists to stop.
+    // Everything above proves the command path. This proves the *event* path by
+    // driving the surface through its own parser and waiting for the runtime to
+    // publish the results back. Without it "events are wired" would be an
+    // untested claim, which is the mistake this probe exists to stop.
     if (panes_arr.len > 0) {
         const pane_obj = panes_arr[0].object;
         const id_val = pane_obj.get("pane_id") orelse return error.MalformedResponse;
@@ -124,7 +124,7 @@ pub fn main() !void {
             .id = 3,
             .cmd = .events_subscribe,
             .auth = token,
-            .opts = .{ .events = &.{ .bell, .title_change } },
+            .opts = .{ .events = &.{ .bell, .title_change, .resize, .child_exit } },
         });
         var sub = try client.readResponse(gpa);
         defer sub.deinit();
@@ -137,8 +137,6 @@ pub fn main() !void {
         // the same bytes a program would write:
         //   BEL                 ring the bell
         //   ESC ] 0 ; <text> BEL set the window title (OSC 0)
-        // Driving the real parser is what makes this cover the hook rather than
-        // the broker in isolation.
         try client.send(.{
             .id = 4,
             .cmd = .pane_write,
@@ -153,9 +151,6 @@ pub fn main() !void {
             return error.WriteFailed;
         }
 
-        // Read frames until both events arrive. The caller bounds this process,
-        // so a runtime that never publishes fails loudly here rather than
-        // hanging the job.
         var saw_bell = false;
         var saw_title = false;
         while (!saw_bell or !saw_title) {
@@ -163,23 +158,13 @@ pub fn main() !void {
             defer msg.deinit();
             const obj2 = msg.value.object;
             const ev = obj2.get("event") orelse continue;
-
-            // Events for a different pane are not the ones we asked for.
-            if (obj2.get("pane_id")) |pid| {
-                const got: ?protocol.PaneId = switch (pid) {
-                    .integer => |n| protocol.PaneId.init(@intCast(n)),
-                    .string => |str| protocol.PaneId.parseString(str),
-                    else => null,
-                };
-                if (got == null or !protocol.PaneId.eql(got.?, pane_id)) continue;
-            }
+            if (!isPane(obj2, pane_id)) continue;
 
             if (std.mem.eql(u8, ev.string, "bell")) {
                 std.debug.print("probe: bell event received for p-{d}\n", .{pane_id.raw});
                 saw_bell = true;
                 continue;
             }
-
             if (std.mem.eql(u8, ev.string, "title_change")) {
                 const t = obj2.get("data") orelse continue;
                 const title = t.object.get("title") orelse continue;
@@ -194,9 +179,100 @@ pub fn main() !void {
                 saw_title = true;
             }
         }
+
+        // ── resize, via a real layout change ──
+        //
+        // Splitting changes the original pane's cell grid, which is exactly the
+        // condition the resize hook publishes on. If the runtime reports that it
+        // cannot split, say so and do not pretend the event was verified.
+        try client.send(.{
+            .id = 5,
+            .cmd = .pane_create,
+            .auth = token,
+            // The target pane is the split parent; Options has no parent field.
+            .pane_id = pane_id,
+            .opts = .{
+                .split = .vertical,
+                .dir = .right,
+                .focus = false,
+            },
+        });
+        var created = try client.readResponse(gpa);
+        defer created.deinit();
+        const created_ok =
+            (created.value.object.get("ok") orelse return error.MalformedResponse).bool;
+
+        if (created_ok) {
+            while (true) {
+                const msg = try client.readMessage(gpa);
+                defer msg.deinit();
+                const obj2 = msg.value.object;
+                const ev = obj2.get("event") orelse continue;
+                if (!std.mem.eql(u8, ev.string, "resize")) continue;
+                std.debug.print("probe: resize event received\n", .{});
+                break;
+            }
+        } else {
+            const code = if (created.value.object.get("error")) |e|
+                (e.object.get("code") orelse e).string
+            else
+                "unknown";
+            std.debug.print(
+                "probe: pane.create refused ({s}); resize event NOT verified\n",
+                .{code},
+            );
+        }
+
+        // ── child_exit, by actually ending the child ──
+        //
+        // `exit` terminates the pane's shell, so the runtime sees a real child
+        // exit rather than a synthetic one.
+        try client.send(.{
+            .id = 6,
+            .cmd = .pane_write,
+            .auth = token,
+            .pane_id = pane_id,
+            .data = "exit\n",
+        });
+        var exited_req = try client.readResponse(gpa);
+        defer exited_req.deinit();
+
+        while (true) {
+            const msg = try client.readMessage(gpa);
+            defer msg.deinit();
+            const obj2 = msg.value.object;
+            const ev = obj2.get("event") orelse continue;
+            if (!std.mem.eql(u8, ev.string, "child_exit")) continue;
+            const code = if (obj2.get("data")) |d|
+                (d.object.get("exit_code") orelse d)
+            else
+                null;
+            if (code != null and code.? == .integer) {
+                std.debug.print(
+                    "probe: child_exit event received (exit_code={d})\n",
+                    .{code.?.integer},
+                );
+            } else {
+                std.debug.print("probe: child_exit event received\n", .{});
+            }
+            break;
+        }
     } else {
         std.debug.print("probe: no panes, skipping the event checks\n", .{});
     }
 
     std.debug.print("probe: PASS\n", .{});
+}
+
+/// True when the frame's `pane_id` addresses `want`. The id may arrive as
+/// `"p-3"` or as a bare integer. A frame with no pane id is treated as
+/// matching, since not every event kind carries one.
+fn isPane(obj: std.json.ObjectMap, want: protocol.PaneId) bool {
+    const pid = obj.get("pane_id") orelse return true;
+    const got: ?protocol.PaneId = switch (pid) {
+        .integer => |n| protocol.PaneId.init(@intCast(n)),
+        .string => |str| protocol.PaneId.parseString(str),
+        else => null,
+    };
+    return got != null and protocol.PaneId.eql(got.?, want);
 }
