@@ -192,40 +192,20 @@ pub fn main() !void {
             .{},
         );
 
-        // ── child_exit, by actually ending the child ──
+        // ── child_exit: NOT driven here either ──
         //
-        // `exit` terminates the pane's shell, so the runtime sees a real child
-        // exit rather than a synthetic one.
-        try client.send(.{
-            .id = 6,
-            .cmd = .pane_write,
-            .auth = token,
-            .pane_id = pane_id,
-            .data = "exit\n",
-        });
-        var exited_req = try client.readResponse(gpa);
-        defer exited_req.deinit();
-
-        while (true) {
-            const msg = try client.readMessage(gpa);
-            defer msg.deinit();
-            const obj2 = msg.value.object;
-            const ev = obj2.get("event") orelse continue;
-            if (!std.mem.eql(u8, ev.string, "child_exit")) continue;
-            const code = if (obj2.get("data")) |d|
-                (d.object.get("exit_code") orelse d)
-            else
-                null;
-            if (code != null and code.? == .integer) {
-                std.debug.print(
-                    "probe: child_exit event received (exit_code={d})\n",
-                    .{code.?.integer},
-                );
-            } else {
-                std.debug.print("probe: child_exit event received\n", .{});
-            }
-            break;
-        }
+        // `pane.write` feeds the terminal *parser*, i.e. the output direction,
+        // so writing "exit\n" makes the shell print the word rather than run
+        // it. Ending a child needs `pane.close`, which sits on the same
+        // surface-action path that `pane.create` aborts on (#71), so it is not
+        // safe to drive until that is fixed.
+        //
+        // Stated plainly rather than silently skipped: two of four events are
+        // proven, two are wired.
+        std.debug.print(
+            "probe: child_exit event NOT verified (needs pane.close, blocked by #71)\n",
+            .{},
+        );
     } else {
         std.debug.print("probe: no panes, skipping the event checks\n", .{});
     }
