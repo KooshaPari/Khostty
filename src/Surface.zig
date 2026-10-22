@@ -1185,6 +1185,9 @@ pub fn handleMessage(self: *Surface, msg: Message) !void {
                 if (last.durationTo(now).toMilliseconds() < 100) break :bell;
             }
             self.last_bell_time = now;
+            // FORK: tell an attached agent the bell rang. No-op on any build
+            // without an IPC host. KooshaPari/Khostty#48.
+            if (self.app.ipc_hook) |h| h.bell(h.ctx, self.id);
             _ = self.rt_app.performAction(
                 .{ .surface = self },
                 .ring_bell,
@@ -1315,6 +1318,20 @@ fn selectionScrollTick(self: *Surface) !void {
 fn childExited(self: *Surface, info: apprt.surface.Message.ChildExited) void {
     // Mark our flag that we exited immediately
     self.child_exited = true;
+
+    // FORK: tell an attached agent the child ended, with the exit code the
+    // runtime actually observed. No-op without an IPC host.
+    // KooshaPari/Khostty#48.
+    if (self.app.ipc_hook) |h| {
+        // `exit_code` is a non-optional u32 while the wire field is `?i32`.
+        // Report null rather than wrapping if a platform ever hands us a value
+        // that does not fit; a wrong exit code is worse than an absent one.
+        const code: ?i32 = if (info.exit_code <= std.math.maxInt(i32))
+            @intCast(info.exit_code)
+        else
+            null;
+        h.child_exit(h.ctx, self.id, code, null);
+    }
 
     // If our runtime was below some threshold then we assume that this
     // was an abnormal exit and we show an error message.
@@ -2628,6 +2645,12 @@ pub fn sizeCallback(self: *Surface, size: apprt.SurfaceSize) !void {
 }
 
 fn resize(self: *Surface, size: rendererpkg.ScreenSize) !void {
+    // FORK: capture the grid before the resize so an agent is only told about
+    // real cell-size changes. Fluid resizing changes pixels on every frame
+    // while the grid often stays put, and an agent does not care about the
+    // former. KooshaPari/Khostty#48.
+    const prev_grid = self.size.grid();
+
     // Save our screen size
     self.size.screen = size;
     self.balancePaddingIfNeeded();
@@ -2637,6 +2660,14 @@ fn resize(self: *Surface, size: rendererpkg.ScreenSize) !void {
     // We have to update the IO thread no matter what because we send
     // pixel-level sizing to the subprocess.
     const grid_size = self.size.grid();
+    if (grid_size.columns != prev_grid.columns or grid_size.rows != prev_grid.rows) {
+        if (self.app.ipc_hook) |h| h.resize(
+            h.ctx,
+            self.id,
+            @intCast(grid_size.columns),
+            @intCast(grid_size.rows),
+        );
+    }
     if (grid_size.columns < 5 and (self.size.padding.left > 0 or self.size.padding.right > 0)) {
         log.warn("WARNING: very small terminal grid detected with padding " ++
             "set. Is your padding reasonable?", .{});

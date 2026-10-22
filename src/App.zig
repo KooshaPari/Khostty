@@ -14,6 +14,7 @@ const configpkg = @import("config.zig");
 const Config = configpkg.Config;
 const BlockingQueue = @import("datastruct/main.zig").BlockingQueue;
 const renderer = @import("renderer.zig");
+const apprt_hook = @import("apprt/ipc/hook.zig");
 const font = @import("font/main.zig");
 const global = @import("global.zig");
 
@@ -53,6 +54,12 @@ mailbox: Mailbox.Queue,
 /// The set of font GroupCache instances shared by surfaces with the
 /// same font configuration.
 font_grid_set: font.SharedGridSet,
+
+/// FORK: agent IPC event publication, set by a runtime that hosts the IPC
+/// server and null everywhere else. Core `Surface` calls it unconditionally,
+/// so macOS and wasm builds pay one null check per event and need no
+/// per-apprt branching. See `apprt/ipc/hook.zig` and KooshaPari/Khostty#48.
+ipc_hook: ?apprt_hook.Hook = null,
 
 /// The app-scoped render device, shared by the renderers of all surfaces.
 device: ?*renderer.Device,
