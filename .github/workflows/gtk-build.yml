@@ -22,6 +22,12 @@ on:
     paths:
       - ".github/workflows/gtk-build.yml"
       - "src/apprt/gtk/**"
+      # Core files the windowed path compiles too. Without these a
+      # change to Surface.zig or App.zig silently skipped the only
+      # jobs that analyse the windowed code - the exact hole that let
+      # the vtable rot unnoticed. KooshaPari/Khostty#48.
+      - "src/Surface.zig"
+      - "src/App.zig"
       - "src/apprt/ipc/**"
       - "src/build/**"
       - "include/**"
@@ -32,6 +38,12 @@ on:
     paths:
       - ".github/workflows/gtk-build.yml"
       - "src/apprt/gtk/**"
+      # Core files the windowed path compiles too. Without these a
+      # change to Surface.zig or App.zig silently skipped the only
+      # jobs that analyse the windowed code - the exact hole that let
+      # the vtable rot unnoticed. KooshaPari/Khostty#48.
+      - "src/Surface.zig"
+      - "src/App.zig"
       - "src/apprt/ipc/**"
       - "src/build/**"
       - "include/**"
