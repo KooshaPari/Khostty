@@ -85,9 +85,23 @@ pub fn main() !void {
         return error.PaneListFailed;
     }
 
-    const panes = (lobj.get("data") orelse return error.MalformedResponse)
-        .object.get("panes") orelse return error.MalformedResponse;
-    std.debug.print("probe: pane.list ok ({d} pane(s))\n", .{panes.array.items.len});
+    // `pane.list` returns the pane array directly as `data`. Accept an object
+    // with a `panes` key too so a change of envelope does not masquerade as a
+    // failure - and check the tag before touching the union, because touching
+    // the wrong arm panics rather than returning an error.
+    const data_val = lobj.get("data") orelse return error.MalformedResponse;
+    const pane_count: usize = switch (data_val) {
+        .array => |a| a.items.len,
+        .object => |o| if (o.get("panes")) |p|
+            switch (p) {
+                .array => |a| a.items.len,
+                else => return error.MalformedResponse,
+            }
+        else
+            return error.MalformedResponse,
+        else => return error.MalformedResponse,
+    };
+    std.debug.print("probe: pane.list ok ({d} pane(s))\n", .{pane_count});
 
     std.debug.print("probe: PASS\n", .{});
 }
