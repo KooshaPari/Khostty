@@ -241,6 +241,14 @@ in
         # Minimal subset of env set by wrapGAppsHook4 for icons and global settings
         export XDG_DATA_DIRS=$XDG_DATA_DIRS:${hicolor-icon-theme}/share:${adwaita-icon-theme}/share
         export XDG_DATA_DIRS=$XDG_DATA_DIRS:$GSETTINGS_SCHEMAS_PATH # from glib setup hook
+
+        # FORK: make Mesa's EGL vendor discoverable. libglvnd only searches
+        # compiled-in system paths, so on a host with no GPU driver - Xvfb, a
+        # container, a VM - EGL finds nothing, the GTK runtime logs "no EGL
+        # driver could be loaded", fails to create a surface, and then exits 0
+        # silently via its quit timer. KooshaPari/Khostty#65.
+        export __EGL_VENDOR_LIBRARY_FILENAMES=${mesa}/share/glvnd/egl_vendor.d/50_mesa.json
+        export LIBGL_DRIVERS_PATH=${mesa}/lib/dri
       '')
       + (lib.optionalString stdenv.hostPlatform.isDarwin ''
         # On macOS, we unset the macOS SDK env vars that Nix sets up because
