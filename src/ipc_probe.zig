@@ -180,48 +180,17 @@ pub fn main() !void {
             }
         }
 
-        // ── resize, via a real layout change ──
+        // ── resize: NOT driven here, deliberately ──
         //
-        // Splitting changes the original pane's cell grid, which is exactly the
-        // condition the resize hook publishes on. If the runtime reports that it
-        // cannot split, say so and do not pretend the event was verified.
-        try client.send(.{
-            .id = 5,
-            .cmd = .pane_create,
-            .auth = token,
-            // The target pane is the split parent; Options has no parent field.
-            .pane_id = pane_id,
-            .opts = .{
-                .split = .vertical,
-                .dir = .right,
-                .focus = false,
-            },
-        });
-        var created = try client.readResponse(gpa);
-        defer created.deinit();
-        const created_ok =
-            (created.value.object.get("ok") orelse return error.MalformedResponse).bool;
-
-        if (created_ok) {
-            while (true) {
-                const msg = try client.readMessage(gpa);
-                defer msg.deinit();
-                const obj2 = msg.value.object;
-                const ev = obj2.get("event") orelse continue;
-                if (!std.mem.eql(u8, ev.string, "resize")) continue;
-                std.debug.print("probe: resize event received\n", .{});
-                break;
-            }
-        } else {
-            const code = if (created.value.object.get("error")) |e|
-                (e.object.get("code") orelse e).string
-            else
-                "unknown";
-            std.debug.print(
-                "probe: pane.create refused ({s}); resize event NOT verified\n",
-                .{code},
-            );
-        }
+        // The obvious trigger is a split (`pane.create`), but calling it aborts
+        // the GTK runtime outright - it was never exercised before either. See
+        // KooshaPari/Khostty#71. Driving a known crash inside a check that is
+        // supposed to verify event delivery would confound the two, so resize
+        // stays wired-but-unproven and the crash gets its own fix.
+        std.debug.print(
+            "probe: resize event NOT verified (pane.create aborts the app, #71)\n",
+            .{},
+        );
 
         // ── child_exit, by actually ending the child ──
         //
