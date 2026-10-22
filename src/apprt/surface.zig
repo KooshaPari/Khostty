@@ -57,6 +57,16 @@ pub const Message = union(enum) {
         }
     };
 
+    /// Create a split relative to this surface.
+    ///
+    /// FORK: reached via `Surface.splitPane` rather than a direct
+    /// `performAction` call. The agent IPC server runs on per-connection
+    /// threads, and `performAction` dispatches straight into GTK widget code
+    /// with no marshalling, so calling it from there aborts the app. Routing
+    /// the request through the mailbox makes it run on the app thread, the same
+    /// way `parser_write` does. KooshaPari/Khostty#71.
+    new_split: apprt.action.SplitDirection,
+
     /// Set the title of the surface.
     /// TODO: we should change this to a "WriteReq" style structure in
     /// the termio message so that we can more efficiently send strings

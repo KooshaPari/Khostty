@@ -391,11 +391,11 @@ pub const AppHost = struct {
             .left => .left,
             .right => .right,
         };
-        _ = parent.rt_app.performAction(
-            .{ .surface = parent },
-            .new_split,
-            direction,
-        ) catch |err| return mapActionError(err);
+        // Routed through the surface mailbox, not `performAction` directly:
+        // this runs on an IPC connection thread and the GTK action is not
+        // thread-safe there. The polling below already tolerates the resulting
+        // asynchrony. KooshaPari/Khostty#71.
+        parent.splitPane(direction);
 
         const previous = try collectIds(self.gpa, before.items);
         defer self.gpa.free(previous);
