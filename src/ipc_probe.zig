@@ -29,6 +29,9 @@ pub fn main() !void {
     defer threaded.deinit();
     const io = threaded.io();
 
+    // Distinctive so a stale title from the running app cannot pass the check.
+    const expected_title = "khostty-probe-title";
+
     const socket_path = authpkg.Env.process().get(authpkg.socket_env) orelse {
         std.debug.print("probe: {s} is not set\n", .{authpkg.socket_env});
         return error.MissingSocketEnv;
@@ -101,12 +104,12 @@ pub fn main() !void {
     };
     std.debug.print("probe: pane.list ok ({d} pane(s))\n", .{panes_arr.len});
 
-    // ── events: a bell must actually arrive ──
+    // ── events: bell and title must actually arrive ──
     //
     // Everything above proves the command path. This proves the *event* path:
-    // subscribe, ring the bell through the real parser, and wait for the
-    // runtime to publish it back. Without it "events are wired" would be an
-    // untested claim, which is exactly the mistake this probe exists to stop.
+    // subscribe, drive the surface through its own parser, and wait for the
+    // runtime to publish the results back. Without it "events are wired" would
+    // be an untested claim, which is the mistake this probe exists to stop.
     if (panes_arr.len > 0) {
         const pane_obj = panes_arr[0].object;
         const id_val = pane_obj.get("pane_id") orelse return error.MalformedResponse;
@@ -121,7 +124,7 @@ pub fn main() !void {
             .id = 3,
             .cmd = .events_subscribe,
             .auth = token,
-            .opts = .{ .events = &.{.bell} },
+            .opts = .{ .events = &.{ .bell, .title_change } },
         });
         var sub = try client.readResponse(gpa);
         defer sub.deinit();
@@ -130,15 +133,18 @@ pub fn main() !void {
             return error.SubscribeFailed;
         }
 
-        // BEL through the surface's own parser, the same bytes a program would
-        // write. This is what makes the test cover the hook rather than the
-        // broker in isolation.
+        // One write carrying both triggers, through the surface's own parser -
+        // the same bytes a program would write:
+        //   BEL                 ring the bell
+        //   ESC ] 0 ; <text> BEL set the window title (OSC 0)
+        // Driving the real parser is what makes this cover the hook rather than
+        // the broker in isolation.
         try client.send(.{
             .id = 4,
             .cmd = .pane_write,
             .auth = token,
             .pane_id = pane_id,
-            .data = "\x07",
+            .data = "\x07\x1b]0;" ++ expected_title ++ "\x07",
         });
         var wrote = try client.readResponse(gpa);
         defer wrote.deinit();
@@ -147,18 +153,18 @@ pub fn main() !void {
             return error.WriteFailed;
         }
 
-        // Read frames until the bell arrives. The caller wraps this process in
-        // `timeout`, so a runtime that never publishes fails loudly here
-        // instead of hanging the job.
-        while (true) {
+        // Read frames until both events arrive. The caller bounds this process,
+        // so a runtime that never publishes fails loudly here rather than
+        // hanging the job.
+        var saw_bell = false;
+        var saw_title = false;
+        while (!saw_bell or !saw_title) {
             const msg = try client.readMessage(gpa);
             defer msg.deinit();
             const obj2 = msg.value.object;
             const ev = obj2.get("event") orelse continue;
-            if (!std.mem.eql(u8, ev.string, "bell")) continue;
 
-            // A bell for a different pane is not the bell we asked for.
-            // The id may arrive as `"p-3"` or as a bare integer.
+            // Events for a different pane are not the ones we asked for.
             if (obj2.get("pane_id")) |pid| {
                 const got: ?protocol.PaneId = switch (pid) {
                     .integer => |n| protocol.PaneId.init(@intCast(n)),
@@ -167,11 +173,29 @@ pub fn main() !void {
                 };
                 if (got == null or !protocol.PaneId.eql(got.?, pane_id)) continue;
             }
-            std.debug.print("probe: bell event received for p-{d}\n", .{pane_id.raw});
-            break;
+
+            if (std.mem.eql(u8, ev.string, "bell")) {
+                std.debug.print("probe: bell event received for p-{d}\n", .{pane_id.raw});
+                saw_bell = true;
+                continue;
+            }
+
+            if (std.mem.eql(u8, ev.string, "title_change")) {
+                const t = obj2.get("data") orelse continue;
+                const title = t.object.get("title") orelse continue;
+                if (!std.mem.eql(u8, title.string, expected_title)) {
+                    std.debug.print(
+                        "probe: title_change carried '{s}', expected '{s}'\n",
+                        .{ title.string, expected_title },
+                    );
+                    return error.UnexpectedTitle;
+                }
+                std.debug.print("probe: title_change event received ('{s}')\n", .{title.string});
+                saw_title = true;
+            }
         }
     } else {
-        std.debug.print("probe: no panes, skipping the bell event check\n", .{});
+        std.debug.print("probe: no panes, skipping the event checks\n", .{});
     }
 
     std.debug.print("probe: PASS\n", .{});
