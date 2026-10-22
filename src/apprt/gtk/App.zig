@@ -134,6 +134,9 @@ pub fn redrawInspector(_: *App, surface: *Surface) void {
 const IpcRuntime = struct {
     gpa: Allocator,
     io: std.Io,
+    /// Needed so teardown can clear `core_app.ipc_hook`; leaving it set would
+    /// point at this freed struct.
+    core_app: *CoreApp,
     paths: ipc_auth.Paths,
     app_host: ipc_app_host.AppHost,
     manager: ipc_pane.Manager,
@@ -143,6 +146,8 @@ const IpcRuntime = struct {
 
     fn deinit(self: *IpcRuntime) void {
         const gpa = self.gpa;
+        // Clear before freeing: the callbacks close over `&self.app_host`.
+        self.core_app.ipc_hook = null;
         self.server.stop();
         self.server.deinit();
         self.manager.deinit(self.io);
@@ -167,6 +172,7 @@ fn startIpc(core_app: *CoreApp) !*IpcRuntime {
 
     self.gpa = gpa;
     self.io = io;
+    self.core_app = core_app;
     self.paths = try ipc_auth.resolvePaths(gpa, ipc_auth.Env.process());
     errdefer self.paths.deinit();
 
@@ -186,6 +192,22 @@ fn startIpc(core_app: *CoreApp) !*IpcRuntime {
 
     self.manager = ipc_pane.Manager.init(gpa, self.app_host.host());
     self.manager.setEventBroker(&self.broker);
+
+    // The host needs the broker too, independently of the manager: the manager
+    // uses it to emit command results, while the host uses it for the runtime's
+    // own events (title, resize, bell, child exit). Without this every
+    // `AppHost.publish*` call is a silent no-op because `self.broker` is null.
+    self.app_host.setEventBroker(&self.broker);
+
+    // Publish the runtime's own events through a hook the core Surface can
+    // reach without naming a GTK-only type. See apprt/ipc/hook.zig.
+    core_app.ipc_hook = .{
+        .ctx = &self.app_host,
+        .title = ipcHookTitle,
+        .resize = ipcHookResize,
+        .bell = ipcHookBell,
+        .child_exit = ipcHookChildExit,
+    };
 
     self.server = try ipc_server.Server.bind(gpa, io, .{
         .socket_path = self.paths.socket,
@@ -230,4 +252,43 @@ fn loadIpcToken(
 
     // `Auth.init` copies; this copy exists only to outlive `loaded`.
     return try gpa.dupe(u8, loaded.token);
+}
+
+// ── Agent IPC event thunks ──
+//
+// FORK: KooshaPari/Khostty#48 (Phase B4/B5). These adapt the runtime-agnostic
+// `apprt/ipc/hook.zig` callbacks onto the GTK `AppHost`, which addresses
+// surfaces by `*CoreSurface` rather than by pane id.
+
+const CoreSurface = @import("../../Surface.zig").Surface;
+
+/// Resolve the surface for a pane id, or null if it has already gone away.
+/// A hook firing during teardown is normal, so this must not assert.
+fn ipcHookSurface(ctx: *anyopaque, pane_id: u64) ?struct {
+    host: *ipc_app_host.AppHost,
+    core: *CoreSurface,
+} {
+    const host: *ipc_app_host.AppHost = @ptrCast(@alignCast(ctx));
+    const core = host.app.findSurfaceByID(pane_id) orelse return null;
+    return .{ .host = host, .core = core };
+}
+
+fn ipcHookTitle(ctx: *anyopaque, pane_id: u64) void {
+    const s = ipcHookSurface(ctx, pane_id) orelse return;
+    s.host.publishTitleChange(s.core);
+}
+
+fn ipcHookResize(ctx: *anyopaque, pane_id: u64, cols: u16, rows: u16) void {
+    const s = ipcHookSurface(ctx, pane_id) orelse return;
+    s.host.publishResize(s.core, cols, rows);
+}
+
+fn ipcHookBell(ctx: *anyopaque, pane_id: u64) void {
+    const s = ipcHookSurface(ctx, pane_id) orelse return;
+    s.host.publishBell(s.core);
+}
+
+fn ipcHookChildExit(ctx: *anyopaque, pane_id: u64, exit_code: ?i32, signal: ?u8) void {
+    const s = ipcHookSurface(ctx, pane_id) orelse return;
+    s.host.publishChildExit(s.core, exit_code, signal);
 }
