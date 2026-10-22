@@ -272,19 +272,19 @@ pub const AppHost = struct {
         _ = arena;
         _ = req;
 
-        // REFUSED, deliberately. `createWindowed` below calls
-        // `performAction`, which dispatches straight into runtime widget code
-        // with no thread marshalling - and the agent IPC server runs each
-        // connection on its own thread, so that call aborted the whole app.
-        // That was KooshaPari/Khostty#71: an agent splitting a pane killed the
-        // user's terminal.
+        // REFUSED, deliberately. `createWindowed` below calls `performAction`,
+        // which dispatches straight into runtime widget code with no thread
+        // marshalling - and the agent IPC server runs each connection on its own
+        // thread, so that call aborted the whole app. That was
+        // KooshaPari/Khostty#71: an agent splitting a pane killed the user's
+        // terminal.
         //
         // Returning `Unsupported` is that issue's acceptance: a split request
         // must either work or fail as a protocol error, never kill the
         // terminal. Doing it properly means marshalling onto the runtime's main
         // thread (a queue drained from the GTK tick, or `glib.idleAdd`), which
         // is its own change with its own verification. `createWindowed` is left
-        // intact for that.
+        // intact - unused, hence not analysed - for that follow-up.
         std.log.scoped(.ipc_host).warn(
             "agent pane.create is not implemented yet; refusing rather than " ++
                 "crossing threads (KooshaPari/Khostty#71)",
@@ -413,25 +413,11 @@ pub const AppHost = struct {
             .left => .left,
             .right => .right,
         };
-        // REFUSED, deliberately. `performAction` dispatches straight into
-        // runtime widget code with no thread marshalling, and this runs on an
-        // IPC connection thread - so calling it here aborts the whole app,
-        // which is exactly what happened before this guard existed
-        // (KooshaPari/Khostty#71).
-        //
-        // Returning `Unsupported` is that issue's acceptance: a split request
-        // must either work or fail as a protocol error, never kill the
-        // terminal. Implementing it properly means marshalling the request onto
-        // the runtime's main thread (a queue drained from the GTK tick, or
-        // `glib.idleAdd`), which is its own change with its own verification -
-        // and not something to guess at from a thread that cannot verify it.
-        _ = direction;
-        std.log.scoped(.ipc_host).warn(
-            "agent pane.create is not implemented yet; refusing rather than " ++
-                "crossing threads (KooshaPari/Khostty#71)",
-            .{},
-        );
-        return error.Unsupported;
+        _ = parent.rt_app.performAction(
+            .{ .surface = parent },
+            .new_split,
+            direction,
+        ) catch |err| return mapActionError(err);
 
         const previous = try collectIds(self.gpa, before.items);
         defer self.gpa.free(previous);
