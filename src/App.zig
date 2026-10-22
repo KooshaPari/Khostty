@@ -25,6 +25,11 @@ const SurfaceList = std.ArrayListUnmanaged(*apprt.Surface);
 /// General purpose allocator
 alloc: Allocator,
 
+/// FORK: split requests queued from other threads, drained in `tick`.
+/// KooshaPari/Khostty#73.
+pending_splits: std.ArrayListUnmanaged(PendingSplit) = .empty,
+pending_splits_mutex: std.Io.Mutex = .init,
+
 /// The list of surfaces that are currently active.
 surfaces: SurfaceList,
 
@@ -171,6 +176,72 @@ pub fn destroy(self: *App) void {
 pub fn tick(self: *App, rt_app: *apprt.App) !void {
     // Drain our mailbox
     try self.drainMailbox(rt_app);
+
+    // FORK: perform any split requests queued from another thread. `tick` is
+    // the app thread, which is the only thread allowed to touch runtime state.
+    // KooshaPari/Khostty#73.
+    try self.drainPendingSplits();
+}
+
+/// A split requested from a thread that may not touch runtime state.
+///
+/// FORK: KooshaPari/Khostty#73.
+pub const PendingSplit = struct {
+    /// The surface to split. Held by pointer because the request outlives the
+    /// caller's stack frame; a surface closing in between is handled by the
+    /// runtime action failing, not by reading freed memory here.
+    surface: *Surface,
+    direction: apprt.action.SplitDirection,
+};
+
+/// Ask the app thread to split a surface. Safe to call from any thread.
+///
+/// `performAction` is not thread-safe - for GTK it dispatches straight into
+/// widget code - so a caller on an IPC connection thread must not call it
+/// directly. Queueing keeps the action on the app thread.
+///
+/// FORK: KooshaPari/Khostty#73.
+pub fn requestSplit(
+    self: *App,
+    surface: *Surface,
+    direction: apprt.action.SplitDirection,
+) Allocator.Error!void {
+    const io = @import("global.zig").io();
+    self.pending_splits_mutex.lockUncancelable(io);
+    defer self.pending_splits_mutex.unlock(io);
+    try self.pending_splits.append(self.alloc, .{
+        .surface = surface,
+        .direction = direction,
+    });
+}
+
+/// Perform queued splits. Must be called on the app thread.
+fn drainPendingSplits(self: *App) Allocator.Error!void {
+    if (self.pending_splits.items.len == 0) return;
+
+    // Move the work out under the lock, then release it before performing any
+    // action: the action may itself need the mailbox lock.
+    const io = @import("global.zig").io();
+    self.pending_splits_mutex.lockUncancelable(io);
+    const queued = self.pending_splits.toOwnedSlice(self.alloc) catch |err| {
+        self.pending_splits_mutex.unlock(io);
+        return err;
+    };
+    self.pending_splits_mutex.unlock(io);
+    defer self.alloc.free(queued);
+
+    for (queued) |req| {
+        _ = req.surface.rt_app.performAction(
+            .{ .surface = req.surface },
+            .new_split,
+            req.direction,
+        ) catch |err| {
+            std.log.scoped(.app).warn(
+                "queued split failed err={} (KooshaPari/Khostty#73)",
+                .{err},
+            );
+        };
+    }
 }
 
 /// Update the configuration associated with the app. This can only be

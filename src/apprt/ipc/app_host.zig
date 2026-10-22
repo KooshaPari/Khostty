@@ -413,11 +413,12 @@ pub const AppHost = struct {
             .left => .left,
             .right => .right,
         };
-        _ = parent.rt_app.performAction(
-            .{ .surface = parent },
-            .new_split,
-            direction,
-        ) catch |err| return mapActionError(err);
+        // Queued for the app thread rather than performed here: this runs on an
+        // IPC connection thread and `performAction` dispatches straight into
+        // runtime widget code, which aborted the app when called directly
+        // (#71). The polling below already tolerates the asynchrony, so only
+        // the dispatch moves. KooshaPari/Khostty#73.
+        try self.app.requestSplit(parent, direction);
 
         const previous = try collectIds(self.gpa, before.items);
         defer self.gpa.free(previous);
