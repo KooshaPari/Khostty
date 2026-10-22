@@ -25,6 +25,12 @@ on:
     paths:
       - ".github/workflows/ipc-runtime.yml"
       - "src/apprt/gtk/**"
+      # Core files the windowed path compiles too. Without these a
+      # change to Surface.zig or App.zig silently skipped the only
+      # jobs that analyse the windowed code - the exact hole that let
+      # the vtable rot unnoticed. KooshaPari/Khostty#48.
+      - "src/Surface.zig"
+      - "src/App.zig"
       - "src/apprt/ipc/**"
       - "src/ipc_probe.zig"
       - "src/build/**"
@@ -35,6 +41,12 @@ on:
     paths:
       - ".github/workflows/ipc-runtime.yml"
       - "src/apprt/gtk/**"
+      # Core files the windowed path compiles too. Without these a
+      # change to Surface.zig or App.zig silently skipped the only
+      # jobs that analyse the windowed code - the exact hole that let
+      # the vtable rot unnoticed. KooshaPari/Khostty#48.
+      - "src/Surface.zig"
+      - "src/App.zig"
       - "src/apprt/ipc/**"
       - "src/ipc_probe.zig"
       - "src/build/**"

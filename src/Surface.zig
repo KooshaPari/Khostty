@@ -1052,6 +1052,12 @@ pub fn handleMessage(self: *Surface, msg: Message) !void {
                 .set_title,
                 .{ .title = slice },
             );
+
+            // FORK: publish after the action, not before, so the title an agent
+            // reads is the one the runtime actually applied rather than the
+            // previous one. No-op without an IPC host.
+            // KooshaPari/Khostty#48.
+            if (self.app.ipc_hook) |h| h.title(h.ctx, self.id);
         },
 
         .report_title => |style| report_title: {
