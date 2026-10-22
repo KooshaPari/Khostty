@@ -937,6 +937,18 @@ pub fn writeToParser(self: *Surface, data: []const u8) Allocator.Error!void {
     } }, .unlocked);
 }
 
+/// Ask the runtime to split this surface, from any thread.
+///
+/// `performAction` is not thread-safe: for GTK it dispatches straight into
+/// widget code, so a caller on an IPC connection thread aborts the process.
+/// Queuing the request keeps the action on the app thread, the same way
+/// `writeToParser` keeps the parser there.
+///
+/// FORK: added for KooshaPari/Khostty#71.
+pub fn splitPane(self: *Surface, direction: apprt.action.SplitDirection) void {
+    self.queueIo(.{ .new_split = direction }, .unlocked);
+}
+
 /// Forces the surface to render. This is useful for when the surface
 /// is in the middle of animation (such as a resize, etc.) or when
 /// the render timer is managed manually by the apprt.
@@ -1035,6 +1047,16 @@ pub fn needsConfirmQuit(self: *Surface) bool {
 pub fn handleMessage(self: *Surface, msg: Message) !void {
     switch (msg) {
         .change_config => |config| try self.updateConfig(config),
+
+        .new_split => |direction| {
+            // Runs on the app thread, which is the only thread allowed to
+            // touch GTK widget state. KooshaPari/Khostty#71.
+            _ = try self.rt_app.performAction(
+                .{ .surface = self },
+                .new_split,
+                direction,
+            );
+        },
 
         .set_title => |*v| {
             // We ignore the message in case the title was set via config.
