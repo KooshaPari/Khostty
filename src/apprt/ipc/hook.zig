@@ -21,7 +21,7 @@
 //! app's IO thread - and must not block. The GTK implementation forwards to
 //! `events.Broker.publish`, which is already safe for that.
 
-const Hook = @This();
+pub const Hook = @This();
 
 /// Opaque owner, normally the `AppHost`. Passed back to every callback.
 ctx: *anyopaque,
