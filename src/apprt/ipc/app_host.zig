@@ -268,29 +268,10 @@ pub const AppHost = struct {
         arena: Allocator,
         req: pane.CreateRequest,
     ) pane.HostError!pane.PaneHandle {
-        _ = ctx;
-        _ = arena;
-        _ = req;
-
-        // REFUSED, deliberately. `createWindowed` below calls `performAction`,
-        // which dispatches straight into runtime widget code with no thread
-        // marshalling - and the agent IPC server runs each connection on its own
-        // thread, so that call aborted the whole app. That was
-        // KooshaPari/Khostty#71: an agent splitting a pane killed the user's
-        // terminal.
-        //
-        // Returning `Unsupported` is that issue's acceptance: a split request
-        // must either work or fail as a protocol error, never kill the
-        // terminal. Doing it properly means marshalling onto the runtime's main
-        // thread (a queue drained from the GTK tick, or `glib.idleAdd`), which
-        // is its own change with its own verification. `createWindowed` is left
-        // intact - unused, hence not analysed - for that follow-up.
-        std.log.scoped(.ipc_host).warn(
-            "agent pane.create is not implemented yet; refusing rather than " ++
-                "crossing threads (KooshaPari/Khostty#71)",
-            .{},
-        );
-        return error.Unsupported;
+        // Re-enabled now that the split is marshalled onto the app thread
+        // (#73). #72 refused here because calling `performAction` from a
+        // connection thread aborted the process (#71).
+        return ctxHost(ctx).createWindowed(arena, req);
     }
 
     fn closeCore(ctx: *anyopaque, id: PaneId) pane.HostError!void {
