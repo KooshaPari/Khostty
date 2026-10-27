@@ -393,6 +393,148 @@ pub const AppHost = struct {
         arena: Allocator,
         req: pane.CreateRequest,
     ) pane.HostError!pane.PaneHandle {
+        // Nothing in here may read app state: this runs on an IPC connection
+        // thread. The parent is resolved, the split performed, and the new
+        // surface identified, all on the app thread.
+        // KooshaPari/Khostty#73, #76.
+        const direction: apprt.action.SplitDirection = switch (req.dir) {
+            .up => .up,
+            .down => .down,
+            .left => .left,
+            .right => .right,
+        };
+
+        var request: App.SplitRequest = .{
+            .parent_id = if (req.parent) |id| id.raw else null,
+            .direction = direction,
+            .title = req.title,
+        };
+        const result = (try self.app.splitOnAppThread(
+            &request,
+            self.split_wait_ms,
+        )) orelse return error.Internal;
+
+        // `result` is stable now: the app thread set `done` and will not touch
+        // the slot again. Copy the title into the arena so the returned handle
+        // does not dangle.
+        const title: ?[]const u8 = if (result.title_len > 0)
+            try arena.dupe(u8, result.title_buf[0..result.title_len])
+        else
+            null;
+
+        // Any requested title was applied by the app thread as part of the
+        // same request, because it is a write into runtime state.
+
+        return .{
+            .id = PaneId.init(result.id),
+            .pid = result.pid,
+            .title = title,
+            .cols = result.cols,
+            .rows = result.rows,
+            .focused = result.focused,
+        };
+    }
+
+    fn closeCore(ctx: *anyopaque, id: PaneId) pane.HostError!void {
+        const self = ctxHost(ctx);
+        const core = self.findCore(id) orelse return error.PaneNotFound;
+        // The app's own close path: ask the runtime to start closing, honoring
+        // the confirmation setting.
+        core.close();
+    }
+
+    fn listSurfaces(
+        ctx: *anyopaque,
+        arena: Allocator,
+        out: *std.ArrayListUnmanaged(pane.PaneInfo),
+    ) pane.HostError!void {
+        return ctxHost(ctx).listWindowed(arena, out);
+    }
+
+    fn writeToParser(ctx: *anyopaque, id: PaneId, data: []const u8) pane.HostError!usize {
+        const self = ctxHost(ctx);
+        const core = self.findCore(id) orelse return error.PaneNotFound;
+        // The same parser the pty output goes through, so escape sequences and
+        // modes behave exactly as if the program had written them.
+        //
+        // The parser is owned by the app's IO thread; this function runs on an
+        // IPC connection thread. Hand the bytes to the IO thread through the
+        // surface mailbox instead of calling `nextSlice` here, so the parser
+        // is only ever mutated from the thread that owns it. See
+        // `CoreSurface.writeToParser` and `protocol.md` section 7.
+        //
+        // The byte count is reported optimistically: the bytes are queued for
+        // the IO thread, which is the same guarantee the previous direct call
+        // gave (it always returned `data.len`).
+        //
+        // FORK: KooshaPari/Khostty#48.
+        try core.writeToParser(data);
+        return data.len;
+    }
+
+    fn snapshotCore(
+        ctx: *anyopaque,
+        arena: Allocator,
+        id: PaneId,
+        out: *state.Snapshot,
+    ) pane.HostError!void {
+        const self = ctxHost(ctx);
+        const core = self.findCore(id) orelse return error.PaneNotFound;
+        return self.snapshotWindowed(arena, core, out);
+    }
+
+    fn resizeSplit(
+        ctx: *anyopaque,
+        id: PaneId,
+        dir: protocol.Direction,
+        amount: u16,
+    ) pane.HostError!void {
+        const self = ctxHost(ctx);
+        const core = self.findCore(id) orelse return error.PaneNotFound;
+        // Explicit switch, NOT @enumFromInt/@intFromEnum: protocol.Direction is
+        // {right, down, left, up} but ResizeSplit.Direction is
+        // {up, down, left, right}. Converting by integer would silently swap
+        // right and up.
+        const direction: apprt.action.ResizeSplit.Direction = switch (dir) {
+            .up => .up,
+            .down => .down,
+            .left => .left,
+            .right => .right,
+        };
+        _ = core.rt_app.performAction(
+            .{ .surface = core },
+            .resize_split,
+            .{ .amount = amount, .direction = direction },
+        ) catch |err| return mapActionError(err);
+    }
+
+    fn equalizeSplits(ctx: *anyopaque) pane.HostError!void {
+        const self = ctxHost(ctx);
+        const core = self.app.focused_surface orelse return error.PaneNotFound;
+        _ = core.rt_app.performAction(
+            .{ .surface = core },
+            .equalize_splits,
+            {},
+        ) catch |err| return mapActionError(err);
+    }
+
+    fn toggleZoom(ctx: *anyopaque, id: PaneId) pane.HostError!void {
+        const self = ctxHost(ctx);
+        const core = self.findCore(id) orelse return error.PaneNotFound;
+        _ = core.rt_app.performAction(
+            .{ .surface = core },
+            .toggle_split_zoom,
+            {},
+        ) catch |err| return mapActionError(err);
+    }
+
+    // ── Windowed implementations ──
+
+    fn createWindowed(
+        self: *AppHost,
+        arena: Allocator,
+        req: pane.CreateRequest,
+    ) pane.HostError!pane.PaneHandle {
         self.mutex.lockUncancelable(self.io);
         defer self.mutex.unlock(self.io);
 
