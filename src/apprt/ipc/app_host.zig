@@ -63,7 +63,6 @@ const protocol = @import("protocol.zig");
 const state = @import("state.zig");
 const events = @import("events.zig");
 const ipc_task = @import("task.zig");
-const ipc_slot = @import("slot.zig");
 
 const PaneId = protocol.PaneId;
 
