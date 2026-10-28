@@ -62,6 +62,7 @@ const pane = @import("pane.zig");
 const protocol = @import("protocol.zig");
 const state = @import("state.zig");
 const events = @import("events.zig");
+const ipc_slot = @import("slot.zig");
 
 const PaneId = protocol.PaneId;
 
@@ -96,6 +97,8 @@ pub const AppHost = struct {
     io: std.Io,
     app: *App,
     mutex: std.Io.Mutex = .init,
+    /// How long to wait for a single app-thread round trip.
+    list_timeout_ms: u64 = 2000,
     /// How long to wait for the queued `new_split` to produce a surface.
     split_wait_ms: u64 = 500,
     /// Poll interval while waiting for that surface.
@@ -472,16 +475,23 @@ pub const AppHost = struct {
         arena: Allocator,
         out: *std.ArrayListUnmanaged(pane.PaneInfo),
     ) pane.HostError!void {
-        for (self.app.surfaces.items) |rt_surface| {
-            const core = rt_surface.core();
+        // Enumerated on the app thread. Reading `app.surfaces` and the GTK
+        // title/size getters from this thread is undefined behaviour; it worked
+        // only because the race had not been lost yet.
+        // KooshaPari/Khostty#76.
+        var req: ipc_slot.Slot = .{ .kind = .list_surfaces };
+        if (!try self.app.requestSlotOnAppThread(&req, self.list_timeout_ms))
+            return error.Internal;
+
+        for (req.surfaces_buf[0..req.surfaces_len]) |info| {
             try out.append(arena, .{
-                .id = PaneId.init(core.id),
-                .title = if (titleOf(core)) |t| try arena.dupe(u8, t) else null,
-                .pid = pidOf(core),
-                .cwd = if (cwdOf(core)) |cwd| try arena.dupe(u8, cwd) else null,
-                .cols = colsOf(core),
-                .rows = rowsOf(core),
-                .focused = self.app.focused_surface == core,
+                .id = PaneId.init(info.id),
+                .title = if (info.title()) |t| try arena.dupe(u8, t) else null,
+                .pid = info.pid,
+                .cwd = if (info.cwd()) |c| try arena.dupe(u8, c) else null,
+                .cols = info.cols,
+                .rows = info.rows,
+                .focused = info.focused,
                 // The runtime drops the surface when the child exits and keeps
                 // no exit status, so this stays unknown rather than false.
                 .exited = null,

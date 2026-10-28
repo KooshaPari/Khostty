@@ -15,6 +15,7 @@ const Config = configpkg.Config;
 const BlockingQueue = @import("datastruct/main.zig").BlockingQueue;
 const renderer = @import("renderer.zig");
 const apprt_hook = @import("apprt/ipc/hook.zig");
+const ipc_slot = @import("apprt/ipc/slot.zig");
 const font = @import("font/main.zig");
 const global = @import("global.zig");
 
@@ -54,6 +55,11 @@ mailbox: Mailbox.Queue,
 /// The set of font GroupCache instances shared by surfaces with the
 /// same font configuration.
 font_grid_set: font.SharedGridSet,
+
+/// FORK: request slots posted from IPC connection threads, serviced in `tick`.
+/// KooshaPari/Khostty#76.
+pending_slots: std.ArrayListUnmanaged(*ipc_slot.Slot) = .empty,
+pending_slots_mutex: std.Io.Mutex = .init,
 
 /// FORK: agent IPC event publication, set by a runtime that hosts the IPC
 /// server and null everywhere else. Core `Surface` calls it unconditionally,
@@ -171,6 +177,94 @@ pub fn destroy(self: *App) void {
 pub fn tick(self: *App, rt_app: *apprt.App) !void {
     // Drain our mailbox
     try self.drainMailbox(rt_app);
+
+    // FORK: service requests posted from IPC connection threads. `tick` is the
+    // app thread, the only thread allowed to touch runtime and terminal state.
+    // KooshaPari/Khostty#76.
+    self.serviceSlots();
+}
+
+/// Post `req` and wait for the app thread to service it. Safe from any thread,
+/// but it DOES block the caller until the app thread runs `tick`.
+///
+/// FORK: KooshaPari/Khostty#76.
+pub fn requestSlotOnAppThread(
+    self: *App,
+    req: *ipc_slot.Slot,
+    timeout_ms: u64,
+) Allocator.Error!bool {
+    const io = @import("global.zig").io();
+
+    {
+        self.pending_slots_mutex.lockUncancelable(io);
+        defer self.pending_slots_mutex.unlock(io);
+        try self.pending_slots.append(self.alloc, req);
+    }
+
+    // Poll rather than block on a condition variable: the app thread services
+    // these from `tick`, which also drives the terminal's event loop, so a
+    // missed wakeup would hang the terminal, not just this request.
+    const deadline = std.Io.Timestamp.now(io, .awake);
+    while (deadline.durationTo(
+        std.Io.Timestamp.now(io, .awake),
+    ).toMilliseconds() <= timeout_ms) {
+        req.mutex.lockUncancelable(io);
+        const finished = req.done;
+        req.mutex.unlock(io);
+        if (finished) return true;
+        std.Io.sleep(io, std.Io.Duration.fromMilliseconds(5), .awake) catch {};
+    }
+    return false;
+}
+
+/// Service every queued slot. Must be called on the app thread.
+fn serviceSlots(self: *App) void {
+    const io = @import("global.zig").io();
+
+    self.pending_slots_mutex.lockUncancelable(io);
+    const queued = self.pending_slots.toOwnedSlice(self.alloc) catch {
+        self.pending_slots_mutex.unlock(io);
+        return;
+    };
+    self.pending_slots_mutex.unlock(io);
+    defer self.alloc.free(queued);
+
+    for (queued) |req| {
+        switch (req.kind) {
+            .list_surfaces => self.fillSurfaceList(req),
+        }
+        req.mutex.lockUncancelable(io);
+        req.done = true;
+        req.mutex.unlock(io);
+    }
+}
+
+/// Fill a slot's surface list. Runs on the app thread.
+fn fillSurfaceList(self: *App, req: *ipc_slot.Slot) void {
+    req.surfaces_len = 0;
+    for (self.surfaces.items) |rt_surface| {
+        if (req.surfaces_len >= req.surfaces_buf.len) break;
+        const core = rt_surface.core();
+        var info: ipc_slot.Surface = .{
+            .id = core.id,
+            .pid = corePid(core),
+            .cols = coreCols(core),
+            .rows = coreRows(core),
+            .focused = self.focused_surface == core,
+        };
+        if (coreTitle(core)) |t| {
+            const n = @min(t.len, info.title_buf.len);
+            @memcpy(info.title_buf[0..n], t[0..n]);
+            info.title_len = n;
+        }
+        if (coreCwd(core)) |c| {
+            const n = @min(c.len, info.cwd_buf.len);
+            @memcpy(info.cwd_buf[0..n], c[0..n]);
+            info.cwd_len = n;
+        }
+        req.surfaces_buf[req.surfaces_len] = info;
+        req.surfaces_len += 1;
+    }
 }
 
 /// Update the configuration associated with the app. This can only be
@@ -636,3 +730,31 @@ pub const Wasm = if (!builtin.target.isWasm()) struct {} else struct {
     //     }
     // }
 };
+
+fn coreCwd(core: *Surface) ?[]const u8 {
+    return core.io.terminal.getPwd();
+}
+
+// ── App-thread surface accessors ──
+//
+// FORK: KooshaPari/Khostty#76. These read runtime and terminal state, so they
+// may ONLY be called from the app thread. They live here rather than being
+// borrowed from app_host.zig because that file is GTK-gated at comptime while
+// `tick` runs on every platform.
+
+fn coreTitle(core: *Surface) ?[]const u8 {
+    return core.rt_surface.getTitle();
+}
+
+fn corePid(core: *Surface) ?u32 {
+    const pid = core.io.getProcessInfo(.foreground_pid) orelse return null;
+    return std.math.cast(u32, pid);
+}
+
+fn coreCols(core: *Surface) ?u16 {
+    return std.math.cast(u16, core.io.terminal.cols);
+}
+
+fn coreRows(core: *Surface) ?u16 {
+    return std.math.cast(u16, core.io.terminal.rows);
+}
