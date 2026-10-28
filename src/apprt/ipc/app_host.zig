@@ -374,9 +374,8 @@ pub const AppHost = struct {
         arena: Allocator,
         req: pane.CreateRequest,
     ) pane.HostError!pane.PaneHandle {
-        // Nothing here may read app state: this runs on an IPC connection
-        // thread. The parent is resolved, the split performed, the new surface
-        // identified, and any title applied - all on the app thread.
+        // Nothing in here may read app state: this runs on an IPC connection
+        // thread. Every read and write is a request to the app thread.
         // KooshaPari/Khostty#73, #76.
         const direction: apprt.action.SplitDirection = switch (req.dir) {
             .up => .up,
@@ -385,20 +384,68 @@ pub const AppHost = struct {
             .right => .right,
         };
 
-        var request: App.SplitRequest = .{
+        // Snapshot the surface set before the split so the new pane can be
+        // identified by diff.
+        var slot: App.SplitRequest = .{ .direction = direction };
+        const before = try self.app.surfaceIdsOnAppThread(&slot, self.split_wait_ms);
+        var previous: [64]u64 = undefined;
+        const previous_len = @min(before.len, previous.len);
+        @memcpy(previous[0..previous_len], before[0..previous_len]);
+
+        // Initiate. This returns before the surface exists: GTK updates the
+        // split tree synchronously and creates the surface on a later loop
+        // iteration, so the wait happens here rather than on the app thread.
+        var split_slot: App.SplitRequest = .{
+            .kind = .split,
             .parent_id = if (req.parent) |id| id.raw else null,
             .direction = direction,
-            // dupeZ because SetTitle carries a sentinel-terminated slice. The
-            // arena keeps it alive for the whole wait.
             .title = if (req.title) |v| try arena.dupeZ(u8, v) else null,
         };
-        const result = (try self.app.splitOnAppThread(
-            &request,
+        _ = self.app.splitOnAppThread(&split_slot, self.split_wait_ms) catch null;
+
+        // Poll for the surface that was not there before.
+        var created: ?u64 = null;
+        var waited: u64 = 0;
+        while (waited <= self.split_wait_ms) {
+            var poll_slot: App.SplitRequest = .{};
+            const now = self.app.surfaceIdsOnAppThread(
+                &poll_slot,
+                self.split_wait_ms,
+            ) catch break;
+            for (now) |id| {
+                var known = false;
+                for (previous[0..previous_len]) |p| {
+                    if (p == id) {
+                        known = true;
+                        break;
+                    }
+                }
+                if (!known) {
+                    created = id;
+                    break;
+                }
+            }
+            if (created != null) break;
+            std.Io.sleep(
+                self.io,
+                std.Io.Duration.fromMilliseconds(@intCast(self.split_poll_interval_ms)),
+                .awake,
+            ) catch break;
+            waited += self.split_poll_interval_ms;
+        }
+
+        const id = created orelse return error.Internal;
+
+        // Info for the new pane, again from the app thread.
+        var info_slot: App.SplitRequest = .{};
+        const result = (try self.app.surfaceInfoOnAppThread(
+            &info_slot,
+            id,
             self.split_wait_ms,
         )) orelse return error.Internal;
 
-        // Stable now: the app thread set `done` and will not touch the slot
-        // again. Copy the title into the arena so the handle cannot dangle.
+        // `result` is stable now. Copy the title into the arena so the returned
+        // handle cannot dangle.
         const title: ?[]const u8 = if (result.title_len > 0)
             try arena.dupe(u8, result.title_buf[0..result.title_len])
         else

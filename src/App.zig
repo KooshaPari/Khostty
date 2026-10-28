@@ -201,10 +201,22 @@ pub const SplitRequest = struct {
     /// the wait; sentinel-terminated because `SetTitle` requires it.
     title: ?[:0]const u8 = null,
 
+    /// What to do. `ids` lets the requester observe the surface set across
+    /// ticks without the app thread ever blocking on a surface that appears
+    /// asynchronously.
+    kind: Kind = .split,
+
     mutex: std.Io.Mutex = .init,
     done: bool = false,
-    /// Null when the split failed.
+    /// Null when the split failed or for an `ids` request.
     result: ?Result = null,
+    /// Target for `kind == .info`.
+    target_id: u64 = 0,
+    /// Filled for `kind == .ids`.
+    ids_buf: [64]u64 = [_]u64{0} ** 64,
+    ids_len: usize = 0,
+
+    pub const Kind = enum { split, ids, info };
 
     /// Scalar-only on purpose: `PaneHandle.title` is a borrowed slice, so the
     /// app thread copies into a fixed buffer here and the requester dups it
@@ -257,6 +269,33 @@ pub fn splitOnAppThread(
     return null;
 }
 
+/// Read the current surface ids from the app thread. Safe from any thread.
+///
+/// FORK: KooshaPari/Khostty#76.
+pub fn surfaceIdsOnAppThread(
+    self: *App,
+    req: *SplitRequest,
+    timeout_ms: u64,
+) Allocator.Error![]const u64 {
+    req.kind = .ids;
+    _ = try self.splitOnAppThread(req, timeout_ms);
+    return req.ids_buf[0..req.ids_len];
+}
+
+/// Read one surface's info from the app thread. Safe from any thread.
+///
+/// FORK: KooshaPari/Khostty#76.
+pub fn surfaceInfoOnAppThread(
+    self: *App,
+    req: *SplitRequest,
+    target_id: u64,
+    timeout_ms: u64,
+) Allocator.Error!?SplitRequest.Result {
+    req.kind = .info;
+    req.target_id = target_id;
+    return self.splitOnAppThread(req, timeout_ms);
+}
+
 /// Perform every queued split request. Must be called on the app thread.
 fn serviceSplitRequests(self: *App) void {
     const io = @import("global.zig").io();
@@ -270,6 +309,37 @@ fn serviceSplitRequests(self: *App) void {
     defer self.alloc.free(queued);
 
     for (queued) |req| {
+        if (req.kind == .info) {
+            req.mutex.lockUncancelable(io);
+            defer req.mutex.unlock(io);
+            req.done = true;
+            const core = self.findSurfaceByID(req.target_id) orelse continue;
+            var result: SplitRequest.Result = .{ .id = core.id };
+            result.pid = corePid(core);
+            result.cols = coreCols(core);
+            result.rows = coreRows(core);
+            if (coreTitle(core)) |t| {
+                const n = @min(t.len, result.title_buf.len);
+                @memcpy(result.title_buf[0..n], t[0..n]);
+                result.title_len = n;
+            }
+            req.result = result;
+            continue;
+        }
+
+        if (req.kind == .ids) {
+            req.mutex.lockUncancelable(io);
+            defer req.mutex.unlock(io);
+            req.ids_len = 0;
+            for (self.surfaces.items) |rt_surface| {
+                if (req.ids_len >= req.ids_buf.len) break;
+                req.ids_buf[req.ids_len] = rt_surface.core().id;
+                req.ids_len += 1;
+            }
+            req.done = true;
+            continue;
+        }
+
         // Snapshot ids before, so the new surface can be identified by diff.
         var before: std.ArrayListUnmanaged(u64) = .empty;
         defer before.deinit(self.alloc);
@@ -331,6 +401,9 @@ fn serviceSplitRequests(self: *App) void {
         req.mutex.lockUncancelable(io);
         defer req.mutex.unlock(io);
         req.done = true;
+        // The new surface may not exist yet: GTK updates the split tree
+        // synchronously but creates the surface on a later loop iteration. The
+        // requester polls `kind == .ids` for that reason.
         const core = found orelse continue;
         var result: SplitRequest.Result = .{ .id = core.id };
         result.pid = corePid(core);
