@@ -62,6 +62,7 @@ const pane = @import("pane.zig");
 const protocol = @import("protocol.zig");
 const state = @import("state.zig");
 const events = @import("events.zig");
+const ipc_task = @import("task.zig");
 const ipc_slot = @import("slot.zig");
 
 const PaneId = protocol.PaneId;
@@ -98,7 +99,7 @@ pub const AppHost = struct {
     app: *App,
     mutex: std.Io.Mutex = .init,
     /// How long to wait for a single app-thread round trip.
-    list_timeout_ms: u64 = 2000,
+    call_timeout_ms: u64 = 2000,
     /// How long to wait for the queued `new_split` to produce a surface.
     split_wait_ms: u64 = 500,
     /// Poll interval while waiting for that surface.
@@ -297,11 +298,29 @@ pub const AppHost = struct {
     }
 
     fn closeCore(ctx: *anyopaque, id: PaneId) pane.HostError!void {
+        const Payload = struct {
+            host: *AppHost,
+            id: PaneId,
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const self: *@This() = @ptrCast(@alignCast(raw));
+                // Resolution and the close both touch app state, so both run
+                // on the app thread.
+                const core = self.host.findCore(self.id) orelse {
+                    self.err = error.PaneNotFound;
+                    return;
+                };
+                core.close();
+            }
+        };
+
         const self = ctxHost(ctx);
-        const core = self.findCore(id) orelse return error.PaneNotFound;
-        // The app's own close path: ask the runtime to start closing, honoring
-        // the confirmation setting.
-        core.close();
+        var payload: Payload = .{ .host = self, .id = id };
+        var task = ipc_task.Task.init(&payload, Payload.run);
+        if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
+            return error.Internal;
+        if (payload.err) |e| return e;
     }
 
     fn listSurfaces(
@@ -309,7 +328,26 @@ pub const AppHost = struct {
         arena: Allocator,
         out: *std.ArrayListUnmanaged(pane.PaneInfo),
     ) pane.HostError!void {
-        return ctxHost(ctx).listWindowed(arena, out);
+        const Payload = struct {
+            host: *AppHost,
+            arena: Allocator,
+            out: *std.ArrayListUnmanaged(pane.PaneInfo),
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const self: *@This() = @ptrCast(@alignCast(raw));
+                self.host.listInner(self.arena, self.out) catch |e| {
+                    self.err = e;
+                };
+            }
+        };
+
+        const self = ctxHost(ctx);
+        var payload: Payload = .{ .host = self, .arena = arena, .out = out };
+        var task = ipc_task.Task.init(&payload, Payload.run);
+        if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
+            return error.Internal;
+        if (payload.err) |e| return e;
     }
 
     fn writeToParser(ctx: *anyopaque, id: PaneId, data: []const u8) pane.HostError!usize {
@@ -339,9 +377,31 @@ pub const AppHost = struct {
         id: PaneId,
         out: *state.Snapshot,
     ) pane.HostError!void {
+        const Payload = struct {
+            host: *AppHost,
+            arena: Allocator,
+            id: PaneId,
+            out: *state.Snapshot,
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const self: *@This() = @ptrCast(@alignCast(raw));
+                const core = self.host.findCore(self.id) orelse {
+                    self.err = error.PaneNotFound;
+                    return;
+                };
+                self.host.snapshotInner(self.arena, core, self.out) catch |e| {
+                    self.err = e;
+                };
+            }
+        };
+
         const self = ctxHost(ctx);
-        const core = self.findCore(id) orelse return error.PaneNotFound;
-        return self.snapshotWindowed(arena, core, out);
+        var payload: Payload = .{ .host = self, .arena = arena, .id = id, .out = out };
+        var task = ipc_task.Task.init(&payload, Payload.run);
+        if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
+            return error.Internal;
+        if (payload.err) |e| return e;
     }
 
     fn resizeSplit(
@@ -408,7 +468,7 @@ pub const AppHost = struct {
         // so the new pane can only be identified by diffing.
         var before: std.ArrayListUnmanaged(pane.PaneInfo) = .empty;
         defer before.deinit(self.gpa);
-        try self.listWindowed(arena, &before);
+        try self.listInner(arena, &before);
 
         const direction: apprt.action.SplitDirection = switch (req.dir) {
             .up => .up,
@@ -430,7 +490,7 @@ pub const AppHost = struct {
         while (waited <= self.split_wait_ms) {
             var after: std.ArrayListUnmanaged(pane.PaneInfo) = .empty;
             defer after.deinit(self.gpa);
-            try self.listWindowed(arena, &after);
+            try self.listInner(arena, &after);
 
             if (pane.findNewPane(previous, after.items)) |found| {
                 created = found;
@@ -470,7 +530,8 @@ pub const AppHost = struct {
         };
     }
 
-    fn listWindowed(
+    /// Enumerate surfaces. Runs on the app thread.
+    fn listInner(
         self: *AppHost,
         arena: Allocator,
         out: *std.ArrayListUnmanaged(pane.PaneInfo),
@@ -480,7 +541,7 @@ pub const AppHost = struct {
         // only because the race had not been lost yet.
         // KooshaPari/Khostty#76.
         var req: ipc_slot.Slot = .{ .kind = .list_surfaces };
-        if (!try self.app.requestSlotOnAppThread(&req, self.list_timeout_ms))
+        if (!try self.app.requestSlotOnAppThread(&req, self.call_timeout_ms))
             return error.Internal;
 
         for (req.surfaces_buf[0..req.surfaces_len]) |info| {
@@ -499,7 +560,8 @@ pub const AppHost = struct {
         }
     }
 
-    fn snapshotWindowed(
+    /// Fill a snapshot. Runs on the app thread.
+    fn snapshotInner(
         self: *AppHost,
         arena: Allocator,
         core: *CoreSurface,
