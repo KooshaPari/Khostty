@@ -40,15 +40,12 @@ pub const Task = struct {
     /// Written by the app thread last, read by the caller first.
     done: bool = false,
 
-    /// Bind a concrete context and function.
+    /// Bind a context and the function that consumes it.
     ///
-    /// The function must accept a pointer to the same type as `ctx`.
-    pub fn init(ctx: anytype, comptime func: fn (@TypeOf(ctx)) void) Task {
-        const Thunk = struct {
-            fn runThunk(raw: *anyopaque) void {
-                func(@ptrCast(@alignCast(raw)));
-            }
-        };
-        return .{ .ctx = @ptrCast(ctx), .run = &Thunk.runThunk };
+    /// The function receives the context as `*anyopaque` and does its own
+    /// cast, which keeps `Task` free of any knowledge of the payload type and
+    /// lets callers declare the cast next to the fields they touch.
+    pub fn init(ctx: anytype, func: *const fn (*anyopaque) void) Task {
+        return .{ .ctx = @ptrCast(ctx), .run = func };
     }
 };
