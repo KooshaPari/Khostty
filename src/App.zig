@@ -15,7 +15,7 @@ const Config = configpkg.Config;
 const BlockingQueue = @import("datastruct/main.zig").BlockingQueue;
 const renderer = @import("renderer.zig");
 const apprt_hook = @import("apprt/ipc/hook.zig");
-const ipc_slot = @import("apprt/ipc/slot.zig");
+const ipc_task = @import("apprt/ipc/task.zig");
 const font = @import("font/main.zig");
 const global = @import("global.zig");
 
@@ -56,10 +56,10 @@ mailbox: Mailbox.Queue,
 /// same font configuration.
 font_grid_set: font.SharedGridSet,
 
-/// FORK: request slots posted from IPC connection threads, serviced in `tick`.
+/// FORK: closures posted from IPC connection threads, serviced in `tick`.
 /// KooshaPari/Khostty#76.
-pending_slots: std.ArrayListUnmanaged(*ipc_slot.Slot) = .empty,
-pending_slots_mutex: std.Io.Mutex = .init,
+pending_tasks: std.ArrayListUnmanaged(*ipc_task.Task) = .empty,
+pending_tasks_mutex: std.Io.Mutex = .init,
 
 /// FORK: agent IPC event publication, set by a runtime that hosts the IPC
 /// server and null everywhere else. Core `Surface` calls it unconditionally,
@@ -181,24 +181,24 @@ pub fn tick(self: *App, rt_app: *apprt.App) !void {
     // FORK: service requests posted from IPC connection threads. `tick` is the
     // app thread, the only thread allowed to touch runtime and terminal state.
     // KooshaPari/Khostty#76.
-    self.serviceSlots();
+    self.serviceTasks();
 }
 
 /// Post `req` and wait for the app thread to service it. Safe from any thread,
 /// but it DOES block the caller until the app thread runs `tick`.
 ///
 /// FORK: KooshaPari/Khostty#76.
-pub fn requestSlotOnAppThread(
+pub fn runOnAppThread(
     self: *App,
-    req: *ipc_slot.Slot,
+    req: *ipc_task.Task,
     timeout_ms: u64,
 ) Allocator.Error!bool {
     const io = @import("global.zig").io();
 
     {
-        self.pending_slots_mutex.lockUncancelable(io);
-        defer self.pending_slots_mutex.unlock(io);
-        try self.pending_slots.append(self.alloc, req);
+        self.pending_tasks_mutex.lockUncancelable(io);
+        defer self.pending_tasks_mutex.unlock(io);
+        try self.pending_tasks.append(self.alloc, req);
     }
 
     // Poll rather than block on a condition variable: the app thread services
@@ -217,53 +217,23 @@ pub fn requestSlotOnAppThread(
     return false;
 }
 
-/// Service every queued slot. Must be called on the app thread.
-fn serviceSlots(self: *App) void {
+/// Run every queued closure. Must be called on the app thread.
+fn serviceTasks(self: *App) void {
     const io = @import("global.zig").io();
 
-    self.pending_slots_mutex.lockUncancelable(io);
-    const queued = self.pending_slots.toOwnedSlice(self.alloc) catch {
-        self.pending_slots_mutex.unlock(io);
+    self.pending_tasks_mutex.lockUncancelable(io);
+    const queued = self.pending_tasks.toOwnedSlice(self.alloc) catch {
+        self.pending_tasks_mutex.unlock(io);
         return;
     };
-    self.pending_slots_mutex.unlock(io);
+    self.pending_tasks_mutex.unlock(io);
     defer self.alloc.free(queued);
 
     for (queued) |req| {
-        switch (req.kind) {
-            .list_surfaces => self.fillSurfaceList(req),
-        }
+        req.run(req.ctx);
         req.mutex.lockUncancelable(io);
         req.done = true;
         req.mutex.unlock(io);
-    }
-}
-
-/// Fill a slot's surface list. Runs on the app thread.
-fn fillSurfaceList(self: *App, req: *ipc_slot.Slot) void {
-    req.surfaces_len = 0;
-    for (self.surfaces.items) |rt_surface| {
-        if (req.surfaces_len >= req.surfaces_buf.len) break;
-        const core = rt_surface.core();
-        var info: ipc_slot.Surface = .{
-            .id = core.id,
-            .pid = corePid(core),
-            .cols = coreCols(core),
-            .rows = coreRows(core),
-            .focused = self.focused_surface == core,
-        };
-        if (coreTitle(core)) |t| {
-            const n = @min(t.len, info.title_buf.len);
-            @memcpy(info.title_buf[0..n], t[0..n]);
-            info.title_len = n;
-        }
-        if (coreCwd(core)) |c| {
-            const n = @min(c.len, info.cwd_buf.len);
-            @memcpy(info.cwd_buf[0..n], c[0..n]);
-            info.cwd_len = n;
-        }
-        req.surfaces_buf[req.surfaces_len] = info;
-        req.surfaces_len += 1;
     }
 }
 
