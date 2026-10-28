@@ -196,7 +196,7 @@ pub const SplitRequest = struct {
     /// pointer: resolving it is itself an app-state read, so the app thread
     /// must do it too.
     parent_id: ?u64 = null,
-    direction: apprt.action.SplitDirection,
+    direction: apprt.action.SplitDirection = .right,
     /// Optional title to apply to the new surface. Borrowed for the duration of
     /// the wait; sentinel-terminated because `SetTitle` requires it.
     title: ?[:0]const u8 = null,
