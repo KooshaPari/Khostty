@@ -25,6 +25,11 @@ const SurfaceList = std.ArrayListUnmanaged(*apprt.Surface);
 /// General purpose allocator
 alloc: Allocator,
 
+/// FORK: split requests posted from other threads, serviced in `tick`.
+/// KooshaPari/Khostty#73, #76.
+split_requests: std.ArrayListUnmanaged(*SplitRequest) = .empty,
+split_requests_mutex: std.Io.Mutex = .init,
+
 /// The list of surfaces that are currently active.
 surfaces: SurfaceList,
 
@@ -171,6 +176,246 @@ pub fn destroy(self: *App) void {
 pub fn tick(self: *App, rt_app: *apprt.App) !void {
     // Drain our mailbox
     try self.drainMailbox(rt_app);
+
+    // FORK: service split requests posted from IPC connection threads. `tick`
+    // is the app thread, the only thread allowed to touch runtime state.
+    // KooshaPari/Khostty#73, #76.
+    self.serviceSplitRequests();
+}
+
+/// A split request posted from a connection thread.
+///
+/// The requester owns this on its own stack, posts a pointer, and waits for
+/// `done`. The app thread fills `result` and then sets `done` under `mutex`;
+/// anything the requester reads after observing `done` is stable because the
+/// app thread never touches the slot again.
+///
+/// FORK: KooshaPari/Khostty#73, #76.
+pub const SplitRequest = struct {
+    /// Pane to split, or null for "whatever is focused". An id rather than a
+    /// pointer: resolving it is itself an app-state read, so the app thread
+    /// must do it too.
+    parent_id: ?u64 = null,
+    direction: apprt.action.SplitDirection = .right,
+    /// Optional title to apply to the new surface. Borrowed for the duration of
+    /// the wait; sentinel-terminated because `SetTitle` requires it.
+    title: ?[:0]const u8 = null,
+
+    /// What to do. `ids` lets the requester observe the surface set across
+    /// ticks without the app thread ever blocking on a surface that appears
+    /// asynchronously.
+    kind: Kind = .split,
+
+    mutex: std.Io.Mutex = .init,
+    done: bool = false,
+    /// Null when the split failed or for an `ids` request.
+    result: ?Result = null,
+    /// Target for `kind == .info`.
+    target_id: u64 = 0,
+    /// Filled for `kind == .ids`.
+    ids_buf: [64]u64 = [_]u64{0} ** 64,
+    ids_len: usize = 0,
+
+    pub const Kind = enum { split, ids, info };
+
+    /// Scalar-only on purpose: `PaneHandle.title` is a borrowed slice, so the
+    /// app thread copies into a fixed buffer here and the requester dups it
+    /// into its arena after `done`. Nothing else crosses the boundary.
+    pub const Result = struct {
+        id: u64,
+        pid: ?u32 = null,
+        cols: ?u16 = null,
+        rows: ?u16 = null,
+        focused: ?bool = null,
+        title_buf: [255]u8 = [_]u8{0} ** 255,
+        title_len: usize = 0,
+    };
+};
+
+/// Ask the app thread to split `surface`. Safe from any thread.
+///
+/// Blocks until the app thread has serviced the request. Returns the result,
+/// or null if the split failed.
+///
+/// FORK: KooshaPari/Khostty#73, #76.
+pub fn splitOnAppThread(
+    self: *App,
+    req: *SplitRequest,
+    timeout_ms: u64,
+) Allocator.Error!?SplitRequest.Result {
+    const io = @import("global.zig").io();
+
+    {
+        self.split_requests_mutex.lockUncancelable(io);
+        defer self.split_requests_mutex.unlock(io);
+        try self.split_requests.append(self.alloc, req);
+    }
+
+    // Poll rather than block on a condition variable: the app thread services
+    // this from `tick`, which also drives the event loop, so a missed wakeup
+    // would hang the terminal, not just the request.
+    var waited: u64 = 0;
+    while (waited <= timeout_ms) {
+        req.mutex.lockUncancelable(io);
+        if (req.done) {
+            const result = req.result;
+            req.mutex.unlock(io);
+            return result;
+        }
+        req.mutex.unlock(io);
+        std.Io.sleep(io, std.Io.Duration.fromMilliseconds(5), .awake) catch {};
+        waited += 5;
+    }
+    return null;
+}
+
+/// Read the current surface ids from the app thread. Safe from any thread.
+///
+/// FORK: KooshaPari/Khostty#76.
+pub fn surfaceIdsOnAppThread(
+    self: *App,
+    req: *SplitRequest,
+    timeout_ms: u64,
+) Allocator.Error![]const u64 {
+    req.kind = .ids;
+    _ = try self.splitOnAppThread(req, timeout_ms);
+    return req.ids_buf[0..req.ids_len];
+}
+
+/// Read one surface's info from the app thread. Safe from any thread.
+///
+/// FORK: KooshaPari/Khostty#76.
+pub fn surfaceInfoOnAppThread(
+    self: *App,
+    req: *SplitRequest,
+    target_id: u64,
+    timeout_ms: u64,
+) Allocator.Error!?SplitRequest.Result {
+    req.kind = .info;
+    req.target_id = target_id;
+    return self.splitOnAppThread(req, timeout_ms);
+}
+
+/// Perform every queued split request. Must be called on the app thread.
+fn serviceSplitRequests(self: *App) void {
+    const io = @import("global.zig").io();
+
+    self.split_requests_mutex.lockUncancelable(io);
+    const queued = self.split_requests.toOwnedSlice(self.alloc) catch {
+        self.split_requests_mutex.unlock(io);
+        return;
+    };
+    self.split_requests_mutex.unlock(io);
+    defer self.alloc.free(queued);
+
+    for (queued) |req| {
+        if (req.kind == .info) {
+            req.mutex.lockUncancelable(io);
+            defer req.mutex.unlock(io);
+            req.done = true;
+            const core = self.findSurfaceByID(req.target_id) orelse continue;
+            var result: SplitRequest.Result = .{ .id = core.id };
+            result.pid = corePid(core);
+            result.cols = coreCols(core);
+            result.rows = coreRows(core);
+            if (coreTitle(core)) |t| {
+                const n = @min(t.len, result.title_buf.len);
+                @memcpy(result.title_buf[0..n], t[0..n]);
+                result.title_len = n;
+            }
+            req.result = result;
+            continue;
+        }
+
+        if (req.kind == .ids) {
+            req.mutex.lockUncancelable(io);
+            defer req.mutex.unlock(io);
+            req.ids_len = 0;
+            for (self.surfaces.items) |rt_surface| {
+                if (req.ids_len >= req.ids_buf.len) break;
+                req.ids_buf[req.ids_len] = rt_surface.core().id;
+                req.ids_len += 1;
+            }
+            req.done = true;
+            continue;
+        }
+
+        // Snapshot ids before, so the new surface can be identified by diff.
+        var before: std.ArrayListUnmanaged(u64) = .empty;
+        defer before.deinit(self.alloc);
+        for (self.surfaces.items) |rt_surface| {
+            before.append(self.alloc, rt_surface.core().id) catch {};
+        }
+
+        // Resolve the target here, on the app thread: `focused_surface` and
+        // the surface list are app state.
+        const parent = if (req.parent_id) |id|
+            self.findSurfaceByID(id)
+        else
+            self.focused_surface;
+
+        const target = parent orelse {
+            req.mutex.lockUncancelable(io);
+            req.done = true;
+            req.mutex.unlock(io);
+            continue;
+        };
+
+        _ = target.rt_app.performAction(
+            .{ .surface = target },
+            .new_split,
+            req.direction,
+        ) catch |err| {
+            std.log.scoped(.app).warn("queued split failed err={}", .{err});
+            req.mutex.lockUncancelable(io);
+            req.done = true;
+            req.mutex.unlock(io);
+            continue;
+        };
+
+        // The action returns no handle, so find the surface that was not there
+        // before. Safe here: this is the app thread and it owns `surfaces`.
+        var found: ?*Surface = null;
+        for (self.surfaces.items) |rt_surface| {
+            const core = rt_surface.core();
+            if (std.mem.indexOfScalar(u64, before.items, core.id) == null) {
+                found = core;
+                break;
+            }
+        }
+
+        // Apply a requested title through the same action OSC 0/2 uses. A
+        // write, so it belongs on this thread too.
+        if (found) |core| {
+            if (req.title) |t| {
+                _ = target.rt_app.performAction(
+                    .{ .surface = core },
+                    .set_title,
+                    .{ .title = t },
+                ) catch |err| {
+                    std.log.scoped(.app).warn("split title apply failed err={}", .{err});
+                };
+            }
+        }
+
+        req.mutex.lockUncancelable(io);
+        defer req.mutex.unlock(io);
+        req.done = true;
+        // The new surface may not exist yet: GTK updates the split tree
+        // synchronously but creates the surface on a later loop iteration. The
+        // requester polls `kind == .ids` for that reason.
+        const core = found orelse continue;
+        var result: SplitRequest.Result = .{ .id = core.id };
+        result.pid = corePid(core);
+        result.cols = coreCols(core);
+        result.rows = coreRows(core);
+        if (coreTitle(core)) |t| {
+            const n = @min(t.len, result.title_buf.len);
+            @memcpy(result.title_buf[0..n], t[0..n]);
+            result.title_len = n;
+        }
+        req.result = result;
+    }
 }
 
 /// Update the configuration associated with the app. This can only be
@@ -636,3 +881,27 @@ pub const Wasm = if (!builtin.target.isWasm()) struct {} else struct {
     //     }
     // }
 };
+
+// ── App-thread surface accessors ──
+//
+// FORK: KooshaPari/Khostty#73, #76. These read runtime and terminal state, so
+// they may ONLY be called from the app thread. They live here rather than being
+// borrowed from app_host.zig because app_host is GTK-gated at comptime while
+// `tick` runs everywhere.
+
+fn coreTitle(core: *Surface) ?[]const u8 {
+    return core.rt_surface.getTitle();
+}
+
+fn corePid(core: *Surface) ?u32 {
+    const pid = core.io.getProcessInfo(.foreground_pid) orelse return null;
+    return std.math.cast(u32, pid);
+}
+
+fn coreCols(core: *Surface) ?u16 {
+    return std.math.cast(u16, core.io.terminal.cols);
+}
+
+fn coreRows(core: *Surface) ?u16 {
+    return std.math.cast(u16, core.io.terminal.rows);
+}

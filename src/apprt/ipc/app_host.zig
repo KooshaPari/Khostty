@@ -97,9 +97,12 @@ pub const AppHost = struct {
     app: *App,
     mutex: std.Io.Mutex = .init,
     /// How long to wait for the queued `new_split` to produce a surface.
-    split_wait_ms: u64 = 500,
+    split_wait_ms: u64 = 2000,
     /// Poll interval while waiting for that surface.
     split_poll_interval_ms: u64 = 2,
+    /// Per-request budget for a single app-thread round trip. Kept short so one
+    /// slow round trip cannot consume the whole `split_wait_ms` allowance.
+    split_poll_timeout_ms: u64 = 100,
     /// Optional event sink; when set, the publish hooks deliver to subscribers.
     broker: ?*events.Broker = null,
 
@@ -268,29 +271,10 @@ pub const AppHost = struct {
         arena: Allocator,
         req: pane.CreateRequest,
     ) pane.HostError!pane.PaneHandle {
-        _ = ctx;
-        _ = arena;
-        _ = req;
-
-        // REFUSED, deliberately. `createWindowed` below calls `performAction`,
-        // which dispatches straight into runtime widget code with no thread
-        // marshalling - and the agent IPC server runs each connection on its own
-        // thread, so that call aborted the whole app. That was
-        // KooshaPari/Khostty#71: an agent splitting a pane killed the user's
-        // terminal.
-        //
-        // Returning `Unsupported` is that issue's acceptance: a split request
-        // must either work or fail as a protocol error, never kill the
-        // terminal. Doing it properly means marshalling onto the runtime's main
-        // thread (a queue drained from the GTK tick, or `glib.idleAdd`), which
-        // is its own change with its own verification. `createWindowed` is left
-        // intact - unused, hence not analysed - for that follow-up.
-        std.log.scoped(.ipc_host).warn(
-            "agent pane.create is not implemented yet; refusing rather than " ++
-                "crossing threads (KooshaPari/Khostty#71)",
-            .{},
-        );
-        return error.Unsupported;
+        // Re-enabled now that the whole split runs on the app thread (#76).
+        // #72 refused here because the action reached runtime widget code from a
+        // connection thread and aborted the process (#71).
+        return ctxHost(ctx).createWindowed(arena, req);
     }
 
     fn closeCore(ctx: *anyopaque, id: PaneId) pane.HostError!void {
@@ -393,77 +377,102 @@ pub const AppHost = struct {
         arena: Allocator,
         req: pane.CreateRequest,
     ) pane.HostError!pane.PaneHandle {
-        self.mutex.lockUncancelable(self.io);
-        defer self.mutex.unlock(self.io);
-
-        const parent = if (req.parent) |id|
-            self.findCore(id) orelse return error.PaneNotFound
-        else
-            self.app.focused_surface orelse return error.Unsupported;
-
-        // Snapshot the runtime's surfaces: the split action returns no handle,
-        // so the new pane can only be identified by diffing.
-        var before: std.ArrayListUnmanaged(pane.PaneInfo) = .empty;
-        defer before.deinit(self.gpa);
-        try self.listWindowed(arena, &before);
-
+        // Nothing in here may read app state: this runs on an IPC connection
+        // thread. Every read and write is a request to the app thread.
+        // KooshaPari/Khostty#73, #76.
         const direction: apprt.action.SplitDirection = switch (req.dir) {
             .up => .up,
             .down => .down,
             .left => .left,
             .right => .right,
         };
-        _ = parent.rt_app.performAction(
-            .{ .surface = parent },
-            .new_split,
-            direction,
-        ) catch |err| return mapActionError(err);
 
-        const previous = try collectIds(self.gpa, before.items);
-        defer self.gpa.free(previous);
+        // Snapshot the surface set before the split so the new pane can be
+        // identified by diff.
+        var slot: App.SplitRequest = .{ .direction = direction };
+        const before = try self.app.surfaceIdsOnAppThread(
+            &slot,
+            self.split_poll_timeout_ms,
+        );
+        var previous: [64]u64 = undefined;
+        const previous_len = @min(before.len, previous.len);
+        @memcpy(previous[0..previous_len], before[0..previous_len]);
 
-        var waited: u64 = 0;
-        var created: ?pane.PaneInfo = null;
-        while (waited <= self.split_wait_ms) {
-            var after: std.ArrayListUnmanaged(pane.PaneInfo) = .empty;
-            defer after.deinit(self.gpa);
-            try self.listWindowed(arena, &after);
+        // Initiate. This returns before the surface exists: GTK updates the
+        // split tree synchronously and creates the surface on a later loop
+        // iteration, so the wait happens here rather than on the app thread.
+        var split_slot: App.SplitRequest = .{
+            .kind = .split,
+            .parent_id = if (req.parent) |id| id.raw else null,
+            .direction = direction,
+            .title = if (req.title) |v| try arena.dupeZ(u8, v) else null,
+        };
+        _ = self.app.splitOnAppThread(
+            &split_slot,
+            self.split_poll_timeout_ms,
+        ) catch null;
 
-            if (pane.findNewPane(previous, after.items)) |found| {
-                created = found;
-                break;
+        // Poll for the surface that was not there before, against a real
+        // wall-clock deadline. Counting iterations is wrong here: each request
+        // can itself consume its whole timeout when the app thread is busy, so
+        // an iteration budget turns into an unbounded wait.
+        var created: ?u64 = null;
+        const deadline = std.Io.Timestamp.now(self.io, .awake);
+        while (true) {
+            if (deadline.durationTo(
+                std.Io.Timestamp.now(self.io, .awake),
+            ).toMilliseconds() > self.split_wait_ms) break;
+
+            var poll_slot: App.SplitRequest = .{};
+            const now = self.app.surfaceIdsOnAppThread(
+                &poll_slot,
+                self.split_poll_timeout_ms,
+            ) catch break;
+            for (now) |id| {
+                var known = false;
+                for (previous[0..previous_len]) |p| {
+                    if (p == id) {
+                        known = true;
+                        break;
+                    }
+                }
+                if (!known) {
+                    created = id;
+                    break;
+                }
             }
-
+            if (created != null) break;
             std.Io.sleep(
                 self.io,
                 std.Io.Duration.fromMilliseconds(@intCast(self.split_poll_interval_ms)),
                 .awake,
             ) catch break;
-            waited += self.split_poll_interval_ms;
         }
 
-        const info = created orelse return error.Internal;
+        const id = created orelse return error.Internal;
 
-        // A requested title goes through the same action the runtime uses for
-        // OSC 0/2, so title reporting and window-title updates behave normally.
-        if (req.title) |title| {
-            const core = self.findCore(info.id) orelse return error.Internal;
-            _ = core.rt_app.performAction(
-                .{ .surface = core },
-                .set_title,
-                // SetTitle carries a sentinel-terminated slice (the GTK
-                // window title path requires it), unlike PaneInfo.title.
-                .{ .title = try arena.dupeZ(u8, title) },
-            ) catch |err| return mapActionError(err);
-        }
+        // Info for the new pane, again from the app thread.
+        var info_slot: App.SplitRequest = .{};
+        const result = (try self.app.surfaceInfoOnAppThread(
+            &info_slot,
+            id,
+            self.split_poll_timeout_ms,
+        )) orelse return error.Internal;
+
+        // `result` is stable now. Copy the title into the arena so the returned
+        // handle cannot dangle.
+        const title: ?[]const u8 = if (result.title_len > 0)
+            try arena.dupe(u8, result.title_buf[0..result.title_len])
+        else
+            null;
 
         return .{
-            .id = info.id,
-            .pid = info.pid,
-            .title = info.title,
-            .cols = info.cols,
-            .rows = info.rows,
-            .focused = info.focused,
+            .id = PaneId.init(result.id),
+            .pid = result.pid,
+            .title = title,
+            .cols = result.cols,
+            .rows = result.rows,
+            .focused = result.focused,
         };
     }
 
