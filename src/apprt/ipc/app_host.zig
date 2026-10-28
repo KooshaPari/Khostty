@@ -97,9 +97,12 @@ pub const AppHost = struct {
     app: *App,
     mutex: std.Io.Mutex = .init,
     /// How long to wait for the queued `new_split` to produce a surface.
-    split_wait_ms: u64 = 500,
+    split_wait_ms: u64 = 2000,
     /// Poll interval while waiting for that surface.
     split_poll_interval_ms: u64 = 2,
+    /// Per-request budget for a single app-thread round trip. Kept short so one
+    /// slow round trip cannot consume the whole `split_wait_ms` allowance.
+    split_poll_timeout_ms: u64 = 100,
     /// Optional event sink; when set, the publish hooks deliver to subscribers.
     broker: ?*events.Broker = null,
 
@@ -387,7 +390,10 @@ pub const AppHost = struct {
         // Snapshot the surface set before the split so the new pane can be
         // identified by diff.
         var slot: App.SplitRequest = .{ .direction = direction };
-        const before = try self.app.surfaceIdsOnAppThread(&slot, self.split_wait_ms);
+        const before = try self.app.surfaceIdsOnAppThread(
+            &slot,
+            self.split_poll_timeout_ms,
+        );
         var previous: [64]u64 = undefined;
         const previous_len = @min(before.len, previous.len);
         @memcpy(previous[0..previous_len], before[0..previous_len]);
@@ -401,16 +407,26 @@ pub const AppHost = struct {
             .direction = direction,
             .title = if (req.title) |v| try arena.dupeZ(u8, v) else null,
         };
-        _ = self.app.splitOnAppThread(&split_slot, self.split_wait_ms) catch null;
+        _ = self.app.splitOnAppThread(
+            &split_slot,
+            self.split_poll_timeout_ms,
+        ) catch null;
 
-        // Poll for the surface that was not there before.
+        // Poll for the surface that was not there before, against a real
+        // wall-clock deadline. Counting iterations is wrong here: each request
+        // can itself consume its whole timeout when the app thread is busy, so
+        // an iteration budget turns into an unbounded wait.
         var created: ?u64 = null;
-        var waited: u64 = 0;
-        while (waited <= self.split_wait_ms) {
+        const deadline = std.Io.Timestamp.now(self.io, .awake);
+        while (true) {
+            if (deadline.durationTo(
+                std.Io.Timestamp.now(self.io, .awake),
+            ).toMilliseconds() > self.split_wait_ms) break;
+
             var poll_slot: App.SplitRequest = .{};
             const now = self.app.surfaceIdsOnAppThread(
                 &poll_slot,
-                self.split_wait_ms,
+                self.split_poll_timeout_ms,
             ) catch break;
             for (now) |id| {
                 var known = false;
@@ -431,7 +447,6 @@ pub const AppHost = struct {
                 std.Io.Duration.fromMilliseconds(@intCast(self.split_poll_interval_ms)),
                 .awake,
             ) catch break;
-            waited += self.split_poll_interval_ms;
         }
 
         const id = created orelse return error.Internal;
@@ -441,7 +456,7 @@ pub const AppHost = struct {
         const result = (try self.app.surfaceInfoOnAppThread(
             &info_slot,
             id,
-            self.split_wait_ms,
+            self.split_poll_timeout_ms,
         )) orelse return error.Internal;
 
         // `result` is stable now. Copy the title into the arena so the returned
