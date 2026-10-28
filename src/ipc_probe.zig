@@ -75,33 +75,61 @@ pub fn main() !void {
     // Proves the windowed vtable is reachable and can enumerate the app's live
     // surfaces. An `Unsupported` the whole way down would still pass `ping`,
     // so this is what separates "socket alive" from "agent surface usable".
-    try client.send(.{ .id = 2, .cmd = .pane_list, .auth = token });
-    var list = try client.readResponse(gpa);
-    defer list.deinit();
+    // Retried: the socket exists from `App.init` but the app's tick loop - which
+    // services the request on the app thread - may not be running yet. Observed
+    // in CI as `pane.list failed: internal` one second after connect on a build
+    // where the same call had succeeded instantly.
+    var panes_arr: []const std.json.Value = &.{};
+    var attempt: usize = 0;
+    while (attempt < 100) : (attempt += 1) {
+        try client.send(.{ .id = 2, .cmd = .pane_list, .auth = token });
+        var list = try client.readResponse(gpa);
+        defer list.deinit();
 
-    const lobj = list.value.object;
-    if (lobj.get("ok") == null or !lobj.get("ok").?.bool) {
-        const err_str = if (lobj.get("error")) |e|
-            (e.object.get("code") orelse e).string
-        else
-            "unknown";
-        std.debug.print("probe: pane.list failed: {s}\n", .{err_str});
-        return error.PaneListFailed;
-    }
+        const lobj = list.value.object;
+        if (lobj.get("ok") == null or !lobj.get("ok").?.bool) {
+            const code = if (lobj.get("error")) |e|
+                (e.object.get("code") orelse e).string
+            else
+                "unknown";
 
-    // `pane.list` returns the pane array directly as `data`. Accept an object
-    // with a `panes` key too so a change of envelope does not masquerade as a
-    // failure - and check the tag before touching the union, because touching
-    // the wrong arm panics rather than returning an error.
-    const data_val = lobj.get("data") orelse return error.MalformedResponse;
-    const panes_arr: []const std.json.Value = switch (data_val) {
-        .array => |a| a.items,
-        .object => |o| if (o.get("panes")) |p| switch (p) {
+            // `internal` means the app thread did not service it in time, which
+            // during startup is expected. Anything else is a real refusal.
+            if (std.mem.eql(u8, code, "internal")) {
+                std.Io.sleep(
+                    io,
+                    std.Io.Duration.fromMilliseconds(100),
+                    .awake,
+                ) catch {};
+                continue;
+            }
+
+            std.debug.print("probe: pane.list failed: {s}\n", .{code});
+            return error.PaneListFailed;
+        }
+
+        // `pane.list` returns the pane array directly as `data`. Accept an
+        // object with a `panes` key too, and check the union tag before
+        // touching an arm: the wrong arm panics rather than erroring.
+        const data_val = lobj.get("data") orelse return error.MalformedResponse;
+        panes_arr = switch (data_val) {
             .array => |a| a.items,
+            .object => |o| if (o.get("panes")) |p| switch (p) {
+                .array => |a| a.items,
+                else => return error.MalformedResponse,
+            } else return error.MalformedResponse,
             else => return error.MalformedResponse,
-        } else return error.MalformedResponse,
-        else => return error.MalformedResponse,
-    };
+        };
+
+        // Panes appear after the window is created, so keep polling until one
+        // exists rather than racing startup.
+        if (panes_arr.len > 0) break;
+        std.Io.sleep(io, std.Io.Duration.fromMilliseconds(100), .awake) catch {};
+    }
+    if (panes_arr.len == 0) {
+        std.debug.print("probe: pane.list returned no panes after ~10s\n", .{});
+        return error.NoPanes;
+    }
     std.debug.print("probe: pane.list ok ({d} pane(s))\n", .{panes_arr.len});
 
     // ── events: all four must actually arrive ──
