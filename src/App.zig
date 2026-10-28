@@ -734,3 +734,27 @@ pub const Wasm = if (!builtin.target.isWasm()) struct {} else struct {
 fn coreCwd(core: *Surface) ?[]const u8 {
     return core.io.terminal.getPwd();
 }
+
+// ── App-thread surface accessors ──
+//
+// FORK: KooshaPari/Khostty#76. These read runtime and terminal state, so they
+// may ONLY be called from the app thread. They live here rather than being
+// borrowed from app_host.zig because that file is GTK-gated at comptime while
+// `tick` runs on every platform.
+
+fn coreTitle(core: *Surface) ?[]const u8 {
+    return core.rt_surface.getTitle();
+}
+
+fn corePid(core: *Surface) ?u32 {
+    const pid = core.io.getProcessInfo(.foreground_pid) orelse return null;
+    return std.math.cast(u32, pid);
+}
+
+fn coreCols(core: *Surface) ?u16 {
+    return std.math.cast(u16, core.io.terminal.cols);
+}
+
+fn coreRows(core: *Surface) ?u16 {
+    return std.math.cast(u16, core.io.terminal.rows);
+}
