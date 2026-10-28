@@ -197,9 +197,9 @@ pub const SplitRequest = struct {
     /// must do it too.
     parent_id: ?u64 = null,
     direction: apprt.action.SplitDirection,
-    /// Optional title to apply to the new surface. Borrowed: the requester
-    /// keeps the memory alive for the whole wait.
-    title: ?[]const u8 = null,
+    /// Optional title to apply to the new surface. Borrowed for the duration of
+    /// the wait; sentinel-terminated because `SetTitle` requires it.
+    title: ?[:0]const u8 = null,
 
     mutex: std.Io.Mutex = .init,
     done: bool = false,

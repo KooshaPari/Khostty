@@ -388,7 +388,9 @@ pub const AppHost = struct {
         var request: App.SplitRequest = .{
             .parent_id = if (req.parent) |id| id.raw else null,
             .direction = direction,
-            .title = req.title,
+            // dupeZ because SetTitle carries a sentinel-terminated slice. The
+            // arena keeps it alive for the whole wait.
+            .title = if (req.title) |v| try arena.dupeZ(u8, v) else null,
         };
         const result = (try self.app.splitOnAppThread(
             &request,
