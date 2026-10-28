@@ -79,6 +79,9 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check the IPC app-thread boundary
+        run: zig build check-ipc-app-thread
+
       - name: Build the GTK runtime and the IPC probe
         run: |
           set -euo pipefail

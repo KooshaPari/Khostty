@@ -306,7 +306,7 @@ pub const AppHost = struct {
                 const self: *@This() = @ptrCast(@alignCast(raw));
                 // Resolution and the close both touch app state, so both run
                 // on the app thread.
-                const core = self.host.findCore(self.id) orelse {
+                const core = self.host.findCoreInner(self.id) orelse {
                     self.err = error.PaneNotFound;
                     return;
                 };
@@ -351,7 +351,7 @@ pub const AppHost = struct {
 
     fn writeToParser(ctx: *anyopaque, id: PaneId, data: []const u8) pane.HostError!usize {
         const self = ctxHost(ctx);
-        const core = self.findCore(id) orelse return error.PaneNotFound;
+        const core = self.findCoreInner(id) orelse return error.PaneNotFound;
         // The same parser the pty output goes through, so escape sequences and
         // modes behave exactly as if the program had written them.
         //
@@ -385,7 +385,7 @@ pub const AppHost = struct {
 
             fn run(raw: *anyopaque) void {
                 const self: *@This() = @ptrCast(@alignCast(raw));
-                const core = self.host.findCore(self.id) orelse {
+                const core = self.host.findCoreInner(self.id) orelse {
                     self.err = error.PaneNotFound;
                     return;
                 };
@@ -410,7 +410,7 @@ pub const AppHost = struct {
         amount: u16,
     ) pane.HostError!void {
         const self = ctxHost(ctx);
-        const core = self.findCore(id) orelse return error.PaneNotFound;
+        const core = self.findCoreInner(id) orelse return error.PaneNotFound;
         // Explicit switch, NOT @enumFromInt/@intFromEnum: protocol.Direction is
         // {right, down, left, up} but ResizeSplit.Direction is
         // {up, down, left, right}. Converting by integer would silently swap
@@ -429,107 +429,68 @@ pub const AppHost = struct {
     }
 
     fn equalizeSplits(ctx: *anyopaque) pane.HostError!void {
+        const Payload = struct {
+            host: *AppHost,
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const self: *@This() = @ptrCast(@alignCast(raw));
+                // `focused_surface` is app state, so resolving it belongs on
+                // the app thread. KooshaPari/Khostty#76.
+                const core = self.host.app.focused_surface orelse {
+                    self.err = error.PaneNotFound;
+                    return;
+                };
+                _ = core.rt_app.performAction(
+                    .{ .surface = core },
+                    .equalize_splits,
+                    {},
+                ) catch |e| {
+                    self.err = mapActionError(e);
+                };
+            }
+        };
+
         const self = ctxHost(ctx);
-        const core = self.app.focused_surface orelse return error.PaneNotFound;
-        _ = core.rt_app.performAction(
-            .{ .surface = core },
-            .equalize_splits,
-            {},
-        ) catch |err| return mapActionError(err);
+        var payload: Payload = .{ .host = self };
+        var task = ipc_task.Task.init(&payload, Payload.run);
+        if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
+            return error.Internal;
+        if (payload.err) |e| return e;
     }
 
     fn toggleZoom(ctx: *anyopaque, id: PaneId) pane.HostError!void {
+        const Payload = struct {
+            host: *AppHost,
+            id: PaneId,
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const self: *@This() = @ptrCast(@alignCast(raw));
+                const core = self.host.findCoreInner(self.id) orelse {
+                    self.err = error.PaneNotFound;
+                    return;
+                };
+                _ = core.rt_app.performAction(
+                    .{ .surface = core },
+                    .toggle_split_zoom,
+                    {},
+                ) catch |e| {
+                    self.err = mapActionError(e);
+                };
+            }
+        };
+
         const self = ctxHost(ctx);
-        const core = self.findCore(id) orelse return error.PaneNotFound;
-        _ = core.rt_app.performAction(
-            .{ .surface = core },
-            .toggle_split_zoom,
-            {},
-        ) catch |err| return mapActionError(err);
+        var payload: Payload = .{ .host = self, .id = id };
+        var task = ipc_task.Task.init(&payload, Payload.run);
+        if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
+            return error.Internal;
+        if (payload.err) |e| return e;
     }
 
     // ── Windowed implementations ──
 
-    fn createWindowed(
-        self: *AppHost,
-        arena: Allocator,
-        req: pane.CreateRequest,
-    ) pane.HostError!pane.PaneHandle {
-        self.mutex.lockUncancelable(self.io);
-        defer self.mutex.unlock(self.io);
-
-        const parent = if (req.parent) |id|
-            self.findCore(id) orelse return error.PaneNotFound
-        else
-            self.app.focused_surface orelse return error.Unsupported;
-
-        // Snapshot the runtime's surfaces: the split action returns no handle,
-        // so the new pane can only be identified by diffing.
-        var before: std.ArrayListUnmanaged(pane.PaneInfo) = .empty;
-        defer before.deinit(self.gpa);
-        try self.listInner(arena, &before);
-
-        const direction: apprt.action.SplitDirection = switch (req.dir) {
-            .up => .up,
-            .down => .down,
-            .left => .left,
-            .right => .right,
-        };
-        _ = parent.rt_app.performAction(
-            .{ .surface = parent },
-            .new_split,
-            direction,
-        ) catch |err| return mapActionError(err);
-
-        const previous = try collectIds(self.gpa, before.items);
-        defer self.gpa.free(previous);
-
-        var waited: u64 = 0;
-        var created: ?pane.PaneInfo = null;
-        while (waited <= self.split_wait_ms) {
-            var after: std.ArrayListUnmanaged(pane.PaneInfo) = .empty;
-            defer after.deinit(self.gpa);
-            try self.listInner(arena, &after);
-
-            if (pane.findNewPane(previous, after.items)) |found| {
-                created = found;
-                break;
-            }
-
-            std.Io.sleep(
-                self.io,
-                std.Io.Duration.fromMilliseconds(@intCast(self.split_poll_interval_ms)),
-                .awake,
-            ) catch break;
-            waited += self.split_poll_interval_ms;
-        }
-
-        const info = created orelse return error.Internal;
-
-        // A requested title goes through the same action the runtime uses for
-        // OSC 0/2, so title reporting and window-title updates behave normally.
-        if (req.title) |title| {
-            const core = self.findCore(info.id) orelse return error.Internal;
-            _ = core.rt_app.performAction(
-                .{ .surface = core },
-                .set_title,
-                // SetTitle carries a sentinel-terminated slice (the GTK
-                // window title path requires it), unlike PaneInfo.title.
-                .{ .title = try arena.dupeZ(u8, title) },
-            ) catch |err| return mapActionError(err);
-        }
-
-        return .{
-            .id = info.id,
-            .pid = info.pid,
-            .title = info.title,
-            .cols = info.cols,
-            .rows = info.rows,
-            .focused = info.focused,
-        };
-    }
-
-    /// Enumerate surfaces. Runs on the app thread.
     fn listInner(
         self: *AppHost,
         arena: Allocator,
@@ -612,7 +573,7 @@ pub const AppHost = struct {
         };
     }
 
-    fn findCore(self: *AppHost, id: PaneId) ?*CoreSurface {
+    fn findCoreInner(self: *AppHost, id: PaneId) ?*CoreSurface {
         return self.app.findSurfaceByID(id.raw);
     }
 };

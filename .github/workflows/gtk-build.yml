@@ -86,5 +86,10 @@ jobs:
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check the IPC app-thread boundary
+        # Fast and toolchain-free: fails if a vtable method reads app state
+        # from a connection thread. Keeps #76 from silently regressing.
+        run: zig build check-ipc-app-thread
+
       - name: Build with the GTK runtime
         run: nix develop -c zig build -Dapp-runtime=gtk

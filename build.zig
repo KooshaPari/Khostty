@@ -157,6 +157,23 @@ pub fn build(b: *std.Build) !void {
         fork_discipline_step.dependOn(&check.step);
     }
 
+    // ---- IPC app-thread guard ----------------------------------------------
+    // FORK: every windowed IPC vtable method runs on a per-connection thread,
+    // so touching app state there is undefined behaviour (KooshaPari/Khostty#76).
+    // This fails the build if a call site regresses.
+    const ipc_thread_step = b.step(
+        "check-ipc-app-thread",
+        "Fail if an IPC vtable method touches app state off the app thread",
+    );
+    {
+        const check = b.addSystemCommand(&.{
+            "zig", "run", "tools/check-ipc-app-thread.zig", "--",
+        });
+        check.addArg("src/apprt/ipc/app_host.zig");
+        check.setCwd(b.path("."));
+        ipc_thread_step.dependOn(&check.step);
+    }
+
     // Ghostty resources like terminfo, shell integration, themes, etc.
     const resources = try buildpkg.GhosttyResources.init(b, &config, &deps);
     const i18n = if (config.i18n) try buildpkg.GhosttyI18n.init(b, &config) else null;
