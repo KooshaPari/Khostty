@@ -79,6 +79,12 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check the IPC app-thread boundary
+        # `zig run`, not `zig build`: the build graph unpacks build.zig.zon
+        # dependencies, which needs the dev shell. The guard only reads a
+        # source file, so it needs no toolchain beyond zig itself.
+        run: zig run tools/check-ipc-app-thread.zig -- src/apprt/ipc/app_host.zig
+
       - name: Build the GTK runtime and the IPC probe
         run: |
           set -euo pipefail
