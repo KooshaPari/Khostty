@@ -34,6 +34,8 @@ const adw_version = @import("../adw_version.zig");
 const gtk_version = @import("../gtk_version.zig");
 const winprotopkg = @import("../winproto.zig");
 const ApprtApp = @import("../App.zig");
+const SurfaceInitState = @import("../surface_init_state.zig").State;
+const SurfaceInitFailure = @import("../surface_init_state.zig").Failure;
 const Common = @import("../class.zig").Common;
 const WeakRef = @import("../weak_ref.zig").WeakRef;
 const Config = @import("config.zig").Config;
@@ -185,10 +187,18 @@ pub const Application = extern struct {
         /// The global shortcut logic.
         global_shortcuts: *GlobalShortcuts,
 
-        /// This is set to true so long as we request a window exactly
-        /// once. This prevents quitting the app before we've shown one
-        /// window.
-        requested_window: bool = false,
+        /// Tracks whether we ever managed to initialize a surface, and why
+        /// not if we didn't.
+        ///
+        /// If we quit the app without ever initializing a surface then we
+        /// never actually showed the user a terminal, which means something
+        /// went wrong in the environment (e.g. no EGL driver is available on
+        /// a headless host). We track this so that we can exit with an error
+        /// status instead of looking like a clean shutdown.
+        ///
+        /// This also tracks whether a window was requested, which prevents
+        /// quitting the app before we've shown one window.
+        surface_init: SurfaceInitState = .{},
 
         /// This is set to false internally when the event loop
         /// should exit and the application should quit. This must
@@ -588,7 +598,7 @@ pub const Application = extern struct {
                 // We only do this if we don't have the closed delay set,
                 // because with the closed delay set we'll exit eventually.
                 if (config.@"quit-after-last-window-closed-delay" == null) {
-                    if (priv.requested_window and @as(
+                    if (priv.surface_init.window_requested and @as(
                         ?*glib.List,
                         self.as(gtk.Application).getWindows(),
                     ) == null) {
@@ -609,6 +619,32 @@ pub const Application = extern struct {
                 // begin our exit immediately.
                 self.quitNow();
             }
+        }
+
+        // If we quit without ever initializing a surface then we never showed
+        // the user a terminal. Something is wrong with the environment (e.g.
+        // no EGL driver is available on a headless host) and exiting with a
+        // success status would be indistinguishable from a clean shutdown.
+        // Supervisors, systemd units and CI checks all rely on the exit
+        // status to know that something went wrong.
+        if (self.surfaceInitFailure()) |failure| {
+            switch (failure) {
+                .failed => |err| log.err(
+                    "fatal: no terminal surface could be initialized; the last " ++
+                        "initialization error was error.{s}. This usually means " ++
+                        "the GPU/OpenGL driver is unavailable, e.g. no EGL " ++
+                        "driver could be loaded on a headless host",
+                    .{err},
+                ),
+                .incomplete => log.err(
+                    "fatal: no terminal surface could be initialized. This " ++
+                        "usually means the GPU/OpenGL driver is unavailable, " ++
+                        "e.g. no EGL driver could be loaded on a headless host",
+                    .{},
+                ),
+            }
+
+            return error.SurfaceInitializationFailed;
         }
     }
 
@@ -847,6 +883,33 @@ pub const Application = extern struct {
     /// Returns the open URI portal implementation.
     pub fn openUri(self: *Self) *OpenURI {
         return &self.private().open_uri;
+    }
+
+    /// Record that a surface was successfully initialized.
+    ///
+    /// Once this happens we know the app is functional, so any later quit is
+    /// a clean shutdown and must keep exiting with a success status.
+    pub fn surfaceInitialized(self: *Self) void {
+        self.private().surface_init.initializedSuccessfully();
+    }
+
+    /// Record that a surface failed to initialize, along with the reason.
+    ///
+    /// The first reason recorded wins: the first failure is the root cause
+    /// and later failures are usually just consequences of it.
+    pub fn surfaceInitFailed(self: *Self, reason: []const u8) void {
+        self.private().surface_init.initFailed(reason);
+    }
+
+    /// Returns why we failed to ever initialize a surface, or null if we
+    /// didn't fail.
+    ///
+    /// This is null when we initialized a surface at some point (a clean
+    /// shutdown), and null when we never even tried (e.g. the app was
+    /// started in the background with `initial-window = false`), because in
+    /// that case nothing actually failed.
+    fn surfaceInitFailure(self: *Self) ?SurfaceInitFailure {
+        return self.private().surface_init.failure();
     }
 
     /// This will get called when there are no more open surfaces.
@@ -2555,7 +2618,7 @@ const Action = struct {
         // necessary, but I don't want to risk a bug where on a slow machine
         // or something we quit immediately after starting up because there
         // was a delay in the event loop before we created a Window.
-        self.private().requested_window = true;
+        self.private().surface_init.requestWindow();
 
         const win = Window.new(self, .{
             .title = overrides.title,

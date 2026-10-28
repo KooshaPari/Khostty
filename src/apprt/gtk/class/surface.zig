@@ -3447,6 +3447,12 @@ pub const Surface = extern struct {
             // is somehow realized before the first resize signal ever fires.
             self.initSurface() catch |err| {
                 log.warn("surface failed to initialize err={}", .{err});
+
+                // Record the failure so that the app can exit with an error
+                // status if we never manage to initialize a surface. Without
+                // this the app exits with a success status even though the
+                // user never got a terminal.
+                Application.default().surfaceInitFailed(@errorName(err));
             };
         }
     }
@@ -3517,6 +3523,12 @@ pub const Surface = extern struct {
             &priv.rt_surface,
         ) catch |err| {
             log.warn("failed to initialize surface err={}", .{err});
+
+            // Record the precise reason on the app before we collapse it
+            // into our generic error below. The app uses this to name the
+            // cause when it exits because it never got a working surface.
+            app.surfaceInitFailed(@errorName(err));
+
             return error.SurfaceError;
         };
         errdefer surface.deinit();
@@ -3524,6 +3536,11 @@ pub const Surface = extern struct {
         // Store it!
         priv.core_surface = surface;
         priv.desktop_notifications = .init(surface.id);
+
+        // The surface is now usable, so the app is functional. If the app
+        // quits from here on it is a clean shutdown and must exit with a
+        // success status.
+        app.surfaceInitialized();
 
         // Give the render surface a pointer to the core surface so it
         // can pull presents from the renderer in its snapshot handler.
