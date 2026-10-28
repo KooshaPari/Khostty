@@ -89,7 +89,10 @@ jobs:
       - name: Check the IPC app-thread boundary
         # Fast and toolchain-free: fails if a vtable method reads app state
         # from a connection thread. Keeps #76 from silently regressing.
-        run: zig build check-ipc-app-thread
+        # `zig run`, not `zig build`: the build graph unpacks build.zig.zon
+        # dependencies, which needs the dev shell. The guard only reads a
+        # source file, so it needs no toolchain beyond zig itself.
+        run: zig run tools/check-ipc-app-thread.zig -- src/apprt/ipc/app_host.zig
 
       - name: Build with the GTK runtime
         run: nix develop -c zig build -Dapp-runtime=gtk
