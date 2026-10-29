@@ -113,6 +113,11 @@ jobs:
       - name: Diagnose the post-split render storm
         # KooshaPari/Khostty#78. Captures the runtime log around a split and
         # reports which line repeats, so the cause comes from evidence rather
-        # than from reading code. Never fails the job: a diagnostic, not a gate.
+        # than from reading code.
+        #
+        # `if: always()` because the diagnostic is most useful exactly when
+        # the step above it fails - which is the case this branch is about.
+        # It never fails the job: it is a diagnostic, not a gate.
+        if: always()
         continue-on-error: true
         run: nix develop -c bash nix/ipc-storm-diagnose.sh
