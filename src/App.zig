@@ -57,9 +57,16 @@ mailbox: Mailbox.Queue,
 font_grid_set: font.SharedGridSet,
 
 /// FORK: closures posted from IPC connection threads, serviced in `tick`.
-/// KooshaPari/Khostty#76.
+/// KooshaPari/Khostty#76, #79.
 pending_tasks: std.ArrayListUnmanaged(*ipc_task.Task) = .empty,
 pending_tasks_mutex: std.Io.Mutex = .init,
+
+/// Allocator for the heap-allocated tasks.
+///
+/// Thread-safe on purpose: a task is created on a connection thread and freed
+/// on the app thread. `c_allocator` (malloc) is used for that reason, matching
+/// the GTK IPC runtime's existing cross-thread allocations.
+task_alloc: Allocator = std.heap.c_allocator,
 
 /// FORK: agent IPC event publication, set by a runtime that hosts the IPC
 /// server and null everywhere else. Core `Surface` calls it unconditionally,
@@ -208,12 +215,36 @@ pub fn runOnAppThread(
     while (deadline.durationTo(
         std.Io.Timestamp.now(io, .awake),
     ).toMilliseconds() <= timeout_ms) {
-        req.mutex.lockUncancelable(io);
-        const finished = req.done;
-        req.mutex.unlock(io);
-        if (finished) return true;
+        if (req.isDone()) {
+            req.destroy(self.task_alloc);
+            return true;
+        }
         std.Io.sleep(io, std.Io.Duration.fromMilliseconds(5), .awake) catch {};
     }
+
+    // Timed out. The task may still be queued, so mark it cancelled: the app
+    // thread checks this before touching the payload, which may already be
+    // abandoned stack memory.
+    //
+    // FORK: KooshaPari/Khostty#79. Without this the app thread wrote through
+    // `ctx` into a stack frame that had already returned - a use-after-free.
+    if (req.cancel()) {
+        // We won: the app thread has not claimed it and never will. The task
+        // is still queued, so the app thread will free it when it drains it.
+        return false;
+    }
+
+    // We lost: the app thread claimed the task and may be running the closure
+    // right now, reading this stack frame. The payload must stay alive until
+    // it finishes, so wait for `done` before returning.
+    //
+    // This cannot block forever: the closure is short by contract, and the
+    // app thread always marks the task done.
+    while (!req.isDone()) {
+        std.Io.sleep(io, std.Io.Duration.fromMilliseconds(1), .awake) catch {};
+    }
+    // The app thread has finished with it.
+    req.destroy(self.task_alloc);
     return false;
 }
 
@@ -230,10 +261,28 @@ fn serviceTasks(self: *App) void {
     defer self.alloc.free(queued);
 
     for (queued) |req| {
-        req.run(req.ctx);
-        req.mutex.lockUncancelable(io);
-        req.done = true;
-        req.mutex.unlock(io);
+        // Exactly one side frees the task, and it is always the side that
+        // finished LAST. Both sides reach here through the same handshake:
+        //
+        //   app thread: claim() -> run() -> finish()
+        //   caller    : poll isDone() -> free
+        //
+        // The caller only frees after observing `done`, which the app thread
+        // sets after it has stopped touching the task. If the caller had
+        // already given up (cancel won), it is no longer polling, so the app
+        // thread frees instead.
+        //
+        // The free is therefore never concurrent with a poll: the caller
+        // frees only after `done`, and `done` is set after the last touch.
+        if (req.claim()) {
+            req.run(req.ctx);
+            req.finish();
+            // The caller is polling and will free once it sees `done`.
+        } else {
+            // Cancelled: the caller has stopped polling and will not free.
+            req.finish();
+            req.destroy(self.task_alloc);
+        }
     }
 }
 
