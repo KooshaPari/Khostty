@@ -94,6 +94,11 @@ timeout 20 "$PROBE" --split-only 2>&1 | tail -n 5 || true
 echo "capturing $CAPTURE_SECONDS seconds after the split"
 sleep "$CAPTURE_SECONDS"
 
+# Second window: a bounded loop emits at a steady rate, an accelerating one
+# emits more. Measuring twice is what distinguishes "busy" from "runaway".
+MID=$(wc -l < "$LOG")
+sleep "$CAPTURE_SECONDS"
+
 echo "--- analysis ---"
 TOTAL=$(wc -l < "$LOG")
 echo "total log lines: $TOTAL (baseline was $BASE_LINES)"
@@ -103,7 +108,18 @@ echo "lines emitted during the capture: $AFTER"
 if [ "$AFTER" -eq 0 ]; then
   echo "NO STORM: the log did not grow after the split."
 else
-  echo "lines per second: $(awk -v a="$AFTER" -v s="$CAPTURE_SECONDS" 'BEGIN{printf "%.1f", a/s}')"
+  LATE=$(($(wc -l < "$LOG") - MID))
+  R1=$(awk -v a="$AFTER" -v s="$CAPTURE_SECONDS" 'BEGIN{printf "%.1f", a/s}')
+  R2=$(awk -v a="$LATE" -v s="$CAPTURE_SECONDS" 'BEGIN{printf "%.1f", a/s}')
+  echo "window 1 rate: $R1 lines/s"
+  echo "window 2 rate: $R2 lines/s"
+  echo
+  if awk -v a="$R2" -v b="$R1" 'BEGIN{exit !(a > b * 1.5)}'; then
+    echo "VERDICT: ACCELERATING - window 2 is over 1.5x window 1. This is a runaway."
+  else
+    echo "VERDICT: BOUNDED - the rate did not grow between windows. This is a steady"
+    echo "         redraw under software rendering, not an unbounded loop."
+  fi
   echo
   echo "top repeating log lines (message text only):"
   sed -E 's/^[0-9T:.Z-]+ //; s/[0-9]+/N/g' "$LOG" \
