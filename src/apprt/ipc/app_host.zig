@@ -271,29 +271,166 @@ pub const AppHost = struct {
         arena: Allocator,
         req: pane.CreateRequest,
     ) pane.HostError!pane.PaneHandle {
-        _ = ctx;
-        _ = arena;
-        _ = req;
-
-        // REFUSED, deliberately. `createWindowed` below calls `performAction`,
-        // which dispatches straight into runtime widget code with no thread
-        // marshalling - and the agent IPC server runs each connection on its own
-        // thread, so that call aborted the whole app. That was
-        // KooshaPari/Khostty#71: an agent splitting a pane killed the user's
-        // terminal.
+        // Everything that touches app state runs on the app thread; everything
+        // that only touches the caller's own memory runs here.
         //
-        // Returning `Unsupported` is that issue's acceptance: a split request
-        // must either work or fail as a protocol error, never kill the
-        // terminal. Doing it properly means marshalling onto the runtime's main
-        // thread (a queue drained from the GTK tick, or `glib.idleAdd`), which
-        // is its own change with its own verification. `createWindowed` is left
-        // intact - unused, hence not analysed - for that follow-up.
-        std.log.scoped(.ipc_host).warn(
-            "agent pane.create is not implemented yet; refusing rather than " ++
-                "crossing threads (KooshaPari/Khostty#71)",
-            .{},
-        );
-        return error.Unsupported;
+        // The split itself is one app-thread task. Identifying the new pane
+        // needs a SECOND app-thread task per poll, because the surface list is
+        // app state. That is why this is not a single thunk: the split happens
+        // on one tick and the surface appears on a later one.
+        //
+        // KooshaPari/Khostty#73, #76.
+        const self = ctxHost(ctx);
+        const direction: apprt.action.SplitDirection = switch (req.dir) {
+            .up => .up,
+            .down => .down,
+            .left => .left,
+            .right => .right,
+        };
+
+        // 1. Initiate the split on the app thread.
+        const SplitPayload = struct {
+            host: *AppHost,
+            parent_id: ?u64,
+            direction: apprt.action.SplitDirection,
+            title: ?[:0]const u8,
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const p: *@This() = @ptrCast(@alignCast(raw));
+                p.host.splitInner(p.parent_id, p.direction, p.title) catch |e| {
+                    p.err = e;
+                };
+            }
+        };
+
+        var split_payload: SplitPayload = .{
+            .host = self,
+            .parent_id = if (req.parent) |id| id.raw else null,
+            .direction = direction,
+            // Sentinel-terminated because SetTitle requires it. The arena is
+            // the caller's, and it outlives this call because the app thread
+            // finishes with the payload before we return.
+            .title = if (req.title) |v| try arena.dupeZ(u8, v) else null,
+        };
+        {
+            const task = try ipc_task.Task.create(
+                std.heap.c_allocator,
+                &split_payload,
+                SplitPayload.run,
+            );
+            _ = try self.app.runOnAppThread(task, self.call_timeout_ms);
+        }
+        if (split_payload.err) |e| return e;
+
+        // 2. Poll the app thread for the surface that was not there before.
+        //
+        // GTK updates the split tree synchronously but creates the surface on
+        // a later loop iteration, so the new pane is not available immediately.
+        const IdsPayload = struct {
+            host: *AppHost,
+            before: []const u64,
+            found: ?u64 = null,
+
+            fn run(raw: *anyopaque) void {
+                const p: *@This() = @ptrCast(@alignCast(raw));
+                p.found = p.host.findNewSurfaceInner(p.before);
+            }
+        };
+
+        // Snapshot the current ids on the app thread, so the diff is against a
+        // consistent set rather than one taken mid-mutation.
+        var before: [64]u64 = undefined;
+        var before_len: usize = 0;
+        {
+            const BeforePayload = struct {
+                host: *AppHost,
+                buf: *[64]u64,
+                len: *usize,
+
+                fn run(raw: *anyopaque) void {
+                    const p: *@This() = @ptrCast(@alignCast(raw));
+                    p.host.snapshotSurfaceIdsInner(p.buf, p.len);
+                }
+            };
+            var bp: BeforePayload = .{
+                .host = self,
+                .buf = &before,
+                .len = &before_len,
+            };
+            const task = try ipc_task.Task.create(
+                std.heap.c_allocator,
+                &bp,
+                BeforePayload.run,
+            );
+            _ = try self.app.runOnAppThread(task, self.call_timeout_ms);
+        }
+
+        var created: ?u64 = null;
+        {
+            const deadline = std.Io.Timestamp.now(self.io, .awake);
+            while (created == null) {
+                if (deadline.durationTo(
+                    std.Io.Timestamp.now(self.io, .awake),
+                ).toMilliseconds() > self.split_wait_ms) break;
+
+                var ip: IdsPayload = .{ .host = self, .before = before[0..before_len] };
+                const task = try ipc_task.Task.create(
+                    std.heap.c_allocator,
+                    &ip,
+                    IdsPayload.run,
+                );
+                _ = try self.app.runOnAppThread(task, self.call_timeout_ms);
+                created = ip.found;
+
+                if (created == null) {
+                    std.Io.sleep(
+                        self.io,
+                        std.Io.Duration.fromMilliseconds(@intCast(self.split_poll_interval_ms)),
+                        .awake,
+                    ) catch break;
+                }
+            }
+        }
+        const id = created orelse return error.Internal;
+
+        // 3. Read the new pane's info on the app thread.
+        const InfoPayload = struct {
+            host: *AppHost,
+            id: u64,
+            result: ?SplitRequestResult = null,
+
+            fn run(raw: *anyopaque) void {
+                const p: *@This() = @ptrCast(@alignCast(raw));
+                p.result = p.host.surfaceInfoInner(p.id);
+            }
+        };
+        var info_payload: InfoPayload = .{ .host = self, .id = id };
+        {
+            const task = try ipc_task.Task.create(
+                std.heap.c_allocator,
+                &info_payload,
+                InfoPayload.run,
+            );
+            _ = try self.app.runOnAppThread(task, self.call_timeout_ms);
+        }
+        const info = info_payload.result orelse return error.Internal;
+
+        // The title was applied by the app thread as part of the split.
+        // Copy it into the caller's arena so the handle cannot dangle.
+        const title: ?[]const u8 = if (info.title_len > 0)
+            try arena.dupe(u8, info.title_buf[0..info.title_len])
+        else
+            null;
+
+        return .{
+            .id = PaneId.init(info.id),
+            .pid = info.pid,
+            .title = title,
+            .cols = info.cols,
+            .rows = info.rows,
+            .focused = info.focused,
+        };
     }
 
     fn closeCore(ctx: *anyopaque, id: PaneId) pane.HostError!void {
@@ -641,6 +778,96 @@ pub const AppHost = struct {
             .command = null,
             .last_activity_ms = null,
         };
+    }
+
+    /// Scalar info for one surface, as observed on the app thread.
+    const SplitRequestResult = struct {
+        id: u64,
+        pid: ?u32 = null,
+        cols: ?u16 = null,
+        rows: ?u16 = null,
+        focused: bool = false,
+        title_buf: [255]u8 = [_]u8{0} ** 255,
+        title_len: usize = 0,
+    };
+
+    /// Perform the split. Runs on the app thread, inside a thunk.
+    ///
+    /// The payload fields are spelled out rather than taken as `anytype`: the
+    /// payload is a local struct declared inside the caller, and an `anytype`
+    /// parameter cannot be instantiated with it in a way that type-checks.
+    fn splitInner(
+        self: *AppHost,
+        parent_id: ?u64,
+        direction: apprt.action.SplitDirection,
+        title: ?[:0]const u8,
+    ) !void {
+        // Resolve the parent here: `focused_surface` and the surface list are
+        // app state.
+        const parent = if (parent_id) |id|
+            self.findCoreInner(PaneId.init(id)) orelse return error.PaneNotFound
+        else
+            self.app.focused_surface orelse return error.Unsupported;
+
+        _ = parent.rt_app.performAction(
+            .{ .surface = parent },
+            .new_split,
+            direction,
+        ) catch |err| return mapActionError(err);
+
+        // Apply a requested title through the same action OSC 0/2 uses. A
+        // write, so it belongs on this thread.
+        if (title) |t| {
+            if (self.findCoreInner(PaneId.init(parent.id))) |core| {
+                _ = core.rt_app.performAction(
+                    .{ .surface = core },
+                    .set_title,
+                    .{ .title = t },
+                ) catch {};
+            }
+        }
+    }
+
+    /// Record the current surface ids. Runs on the app thread.
+    fn snapshotSurfaceIdsInner(self: *AppHost, buf: *[64]u64, len: *usize) void {
+        len.* = 0;
+        for (self.app.surfaces.items) |rt_surface| {
+            if (len.* >= buf.len) break;
+            buf[len.*] = rt_surface.core().id;
+            len.* += 1;
+        }
+    }
+
+    /// Find a surface id that was not in `before`. Runs on the app thread.
+    fn findNewSurfaceInner(self: *AppHost, before: []const u64) ?u64 {
+        for (self.app.surfaces.items) |rt_surface| {
+            const id = rt_surface.core().id;
+            var known = false;
+            for (before) |b| {
+                if (b == id) {
+                    known = true;
+                    break;
+                }
+            }
+            if (!known) return id;
+        }
+        return null;
+    }
+
+    /// Read one surface's info. Runs on the app thread.
+    fn surfaceInfoInner(self: *AppHost, id: u64) ?SplitRequestResult {
+        const core = self.findCoreInner(PaneId.init(id)) orelse return null;
+        var result: SplitRequestResult = .{ .id = core.id };
+        result.pid = pidOf(core);
+        result.cols = colsOf(core);
+        result.rows = rowsOf(core);
+        result.focused = self.app.focused_surface == core;
+        if (titleOf(core)) |t| {
+            const n = @min(t.len, result.title_buf.len);
+            @memcpy(result.title_buf[0..n], t[0..n]);
+            result.title_len = n;
+        }
+        return result;
     }
 
     fn findCoreInner(self: *AppHost, id: PaneId) ?*CoreSurface {
