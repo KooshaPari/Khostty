@@ -152,17 +152,8 @@ pub const AppHost = struct {
 
     /// Publish a resize for a surface whose grid changed.
     pub fn publishResize(self: *AppHost, core: *CoreSurface, cols: u16, rows: u16) void {
-        const broker = self.broker orelse {
-            std.log.scoped(.ipc_host).warn("publishResize: no broker", .{});
-            return;
-        };
-        const seq = broker.publish(self.io, events.Event.resize(PaneId.init(core.id), cols, rows));
-        // FORK: temporary diagnostic - did the event get a sequence number?
-        // KooshaPari/Khostty#48.
-        std.log.scoped(.ipc_host).warn(
-            "publishResize: pane={d} cols={d} rows={d} seq={d}",
-            .{ core.id, cols, rows, seq },
-        );
+        const broker = self.broker orelse return;
+        _ = broker.publish(self.io, events.Event.resize(PaneId.init(core.id), cols, rows));
     }
 
     /// Publish a bell for a surface that rang one.

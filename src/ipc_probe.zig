@@ -233,10 +233,24 @@ pub fn main() !void {
             (created.value.object.get("ok") orelse return error.MalformedResponse).bool;
 
         if (created_ok) {
+            // The resize event may already have arrived - the client queues
+            // events that land while a response is being awaited, because
+            // discarding them would silently lose the event.
             while (true) {
-                const msg = try client.readMessage(gpa);
-                defer msg.deinit();
-                const obj2 = msg.value.object;
+                const raw = client.readPendingEvent() orelse {
+                    // Nothing queued: fall through to reading the stream.
+                    const msg = try client.readMessage(gpa);
+                    defer msg.deinit();
+                    const obj2 = msg.value.object;
+                    const ev = obj2.get("event") orelse continue;
+                    if (!std.mem.eql(u8, ev.string, "resize")) continue;
+                    std.debug.print("probe: resize event received\n", .{});
+                    break;
+                };
+                defer gpa.free(raw);
+                var parsed = try std.json.parseFromSlice(std.json.Value, gpa, raw, .{});
+                defer parsed.deinit();
+                const obj2 = parsed.value.object;
                 const ev = obj2.get("event") orelse continue;
                 if (!std.mem.eql(u8, ev.string, "resize")) continue;
                 std.debug.print("probe: resize event received\n", .{});

@@ -486,6 +486,15 @@ pub const Client = struct {
     read_buf: []u8,
     write_buf: [1024]u8 = undefined,
 
+    /// Events that arrived while a response was being awaited.
+    ///
+    /// FORK: KooshaPari/Khostty#48. `readResponse` used to DISCARD any frame
+    /// carrying an event, which silently destroyed events: a client that
+    /// awaited a response while an event arrived first lost that event
+    /// forever. This is the difference between "no event happened" and "you
+    /// missed it".
+    pending_events: std.ArrayListUnmanaged([]u8) = .empty,
+
     /// Default read buffer, sized for the default frame cap.
     pub const default_read_buffer: usize = protocol.max_frame_bytes + 2;
 
@@ -502,12 +511,6 @@ pub const Client = struct {
             .reader = std.Io.net.Stream.Reader.init(stream, io, read_buf),
             .read_buf = read_buf,
         };
-    }
-
-    pub fn deinit(self: *Client) void {
-        self.stream.close(self.io);
-        self.gpa.free(self.read_buf);
-        self.* = undefined;
     }
 
     /// Frame one request and send it.
@@ -540,15 +543,45 @@ pub const Client = struct {
     }
 
     /// Read frames until a response arrives, skipping events. Caller deinits.
+    /// Read a response frame, queuing any events that arrive first.
+    ///
+    /// Events are NOT discarded: they are kept in `pending_events` and can be
+    /// read back with `readPendingEvent`. A client that awaits a response
+    /// while an event arrives first would otherwise lose that event silently.
+    ///
+    /// FORK: KooshaPari/Khostty#48.
     pub fn readResponse(self: *Client, alloc: Allocator) !std.json.Parsed(std.json.Value) {
         while (true) {
             const message = try self.readMessage(alloc);
             if (message.value.object.get("event") != null) {
+                // Keep the raw frame so the event survives.
+                const raw = try std.json.Stringify.valueAlloc(
+                    alloc,
+                    message.value,
+                    .{},
+                );
+                try self.pending_events.append(self.gpa, raw);
                 message.deinit();
                 continue;
             }
             return message;
         }
+    }
+
+    /// Take the next queued event, if any. Caller owns the returned slice.
+    pub fn readPendingEvent(self: *Client) ?[]u8 {
+        if (self.pending_events.items.len == 0) return null;
+        const first = self.pending_events.orderedRemove(0);
+        return first;
+    }
+
+    /// Free the client and any queued events.
+    pub fn deinit(self: *Client) void {
+        for (self.pending_events.items) |e| self.gpa.free(e);
+        self.pending_events.deinit(self.gpa);
+        self.stream.close(self.io);
+        self.gpa.free(self.read_buf);
+        self.* = undefined;
     }
 
     /// Read frames until an event arrives, skipping responses. Caller deinits.
