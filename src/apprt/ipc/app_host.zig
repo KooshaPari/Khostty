@@ -805,7 +805,7 @@ pub const AppHost = struct {
         // Resolve the parent here: `focused_surface` and the surface list are
         // app state.
         const parent = if (parent_id) |id|
-            self.findCoreInner(id) orelse return error.PaneNotFound
+            self.findCoreInner(PaneId.init(id)) orelse return error.PaneNotFound
         else
             self.app.focused_surface orelse return error.Unsupported;
 
@@ -856,7 +856,7 @@ pub const AppHost = struct {
 
     /// Read one surface's info. Runs on the app thread.
     fn surfaceInfoInner(self: *AppHost, id: u64) ?SplitRequestResult {
-        const core = self.findCoreInner(id) orelse return null;
+        const core = self.findCoreInner(PaneId.init(id)) orelse return null;
         var result: SplitRequestResult = .{ .id = core.id };
         result.pid = pidOf(core);
         result.cols = colsOf(core);
