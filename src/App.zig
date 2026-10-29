@@ -215,7 +215,10 @@ pub fn runOnAppThread(
     while (deadline.durationTo(
         std.Io.Timestamp.now(io, .awake),
     ).toMilliseconds() <= timeout_ms) {
-        if (req.isDone()) return true;
+        if (req.isDone()) {
+            req.destroy(self.task_alloc);
+            return true;
+        }
         std.Io.sleep(io, std.Io.Duration.fromMilliseconds(5), .awake) catch {};
     }
 
@@ -226,7 +229,8 @@ pub fn runOnAppThread(
     // FORK: KooshaPari/Khostty#79. Without this the app thread wrote through
     // `ctx` into a stack frame that had already returned - a use-after-free.
     if (req.cancel()) {
-        // We won: the app thread has not claimed it and never will.
+        // We won: the app thread has not claimed it and never will. The task
+        // is still queued, so the app thread will free it when it drains it.
         return false;
     }
 
@@ -239,6 +243,8 @@ pub fn runOnAppThread(
     while (!req.isDone()) {
         std.Io.sleep(io, std.Io.Duration.fromMilliseconds(1), .awake) catch {};
     }
+    // The app thread has finished with it.
+    req.destroy(self.task_alloc);
     return false;
 }
 
@@ -255,15 +261,28 @@ fn serviceTasks(self: *App) void {
     defer self.alloc.free(queued);
 
     for (queued) |req| {
-        // If the caller gave up, its payload may be gone. Do not touch it.
+        // Exactly one side frees the task, and it is always the side that
+        // finished LAST. Both sides reach here through the same handshake:
+        //
+        //   app thread: claim() -> run() -> finish()
+        //   caller    : poll isDone() -> free
+        //
+        // The caller only frees after observing `done`, which the app thread
+        // sets after it has stopped touching the task. If the caller had
+        // already given up (cancel won), it is no longer polling, so the app
+        // thread frees instead.
+        //
+        // The free is therefore never concurrent with a poll: the caller
+        // frees only after `done`, and `done` is set after the last touch.
         if (req.claim()) {
             req.run(req.ctx);
+            req.finish();
+            // The caller is polling and will free once it sees `done`.
+        } else {
+            // Cancelled: the caller has stopped polling and will not free.
+            req.finish();
+            req.destroy(self.task_alloc);
         }
-        req.finish();
-        // The task is heap allocated precisely so it can outlive the caller
-        // that posted it. Freeing it here is safe because `claim` guarantees
-        // nobody else will touch it.
-        req.destroy(self.task_alloc);
     }
 }
 

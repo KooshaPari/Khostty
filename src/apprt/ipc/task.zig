@@ -70,7 +70,12 @@ pub const Task = struct {
         return task;
     }
 
-    /// Free the task. Only safe once the app thread will not touch it again.
+    /// Free the task.
+    ///
+    /// Only safe once BOTH sides are finished with it: the app thread will not
+    /// touch it again, and the caller has stopped polling it. The app thread
+    /// alone cannot know the second part, so the CALLER frees the task once it
+    /// observes `done`. That is why `runOnAppThread` owns the free.
     pub fn destroy(self: *Task, gpa: std.mem.Allocator) void {
         gpa.destroy(self);
     }
