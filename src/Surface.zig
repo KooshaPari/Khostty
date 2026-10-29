@@ -2689,6 +2689,12 @@ fn resize(self: *Surface, size: rendererpkg.ScreenSize) !void {
     // pixel-level sizing to the subprocess.
     const grid_size = self.size.grid();
     if (grid_size.columns != prev_grid.columns or grid_size.rows != prev_grid.rows) {
+        // FORK: temporary diagnostic - is the resize hook reached at all?
+        // KooshaPari/Khostty#48.
+        log.debug(
+            "FORK resize hook firing cols={d}->{d} rows={d}->{d}",
+            .{ prev_grid.columns, grid_size.columns, prev_grid.rows, grid_size.rows },
+        );
         if (self.app.ipc_hook) |h| h.resize(
             h.ctx,
             self.id,
