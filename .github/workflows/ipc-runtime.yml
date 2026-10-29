@@ -115,3 +115,10 @@ jobs:
         # Note #65 is still open for the *product* case: a real host without
         # EGL still exits 0 silently. This job no longer hides that.
         run: nix develop -c bash nix/ipc-runtime-check.sh
+
+      - name: Assert a failed startup exits non-zero
+        # KooshaPari/Khostty#65. The runtime used to exit 0 when it could
+        # never open a terminal (e.g. no EGL driver), which is
+        # indistinguishable from a clean shutdown to a supervisor. This
+        # breaks EGL deliberately and requires a non-zero exit.
+        run: nix develop -c bash nix/ipc-exit-code-check.sh
