@@ -57,9 +57,16 @@ mailbox: Mailbox.Queue,
 font_grid_set: font.SharedGridSet,
 
 /// FORK: closures posted from IPC connection threads, serviced in `tick`.
-/// KooshaPari/Khostty#76.
+/// KooshaPari/Khostty#76, #79.
 pending_tasks: std.ArrayListUnmanaged(*ipc_task.Task) = .empty,
 pending_tasks_mutex: std.Io.Mutex = .init,
+
+/// Allocator for the heap-allocated tasks.
+///
+/// Thread-safe on purpose: a task is created on a connection thread and freed
+/// on the app thread. `c_allocator` (malloc) is used for that reason, matching
+/// the GTK IPC runtime's existing cross-thread allocations.
+task_alloc: Allocator = std.heap.c_allocator,
 
 /// FORK: agent IPC event publication, set by a runtime that hosts the IPC
 /// server and null everywhere else. Core `Surface` calls it unconditionally,
@@ -208,11 +215,29 @@ pub fn runOnAppThread(
     while (deadline.durationTo(
         std.Io.Timestamp.now(io, .awake),
     ).toMilliseconds() <= timeout_ms) {
-        req.mutex.lockUncancelable(io);
-        const finished = req.done;
-        req.mutex.unlock(io);
-        if (finished) return true;
+        if (req.isDone()) return true;
         std.Io.sleep(io, std.Io.Duration.fromMilliseconds(5), .awake) catch {};
+    }
+
+    // Timed out. The task may still be queued, so mark it cancelled: the app
+    // thread checks this before touching the payload, which may already be
+    // abandoned stack memory.
+    //
+    // FORK: KooshaPari/Khostty#79. Without this the app thread wrote through
+    // `ctx` into a stack frame that had already returned - a use-after-free.
+    if (req.cancel()) {
+        // We won: the app thread has not claimed it and never will.
+        return false;
+    }
+
+    // We lost: the app thread claimed the task and may be running the closure
+    // right now, reading this stack frame. The payload must stay alive until
+    // it finishes, so wait for `done` before returning.
+    //
+    // This cannot block forever: the closure is short by contract, and the
+    // app thread always marks the task done.
+    while (!req.isDone()) {
+        std.Io.sleep(io, std.Io.Duration.fromMilliseconds(1), .awake) catch {};
     }
     return false;
 }
@@ -230,10 +255,15 @@ fn serviceTasks(self: *App) void {
     defer self.alloc.free(queued);
 
     for (queued) |req| {
-        req.run(req.ctx);
-        req.mutex.lockUncancelable(io);
-        req.done = true;
-        req.mutex.unlock(io);
+        // If the caller gave up, its payload may be gone. Do not touch it.
+        if (req.claim()) {
+            req.run(req.ctx);
+        }
+        req.finish();
+        // The task is heap allocated precisely so it can outlive the caller
+        // that posted it. Freeing it here is safe because `claim` guarantees
+        // nobody else will touch it.
+        req.destroy(self.task_alloc);
     }
 }
 

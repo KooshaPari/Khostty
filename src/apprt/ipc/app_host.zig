@@ -316,7 +316,21 @@ pub const AppHost = struct {
 
         const self = ctxHost(ctx);
         var payload: Payload = .{ .host = self, .id = id };
-        var task = ipc_task.Task.init(&payload, Payload.run);
+        // The task is heap allocated: it may outlive this frame if the wait
+        // times out.
+        //
+        // The PAYLOAD stays on this stack frame, and it points at `arena` and
+        // `out`, which the caller owns. That is only safe because
+        // `runOnAppThread` does not return until the app thread has finished
+        // with the payload - including when the wait times out and the app
+        // thread had already claimed the task.
+        //
+        // KooshaPari/Khostty#79.
+        const task = try ipc_task.Task.create(
+            std.heap.c_allocator,
+            &payload,
+            Payload.run,
+        );
         if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
             return error.Internal;
         if (payload.err) |e| return e;
@@ -343,7 +357,21 @@ pub const AppHost = struct {
 
         const self = ctxHost(ctx);
         var payload: Payload = .{ .host = self, .arena = arena, .out = out };
-        var task = ipc_task.Task.init(&payload, Payload.run);
+        // The task is heap allocated: it may outlive this frame if the wait
+        // times out.
+        //
+        // The PAYLOAD stays on this stack frame, and it points at `arena` and
+        // `out`, which the caller owns. That is only safe because
+        // `runOnAppThread` does not return until the app thread has finished
+        // with the payload - including when the wait times out and the app
+        // thread had already claimed the task.
+        //
+        // KooshaPari/Khostty#79.
+        const task = try ipc_task.Task.create(
+            std.heap.c_allocator,
+            &payload,
+            Payload.run,
+        );
         if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
             return error.Internal;
         if (payload.err) |e| return e;
@@ -397,7 +425,21 @@ pub const AppHost = struct {
 
         const self = ctxHost(ctx);
         var payload: Payload = .{ .host = self, .arena = arena, .id = id, .out = out };
-        var task = ipc_task.Task.init(&payload, Payload.run);
+        // The task is heap allocated: it may outlive this frame if the wait
+        // times out.
+        //
+        // The PAYLOAD stays on this stack frame, and it points at `arena` and
+        // `out`, which the caller owns. That is only safe because
+        // `runOnAppThread` does not return until the app thread has finished
+        // with the payload - including when the wait times out and the app
+        // thread had already claimed the task.
+        //
+        // KooshaPari/Khostty#79.
+        const task = try ipc_task.Task.create(
+            std.heap.c_allocator,
+            &payload,
+            Payload.run,
+        );
         if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
             return error.Internal;
         if (payload.err) |e| return e;
@@ -453,7 +495,21 @@ pub const AppHost = struct {
 
         const self = ctxHost(ctx);
         var payload: Payload = .{ .host = self };
-        var task = ipc_task.Task.init(&payload, Payload.run);
+        // The task is heap allocated: it may outlive this frame if the wait
+        // times out.
+        //
+        // The PAYLOAD stays on this stack frame, and it points at `arena` and
+        // `out`, which the caller owns. That is only safe because
+        // `runOnAppThread` does not return until the app thread has finished
+        // with the payload - including when the wait times out and the app
+        // thread had already claimed the task.
+        //
+        // KooshaPari/Khostty#79.
+        const task = try ipc_task.Task.create(
+            std.heap.c_allocator,
+            &payload,
+            Payload.run,
+        );
         if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
             return error.Internal;
         if (payload.err) |e| return e;
@@ -483,7 +539,21 @@ pub const AppHost = struct {
 
         const self = ctxHost(ctx);
         var payload: Payload = .{ .host = self, .id = id };
-        var task = ipc_task.Task.init(&payload, Payload.run);
+        // The task is heap allocated: it may outlive this frame if the wait
+        // times out.
+        //
+        // The PAYLOAD stays on this stack frame, and it points at `arena` and
+        // `out`, which the caller owns. That is only safe because
+        // `runOnAppThread` does not return until the app thread has finished
+        // with the payload - including when the wait times out and the app
+        // thread had already claimed the task.
+        //
+        // KooshaPari/Khostty#79.
+        const task = try ipc_task.Task.create(
+            std.heap.c_allocator,
+            &payload,
+            Payload.run,
+        );
         if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
             return error.Internal;
         if (payload.err) |e| return e;
