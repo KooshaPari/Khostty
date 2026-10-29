@@ -20,14 +20,24 @@ const ipc = @import("apprt/ipc/server.zig");
 const authpkg = @import("apprt/ipc/auth.zig");
 const protocol = @import("apprt/ipc/protocol.zig");
 
-pub fn main() !void {
-    var gpa_state: std.heap.DebugAllocator(.{}) = .init;
-    defer _ = gpa_state.deinit();
-    const gpa = gpa_state.allocator();
+pub fn main(init: std.process.Init) !void {
+    const gpa = init.gpa;
+    const io = init.io;
 
-    var threaded: std.Io.Threaded = .init(gpa, .{});
-    defer threaded.deinit();
-    const io = threaded.io();
+    // `--split-only`: connect, request a split, report the outcome, exit.
+    // Used by nix/ipc-storm-diagnose.sh to trigger a split and then observe
+    // the runtime without the rest of the probe's assertions in the way.
+    //
+    // FORK: KooshaPari/Khostty#78.
+    var split_only = false;
+    {
+        var args = try std.process.Args.Iterator.initAllocator(init.minimal.args, gpa);
+        defer args.deinit();
+        _ = args.next();
+        while (args.next()) |arg| {
+            if (std.mem.eql(u8, arg, "--split-only")) split_only = true;
+        }
+    }
 
     // Distinctive so a stale title from the running app cannot pass the check.
     const expected_title = "khostty-probe-title";
@@ -39,6 +49,62 @@ pub fn main() !void {
 
     var client = try ipc.Client.connect(gpa, io, socket_path);
     defer client.deinit();
+
+    if (split_only) {
+        const token = authpkg.Env.process().get(authpkg.token_env);
+
+        // Wait for a pane to exist, so the split has something to split.
+        var pane_id: ?protocol.PaneId = null;
+        var attempt: usize = 0;
+        while (attempt < 60) : (attempt += 1) {
+            try client.send(.{ .id = 1, .cmd = .pane_list, .auth = token });
+            var list = try client.readResponse(gpa);
+            defer list.deinit();
+            const obj = list.value.object;
+            if (obj.get("ok") == null or !obj.get("ok").?.bool) {
+                std.Io.sleep(io, std.Io.Duration.fromMilliseconds(100), .awake) catch {};
+                continue;
+            }
+            const data = obj.get("data") orelse continue;
+            const arr = switch (data) {
+                .array => |a| a.items,
+                else => &[_]std.json.Value{},
+            };
+            if (arr.len == 0) {
+                std.Io.sleep(io, std.Io.Duration.fromMilliseconds(100), .awake) catch {};
+                continue;
+            }
+            const idv = arr[0].object.get("pane_id") orelse continue;
+            pane_id = switch (idv) {
+                .integer => |n| protocol.PaneId.init(@intCast(n)),
+                .string => |str| protocol.PaneId.parseString(str),
+                else => null,
+            };
+            if (pane_id != null) break;
+        }
+
+        const id = pane_id orelse {
+            std.debug.print("probe: no pane to split\n", .{});
+            return error.NoPanes;
+        };
+
+        try client.send(.{
+            .id = 2,
+            .cmd = .pane_create,
+            .auth = token,
+            .pane_id = id,
+            .opts = .{ .split = .vertical, .dir = .right, .focus = false },
+        });
+        var created = try client.readResponse(gpa);
+        defer created.deinit();
+        const ok = (created.value.object.get("ok") orelse return error.MalformedResponse).bool;
+        std.debug.print(
+            "probe: split request -> {s}\n",
+            .{if (ok) "accepted" else "refused"},
+        );
+        // Return immediately. The caller then watches the runtime's log.
+        return;
+    }
     std.debug.print("probe: connected to {s}\n", .{socket_path});
 
     // ── ping ──
