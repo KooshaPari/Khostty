@@ -150,6 +150,18 @@ pub fn main(init: std.process.Init) !void {
         }
     }
 
+    // A second rule: a task must never be stack allocated. A task can outlive
+    // the frame that posted it (the wait may time out), so a stack task means
+    // the app thread can write into a dead frame.
+    if (std.mem.indexOf(u8, src, "ipc_task.Task.init(") != null) {
+        std.debug.print(
+            "{s}: tasks must be heap allocated (Task.create), not Task.init: " ++
+                "a task can outlive the frame that posted it\n",
+            .{path},
+        );
+        violations += 1;
+    }
+
     if (violations > 0) {
         std.debug.print("\n{d} app-thread violation(s) in {s}\n", .{ violations, path });
         std.process.exit(1);

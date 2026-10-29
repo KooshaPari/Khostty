@@ -326,12 +326,12 @@ pub const AppHost = struct {
         // thread had already claimed the task.
         //
         // KooshaPari/Khostty#79.
-        const task = try ipc_task.Task.create(
+        var task = try ipc_task.Task.create(
             std.heap.c_allocator,
             &payload,
             Payload.run,
         );
-        if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
+        if (!try self.app.runOnAppThread(task, self.call_timeout_ms))
             return error.Internal;
         if (payload.err) |e| return e;
     }
@@ -367,12 +367,12 @@ pub const AppHost = struct {
         // thread had already claimed the task.
         //
         // KooshaPari/Khostty#79.
-        const task = try ipc_task.Task.create(
+        var task = try ipc_task.Task.create(
             std.heap.c_allocator,
             &payload,
             Payload.run,
         );
-        if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
+        if (!try self.app.runOnAppThread(task, self.call_timeout_ms))
             return error.Internal;
         if (payload.err) |e| return e;
     }
@@ -435,12 +435,12 @@ pub const AppHost = struct {
         // thread had already claimed the task.
         //
         // KooshaPari/Khostty#79.
-        const task = try ipc_task.Task.create(
+        var task = try ipc_task.Task.create(
             std.heap.c_allocator,
             &payload,
             Payload.run,
         );
-        if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
+        if (!try self.app.runOnAppThread(task, self.call_timeout_ms))
             return error.Internal;
         if (payload.err) |e| return e;
     }
@@ -505,12 +505,12 @@ pub const AppHost = struct {
         // thread had already claimed the task.
         //
         // KooshaPari/Khostty#79.
-        const task = try ipc_task.Task.create(
+        var task = try ipc_task.Task.create(
             std.heap.c_allocator,
             &payload,
             Payload.run,
         );
-        if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
+        if (!try self.app.runOnAppThread(task, self.call_timeout_ms))
             return error.Internal;
         if (payload.err) |e| return e;
     }
@@ -549,12 +549,12 @@ pub const AppHost = struct {
         // thread had already claimed the task.
         //
         // KooshaPari/Khostty#79.
-        const task = try ipc_task.Task.create(
+        var task = try ipc_task.Task.create(
             std.heap.c_allocator,
             &payload,
             Payload.run,
         );
-        if (!try self.app.runOnAppThread(&task, self.call_timeout_ms))
+        if (!try self.app.runOnAppThread(task, self.call_timeout_ms))
             return error.Internal;
         if (payload.err) |e| return e;
     }
