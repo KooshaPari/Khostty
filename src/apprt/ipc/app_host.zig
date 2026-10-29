@@ -326,7 +326,7 @@ pub const AppHost = struct {
         // thread had already claimed the task.
         //
         // KooshaPari/Khostty#79.
-        var task = try ipc_task.Task.create(
+        const task = try ipc_task.Task.create(
             std.heap.c_allocator,
             &payload,
             Payload.run,
@@ -367,7 +367,7 @@ pub const AppHost = struct {
         // thread had already claimed the task.
         //
         // KooshaPari/Khostty#79.
-        var task = try ipc_task.Task.create(
+        const task = try ipc_task.Task.create(
             std.heap.c_allocator,
             &payload,
             Payload.run,
@@ -435,7 +435,7 @@ pub const AppHost = struct {
         // thread had already claimed the task.
         //
         // KooshaPari/Khostty#79.
-        var task = try ipc_task.Task.create(
+        const task = try ipc_task.Task.create(
             std.heap.c_allocator,
             &payload,
             Payload.run,
@@ -505,7 +505,7 @@ pub const AppHost = struct {
         // thread had already claimed the task.
         //
         // KooshaPari/Khostty#79.
-        var task = try ipc_task.Task.create(
+        const task = try ipc_task.Task.create(
             std.heap.c_allocator,
             &payload,
             Payload.run,
@@ -549,7 +549,7 @@ pub const AppHost = struct {
         // thread had already claimed the task.
         //
         // KooshaPari/Khostty#79.
-        var task = try ipc_task.Task.create(
+        const task = try ipc_task.Task.create(
             std.heap.c_allocator,
             &payload,
             Payload.run,
