@@ -818,7 +818,7 @@ pub const AppHost = struct {
         // Apply a requested title through the same action OSC 0/2 uses. A
         // write, so it belongs on this thread.
         if (title) |t| {
-            if (self.findCoreInner(parent.id)) |core| {
+            if (self.findCoreInner(PaneId.init(parent.id))) |core| {
                 _ = core.rt_app.performAction(
                     .{ .surface = core },
                     .set_title,
