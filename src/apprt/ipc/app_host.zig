@@ -588,23 +588,56 @@ pub const AppHost = struct {
         dir: protocol.Direction,
         amount: u16,
     ) pane.HostError!void {
-        const self = ctxHost(ctx);
-        const core = self.findCoreInner(id) orelse return error.PaneNotFound;
-        // Explicit switch, NOT @enumFromInt/@intFromEnum: protocol.Direction is
-        // {right, down, left, up} but ResizeSplit.Direction is
-        // {up, down, left, right}. Converting by integer would silently swap
-        // right and up.
-        const direction: apprt.action.ResizeSplit.Direction = switch (dir) {
-            .up => .up,
-            .down => .down,
-            .left => .left,
-            .right => .right,
+        const Payload = struct {
+            host: *AppHost,
+            id: PaneId,
+            dir: protocol.Direction,
+            amount: u16,
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const self: *@This() = @ptrCast(@alignCast(raw));
+                // `findCoreInner` scans `app.surfaces`, which the app thread
+                // mutates, so the lookup belongs on the app thread too - not
+                // just the action. KooshaPari/Khostty#76.
+                const core = self.host.findCoreInner(self.id) orelse {
+                    self.err = error.PaneNotFound;
+                    return;
+                };
+                // Explicit switch, NOT @enumFromInt/@intFromEnum:
+                // protocol.Direction is {right, down, left, up} but
+                // ResizeSplit.Direction is {up, down, left, right}.
+                // Converting by integer would silently swap right and up.
+                const direction: apprt.action.ResizeSplit.Direction = switch (self.dir) {
+                    .up => .up,
+                    .down => .down,
+                    .left => .left,
+                    .right => .right,
+                };
+                _ = core.rt_app.performAction(
+                    .{ .surface = core },
+                    .resize_split,
+                    .{ .amount = self.amount, .direction = direction },
+                ) catch |e| {
+                    self.err = mapActionError(e);
+                };
+            }
         };
-        _ = core.rt_app.performAction(
-            .{ .surface = core },
-            .resize_split,
-            .{ .amount = amount, .direction = direction },
-        ) catch |err| return mapActionError(err);
+
+        const self = ctxHost(ctx);
+        var payload: Payload = .{ .host = self, .id = id, .dir = dir, .amount = amount };
+        // The task is heap allocated: it may outlive this frame if the wait
+        // times out. The payload stays on this stack frame, which is only safe
+        // because `runOnAppThread` does not return until the app thread has
+        // finished with it. KooshaPari/Khostty#79.
+        const task = try ipc_task.Task.create(
+            std.heap.c_allocator,
+            &payload,
+            Payload.run,
+        );
+        if (!try self.app.runOnAppThread(task, self.call_timeout_ms))
+            return error.Internal;
+        if (payload.err) |e| return e;
     }
 
     fn equalizeSplits(ctx: *anyopaque) pane.HostError!void {
