@@ -14,6 +14,8 @@ const configpkg = @import("config.zig");
 const Config = configpkg.Config;
 const BlockingQueue = @import("datastruct/main.zig").BlockingQueue;
 const renderer = @import("renderer.zig");
+const apprt_hook = @import("apprt/ipc/hook.zig");
+const ipc_task = @import("apprt/ipc/task.zig");
 const font = @import("font/main.zig");
 const global = @import("global.zig");
 
@@ -53,6 +55,24 @@ mailbox: Mailbox.Queue,
 /// The set of font GroupCache instances shared by surfaces with the
 /// same font configuration.
 font_grid_set: font.SharedGridSet,
+
+/// FORK: closures posted from IPC connection threads, serviced in `tick`.
+/// KooshaPari/Khostty#76, #79.
+pending_tasks: std.ArrayListUnmanaged(*ipc_task.Task) = .empty,
+pending_tasks_mutex: std.Io.Mutex = .init,
+
+/// Allocator for the heap-allocated tasks.
+///
+/// Thread-safe on purpose: a task is created on a connection thread and freed
+/// on the app thread. `c_allocator` (malloc) is used for that reason, matching
+/// the GTK IPC runtime's existing cross-thread allocations.
+task_alloc: Allocator = std.heap.c_allocator,
+
+/// FORK: agent IPC event publication, set by a runtime that hosts the IPC
+/// server and null everywhere else. Core `Surface` calls it unconditionally,
+/// so macOS and wasm builds pay one null check per event and need no
+/// per-apprt branching. See `apprt/ipc/hook.zig` and KooshaPari/Khostty#48.
+ipc_hook: ?apprt_hook.Hook = null,
 
 /// The app-scoped render device, shared by the renderers of all surfaces.
 device: ?*renderer.Device,
@@ -164,6 +184,106 @@ pub fn destroy(self: *App) void {
 pub fn tick(self: *App, rt_app: *apprt.App) !void {
     // Drain our mailbox
     try self.drainMailbox(rt_app);
+
+    // FORK: service requests posted from IPC connection threads. `tick` is the
+    // app thread, the only thread allowed to touch runtime and terminal state.
+    // KooshaPari/Khostty#76.
+    self.serviceTasks();
+}
+
+/// Post `req` and wait for the app thread to service it. Safe from any thread,
+/// but it DOES block the caller until the app thread runs `tick`.
+///
+/// FORK: KooshaPari/Khostty#76.
+pub fn runOnAppThread(
+    self: *App,
+    req: *ipc_task.Task,
+    timeout_ms: u64,
+) Allocator.Error!bool {
+    const io = @import("global.zig").io();
+
+    {
+        self.pending_tasks_mutex.lockUncancelable(io);
+        defer self.pending_tasks_mutex.unlock(io);
+        try self.pending_tasks.append(self.alloc, req);
+    }
+
+    // Poll rather than block on a condition variable: the app thread services
+    // these from `tick`, which also drives the terminal's event loop, so a
+    // missed wakeup would hang the terminal, not just this request.
+    const deadline = std.Io.Timestamp.now(io, .awake);
+    while (deadline.durationTo(
+        std.Io.Timestamp.now(io, .awake),
+    ).toMilliseconds() <= timeout_ms) {
+        if (req.isDone()) {
+            req.destroy(self.task_alloc);
+            return true;
+        }
+        std.Io.sleep(io, std.Io.Duration.fromMilliseconds(5), .awake) catch {};
+    }
+
+    // Timed out. The task may still be queued, so mark it cancelled: the app
+    // thread checks this before touching the payload, which may already be
+    // abandoned stack memory.
+    //
+    // FORK: KooshaPari/Khostty#79. Without this the app thread wrote through
+    // `ctx` into a stack frame that had already returned - a use-after-free.
+    if (req.cancel()) {
+        // We won: the app thread has not claimed it and never will. The task
+        // is still queued, so the app thread will free it when it drains it.
+        return false;
+    }
+
+    // We lost: the app thread claimed the task and may be running the closure
+    // right now, reading this stack frame. The payload must stay alive until
+    // it finishes, so wait for `done` before returning.
+    //
+    // This cannot block forever: the closure is short by contract, and the
+    // app thread always marks the task done.
+    while (!req.isDone()) {
+        std.Io.sleep(io, std.Io.Duration.fromMilliseconds(1), .awake) catch {};
+    }
+    // The app thread has finished with it.
+    req.destroy(self.task_alloc);
+    return false;
+}
+
+/// Run every queued closure. Must be called on the app thread.
+fn serviceTasks(self: *App) void {
+    const io = @import("global.zig").io();
+
+    self.pending_tasks_mutex.lockUncancelable(io);
+    const queued = self.pending_tasks.toOwnedSlice(self.alloc) catch {
+        self.pending_tasks_mutex.unlock(io);
+        return;
+    };
+    self.pending_tasks_mutex.unlock(io);
+    defer self.alloc.free(queued);
+
+    for (queued) |req| {
+        // Exactly one side frees the task, and it is always the side that
+        // finished LAST. Both sides reach here through the same handshake:
+        //
+        //   app thread: claim() -> run() -> finish()
+        //   caller    : poll isDone() -> free
+        //
+        // The caller only frees after observing `done`, which the app thread
+        // sets after it has stopped touching the task. If the caller had
+        // already given up (cancel won), it is no longer polling, so the app
+        // thread frees instead.
+        //
+        // The free is therefore never concurrent with a poll: the caller
+        // frees only after `done`, and `done` is set after the last touch.
+        if (req.claim()) {
+            req.run(req.ctx);
+            req.finish();
+            // The caller is polling and will free once it sees `done`.
+        } else {
+            // Cancelled: the caller has stopped polling and will not free.
+            req.finish();
+            req.destroy(self.task_alloc);
+        }
+    }
 }
 
 /// Update the configuration associated with the app. This can only be
@@ -629,3 +749,31 @@ pub const Wasm = if (!builtin.target.isWasm()) struct {} else struct {
     //     }
     // }
 };
+
+fn coreCwd(core: *Surface) ?[]const u8 {
+    return core.io.terminal.getPwd();
+}
+
+// ── App-thread surface accessors ──
+//
+// FORK: KooshaPari/Khostty#76. These read runtime and terminal state, so they
+// may ONLY be called from the app thread. They live here rather than being
+// borrowed from app_host.zig because that file is GTK-gated at comptime while
+// `tick` runs on every platform.
+
+fn coreTitle(core: *Surface) ?[]const u8 {
+    return core.rt_surface.getTitle();
+}
+
+fn corePid(core: *Surface) ?u32 {
+    const pid = core.io.getProcessInfo(.foreground_pid) orelse return null;
+    return std.math.cast(u32, pid);
+}
+
+fn coreCols(core: *Surface) ?u16 {
+    return std.math.cast(u16, core.io.terminal.cols);
+}
+
+fn coreRows(core: *Surface) ?u16 {
+    return std.math.cast(u16, core.io.terminal.rows);
+}

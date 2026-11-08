@@ -535,6 +535,12 @@ pub fn init(
         &derived_config.font,
         font_size,
     );
+    // FORK: release the ref if any remaining init step fails. Without this a
+    // failed surface init leaks a grid ref, and the app then aborts at shutdown
+    // on `assert(font_grid_set.count() == 0)` - which hides the original error
+    // behind an assertion failure. The second ref site below already has this.
+    // KooshaPari/Khostty#48.
+    errdefer app.font_grid_set.deref(font_grid_key);
 
     // Build our size struct which has all the sizes we need.
     const size: rendererpkg.Size = size: {
@@ -931,6 +937,18 @@ pub fn writeToParser(self: *Surface, data: []const u8) Allocator.Error!void {
     } }, .unlocked);
 }
 
+/// Ask the runtime to split this surface, from any thread.
+///
+/// `performAction` is not thread-safe: for GTK it dispatches straight into
+/// widget code, so a caller on an IPC connection thread aborts the process.
+/// Queuing the request keeps the action on the app thread, the same way
+/// `writeToParser` keeps the parser there.
+///
+/// FORK: added for KooshaPari/Khostty#71.
+pub fn splitPane(self: *Surface, direction: apprt.action.SplitDirection) void {
+    self.queueIo(.{ .new_split = direction }, .unlocked);
+}
+
 /// Forces the surface to render. This is useful for when the surface
 /// is in the middle of animation (such as a resize, etc.) or when
 /// the render timer is managed manually by the apprt.
@@ -1030,6 +1048,16 @@ pub fn handleMessage(self: *Surface, msg: Message) !void {
     switch (msg) {
         .change_config => |config| try self.updateConfig(config),
 
+        .new_split => |direction| {
+            // Runs on the app thread, which is the only thread allowed to
+            // touch GTK widget state. KooshaPari/Khostty#71.
+            _ = try self.rt_app.performAction(
+                .{ .surface = self },
+                .new_split,
+                direction,
+            );
+        },
+
         .set_title => |*v| {
             // We ignore the message in case the title was set via config.
             if (self.config.title != null) {
@@ -1046,6 +1074,12 @@ pub fn handleMessage(self: *Surface, msg: Message) !void {
                 .set_title,
                 .{ .title = slice },
             );
+
+            // FORK: publish after the action, not before, so the title an agent
+            // reads is the one the runtime actually applied rather than the
+            // previous one. No-op without an IPC host.
+            // KooshaPari/Khostty#48.
+            if (self.app.ipc_hook) |h| h.title(h.ctx, self.id);
         },
 
         .report_title => |style| report_title: {
@@ -1179,6 +1213,9 @@ pub fn handleMessage(self: *Surface, msg: Message) !void {
                 if (last.durationTo(now).toMilliseconds() < 100) break :bell;
             }
             self.last_bell_time = now;
+            // FORK: tell an attached agent the bell rang. No-op on any build
+            // without an IPC host. KooshaPari/Khostty#48.
+            if (self.app.ipc_hook) |h| h.bell(h.ctx, self.id);
             _ = self.rt_app.performAction(
                 .{ .surface = self },
                 .ring_bell,
@@ -1309,6 +1346,20 @@ fn selectionScrollTick(self: *Surface) !void {
 fn childExited(self: *Surface, info: apprt.surface.Message.ChildExited) void {
     // Mark our flag that we exited immediately
     self.child_exited = true;
+
+    // FORK: tell an attached agent the child ended, with the exit code the
+    // runtime actually observed. No-op without an IPC host.
+    // KooshaPari/Khostty#48.
+    if (self.app.ipc_hook) |h| {
+        // `exit_code` is a non-optional u32 while the wire field is `?i32`.
+        // Report null rather than wrapping if a platform ever hands us a value
+        // that does not fit; a wrong exit code is worse than an absent one.
+        const code: ?i32 = if (info.exit_code <= std.math.maxInt(i32))
+            @intCast(info.exit_code)
+        else
+            null;
+        h.child_exit(h.ctx, self.id, code, null);
+    }
 
     // If our runtime was below some threshold then we assume that this
     // was an abnormal exit and we show an error message.
@@ -2622,6 +2673,12 @@ pub fn sizeCallback(self: *Surface, size: apprt.SurfaceSize) !void {
 }
 
 fn resize(self: *Surface, size: rendererpkg.ScreenSize) !void {
+    // FORK: capture the grid before the resize so an agent is only told about
+    // real cell-size changes. Fluid resizing changes pixels on every frame
+    // while the grid often stays put, and an agent does not care about the
+    // former. KooshaPari/Khostty#48.
+    const prev_grid = self.size.grid();
+
     // Save our screen size
     self.size.screen = size;
     self.balancePaddingIfNeeded();
@@ -2631,6 +2688,14 @@ fn resize(self: *Surface, size: rendererpkg.ScreenSize) !void {
     // We have to update the IO thread no matter what because we send
     // pixel-level sizing to the subprocess.
     const grid_size = self.size.grid();
+    if (grid_size.columns != prev_grid.columns or grid_size.rows != prev_grid.rows) {
+        if (self.app.ipc_hook) |h| h.resize(
+            h.ctx,
+            self.id,
+            @intCast(grid_size.columns),
+            @intCast(grid_size.rows),
+        );
+    }
     if (grid_size.columns < 5 and (self.size.padding.left > 0 or self.size.padding.right > 0)) {
         log.warn("WARNING: very small terminal grid detected with padding " ++
             "set. Is your padding reasonable?", .{});

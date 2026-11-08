@@ -62,6 +62,7 @@ const pane = @import("pane.zig");
 const protocol = @import("protocol.zig");
 const state = @import("state.zig");
 const events = @import("events.zig");
+const ipc_task = @import("task.zig");
 
 const PaneId = protocol.PaneId;
 
@@ -96,6 +97,8 @@ pub const AppHost = struct {
     io: std.Io,
     app: *App,
     mutex: std.Io.Mutex = .init,
+    /// How long to wait for a single app-thread round trip.
+    call_timeout_ms: u64 = 2000,
     /// How long to wait for the queued `new_split` to produce a surface.
     split_wait_ms: u64 = 500,
     /// Poll interval while waiting for that surface.
@@ -268,15 +271,206 @@ pub const AppHost = struct {
         arena: Allocator,
         req: pane.CreateRequest,
     ) pane.HostError!pane.PaneHandle {
-        return ctxHost(ctx).createWindowed(arena, req);
+        // Everything that touches app state runs on the app thread; everything
+        // that only touches the caller's own memory runs here.
+        //
+        // The split itself is one app-thread task. Identifying the new pane
+        // needs a SECOND app-thread task per poll, because the surface list is
+        // app state. That is why this is not a single thunk: the split happens
+        // on one tick and the surface appears on a later one.
+        //
+        // KooshaPari/Khostty#73, #76.
+        const self = ctxHost(ctx);
+        const direction: apprt.action.SplitDirection = switch (req.dir) {
+            .up => .up,
+            .down => .down,
+            .left => .left,
+            .right => .right,
+        };
+
+        // 1. Initiate the split on the app thread.
+        const SplitPayload = struct {
+            host: *AppHost,
+            parent_id: ?u64,
+            direction: apprt.action.SplitDirection,
+            title: ?[:0]const u8,
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const p: *@This() = @ptrCast(@alignCast(raw));
+                p.host.splitInner(p.parent_id, p.direction, p.title) catch |e| {
+                    p.err = e;
+                };
+            }
+        };
+
+        var split_payload: SplitPayload = .{
+            .host = self,
+            .parent_id = if (req.parent) |id| id.raw else null,
+            .direction = direction,
+            // Sentinel-terminated because SetTitle requires it. The arena is
+            // the caller's, and it outlives this call because the app thread
+            // finishes with the payload before we return.
+            .title = if (req.title) |v| try arena.dupeZ(u8, v) else null,
+        };
+        {
+            const task = try ipc_task.Task.create(
+                std.heap.c_allocator,
+                &split_payload,
+                SplitPayload.run,
+            );
+            _ = try self.app.runOnAppThread(task, self.call_timeout_ms);
+        }
+        if (split_payload.err) |e| return e;
+
+        // 2. Poll the app thread for the surface that was not there before.
+        //
+        // GTK updates the split tree synchronously but creates the surface on
+        // a later loop iteration, so the new pane is not available immediately.
+        const IdsPayload = struct {
+            host: *AppHost,
+            before: []const u64,
+            found: ?u64 = null,
+
+            fn run(raw: *anyopaque) void {
+                const p: *@This() = @ptrCast(@alignCast(raw));
+                p.found = p.host.findNewSurfaceInner(p.before);
+            }
+        };
+
+        // Snapshot the current ids on the app thread, so the diff is against a
+        // consistent set rather than one taken mid-mutation.
+        var before: [64]u64 = undefined;
+        var before_len: usize = 0;
+        {
+            const BeforePayload = struct {
+                host: *AppHost,
+                buf: *[64]u64,
+                len: *usize,
+
+                fn run(raw: *anyopaque) void {
+                    const p: *@This() = @ptrCast(@alignCast(raw));
+                    p.host.snapshotSurfaceIdsInner(p.buf, p.len);
+                }
+            };
+            var bp: BeforePayload = .{
+                .host = self,
+                .buf = &before,
+                .len = &before_len,
+            };
+            const task = try ipc_task.Task.create(
+                std.heap.c_allocator,
+                &bp,
+                BeforePayload.run,
+            );
+            _ = try self.app.runOnAppThread(task, self.call_timeout_ms);
+        }
+
+        var created: ?u64 = null;
+        {
+            const deadline = std.Io.Timestamp.now(self.io, .awake);
+            while (created == null) {
+                if (deadline.durationTo(
+                    std.Io.Timestamp.now(self.io, .awake),
+                ).toMilliseconds() > self.split_wait_ms) break;
+
+                var ip: IdsPayload = .{ .host = self, .before = before[0..before_len] };
+                const task = try ipc_task.Task.create(
+                    std.heap.c_allocator,
+                    &ip,
+                    IdsPayload.run,
+                );
+                _ = try self.app.runOnAppThread(task, self.call_timeout_ms);
+                created = ip.found;
+
+                if (created == null) {
+                    std.Io.sleep(
+                        self.io,
+                        std.Io.Duration.fromMilliseconds(@intCast(self.split_poll_interval_ms)),
+                        .awake,
+                    ) catch break;
+                }
+            }
+        }
+        const id = created orelse return error.Internal;
+
+        // 3. Read the new pane's info on the app thread.
+        const InfoPayload = struct {
+            host: *AppHost,
+            id: u64,
+            result: ?SplitRequestResult = null,
+
+            fn run(raw: *anyopaque) void {
+                const p: *@This() = @ptrCast(@alignCast(raw));
+                p.result = p.host.surfaceInfoInner(p.id);
+            }
+        };
+        var info_payload: InfoPayload = .{ .host = self, .id = id };
+        {
+            const task = try ipc_task.Task.create(
+                std.heap.c_allocator,
+                &info_payload,
+                InfoPayload.run,
+            );
+            _ = try self.app.runOnAppThread(task, self.call_timeout_ms);
+        }
+        const info = info_payload.result orelse return error.Internal;
+
+        // The title was applied by the app thread as part of the split.
+        // Copy it into the caller's arena so the handle cannot dangle.
+        const title: ?[]const u8 = if (info.title_len > 0)
+            try arena.dupe(u8, info.title_buf[0..info.title_len])
+        else
+            null;
+
+        return .{
+            .id = PaneId.init(info.id),
+            .pid = info.pid,
+            .title = title,
+            .cols = info.cols,
+            .rows = info.rows,
+            .focused = info.focused,
+        };
     }
 
     fn closeCore(ctx: *anyopaque, id: PaneId) pane.HostError!void {
+        const Payload = struct {
+            host: *AppHost,
+            id: PaneId,
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const self: *@This() = @ptrCast(@alignCast(raw));
+                // Resolution and the close both touch app state, so both run
+                // on the app thread.
+                const core = self.host.findCoreInner(self.id) orelse {
+                    self.err = error.PaneNotFound;
+                    return;
+                };
+                core.close();
+            }
+        };
+
         const self = ctxHost(ctx);
-        const core = self.findCore(id) orelse return error.PaneNotFound;
-        // The app's own close path: ask the runtime to start closing, honoring
-        // the confirmation setting.
-        core.close();
+        var payload: Payload = .{ .host = self, .id = id };
+        // The task is heap allocated: it may outlive this frame if the wait
+        // times out.
+        //
+        // The PAYLOAD stays on this stack frame, and it points at `arena` and
+        // `out`, which the caller owns. That is only safe because
+        // `runOnAppThread` does not return until the app thread has finished
+        // with the payload - including when the wait times out and the app
+        // thread had already claimed the task.
+        //
+        // KooshaPari/Khostty#79.
+        const task = try ipc_task.Task.create(
+            std.heap.c_allocator,
+            &payload,
+            Payload.run,
+        );
+        if (!try self.app.runOnAppThread(task, self.call_timeout_ms))
+            return error.Internal;
+        if (payload.err) |e| return e;
     }
 
     fn listSurfaces(
@@ -284,12 +478,45 @@ pub const AppHost = struct {
         arena: Allocator,
         out: *std.ArrayListUnmanaged(pane.PaneInfo),
     ) pane.HostError!void {
-        return ctxHost(ctx).listWindowed(arena, out);
+        const Payload = struct {
+            host: *AppHost,
+            arena: Allocator,
+            out: *std.ArrayListUnmanaged(pane.PaneInfo),
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const self: *@This() = @ptrCast(@alignCast(raw));
+                self.host.listInner(self.arena, self.out) catch |e| {
+                    self.err = e;
+                };
+            }
+        };
+
+        const self = ctxHost(ctx);
+        var payload: Payload = .{ .host = self, .arena = arena, .out = out };
+        // The task is heap allocated: it may outlive this frame if the wait
+        // times out.
+        //
+        // The PAYLOAD stays on this stack frame, and it points at `arena` and
+        // `out`, which the caller owns. That is only safe because
+        // `runOnAppThread` does not return until the app thread has finished
+        // with the payload - including when the wait times out and the app
+        // thread had already claimed the task.
+        //
+        // KooshaPari/Khostty#79.
+        const task = try ipc_task.Task.create(
+            std.heap.c_allocator,
+            &payload,
+            Payload.run,
+        );
+        if (!try self.app.runOnAppThread(task, self.call_timeout_ms))
+            return error.Internal;
+        if (payload.err) |e| return e;
     }
 
     fn writeToParser(ctx: *anyopaque, id: PaneId, data: []const u8) pane.HostError!usize {
         const self = ctxHost(ctx);
-        const core = self.findCore(id) orelse return error.PaneNotFound;
+        const core = self.findCoreInner(id) orelse return error.PaneNotFound;
         // The same parser the pty output goes through, so escape sequences and
         // modes behave exactly as if the program had written them.
         //
@@ -314,9 +541,45 @@ pub const AppHost = struct {
         id: PaneId,
         out: *state.Snapshot,
     ) pane.HostError!void {
+        const Payload = struct {
+            host: *AppHost,
+            arena: Allocator,
+            id: PaneId,
+            out: *state.Snapshot,
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const self: *@This() = @ptrCast(@alignCast(raw));
+                const core = self.host.findCoreInner(self.id) orelse {
+                    self.err = error.PaneNotFound;
+                    return;
+                };
+                self.host.snapshotInner(self.arena, core, self.out) catch |e| {
+                    self.err = e;
+                };
+            }
+        };
+
         const self = ctxHost(ctx);
-        const core = self.findCore(id) orelse return error.PaneNotFound;
-        return self.snapshotWindowed(arena, core, out);
+        var payload: Payload = .{ .host = self, .arena = arena, .id = id, .out = out };
+        // The task is heap allocated: it may outlive this frame if the wait
+        // times out.
+        //
+        // The PAYLOAD stays on this stack frame, and it points at `arena` and
+        // `out`, which the caller owns. That is only safe because
+        // `runOnAppThread` does not return until the app thread has finished
+        // with the payload - including when the wait times out and the app
+        // thread had already claimed the task.
+        //
+        // KooshaPari/Khostty#79.
+        const task = try ipc_task.Task.create(
+            std.heap.c_allocator,
+            &payload,
+            Payload.run,
+        );
+        if (!try self.app.runOnAppThread(task, self.call_timeout_ms))
+            return error.Internal;
+        if (payload.err) |e| return e;
     }
 
     fn resizeSplit(
@@ -325,131 +588,156 @@ pub const AppHost = struct {
         dir: protocol.Direction,
         amount: u16,
     ) pane.HostError!void {
-        const self = ctxHost(ctx);
-        const core = self.findCore(id) orelse return error.PaneNotFound;
-        // Explicit switch, NOT @enumFromInt/@intFromEnum: protocol.Direction is
-        // {right, down, left, up} but ResizeSplit.Direction is
-        // {up, down, left, right}. Converting by integer would silently swap
-        // right and up.
-        const direction: apprt.action.ResizeSplit.Direction = switch (dir) {
-            .up => .up,
-            .down => .down,
-            .left => .left,
-            .right => .right,
+        const Payload = struct {
+            host: *AppHost,
+            id: PaneId,
+            dir: protocol.Direction,
+            amount: u16,
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const self: *@This() = @ptrCast(@alignCast(raw));
+                // `findCoreInner` scans `app.surfaces`, which the app thread
+                // mutates, so the lookup belongs on the app thread too - not
+                // just the action. KooshaPari/Khostty#76.
+                const core = self.host.findCoreInner(self.id) orelse {
+                    self.err = error.PaneNotFound;
+                    return;
+                };
+                // Explicit switch, NOT @enumFromInt/@intFromEnum:
+                // protocol.Direction is {right, down, left, up} but
+                // ResizeSplit.Direction is {up, down, left, right}.
+                // Converting by integer would silently swap right and up.
+                const direction: apprt.action.ResizeSplit.Direction = switch (self.dir) {
+                    .up => .up,
+                    .down => .down,
+                    .left => .left,
+                    .right => .right,
+                };
+                _ = core.rt_app.performAction(
+                    .{ .surface = core },
+                    .resize_split,
+                    .{ .amount = self.amount, .direction = direction },
+                ) catch |e| {
+                    self.err = mapActionError(e);
+                };
+            }
         };
-        _ = core.rt_app.performAction(
-            .{ .surface = core },
-            .resize_split,
-            .{ .amount = amount, .direction = direction },
-        ) catch |err| return mapActionError(err);
+
+        const self = ctxHost(ctx);
+        var payload: Payload = .{ .host = self, .id = id, .dir = dir, .amount = amount };
+        // The task is heap allocated: it may outlive this frame if the wait
+        // times out. The payload stays on this stack frame, which is only safe
+        // because `runOnAppThread` does not return until the app thread has
+        // finished with it. KooshaPari/Khostty#79.
+        const task = try ipc_task.Task.create(
+            std.heap.c_allocator,
+            &payload,
+            Payload.run,
+        );
+        if (!try self.app.runOnAppThread(task, self.call_timeout_ms))
+            return error.Internal;
+        if (payload.err) |e| return e;
     }
 
     fn equalizeSplits(ctx: *anyopaque) pane.HostError!void {
+        const Payload = struct {
+            host: *AppHost,
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const self: *@This() = @ptrCast(@alignCast(raw));
+                // `focused_surface` is app state, so resolving it belongs on
+                // the app thread. KooshaPari/Khostty#76.
+                const core = self.host.app.focused_surface orelse {
+                    self.err = error.PaneNotFound;
+                    return;
+                };
+                _ = core.rt_app.performAction(
+                    .{ .surface = core },
+                    .equalize_splits,
+                    {},
+                ) catch |e| {
+                    self.err = mapActionError(e);
+                };
+            }
+        };
+
         const self = ctxHost(ctx);
-        const core = self.app.focused_surface orelse return error.PaneNotFound;
-        _ = core.rt_app.performAction(
-            .{ .surface = core },
-            .equalize_splits,
-            {},
-        ) catch |err| return mapActionError(err);
+        var payload: Payload = .{ .host = self };
+        // The task is heap allocated: it may outlive this frame if the wait
+        // times out.
+        //
+        // The PAYLOAD stays on this stack frame, and it points at `arena` and
+        // `out`, which the caller owns. That is only safe because
+        // `runOnAppThread` does not return until the app thread has finished
+        // with the payload - including when the wait times out and the app
+        // thread had already claimed the task.
+        //
+        // KooshaPari/Khostty#79.
+        const task = try ipc_task.Task.create(
+            std.heap.c_allocator,
+            &payload,
+            Payload.run,
+        );
+        if (!try self.app.runOnAppThread(task, self.call_timeout_ms))
+            return error.Internal;
+        if (payload.err) |e| return e;
     }
 
     fn toggleZoom(ctx: *anyopaque, id: PaneId) pane.HostError!void {
+        const Payload = struct {
+            host: *AppHost,
+            id: PaneId,
+            err: ?pane.HostError = null,
+
+            fn run(raw: *anyopaque) void {
+                const self: *@This() = @ptrCast(@alignCast(raw));
+                const core = self.host.findCoreInner(self.id) orelse {
+                    self.err = error.PaneNotFound;
+                    return;
+                };
+                _ = core.rt_app.performAction(
+                    .{ .surface = core },
+                    .toggle_split_zoom,
+                    {},
+                ) catch |e| {
+                    self.err = mapActionError(e);
+                };
+            }
+        };
+
         const self = ctxHost(ctx);
-        const core = self.findCore(id) orelse return error.PaneNotFound;
-        _ = core.rt_app.performAction(
-            .{ .surface = core },
-            .toggle_split_zoom,
-            {},
-        ) catch |err| return mapActionError(err);
+        var payload: Payload = .{ .host = self, .id = id };
+        // The task is heap allocated: it may outlive this frame if the wait
+        // times out.
+        //
+        // The PAYLOAD stays on this stack frame, and it points at `arena` and
+        // `out`, which the caller owns. That is only safe because
+        // `runOnAppThread` does not return until the app thread has finished
+        // with the payload - including when the wait times out and the app
+        // thread had already claimed the task.
+        //
+        // KooshaPari/Khostty#79.
+        const task = try ipc_task.Task.create(
+            std.heap.c_allocator,
+            &payload,
+            Payload.run,
+        );
+        if (!try self.app.runOnAppThread(task, self.call_timeout_ms))
+            return error.Internal;
+        if (payload.err) |e| return e;
     }
 
     // ── Windowed implementations ──
 
-    fn createWindowed(
-        self: *AppHost,
-        arena: Allocator,
-        req: pane.CreateRequest,
-    ) pane.HostError!pane.PaneHandle {
-        self.mutex.lockUncancelable(self.io);
-        defer self.mutex.unlock(self.io);
-
-        const parent = if (req.parent) |id|
-            self.findCore(id) orelse return error.PaneNotFound
-        else
-            self.app.focused_surface orelse return error.Unsupported;
-
-        // Snapshot the runtime's surfaces: the split action returns no handle,
-        // so the new pane can only be identified by diffing.
-        var before: std.ArrayListUnmanaged(pane.PaneInfo) = .empty;
-        defer before.deinit(self.gpa);
-        try self.listWindowed(arena, &before);
-
-        const direction: apprt.action.SplitDirection = switch (req.dir) {
-            .up => .up,
-            .down => .down,
-            .left => .left,
-            .right => .right,
-        };
-        _ = parent.rt_app.performAction(
-            .{ .surface = parent },
-            .new_split,
-            direction,
-        ) catch |err| return mapActionError(err);
-
-        const previous = try collectIds(self.gpa, before.items);
-        defer self.gpa.free(previous);
-
-        var waited: u64 = 0;
-        var created: ?pane.PaneInfo = null;
-        while (waited <= self.split_wait_ms) {
-            var after: std.ArrayListUnmanaged(pane.PaneInfo) = .empty;
-            defer after.deinit(self.gpa);
-            try self.listWindowed(arena, &after);
-
-            if (pane.findNewPane(previous, after.items)) |found| {
-                created = found;
-                break;
-            }
-
-            std.Io.sleep(
-                self.io,
-                std.Io.Duration.fromMilliseconds(@intCast(self.split_poll_interval_ms)),
-                .awake,
-            ) catch break;
-            waited += self.split_poll_interval_ms;
-        }
-
-        const info = created orelse return error.Internal;
-
-        // A requested title goes through the same action the runtime uses for
-        // OSC 0/2, so title reporting and window-title updates behave normally.
-        if (req.title) |title| {
-            const core = self.findCore(info.id) orelse return error.Internal;
-            _ = core.rt_app.performAction(
-                .{ .surface = core },
-                .set_title,
-                // SetTitle carries a sentinel-terminated slice (the GTK
-                // window title path requires it), unlike PaneInfo.title.
-                .{ .title = try arena.dupeZ(u8, title) },
-            ) catch |err| return mapActionError(err);
-        }
-
-        return .{
-            .id = info.id,
-            .pid = info.pid,
-            .title = info.title,
-            .cols = info.cols,
-            .rows = info.rows,
-            .focused = info.focused,
-        };
-    }
-
-    fn listWindowed(
+    fn listInner(
         self: *AppHost,
         arena: Allocator,
         out: *std.ArrayListUnmanaged(pane.PaneInfo),
     ) pane.HostError!void {
+        // Runs on the app thread (see `listSurfaces`), so reading the surface
+        // list and the GTK getters here is sound. KooshaPari/Khostty#76.
         for (self.app.surfaces.items) |rt_surface| {
             const core = rt_surface.core();
             try out.append(arena, .{
@@ -467,7 +755,8 @@ pub const AppHost = struct {
         }
     }
 
-    fn snapshotWindowed(
+    /// Fill a snapshot. Runs on the app thread.
+    fn snapshotInner(
         self: *AppHost,
         arena: Allocator,
         core: *CoreSurface,
@@ -524,7 +813,97 @@ pub const AppHost = struct {
         };
     }
 
-    fn findCore(self: *AppHost, id: PaneId) ?*CoreSurface {
+    /// Scalar info for one surface, as observed on the app thread.
+    const SplitRequestResult = struct {
+        id: u64,
+        pid: ?u32 = null,
+        cols: ?u16 = null,
+        rows: ?u16 = null,
+        focused: bool = false,
+        title_buf: [255]u8 = [_]u8{0} ** 255,
+        title_len: usize = 0,
+    };
+
+    /// Perform the split. Runs on the app thread, inside a thunk.
+    ///
+    /// The payload fields are spelled out rather than taken as `anytype`: the
+    /// payload is a local struct declared inside the caller, and an `anytype`
+    /// parameter cannot be instantiated with it in a way that type-checks.
+    fn splitInner(
+        self: *AppHost,
+        parent_id: ?u64,
+        direction: apprt.action.SplitDirection,
+        title: ?[:0]const u8,
+    ) !void {
+        // Resolve the parent here: `focused_surface` and the surface list are
+        // app state.
+        const parent = if (parent_id) |id|
+            self.findCoreInner(PaneId.init(id)) orelse return error.PaneNotFound
+        else
+            self.app.focused_surface orelse return error.Unsupported;
+
+        _ = parent.rt_app.performAction(
+            .{ .surface = parent },
+            .new_split,
+            direction,
+        ) catch |err| return mapActionError(err);
+
+        // Apply a requested title through the same action OSC 0/2 uses. A
+        // write, so it belongs on this thread.
+        if (title) |t| {
+            if (self.findCoreInner(PaneId.init(parent.id))) |core| {
+                _ = core.rt_app.performAction(
+                    .{ .surface = core },
+                    .set_title,
+                    .{ .title = t },
+                ) catch {};
+            }
+        }
+    }
+
+    /// Record the current surface ids. Runs on the app thread.
+    fn snapshotSurfaceIdsInner(self: *AppHost, buf: *[64]u64, len: *usize) void {
+        len.* = 0;
+        for (self.app.surfaces.items) |rt_surface| {
+            if (len.* >= buf.len) break;
+            buf[len.*] = rt_surface.core().id;
+            len.* += 1;
+        }
+    }
+
+    /// Find a surface id that was not in `before`. Runs on the app thread.
+    fn findNewSurfaceInner(self: *AppHost, before: []const u64) ?u64 {
+        for (self.app.surfaces.items) |rt_surface| {
+            const id = rt_surface.core().id;
+            var known = false;
+            for (before) |b| {
+                if (b == id) {
+                    known = true;
+                    break;
+                }
+            }
+            if (!known) return id;
+        }
+        return null;
+    }
+
+    /// Read one surface's info. Runs on the app thread.
+    fn surfaceInfoInner(self: *AppHost, id: u64) ?SplitRequestResult {
+        const core = self.findCoreInner(PaneId.init(id)) orelse return null;
+        var result: SplitRequestResult = .{ .id = core.id };
+        result.pid = pidOf(core);
+        result.cols = colsOf(core);
+        result.rows = rowsOf(core);
+        result.focused = self.app.focused_surface == core;
+        if (titleOf(core)) |t| {
+            const n = @min(t.len, result.title_buf.len);
+            @memcpy(result.title_buf[0..n], t[0..n]);
+            result.title_len = n;
+        }
+        return result;
+    }
+
+    fn findCoreInner(self: *AppHost, id: PaneId) ?*CoreSurface {
         return self.app.findSurfaceByID(id.raw);
     }
 };
