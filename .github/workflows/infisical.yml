@@ -16,7 +16,12 @@ on:
 jobs:
   sync-secrets:
     name: Pull secrets from Infisical
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    # `blacksmith-2vcpu-ubuntu-2204` is a third-party runner label and this
+    # fork has no Blacksmith runner registered, so the job never left the
+    # queue: it sat until GitHub cancelled it at 24h, and because this check is
+    # required for merging, every PR in the repo was unmergeable.
+    # `timeout-minutes` does not bound queue time, so it hid the problem.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -43,12 +48,14 @@ jobs:
             exit 1
           fi
 
-          # Pull all secrets from the configured env into .env
+          # Pull the configured env into the process environment and report
+          # only how many variables arrived. Printing the values (or even their
+          # names) would put real secrets in build logs.
           infisical run \
             --projectId "$INFISICAL_PROJECT_ID" \
             --env "$INFISICAL_ENV" \
             --token "$INFISICAL_TOKEN" \
-            -- bash -c 'echo "Secrets loaded into env successfully" && env | grep -E "^[A-Z_]+=" | grep -v -E "^(PATH|HOME|PWD|SHELL|HOSTNAME|TERM|GITHUB_|RUNNER_|CARGO_|DEPLOY_|INPUT_|IMAGE_|ACTIONS_|STEP_|BOOT_|GRUB_|LS_COLORS|INVOCATION_ID|JOURNAL_)" | head -20'
+            -- bash -c 'echo "Infisical env loaded; variable count follows:"; env | grep -cE "^[A-Z_]+=" || true'
 
       - name: Upload secrets as artifact (debug only, never published)
         if: failure()
