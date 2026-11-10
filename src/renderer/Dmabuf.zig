@@ -41,7 +41,8 @@ pub const Planes = struct {
     count: u8,
 
     /// File descriptor for each plane.
-    fds: [max_planes]std.posix.fd_t = @splat(-1),
+    // DMA-BUF uses Unix integer descriptors, never Windows HANDLE values.
+    fds: [max_planes]c_int = @splat(-1),
 
     /// Offset into the DMABUF where each plane starts, in bytes.
     offsets: [max_planes]c_int = @splat(0),
