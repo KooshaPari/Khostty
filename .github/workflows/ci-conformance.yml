@@ -82,6 +82,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # The test bundle uses `await using` (Explicit Resource Management),
+      # which Node 24 is the first release to parse. The runner's default Node
+      # is 22, where every `await using` is a SyntaxError, so the version has
+      # to be pinned here rather than inherited. Pinned by SHA because the
+      # repo's Sonar gate flags actions referenced by tag.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
       - uses: ./.github/actions/install-zig
         with:
           version: "0.16.0"
@@ -96,6 +104,7 @@ jobs:
         # the local dev loop and keeps the failure output in the per-file
         # order rather than as a single node --test --test-name-pattern run.
         run: |
+          node --version
           for f in ./wasm/test/*.test.mjs; do
             node --test "$f"
           done
