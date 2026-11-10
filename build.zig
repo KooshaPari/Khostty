@@ -410,8 +410,10 @@ pub fn build(b: *std.Build) !void {
             // Run uses the native macOS app
             run_step.dependOn(&macos_app_native_only.open.step);
 
-            // If we have no test filters, install the tests too
-            if (test_filters.len == 0) {
+            // If we have no test filters, install the tests too. FORK: only
+            // when the selected renderer can link the app bundle; Config.zig
+            // disables `xctest` when Metal was downgraded to OpenGL.
+            if (test_filters.len == 0 and config.xctest) {
                 macos_app_native_only.addTestStepDependencies(test_step);
             }
         }

@@ -25,6 +25,11 @@ wasm_target: WasmTarget,
 /// Comptime interfaces
 app_runtime: ApprtRuntime = .none,
 renderer: RendererBackend = .opengl,
+/// True when `renderer` was requested as Metal but silently downgraded to
+/// OpenGL because the Metal toolchain is absent. The OpenGL backend links
+/// vendor/glad, whose EGL entry points do not exist on macOS, so any target
+/// that links the app bundle cannot be built in this state.
+renderer_downgraded: bool = false,
 font_backend: FontBackend = .freetype,
 
 /// Feature flags
@@ -54,6 +59,8 @@ emit_exe: bool = false,
 emit_helpgen: bool = false,
 emit_lib_vt: bool = false,
 emit_macos_app: bool = false,
+/// Run the macOS Xcode test suite as part of `zig build test`.
+xctest: bool = false,
 emit_terminfo: bool = false,
 emit_termcap: bool = false,
 emit_test_exe: bool = false,
@@ -219,6 +226,7 @@ pub fn init(b: *std.Build, appVersion: []const u8, libVersion: []const u8) !Conf
             .{},
         );
         config.renderer = .opengl;
+        config.renderer_downgraded = true;
     }
 
     //---------------------------------------------------------------
@@ -595,6 +603,31 @@ pub fn init(b: *std.Build, appVersion: []const u8, libVersion: []const u8) !Conf
         "emit-macos-app",
         "Build and install the macOS app bundle.",
     ) orelse !config.emit_lib_vt and config.emit_xcframework;
+
+    // FORK: the macOS Xcode test target links the app bundle against whichever
+    // renderer is selected. The OpenGL backend compiles vendor/glad and puts
+    // its EGL entry points on the link line; those symbols do not exist on
+    // macOS, so `xcodebuild test` dies with 15 undefined `_egl*`/`_glad*`
+    // symbols and exit 65 instead of reporting a test result. Gate the target
+    // on a renderer that can actually link it, and say so out loud, so the
+    // failure is a stated skip with a remedy rather than an opaque linker
+    // error. `-Drenderer=metal` still forces the real thing.
+    const xctest_option = b.option(
+        bool,
+        "xctest",
+        "Run the macOS Xcode test suite. Defaults to on only when the selected " ++
+            "renderer can link the app bundle (i.e. Metal is available).",
+    );
+    config.xctest = xctest_option orelse (config.renderer == .metal);
+    if (xctest_option == null and !config.xctest and config.renderer_downgraded) {
+        std.log.warn(
+            "Skipping the macOS Xcode test suite: the Metal toolchain is missing, " ++
+                "so the app bundle cannot link with the OpenGL fallback. " ++
+                "Install it via `xcodebuild -downloadComponent MetalToolchain`, " ++
+                "then re-run. Pass -Dxctest=true to attempt it anyway.",
+            .{},
+        );
+    }
 
     //---------------------------------------------------------------
     // System Packages
