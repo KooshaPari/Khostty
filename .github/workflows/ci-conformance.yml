@@ -19,10 +19,13 @@
 #   push path means a future merge ships a wire-breaking change. The cost
 #   is bounded: ~3 min cold, ~30s warm. Worth paying every push.
 #
-# Why no `pull_request` trigger:
-#   The fork's main branch is single-owner. The push-on-main trigger is
-#   the only place where the conformance gate needs to be loud. PR authors
-#   can run `./conformance/build.sh run` locally before pushing.
+# Why `pull_request` as well as push-on-main:
+#   The original rationale was that a single-owner fork only needs the gate to
+#   be loud on main, and that authors can run it locally before pushing. That
+#   is exactly what went wrong: this workflow was red on main and nobody knew,
+#   because nothing ran it before the merge that made it red. It now runs on
+#   PRs that touch the same paths, so the fix for a red gate can be proven
+#   before it lands rather than after.
 #
 # Why filter to conformance/, wasm/, src/:
 #   This workflow should not re-run for changes to docs, fonts, locales, or
@@ -35,6 +38,18 @@ on:
   push:
     branches:
       - main
+    paths:
+      - ".github/workflows/ci-conformance.yml"
+      - "conformance/**"
+      - "wasm/**"
+      - "src/**"
+  # A gate that only runs after merge cannot prevent a broken merge, and this
+  # one proved it: it was red on main for weeks (the `conformance` job aborted
+  # in 0.01 s, and the `wasm` job could not parse the test source on the
+  # runner's Node), while every PR's required-check view stayed green. Same
+  # path filter as the push trigger, so the cost is bounded to the PRs that
+  # actually touch the wire or the wasm build.
+  pull_request:
     paths:
       - ".github/workflows/ci-conformance.yml"
       - "conformance/**"
