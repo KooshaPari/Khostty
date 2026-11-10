@@ -31,7 +31,14 @@ jobs:
           # Official sha256 for zig-x86_64-linux-0.16.0.tar.xz, from
           # https://ziglang.org/download/index.json (read 2026-09-29).
           shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
-      - run: zig fmt --check src/ build.zig
+      # Scope was `src/ build.zig`, which is the upstream tree. The fork adds
+      # `tools/` and `conformance/`, and both had drifted: 7 fork-authored
+      # files were unformatted (`tools/check-fork-discipline.zig` plus six
+      # `conformance/cases/*/cases.zig`) while this gate reported success,
+      # because it never looked at them. `zig fmt --check .` is not the fix:
+      # it also walks `zig-pkg/`, which is vendored dependency source that
+      # must not be reformatted.
+      - run: zig fmt --check src/ build.zig tools/ conformance/
 
   build:
     name: Build (macOS)

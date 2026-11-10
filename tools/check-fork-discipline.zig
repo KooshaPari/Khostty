@@ -567,8 +567,8 @@ fn hasIssueRef(line: []const u8) bool {
                 }
             }
         } else if (idx + 2 < line.len and
-            (std.mem.eql(u8, line[idx ..][0..2], "GH") or
-            std.mem.eql(u8, line[idx ..][0..2], "gh")) and
+            (std.mem.eql(u8, line[idx..][0..2], "GH") or
+                std.mem.eql(u8, line[idx..][0..2], "gh")) and
             line[idx + 2] == '-')
         {
             if (idx + 3 < line.len and line[idx + 3] >= '0' and line[idx + 3] <= '9') {
@@ -674,16 +674,17 @@ fn analyzeFile(
     }
 
     if (uncovered_ranges == 0 and undocumented_blocks == 0) {
-        try report.appendSlice(gpa,
-            "- All modifications are inside `// FORK:` blocks with issue references\n\n");
+        try report.appendSlice(gpa, "- All modifications are inside `// FORK:` blocks with issue references\n\n");
     } else {
-        try report.print(gpa,
+        try report.print(
+            gpa,
             "- ⚠ {d} added range(s) are NOT inside any `// FORK:` block\n",
             .{uncovered_ranges},
         );
         violations += uncovered_ranges;
 
-        try report.print(gpa,
+        try report.print(
+            gpa,
             "- ⚠ {d} `// FORK:` block(s) have no issue reference (`#NNN` / `GH-NNN`)\n",
             .{undocumented_blocks},
         );
