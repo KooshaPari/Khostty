@@ -358,7 +358,9 @@ fi
 # relative to the script, so a `cd` is not required, but output lands in
 # $STAGE_ROOT/output as declared by OutputDir.
 set +e
-"${ISCC_RUNNER[@]}" "$ISCC_PATH" /Q "$ISS_ARG" >"$LOG_DIR/windows-iscc.log" 2>&1
+# Git Bash otherwise rewrites /Q into a filesystem path, which ISCC treats
+# as a second script filename. Keep script-path conversion, exclude the flag.
+MSYS2_ARG_CONV_EXCL=/Q "${ISCC_RUNNER[@]}" "$ISCC_PATH" /Q "$ISS_ARG" >"$LOG_DIR/windows-iscc.log" 2>&1
 iscc_rc=$?
 set -e
 if [[ "$iscc_rc" -ne 0 ]]; then
@@ -392,8 +394,8 @@ step "recording evidence"
   echo "setup: $(basename "$SETUP_PATH")"
   echo "setup_sha256: $SETUP_SHA"
   echo "setup_bytes: $(wc -c <"$SETUP_PATH" | tr -d ' ')"
-  echo "install_verified: NO — this host cannot run a Windows installer"
-  echo "install_verified_reason: no Windows host or wine in this container; the setup .exe was compiled but never executed."
+  echo "install_verified: NO — packaging does not execute the installer"
+  echo "install_verified_reason: the setup .exe was compiled; install/uninstall verification is a separate step."
 } >"$OUT/windows/EVIDENCE.txt"
 
 ( cd "$STAGE_ROOT/output" && sums_line "$SETUP_PATH" >"$SETUP_NAME.sha256" )
