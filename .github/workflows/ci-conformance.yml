@@ -19,10 +19,13 @@
 #   push path means a future merge ships a wire-breaking change. The cost
 #   is bounded: ~3 min cold, ~30s warm. Worth paying every push.
 #
-# Why no `pull_request` trigger:
-#   The fork's main branch is single-owner. The push-on-main trigger is
-#   the only place where the conformance gate needs to be loud. PR authors
-#   can run `./conformance/build.sh run` locally before pushing.
+# Why `pull_request` as well as push-on-main:
+#   The original rationale was that a single-owner fork only needs the gate to
+#   be loud on main, and that authors can run it locally before pushing. That
+#   is exactly what went wrong: this workflow was red on main and nobody knew,
+#   because nothing ran it before the merge that made it red. It now runs on
+#   PRs that touch the same paths, so the fix for a red gate can be proven
+#   before it lands rather than after.
 #
 # Why filter to conformance/, wasm/, src/:
 #   This workflow should not re-run for changes to docs, fonts, locales, or
@@ -35,6 +38,18 @@ on:
   push:
     branches:
       - main
+    paths:
+      - ".github/workflows/ci-conformance.yml"
+      - "conformance/**"
+      - "wasm/**"
+      - "src/**"
+  # A gate that only runs after merge cannot prevent a broken merge, and this
+  # one proved it: it was red on main for weeks (the `conformance` job aborted
+  # in 0.01 s, and the `wasm` job could not parse the test source on the
+  # runner's Node), while every PR's required-check view stayed green. Same
+  # path filter as the push trigger, so the cost is bounded to the PRs that
+  # actually touch the wire or the wasm build.
+  pull_request:
     paths:
       - ".github/workflows/ci-conformance.yml"
       - "conformance/**"
@@ -82,6 +97,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # The test bundle uses `await using` (Explicit Resource Management),
+      # which Node 24 is the first release to parse. The runner's default Node
+      # is 22, where every `await using` is a SyntaxError, so the version has
+      # to be pinned here rather than inherited. Pinned by SHA because the
+      # repo's Sonar gate flags actions referenced by tag.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
       - uses: ./.github/actions/install-zig
         with:
           version: "0.16.0"
@@ -96,6 +119,7 @@ jobs:
         # the local dev loop and keeps the failure output in the per-file
         # order rather than as a single node --test --test-name-pattern run.
         run: |
+          node --version
           for f in ./wasm/test/*.test.mjs; do
             node --test "$f"
           done
