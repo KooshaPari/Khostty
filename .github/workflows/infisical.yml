@@ -16,11 +16,25 @@ on:
 jobs:
   sync-secrets:
     name: Pull secrets from Infisical
-    # `blacksmith-2vcpu-ubuntu-2204` is a third-party runner label and this
-    # fork has no Blacksmith runner registered, so the job never left the
-    # queue: it sat until GitHub cancelled it at 24h, and because this check is
-    # required for merging, every PR in the repo was unmergeable.
-    # `timeout-minutes` does not bound queue time, so it hid the problem.
+    # Two independent reasons this job cannot run in this fork as written.
+    #
+    # 1. Runner label. `blacksmith-2vcpu-ubuntu-2204` is a third-party runner
+    #    label and this fork has no Blacksmith runner registered, so the job
+    #    never left the queue; GitHub cancelled it at 24h. `timeout-minutes`
+    #    does not bound queue time, so it hid the problem. It ran on no runner
+    #    at all, which is why nothing ever executed the token check below.
+    #
+    # 2. No machine identity. With the label fixed, the job reaches the token
+    #    check and exits 100: `gh secret list --repo KooshaPari/Khostty` and
+    #    `gh variable list` are both empty, and the hardcoded fallback project
+    #    id (`8efe392e-...`) belongs to the upstream project, not to this fork.
+    #
+    # This check is NOT a required status check: branch protection on `main`
+    # requires exactly `ci / lint` and `ci / test`. So gating this job on an
+    # explicit opt-in variable removes no gate. It stays skipped until someone
+    # with a fork-scoped Infisical machine identity sets the `INFISICAL_SYNC`
+    # repository variable to `true` and adds `INFISICAL_TOKEN`.
+    if: vars.INFISICAL_SYNC == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
