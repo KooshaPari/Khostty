@@ -645,7 +645,7 @@ wasm/test/types.test-d.ts` -> 68), so it contributes **0 runtime cases and 68 co
   all 11 `*_test.go`); wasm `test.skip` / `skip:` -> **0** (over `wasm/test/*.mjs`; re-checked with
   the explicit path — `wasm/*.test.mjs` matches nothing, since the files live in `wasm/test/`, and
   that wrong glob silently returns 0); Python
-  `pytest.mark.skip|skipif|xfail` -> **0**. So 199 / 70 / 54 / 162 are counts of cases that run and
+  `pytest.mark.skip|skipif|xfail` -> **0**. So 199 / 75 / 54 / 162 are counts of cases that run and
   can fail. The one qualification is Python's opt-in escape hatch: `conftest.py:30` calls
   `pytest.skip(...)` _only_ when `KHOSTTY_VT_SKIP_IF_MISSING=1` (`conftest.py:20`), and by default
   the missing-library path raises `AssertionError` instead (`:31-36`) precisely so that "a green run
