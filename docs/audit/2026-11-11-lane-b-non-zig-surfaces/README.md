@@ -28,7 +28,7 @@ quoted from other lanes and may be off by those 3 declarations.
 | ---------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | Python `khostty-python/tests`      | 8 tests + `conftest.py`      | **124** functions = **162** collected cases                                                                     | integration (in-process FFI)        |
 | Rust `khostty-vt`                  | 9 in `tests/` + 23 in `src/` | **199** (195 `#[test]` + 4 doc-tests)                                                                           | unit + integration (in-process FFI) |
-| Go `khostty-go`                    | 11 `*_test.go`               | **45** functions = **70** cases                                                                                 | integration (linked DLL/dylib)      |
+| Go `khostty-go`                    | 11 `*_test.go`               | **45** functions = **75** cases                                                                                 | integration (linked DLL/dylib)      |
 | `conformance/`                     | `harness.c` only             | **84** (57 assert nothing, 34 of them structurally)                                                             | conformance                         |
 | `wasm/test`                        | 2 `.mjs`                     | **54**                                                                                                          | integration (in-process wasm)       |
 | `example/`                         | 35 dirs                      | 16 of 27 C mains use `assert(...)`; **1 of 27 executed in CI** (`test.yml:998`, exit code printed not asserted) | build verification                  |
@@ -43,11 +43,11 @@ would actually collect, **two surfaces expand**:
 | ----------- | --------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
 | Python      | 124 `def test_`             | **162**         | 10 `@pytest.mark.parametrize` decorators turn 10 functions into 38 extra cases; one list is a module constant (`ROUND_TRIP_CASES`, 5 entries) |
 | Rust        | 195 `#[test]` + 4 doc-tests | **199**         | no `#[test]` inside a loop or macro; the 4 doc-tests are the `//!` code blocks in `src/lib.rs`                                                |
-| Go          | 45 `func Test`              | **70**          | 5 table-driven functions wrap `t.Run` in `for _, tc := range cases`, adding 30 subtests                                                       |
+| Go          | 45 `func Test`              | **75**          | 5 table-driven functions wrap `t.Run` in `for _, tc := range cases`, adding 30 subtests                                                       |
 | conformance | 84 struct entries           | **84**          | static C array (`harness.c:80-160`)                                                                                                           |
 | wasm        | 54 `test(` blocks           | **54**          | no generator: `grep -cE 'test\.each                                                                                                           | forEach' wasm/test/\*.mjs` -> 0 |
 
-So the honest cross-surface comparison in case units is **162 / 199 / 70 / 84 / 54**, not
+So the honest cross-surface comparison in case units is **162 / 199 / 75 / 84 / 54**, not
 124/199/45/84/54. Python was measured by an `ast` walk that multiplies the length of each
 `parametrize` positional list per function (no `argvalues=` keyword form is used anywhere in the
 suite, so the positional walk is complete): `test_key.py` 18 defs -> 35 cases, `test_mouse.py`
@@ -63,6 +63,11 @@ blocks**. BSD `awk` does not interpret `\t` inside a regex, so `/^\t\t\{/` was r
 `^tt{`, and the table entries are two tabs deep. Passing a literal tab through `-v` fixed it. A zero
 that arrives without a positive control — "does this pattern match something I can see by eye in
 that file?" — is not a measurement.
+
+The five blocks carry 13 + 4 + 5 + 3 + 5 = **30 subtests**, so the static count already resolves to
+45 + 30 = **75** cases; an earlier draft carried "70" here, which was an addition slip rather than a
+second measurement. A real `go test -count=1 -v ./...` run emits 45 top-level and 30 indented
+`=== RUN` lines, confirming **75** (§11.8).
 
 **True e2e (launches a real app, or talks to a real socket): NONE among the six audited surfaces,
 with one process-boundary exception inside Python.** All five real surfaces drive an in-process
@@ -234,7 +239,7 @@ a **compositional integration test in-process**; it starts no application and op
 
 **Unit (65) + integration (130).** Both link the native library in-process.
 
-## 3. `khostty-go` — Go, 45 functions / 70 cases
+## 3. `khostty-go` — Go, 45 functions / 75 cases
 
 Counted with `grep -cE "^func (Test|Benchmark|Example)"` per file and `wc -l`:
 
@@ -1205,9 +1210,11 @@ It also holds on the default branch, not only on the PR head: the first post-mer
 
 **Count reconciliation.** The Go surface is **45 test functions** and **75 cases** once `t.Run`
 subtests expand: `go test -count=1 -v ./...` emits 45 top-level `--- PASS` lines, 30 indented ones,
-and 75 `=== RUN` lines. The "70 cases" this report previously carried in its closing summary does not
-reproduce under any of those three measures, so it is corrected rather than explained away. §8 now
-reads "45 fn / 75 cases".
+and 75 `=== RUN` lines. The "70 cases" this report previously carried does not reproduce under any of
+those three measures, so it is corrected rather than explained away: §8 reads "45 fn / 75 cases", and
+the §0 counting table, its "162 / 199 / 75 / 84 / 54" comparison and the §3 heading now all say 75.
+The static per-block count was already consistent with that (§3: 13 + 4 + 5 + 3 + 5 = 30 subtests), so
+"70" was an addition slip, not a competing measurement.
 
 **Two claims corrected here**, both from §8's `example/` row:
 
