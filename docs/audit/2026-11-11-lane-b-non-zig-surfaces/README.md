@@ -1033,7 +1033,8 @@ where `exe_mod.root_source_file` is `src/main.zig` - so the test binary is compi
 file with no `test` block and contains zero cases. `zig build test` succeeds by compiling. The
 harness entries in §6 should be read as **ZERO TESTS**, and the audit's original finding stands
 with a sharper edge: these three were not merely uninvoked, they were uninvoked _and empty_. A
-wiring change cannot fix an absent test; only writing one can.
+wiring change cannot fix an absent test; only writing one can - see §11.5.1 for the follow-up that
+does.
 
 The other 25 example projects declare no `test` step at all, and `zig build test` exits non-zero on
 a project without one, so the matrix is an explicit list rather than a glob. Adding an example to
@@ -1091,14 +1092,34 @@ the other two runs exited 0 while still printing that same `failed command` line
 normally, and a print-free test in the same project passes under the build runner. Assert, do not
 print. Removing the print is what made the runs above reproducible.
 
-### 11.6 One more surface this branch does not fix
+### 11.6 One more surface this branch does not fix — closed since, by #100
 
-`zig build test` - the repo's own Zig unit suite, the ~3900-test tree - is invoked only from
+`zig build test` - the repo's own Zig unit suite, the ~3900-test tree - was invoked only from
 `test.yml` (`:277`, `:317`, `:1747`, `:1822`, `:2207`), the workflow established in §11.4 as
-unrunnable here. `zig-fork-tests.yml` reaches the tree only through `test-agent-ipc`. So the
-largest Zig suite has the same status as the Rust suite had before this branch: present, invoked,
-and unable to report anything. That is Lane A's surface and is deliberately left alone; it is
-recorded here because the two defects are the same defect.
+unrunnable here, and `zig-fork-tests.yml` reached the tree only through `test-agent-ipc`. So the
+largest Zig suite had the same status as the Rust suite before this branch: present, invoked, and
+unable to report anything. That is Lane A's surface, and this branch left it alone on purpose.
+
+It is closed there now. PR #100 (`49c2d521b`) adds a `zig-test` job to `zig-fork-tests.yml`,
+named `test (zig build test)`, running
+`nix develop -c zig build -Dapp-runtime=none test --summary all` on `ubuntu-latest` with
+`timeout-minutes: 60` and the same Zig `0.16.0` pin as its neighbours. `--summary all` is what
+makes the job mean something: `zig build test` prints nothing on success, which is the
+silent-green failure mode of §11.5. Verified first-hand rather than quoted: run `42975266230` job
+`130372774981` logs `Build Summary: 101/101 steps succeeded; 3935/3978 tests passed (43 skipped)`.
+
+Two follow-ups finished the gate. PR #106 (`08141794c`) adds a `push`-to-`main` trigger, so the
+job runs on the default branch as well as on PRs - run `42980815076` on `08141794c` shows
+`test (zig build test)` **success** among its seven green jobs. PR #108 (`2ba3da153`) then deletes
+the `pull_request` `paths:` filter outright, superseding #100's widening to `src/**` +
+`build.zig.zon`: a path-filtered workflow emits **no check-run at all** on a non-matching PR, so
+the job could never be made a required status check without deadlocking every unrelated PR, and
+protected nothing in the meantime. `push` keeps its 18 paths, so main-side cost is unchanged.
+
+Precision on "blocking": the job carries no `continue-on-error` and no test-level retries, so a
+failure reddens the run on both PRs and `main`. It is **not** a required status check - branch
+protection requires only `ci / lint` and `ci / test` - so it does not currently prevent a merge.
+Making it required is an owner-only settings change and is tracked separately.
 
 ### 11.7 Landed
 
