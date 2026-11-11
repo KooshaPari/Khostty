@@ -42,9 +42,15 @@ on:
   # lives only on a non-default branch). Scope: the workflow file itself,
   # the two fork-only test entry points, the directories and shared imports they
   # transitively pull in (incl. src/App.zig + src/Surface.zig), and build.zig (build-config changes can break
-  # these tests). Anything outside this set does not need a fork-zig
-  # test run; the upstream test.yml continues to cover `zig build test`
-  # and `test-lib-vt` for all other changes. Intended to remain as a
+  # these tests). Since Issue #98 this workflow is the ONLY CI channel for the
+  # Zig suite: `test.yml` cannot run on this fork (its jobs are pinned to
+  # namespace-profile runners this fork cannot schedule, and the Linux `test`
+  # job carries the upstream `github.repository == 'ghostty-org/ghostty'
+  # guard), so it does NOT cover `zig build test` / `test-lib-vt` "for all
+  # other changes" - nothing else covers them at all. `src/**` and
+  # `build.zig.zon` are what keep this gate broad enough to matter, because the
+  # core suite exercises all of src/, not just the entries listed above.
+  # Intended to remain as a
   # validation channel pre- and post-merge; the long-term nightly
   # schedule stays for catch-up coverage on slow PRs.
   pull_request:
