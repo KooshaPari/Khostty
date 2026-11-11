@@ -1033,7 +1033,8 @@ where `exe_mod.root_source_file` is `src/main.zig` - so the test binary is compi
 file with no `test` block and contains zero cases. `zig build test` succeeds by compiling. The
 harness entries in §6 should be read as **ZERO TESTS**, and the audit's original finding stands
 with a sharper edge: these three were not merely uninvoked, they were uninvoked _and empty_. A
-wiring change cannot fix an absent test; only writing one can.
+wiring change cannot fix an absent test; only writing one can - see §11.5.1 for the follow-up that
+does.
 
 The other 25 example projects declare no `test` step at all, and `zig build test` exits non-zero on
 a project without one, so the matrix is an explicit list rather than a glob. Adding an example to
@@ -1044,6 +1045,59 @@ opens its group at `05:30:00.506`, and the next log line is `Post Run actions/ch
 `05:30:51.431`. Fifty-one seconds of compilation and **not one line of test output** - no
 `All 0 tests passed`, nothing - and exit code 0. That is what a passing test step with no tests
 looks like, and it is why the guard checks `build.zig` for the step rather than trusting the green.
+
+#### 11.5.1 Follow-up: the three harnesses now contain tests
+
+The claim above ("only writing one can") is implemented for all three projects. Each
+`b.addTest(.{ .root_module = exe_mod })` still points at the same `src/main.zig`, which now declares
+tests that assert terminal behaviour rather than print it:
+
+| Project                 | Tests | What they assert                                                                                                                                                                     |
+| ----------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `example/zig-vt`        | 2     | at `cols = 3`, `printString("abcd")` wraps to `"abc\nd"` while the unwrapped dump is `"abcd"`; a `\n` in `printString` behaves as carriage return + linefeed, not as a bare linefeed |
+| `example/zig-vt-stream` | 1     | stream-fed text lands on successive rows; `ESC[1;1H` positions the cursor so following text overwrites the first row instead of appending; `ESC[2K` clears the row it is applied to  |
+| `example/zig-formatter` | 1     | the HTML emit escapes markup: fed `a<b>&c`, the output contains `&lt;`, `&gt;` and `&amp;`                                                                                           |
+
+Expected values were measured before being written down, not assumed:
+
+- `printString` (`src/terminal/Terminal.zig:526`) is a codepoint printer - only `\n` is special
+  (carriage return + linefeed) - so an SGR sequence passed to it becomes literal cells. Escape
+  sequences have to go through `vtStream()`, which is why the formatter and stream projects feed
+  the stream and the `zig-vt` project only uses `printString`.
+- `plainString` and `plainStringUnwrapped` (`src/terminal/Terminal.zig:4993,4998`) differ exactly as
+  their doc comments say: `cols = 3` with `"abcd"` yields `"abc\nd"` and `"abcd"`.
+
+Local evidence, `zig 0.16.0`, each project run as `zig build test --summary all`:
+
+```
+zig-vt         Build Summary: 42/42 steps succeeded; 2/2 tests passed
+zig-vt-stream  Build Summary: 42/42 steps succeeded; 1/1 tests passed
+zig-formatter  Build Summary: 42/42 steps succeeded; 1/1 tests passed
+```
+
+Each line is a real test execution - `run test 2 pass (2 total)` and so on - which is the thing the
+job log in §11.5 never contained.
+
+`zig-fork-tests.yml` now enforces that distinction rather than trusting it: the example jobs run
+`zig build test --summary all` and require a `run test N pass` line, so a harness that regresses to
+an empty test binary fails the job instead of reporting green. Negative control for the guard: with
+the `test` blocks stripped, Zig prints `run test success 228ms` - no count - and the guard rejects
+it, while the test-bearing build prints `run test 2 pass (2 total)` and is accepted.
+
+**Gotcha for the next author:** a test that writes to stderr makes the build log lie. With one
+`std.debug.print` inside a test, every run printed
+
+```
+failed command: ./.zig-cache/o/.../test --cache-dir=./.zig-cache --seed=0x... --listen=-
+```
+
+and then, in the same run, ended `Build Summary: 42/42 steps succeeded; 3/3 tests passed`. Seven runs
+with a printing test all emitted it; the exit code was captured in five of them and was 0 in all
+five (the two earliest were piped through `grep`, so their status was never measured and is not
+claimed). Removing the print removes the line. The harness is therefore not broken, only
+misleading: a reader who greps for `failed command` will conclude the job failed while every test
+passed. The same binary run by hand without `--listen=-` prints normally and exits 0. Assert, do not
+print.
 
 ### 11.6 One more surface this branch does not fix — closed since, by #100
 
@@ -1108,4 +1162,4 @@ workflow that could not run before PR #99 runs on the default branch too.
 3. **What `build.sh run` asserts:** all 84 cases parse without crashing, plus a `memcmp` of rendered plaintext for only 27 of them (`harness.c:201`, `:225-226`) — the other 57 cannot assert at all because `""` is overloaded (`:254-273`).
 4. **Largest suite could not block a merge; fixed on `fix/ci-rust-test-gate` (PR #99), see §11:** Rust 199 runs as `cargo test --workspace ... || echo "::warning::test failures (advisory)"` (`ci.yml:162-164`) under `continue-on-error: true` (`ci.yml:151`), and `ci.yml:167-188` records a shipped stale-binding defect that this arrangement let through. The same job has already been silently skipped for a whole release cycle by a broken detection test (`ci.yml:99-104`: `[ -f "**/Cargo.toml" ]` never glob-matched), so both the gate and the trigger have failed here before.
 5. **Hard gates only:** Python tests (`ci.yml:286` job, run step `:340`), Go on Windows (`go-windows.yml:59-63`), conformance (`ci-conformance.yml:68,90`), wasm (`ci-conformance.yml:92,115-125`, no `continue-on-error` in that file), and `gen_ffi.py --check` (`ci.yml:181,195-199`).
-6. **True e2e: none of the six audited surfaces, with one process-boundary exception.** Five drive an in-process `libghostty-vt` (cffi dlopen, linked FFI, cgo, direct C calls, wasm instantiate), but `khostty-python/tests/test_examples.py:21-31` runs the shipped Python examples in **subprocesses** and asserts exit code plus stdout — a real process boundary, inside the merge gate (`ci.yml:340`), though it is a child interpreter rather than a PTY or an external app. `example/` is build-only for 26 of its 27 C mains (the 27th, `c-vt-effects`, is executed on Windows at `test.yml:998` but prints an exit code instead of asserting it), and the three Zig example harnesses now run `zig build test` in `zig-fork-tests.yml` (PR #99) but declare **zero** tests, so their green is a compile result (§11.5); the `agent-ipc` child the CI comment promises is neither built by that step nor spawned (`ci-conformance.yml:87-88`, `build.sh`). The repo's only fork/exec/PTY harness is out of lane and report-only: `test/esctest` (`test/esctest/src/main.zig:67,74,81`, run at `test.yml:1590` ending `|| true`).
+6. **True e2e: none of the six audited surfaces, with one process-boundary exception.** Five drive an in-process `libghostty-vt` (cffi dlopen, linked FFI, cgo, direct C calls, wasm instantiate), but `khostty-python/tests/test_examples.py:21-31` runs the shipped Python examples in **subprocesses** and asserts exit code plus stdout — a real process boundary, inside the merge gate (`ci.yml:340`), though it is a child interpreter rather than a PTY or an external app. `example/` is build-only for 26 of its 27 C mains (the 27th, `c-vt-effects`, is executed on Windows at `test.yml:998` but prints an exit code instead of asserting it), and the three Zig example harnesses run `zig build test` in `zig-fork-tests.yml` (PR #99) but declared **zero** tests as audited, so their green was a compile result (§11.5); they now carry 2/1/1 asserting tests (§11.5.1); the `agent-ipc` child the CI comment promises is neither built by that step nor spawned (`ci-conformance.yml:87-88`, `build.sh`). The repo's only fork/exec/PTY harness is out of lane and report-only: `test/esctest` (`test/esctest/src/main.zig:67,74,81`, run at `test.yml:1590` ending `|| true`).

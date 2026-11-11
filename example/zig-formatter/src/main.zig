@@ -36,3 +36,29 @@ pub fn main(init: std.process.Init) !void {
     try stdout.print("{f}", .{formatter});
     try stdout.flush();
 }
+
+test "formatter emits HTML and escapes markup" {
+    var t: ghostty_vt.Terminal = try .init(std.testing.io, std.testing.allocator, .{
+        .cols = 40,
+        .rows = 5,
+    });
+    defer t.deinit(std.testing.allocator);
+
+    var stream = t.vtStream();
+    defer stream.deinit();
+    stream.nextSlice("a<b>&c");
+
+    const formatter: ghostty_vt.formatter.TerminalFormatter = .init(&t, .{
+        .emit = .html,
+        .palette = &t.colors.palette.current,
+    });
+
+    var aw: std.Io.Writer.Allocating = .init(std.testing.allocator);
+    defer aw.deinit();
+    try aw.writer.print("{f}", .{formatter});
+
+    const html = aw.written();
+    try std.testing.expect(std.mem.indexOf(u8, html, "&lt;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, html, "&gt;") != null);
+    try std.testing.expect(std.mem.indexOf(u8, html, "&amp;") != null);
+}

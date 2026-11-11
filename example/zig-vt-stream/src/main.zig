@@ -34,3 +34,31 @@ pub fn main(init: std.process.Init) !void {
     defer init.gpa.free(str);
     std.debug.print("{s}\n", .{str});
 }
+
+test "stream renders text, cursor moves and line erase" {
+    var t: ghostty_vt.Terminal = try .init(std.testing.io, std.testing.allocator, .{
+        .cols = 40,
+        .rows = 10,
+    });
+    defer t.deinit(std.testing.allocator);
+
+    var stream = t.vtStream();
+    defer stream.deinit();
+
+    stream.nextSlice("one\r\ntwo");
+    const first = try t.plainStringUnwrapped(std.testing.allocator);
+    defer std.testing.allocator.free(first);
+    try std.testing.expectEqualStrings("one\ntwo", first);
+
+    // cursor positioning puts text at the requested row instead of appending
+    stream.nextSlice("\x1b[1;1HTOP");
+    const moved = try t.plainStringUnwrapped(std.testing.allocator);
+    defer std.testing.allocator.free(moved);
+    try std.testing.expect(std.mem.startsWith(u8, moved, "TOP"));
+
+    // erase line removes the contents of the current row
+    stream.nextSlice("\x1b[2;1H\x1b[2K");
+    const erased = try t.plainStringUnwrapped(std.testing.allocator);
+    defer std.testing.allocator.free(erased);
+    try std.testing.expect(std.mem.indexOf(u8, erased, "two") == null);
+}

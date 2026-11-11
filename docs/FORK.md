@@ -212,10 +212,10 @@ tracking issue. Maintained by `tools/check-fork-discipline.zig` and surfaced
 on every PR by `.github/workflows/ci-fork-discipline.yml`. See
 `docs/FORK-DISCIPLINE.md` for the rule set.
 
-| Path                     | Tracking issue | Bracketed? | Notes                                                                                                                                         |
-| ------------------------ | -------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/terminal/mouse.zig` | GH-14736       | yes        | Adds `.windows` to the `.none` switch arm so the Win32 embedding path compiles. The exhaustive upstream switch would otherwise fail to build. |
-| `src/terminal/search/Thread.zig` | #96 (tracked in #94) | yes | Guards `loop.run(.once)` with `loop.stopped()` in both worker paths, and makes stop -> join -> deinit unconditional in the test, fixing a kqueue teardown race that panicked inside libxev (`.BADF => unreachable`) with the worker still polling. |
+| Path                             | Tracking issue       | Bracketed? | Notes                                                                                                                                                                                                                                              |
+| -------------------------------- | -------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/terminal/mouse.zig`         | GH-14736             | yes        | Adds `.windows` to the `.none` switch arm so the Win32 embedding path compiles. The exhaustive upstream switch would otherwise fail to build.                                                                                                      |
+| `src/terminal/search/Thread.zig` | #96 (tracked in #94) | yes        | Guards `loop.run(.once)` with `loop.stopped()` in both worker paths, and makes stop -> join -> deinit unconditional in the test, fixing a kqueue teardown race that panicked inside libxev (`.BADF => unreachable`) with the worker still polling. |
 
 ---
 
