@@ -1199,6 +1199,10 @@ distinct cases once the step script's echoed grep pattern is discounted, matchin
 for case. The same run has `Rust` (2m27s), `Python` (8s) and `Python Tests` (3m29s) green, so roughly
 four minutes is the whole visible cost of the Go job actually doing its job.
 
+It also holds on the default branch, not only on the PR head: the first post-merge `ci.yml` run,
+`43061465577` on `6165b36`, shows `Go` job `130665030149` **success**, with the same three lines
+(`PASS`, `ok github.com/KooshaPari/Khostty/khostty-go 0.049s`, `ran 45 top-level tests`).
+
 **Count reconciliation.** The Go surface is **45 test functions** and **75 cases** once `t.Run`
 subtests expand: `go test -count=1 -v ./...` emits 45 top-level `--- PASS` lines, 30 indented ones,
 and 75 `=== RUN` lines. The "70 cases" this report previously carried in its closing summary does not
