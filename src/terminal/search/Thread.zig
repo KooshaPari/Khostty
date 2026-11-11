@@ -637,7 +637,11 @@ const TestUserData = struct {
     }
 };
 
-test {
+// FORK: name the search-thread test so `zig build test --test-filter` can
+// select it. Upstream leaves this block unnamed, which makes it impossible to
+// isolate or reproduce the flaky teardown crash tracked in #96 on its own.
+// Tracked in #96.
+test "Thread search notifies viewport matches" {
     const alloc = testing.allocator;
     const io = testing.io;
     var mutex: std.Io.Mutex = .init;
