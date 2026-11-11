@@ -95,34 +95,15 @@ on:
   # Intended to remain as a
   # validation channel pre- and post-merge; the long-term nightly
   # schedule stays for catch-up coverage on slow PRs.
-  pull_request:
-    paths:
-      - ".github/workflows/zig-fork-tests.yml"
-      - "src/main_windows_apprt.zig"
-      - "src/main_agent_ipc.zig"
-      - "src/apprt/windows/**"
-      - "src/apprt/ipc/**"
-      - "src/App.zig"
-      - "src/Surface.zig"
-      - "build.zig"
-      # The generated artifacts (khostty-vt/src/ffi.rs,
-      # wasm/include/ghostty-vt.h, wasm/js/terminal-data.js) are derived from
-      # include/ghostty/, so a header change is what makes them stale.
-      - "include/**"
-      - "wasm/**"
-      - "khostty-vt/**"
-      # GTK runtime: the only app_runtime for which `windowed` is true, so the
-      # only place B1 (bind the IPC server from the runtime) can be verified.
-      - "src/apprt/gtk/**"
-      - "example/**"
-      - "src/build/**"
-      # Issue #98: the core Zig suite (`zig build test`) exercises all of src/,
-      # not only the entries above. `src/**` and `build.zig.zon` close the gap
-      # (the narrower src/ entries above are now redundant but harmless).
-      - "src/**"
-      - "build.zig.zon"
-      - "flake.nix"
-      - "nix/**"
+  # 2026-11-11: the `paths:` filter is GONE on purpose. A path-filtered
+  # workflow produces no check-run at all on a PR that does not match, so
+  # `test (zig build test)` would sit at "Expected - waiting for status to be
+  # reported" forever and such a PR could never merge once that job is a
+  # required status check. A gate that silently cannot report is worse than no
+  # gate. The original cost argument ("would dominate CI cost for a repo on the
+  # free Actions tier") does not apply: this repo is PUBLIC, so `ubuntu-latest`
+  # minutes are free and unlimited.
+  pull_request: # every path, every branch - see the 2026-11-11 note above
   # Keep `merge_group` out of the trigger list for now: this fork's
   # default branch is not configured for merge queues, and an
   # unhandled event type silently swallows the trigger.
