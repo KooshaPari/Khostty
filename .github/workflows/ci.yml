@@ -177,9 +177,14 @@ jobs:
         run: |
           set -euo pipefail
           cargo test --workspace -- --list > "$RUNNER_TEMP/rust-tests.txt"
-          echo "collected Rust tests: $(grep -c ': test$' "$RUNNER_TEMP/rust-tests.txt" || true)"
-          if ! grep -q '^end_to_end::' "$RUNNER_TEMP/rust-tests.txt"; then
-            echo "::error::no end_to_end:: tests were collected - build.rs did not find libghostty-vt, so the 130 integration tests were compiled out instead of run."
+          total=$(grep -c ': test$' "$RUNNER_TEMP/rust-tests.txt" || true)
+          echo "collected Rust tests: $total"
+          # 65 unit + 4 doc-tests + 130 linked integration tests = 199. Without
+          # libghostty-vt the 130 are never compiled, so the total lands near 69;
+          # the floor sits well below the real figure and well above that
+          # underrun, and does not pin an exact count that new tests would break.
+          if [ "$total" -lt 190 ]; then
+            echo "::error::only $total Rust tests were collected (expected 199). build.rs did not find libghostty-vt, so the 130 linked integration tests were compiled out instead of run."
             exit 1
           fi
       - name: cargo test
