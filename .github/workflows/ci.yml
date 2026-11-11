@@ -148,45 +148,69 @@ jobs:
     needs: detect
     if: needs.detect.outputs.has_rust == 'true'
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          # Same pinned release and checksum as the `zig-fmt` job above.
+          shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
       - name: cargo fmt --check
         run: |
           cargo fmt --all -- --check 2>&1 || echo "::warning::cargo fmt issues (advisory)"
       - name: cargo clippy
         run: |
           cargo clippy --all-targets -- -D warnings 2>&1 || echo "::warning::clippy issues (advisory)"
-      - name: cargo test
+      # `khostty-vt/tests/` is gated on `#![cfg(ghostty_vt_linked)]`, and
+      # `khostty-vt/build.rs` sets that cfg only when it finds a prebuilt
+      # libghostty-vt under `../zig-out/lib`. Without the build below, the 130
+      # integration tests neither fail nor skip: they are not compiled at all,
+      # so the run is 65 tests and looks green. That silent underrun is why this
+      # job used to be advisory. Build the library first, then prove the linked
+      # tests were really collected before trusting the result.
+      - name: zig build -Demit-lib-vt (materialise the linked library)
+        run: zig build -Demit-lib-vt
+      - name: assert the linked integration tests were collected
+        working-directory: khostty-vt
         run: |
-          cargo test --workspace --no-fail-fast 2>&1 || echo "::warning::test failures (advisory)"
+          set -euo pipefail
+          cargo test --workspace -- --list > "$RUNNER_TEMP/rust-tests.txt"
+          echo "collected Rust tests: $(grep -c ': test$' "$RUNNER_TEMP/rust-tests.txt" || true)"
+          if ! grep -q '^end_to_end::' "$RUNNER_TEMP/rust-tests.txt"; then
+            echo "::error::no end_to_end:: tests were collected - build.rs did not find libghostty-vt, so the 130 integration tests were compiled out instead of run."
+            exit 1
+          fi
+      - name: cargo test
+        run: cargo test --workspace --no-fail-fast
 
   # The generated Rust binding must match the C headers.
   #
-  # REQUIRED, and deliberately NOT advisory. The `rust` job is
-  # `continue-on-error: true` and wraps `cargo test` in
-  # `|| echo "::warning::test failures (advisory)"`, so a stale binding could
-  # not fail CI there — and it did not. khostty-vt 0.1.0 shipped with
+  # REQUIRED, and deliberately NOT advisory. The `rust` job blocks now, but the
+  # history is why this check exists. While that job was
+  # `continue-on-error: true` and wrapped `cargo test` in
+  # `|| echo "::warning::test failures (advisory)"`, a stale binding could not
+  # fail CI there - and it did not. khostty-vt 0.1.0 shipped with
   # `src/ffi.rs` stale against `include/`: 198 functions / 179 types /
   # 794 constants versus 199 / 196 / 884 after regeneration, with
   # `ghostty_osc_set` (include/ghostty/vt/osc.h:330) absent from the binding
-  # entirely. `cargo test --test ffi_coverage` does catch this, but only if it
-  # is allowed to fail the build.
+  # entirely. `cargo test --test ffi_coverage` does catch this, but only when
+  # the library has been built; this check catches it without any of that.
   #
   # This check needs only Python 3 and the source headers: no Zig build, no
   # Rust toolchain, no linked library. It runs in about two seconds, so there
   # is no reason for it to be advisory.
   binding-freshness:
     name: Rust binding freshness
-    # REQUIRED, deliberately not advisory: the `rust` job is
-    # `continue-on-error: true` and wraps `cargo test` in
+    # REQUIRED, deliberately not advisory. Historically the `rust` job was
+    # `continue-on-error: true` and wrapped `cargo test` in
     # `|| echo "::warning::..."`, so a stale binding could not fail CI there -
-    # and it did not. khostty-vt 0.1.0 shipped with src/ffi.rs stale against
-    # include/: 198/179/794 versus 199/196/884 after regeneration, with
-    # ghostty_osc_set (include/ghostty/vt/osc.h:330) absent entirely.
-    # Needs only Python 3 and the source headers: ~2 s.
+    # and it did not: khostty-vt 0.1.0 shipped with src/ffi.rs stale against
+    # include/ (198/179/794 versus 199/196/884 after regeneration, with
+    # ghostty_osc_set in include/ghostty/vt/osc.h:330 absent entirely). The rust
+    # job blocks now, but this check stays because it needs only Python 3 and
+    # the source headers: no Zig build, no Rust toolchain, ~2 s.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
