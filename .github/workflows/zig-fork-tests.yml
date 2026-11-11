@@ -313,6 +313,8 @@ jobs:
       - name: zig build test
         working-directory: example/${{ matrix.example }}
         shell: bash
+        env:
+          EXAMPLE: ${{ matrix.example }}
         run: |
           set -euo pipefail
           out=$(zig build test --summary all 2>&1) || { printf '%s\n' "$out"; exit 1; }
@@ -323,6 +325,6 @@ jobs:
           # was a compile result (docs/audit/2026-11-11-lane-b-non-zig-surfaces,
           # section 11.5). Require a real run, not a build.
           if ! grep -qE 'run test [1-9][0-9]* pass' <<<"$out"; then
-            echo "::error::example/${{ matrix.example }} executed zero tests; the test binary compiled but contains no cases"
+            echo "::error::example/${EXAMPLE} executed zero tests; the test binary compiled but contains no cases"
             exit 1
           fi
