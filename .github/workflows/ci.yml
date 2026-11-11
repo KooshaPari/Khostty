@@ -158,9 +158,11 @@ jobs:
           # Same pinned release and checksum as the `zig-fmt` job above.
           shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
       - name: cargo fmt --check
+        working-directory: khostty-vt
         run: |
           cargo fmt --all -- --check 2>&1 || echo "::warning::cargo fmt issues (advisory)"
       - name: cargo clippy
+        working-directory: khostty-vt
         run: |
           cargo clippy --all-targets -- -D warnings 2>&1 || echo "::warning::clippy issues (advisory)"
       # `khostty-vt/tests/` is gated on `#![cfg(ghostty_vt_linked)]`, and
@@ -188,6 +190,7 @@ jobs:
             exit 1
           fi
       - name: cargo test
+        working-directory: khostty-vt
         run: cargo test --workspace --no-fail-fast
 
   # The generated Rust binding must match the C headers.
