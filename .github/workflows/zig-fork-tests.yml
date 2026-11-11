@@ -11,8 +11,12 @@
 # `zig build test-agent-ipc` by hand — which is why Phase 0 verification
 # required ~27 minutes of local wall-clock and a hand-written evidence log.
 #
-# The inherited upstream `test.yml` DOES cover `zig build test` and
-# `test-lib-vt`. This workflow covers only what is missing.
+# The inherited upstream `test.yml` nominally covers the example harnesses, but
+# it cannot: it is `workflow_dispatch`-only in this fork ("FORK: DISABLED for
+# automatic triggers") and 50 of its 52 jobs target `namespace-profile-ghostty-*`
+# runners this fork does not have. A step added there never runs on a push and
+# never appears on a PR. So the three example harnesses that DO declare a test
+# step are wired here, in the workflow that actually executes for this fork.
 #
 # Why nightly rather than per-push:
 #   `test-agent-ipc` runs the full test tree (~3900 tests, ~4GB peak, ~27min
@@ -61,6 +65,7 @@ on:
       # GTK runtime: the only app_runtime for which `windowed` is true, so the
       # only place B1 (bind the IPC server from the runtime) can be verified.
       - "src/apprt/gtk/**"
+      - "example/**"
       - "src/build/**"
       - "flake.nix"
       - "nix/**"
@@ -181,3 +186,48 @@ jobs:
       - name: Header + data table + ABI + tests
         working-directory: wasm
         run: npm run check
+
+  # ---------------------------------------------------------------------------
+  # Example harnesses: the last Zig surface no workflow reached.
+  # ---------------------------------------------------------------------------
+  # Three of the 28 example projects declare a `test` step:
+  #   example/zig-vt, example/zig-vt-stream, example/zig-formatter
+  # A test step that no workflow invokes is dead code that looks like coverage.
+  #
+  # The remaining 25 have no `test` step at all, and `zig build test` on a
+  # project with no `test` step exits non-zero, so a blind matrix over all 28
+  # would produce 25 permanent reds. The matrix is therefore the explicit list,
+  # each entry re-checked at run time against `build.zig`, so that deleting a
+  # test step is a failure rather than a silent skip.
+  #
+  # `build.zig.zon` pins ghostty as `.ghostty = .{ .path = "../../" }`, so these
+  # build against this checkout, not a network tarball.
+  example-tests:
+    name: example zig build test (${{ matrix.example }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - zig-vt
+          - zig-vt-stream
+          - zig-formatter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          shasum: "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+      - name: example/${{ matrix.example }} must still declare a test step
+        working-directory: example/${{ matrix.example }}
+        run: |
+          if ! grep -q 'b.step("test"' build.zig; then
+            echo "::error::example/${{ matrix.example }}/build.zig declares no test step; it was removed or renamed, and this matrix entry is now meaningless"
+            exit 1
+          fi
+      - name: zig build test
+        working-directory: example/${{ matrix.example }}
+        run: zig build test
