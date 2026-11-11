@@ -660,6 +660,25 @@ test {
         .{&thread},
     );
 
+    // Guarantee stop-then-join regardless of how this test exits, and make
+    // sure it happens BEFORE the `defer thread.deinit()` registered above.
+    // Defers run in reverse registration order, so registering this after
+    // `thread.deinit()` yields exactly: stop -> join -> deinit.
+    //
+    // This matters because `try` on any wait below can unwind with the
+    // worker still inside `loop.run` polling the mailbox; `Thread.deinit`
+    // documents that "the caller must join prior to this" and destroys the
+    // mailbox, which is the observed use-after-free.
+    defer {
+        // A `defer` cannot propagate. This is a best-effort wakeup: the
+        // join below still reaps the worker, and a failed notify is only
+        // reachable on an OS-level async-handle failure.
+        thread.stop.notify() catch |err| {
+            log.warn("failed to notify search thread stop err={}", .{err});
+        };
+        os_thread.join();
+    }
+
     // Start our search
     _ = thread.mailbox.push(
         io,
@@ -671,12 +690,11 @@ test {
     );
     try thread.wakeup.notify();
 
-    // Wait for completion
-    try ud.reset.waitTimeout(testing.io, .{ .duration = .{ .clock = .awake, .raw = .fromMilliseconds(100) } });
-
-    // Stop the thread
-    try thread.stop.notify();
-    os_thread.join();
+    // Wait for completion. This is an assertion that the search actually
+    // finishes, so the budget must be generous: it is a latency ceiling on a
+    // loaded host, not a correctness property. A short budget turned a slow
+    // scheduler into a fatal teardown path (see the stop/join defer above).
+    try ud.reset.waitTimeout(testing.io, .{ .duration = .{ .clock = .awake, .raw = .fromMilliseconds(5000) } });
 
     // 1 total matches
     try testing.expectEqual(1, ud.total);
