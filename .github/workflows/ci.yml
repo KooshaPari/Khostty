@@ -376,18 +376,69 @@ jobs:
     needs: detect
     if: needs.detect.outputs.has_go == 'true'
     runs-on: ubuntu-latest
-    continue-on-error: true
+    # This job used to be decorative three times over: `continue-on-error: true`,
+    # a `|| echo "::warning::..."` on every step, and the part that mattered:
+    # every command ran at the repository root. The only Go module is
+    # `khostty-go/go.mod`, so `go test ./...` failed outright there with
+    #
+    #     pattern ./...: directory prefix . does not contain main module or its
+    #     selected dependencies        (exit status 1, reproduced 2026-11-11)
+    #
+    # and the `|| echo` turned that exit 1 into a green job. The Linux Go gate
+    # therefore executed zero tests and could not detect even a compile error.
+    # `go-windows.yml` is the only real Go gate, and it is Windows-only. The
+    # three things that made it work there are mirrored here: the module
+    # directory as the working directory, a built `libghostty-vt` (the cgo
+    # linker names it explicitly, so `go test` cannot link without it), and exit
+    # codes that are allowed to fail the step.
+    defaults:
+      run:
+        working-directory: khostty-go
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          # Same ziglang.org-published shasum for zig-x86_64-linux-0.16.0.tar.xz
+          # used by the Python job above; the archive is the same one.
+          shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          go-version: "1.24.3"
+          cache: false
+      # `khostty-go` links `-lghostty-vt` against `../zig-out/lib`, so the
+      # library has to exist before any Go command can link. `-Dapp-runtime=none`
+      # is the same invocation the Python job uses and is the cheaper of the two
+      # (the Windows job asks for `-Demit-lib-vt -Doptimize=ReleaseFast`).
+      - name: Build libghostty-vt
+        working-directory: .
+        run: zig build -Dapp-runtime=none
       - name: gofmt check
-        run: gofmt -l . 2>&1 || echo "::warning::gofmt issues (advisory)"
+        run: |
+          set -euo pipefail
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt needed for:"
+            printf '%s\n' "$unformatted"
+            exit 1
+          fi
       - name: go vet
-        run: go vet ./... 2>&1 || echo "::warning::go vet issues (advisory)"
+        run: go vet ./...
       - name: go test
-        run: go test ./... 2>&1 || echo "::warning::test failures (advisory)"
+        run: |
+          set -euo pipefail
+          # `tee` so the log survives for the guard below. `pipefail` (not a
+          # `|| echo`) is what carries a real test failure out of this step.
+          go test -count=1 -v ./... | tee "$RUNNER_TEMP/go-test.log"
+          # A green `go test` that ran no tests is exactly the failure mode this
+          # job previously shipped. 45 top-level tests (75 including subtests)
+          # exist today; require evidence of at least one rather than pinning 45,
+          # the same way `zig-fork-tests.yml` requires a `run test N pass` line.
+          if ! grep -q '^=== RUN' "$RUNNER_TEMP/go-test.log"; then
+            echo "::error::go test reported success but ran zero tests"
+            exit 1
+          fi
+          echo "ran $(grep -c '^=== RUN   [^/]*$' "$RUNNER_TEMP/go-test.log") top-level tests"
 
   typescript:
     name: TS/JS
