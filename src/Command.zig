@@ -101,6 +101,8 @@ rt_post_fork_info: RtPostForkInfo,
 
 /// If set, then the process will be created attached to this pseudo console.
 /// `stdin`, `stdout`, and `stderr` will be ignored if set.
+    // FORK: Windows-only field: ConPTY pseudo console handle replaces the POSIX pty.
+    // The upstream struct has no equivalent because it assumes a POSIX pty. Tracked by #94.
 pseudo_console: if (builtin.os.tag == .windows) ?windows.HPCON else void =
     if (builtin.os.tag == .windows) null else {},
 
