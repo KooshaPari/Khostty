@@ -227,7 +227,37 @@ jobs:
         # indistinguishable from a job that ran no tests. With it the log
         # carries `Build Summary: N/N steps succeeded; M/M tests passed`,
         # which is the only evidence a reviewer or a future reader can check.
-        run: nix develop -c zig build -Dapp-runtime=none test --summary all
+        #
+        # That comment is true but incomplete. Making the evidence PRESENT is
+        # not the same as making it REQUIRED. Issue #115: this job could still
+        # go green having run zero cases - a renamed test step, a module
+        # dropped from the test target's import graph, a filter leaking into
+        # the build file - and print `Build Summary: N/N steps succeeded` with
+        # no `run test` line at all. That is exactly the shape the three
+        # `example zig build test (*)` jobs had on e66ce9183: green in 93
+        # seconds, zero `run test` lines (job 130468186001). #113 closed that
+        # hole for the examples; this closes it for the main suite.
+        #
+        # The regex below tolerates an OPTIONAL module name, unlike the
+        # examples' guard. The main suite prints
+        # `+- run test ghostty-test 3935 pass, 43 skip (3978 total)`, while the
+        # example harnesses print `run test 2 pass` with no module name.
+        # Copying the examples' `run test [1-9][0-9]* pass` verbatim would NOT
+        # match the main suite's line and would fail this job on every run.
+        #
+        # This is NOT a coverage claim and NOT a threshold. It proves the suite
+        # executed at least one case, distinguishing "ran something" from "ran
+        # nothing". A count floor would rot. The real count is already in the
+        # log for a human to read.
+        shell: bash
+        run: |
+          set -euo pipefail
+          out=$(nix develop -c zig build -Dapp-runtime=none test --summary all 2>&1) || { printf '%s\n' "$out"; exit 1; }
+          printf '%s\n' "$out"
+          if ! grep -qE 'run test .*[1-9][0-9]* pass' <<<"$out"; then
+            echo "::error::zig build test executed zero tests; the test binary compiled but contains no cases"
+            exit 1
+          fi
 
   wasm-abi:
     name: wasm ABI + data table
