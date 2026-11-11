@@ -754,16 +754,16 @@ consequences for Lane B are unavoidable:
 
 `.github/workflows/` holds 27 workflow files. For the surfaces in this lane:
 
-| Suite          | Workflow / line                                                                                                                                     | Blocking?                                                                                                                                       |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Python 124     | `ci.yml:286` job, run step `:340`                                                                                                                   | **yes** (ruff job at `:268` is not the tests)                                                                                                   |
-| Go 45          | `go-windows.yml:59-63` `go test -count=1 -v ./...`                                                                                                  | yes, **Windows runner only**                                                                                                                    |
-| Go 45          | `ci.yml:357-358` `go test ./...`, job `continue-on-error` at `:347`                                                                                 | no (swallowed twice)                                                                                                                            |
-| Rust 199       | `ci.yml:162-164` `cargo test ... \|\| echo`, job `continue-on-error` at `:151`                                                                      | **no** before PR #99; now **yes** (see §11)                                                                                                     |
-| Rust bindings  | `ci.yml:181` job, step `:195-199` `gen_ffi.py --check`                                                                                              | yes (not a test)                                                                                                                                |
-| conformance 84 | `ci-conformance.yml:68` job, `:90` run                                                                                                              | **yes** (no escape hatch)                                                                                                                       |
-| wasm 54        | `ci-conformance.yml:92`, `zig-fork-tests.yml:183`                                                                                                   | yes                                                                                                                                             |
-| example/       | `test.yml:259-263` etc. build; `:998` **executes** one; `zig-fork-tests.yml` `example-tests` now runs `zig build test` for the 3 harnesses (PR #99) | **no** for the C mains (exit code printed, never asserted); the 3 Zig harnesses declare **0** tests, so their new green proves compilation only |
+| Suite               | Workflow / line                                                                                                                                     | Blocking?                                                                                                                                                                                                                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Python 124          | `ci.yml:286` job, run step `:340`                                                                                                                   | **yes** (ruff job at `:268` is not the tests)                                                                                                                                                                                                                                                                            |
+| Go 45 fn / 75 cases | `ci.yml` Go job, fixed in PR #117 (§11.8)                                                                                                           | **yes** on `ubuntu-latest` as of #117; before it, this job ran **zero tests** and reported green                                                                                                                                                                                                                         |
+| Go 45 fn / 75 cases | `go-windows.yml:59-63` `go test -count=1 -v ./...`                                                                                                  | yes, **Windows runner only**                                                                                                                                                                                                                                                                                             |
+| Rust 199            | `ci.yml:162-164` `cargo test ... \|\| echo`, job `continue-on-error` at `:151`                                                                      | **no** before PR #99; now **yes** (see §11)                                                                                                                                                                                                                                                                              |
+| Rust bindings       | `ci.yml:181` job, step `:195-199` `gen_ffi.py --check`                                                                                              | yes (not a test)                                                                                                                                                                                                                                                                                                         |
+| conformance 84      | `ci-conformance.yml:68` job, `:90` run                                                                                                              | **yes** (no escape hatch)                                                                                                                                                                                                                                                                                                |
+| wasm 54             | `ci-conformance.yml:92`, `zig-fork-tests.yml:183`                                                                                                   | yes                                                                                                                                                                                                                                                                                                                      |
+| example/            | `test.yml:259-263` etc. build; `:998` **executes** one; `zig-fork-tests.yml` `example-tests` now runs `zig build test` for the 3 harnesses (PR #99) | **no** for the C mains. The one run step (`c-vt-effects`, `test.yml:994-1001`) does end in `exit $code`, but every job in that workflow skips in this fork (run `42782592087`: 20 of 20 `skipped`), so it never executes. The 3 Zig harnesses declare **0** tests as audited, so their new green proves compilation only |
 
 **The largest suite in the repo was the least protected one.** 199 Rust cases, including the
 compositional `tests/end_to_end.rs`, could not fail a merge. PR #99 makes them blocking and proves
@@ -781,15 +781,15 @@ the library and verify round-tripped replies. It is Zig-owned and out of Lane B'
 and it is report-only (`test.yml:1590` ends in `|| true`), so it blocks nothing. The verdict below
 is therefore a statement about the six audited surfaces only.
 
-| Surface                        | Real app spawned?                        | Socket / PTY?       | What it really is                                                                                                |
-| ------------------------------ | ---------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Python 124                     | no                                       | no                  | in-process dlopen of `libghostty-vt` via cffi                                                                    |
-| Rust 199                       | no                                       | no                  | in-process linked FFI (gated on `ghostty_vt_linked`)                                                             |
-| Go 45                          | no                                       | no                  | in-process cgo into the DLL/dylib                                                                                |
-| conformance 84                 | no                                       | no                  | in-process C calls on byte arrays compiled into `harness.c`                                                      |
-| wasm 54                        | no                                       | no                  | in-process wasm module instantiation                                                                             |
-| example/                       | no                                       | no                  | 26 of 27 compiled only; `c-vt-effects` _is_ executed (`test.yml:998`) but its exit code is printed, not asserted |
-| _(out of lane)_ `test/esctest` | **yes**, esctest2 via `forkpty`+`execvp` | **yes, a real PTY** | report-only PTY conformance harness (Zig-owned)                                                                  |
+| Surface                        | Real app spawned?                        | Socket / PTY?       | What it really is                                                                                                                                             |
+| ------------------------------ | ---------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Python 124                     | no                                       | no                  | in-process dlopen of `libghostty-vt` via cffi                                                                                                                 |
+| Rust 199                       | no                                       | no                  | in-process linked FFI (gated on `ghostty_vt_linked`)                                                                                                          |
+| Go 45                          | no                                       | no                  | in-process cgo into the DLL/dylib                                                                                                                             |
+| conformance 84                 | no                                       | no                  | in-process C calls on byte arrays compiled into `harness.c`                                                                                                   |
+| wasm 54                        | no                                       | no                  | in-process wasm module instantiation                                                                                                                          |
+| example/                       | no                                       | no                  | 26 of 27 compiled only; `c-vt-effects` has a run step (`test.yml:994-1001`, ending `exit $code`) that never executes, because every `test.yml` job skips here |
+| _(out of lane)_ `test/esctest` | **yes**, esctest2 via `forkpty`+`execvp` | **yes, a real PTY** | report-only PTY conformance harness (Zig-owned)                                                                                                               |
 
 The strongest surface, `khostty-vt/tests/end_to_end.rs`, is the only one that calls itself e2e, and
 its own doc comment (lines 1-15) defines the claim narrowly: compose the public wrappers
@@ -1155,11 +1155,70 @@ the merged tree was dispatched by hand on `main` to confirm default-branch execu
 build test` entries plus `test-agent-ipc`, `test-windows-apprt` and `wasm ABI + data table`. So the
 workflow that could not run before PR #99 runs on the default branch too.
 
+### 11.8 The Linux Go gate executed zero tests, and reported success
+
+`ci.yml`'s Go job was decorative in the same way the Rust job was (§11.1), and for a reason no static
+read of the YAML shows: **every command ran at the repository root, and there is no Go module
+there.** The only module in the tree is `khostty-go/go.mod` (`git ls-files '*go.mod'` returns one
+path), so `go test ./...` failed before it collected anything:
+
+```
+$ cd <repo root> && go test ./...
+pattern ./...: directory prefix . does not contain main module or its selected dependencies
+$ echo $?
+1
+```
+
+Reproduced 2026-11-11 on `a620c7a` with go1.23.4. The exit 1 never reached the job: the step ended
+`|| echo "::warning::test failures (advisory)"` and the job carried `continue-on-error: true`. So the
+Linux Go row of §8 was not merely "swallowed twice", it was **a gate that executed no tests at all**,
+and it could not have caught a compile error either. `go vet ./...` at the root exits 1 on the same
+missing module; `gofmt -l .` prints nothing because there are no Go files at the root. The remaining
+Go gate, `go-windows.yml`, is Windows-only, so on Linux PRs the whole Go surface was ungated.
+
+The fix (PR #117) copies the three things `go-windows.yml` already does correctly:
+`defaults.run.working-directory: khostty-go`; a `zig build -Dapp-runtime=none` before any Go command
+(cgo links `-lghostty-vt` from `../zig-out/lib`, so no Go command can link before the library
+exists); and exit codes that are allowed to fail the step. `gofmt` / `go vet` / `go test` lose their
+advisory wrappers, all three being clean on the current tree, so nothing needed grandfathering. It
+also carries the zero-test guard from §11.5.1: the step requires at least one `=== RUN` line, so a
+green run over zero tests cannot pass again.
+
+Local evidence for the new step body, run before pushing:
+
+| Check                            | Result                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------- |
+| the real module, in `khostty-go` | `ok github.com/KooshaPari/Khostty/khostty-go`, prints `ran 45 top-level tests`, exit 0 |
+| a module with no `_test.go` file | `::error::go test reported success but ran zero tests`, exit 1                         |
+| a module with one failing test   | exit 1, carried by `pipefail` rather than by an `\|\| echo`                            |
+
+**Count reconciliation.** The Go surface is **45 test functions** and **75 cases** once `t.Run`
+subtests expand: `go test -count=1 -v ./...` emits 45 top-level `--- PASS` lines, 30 indented ones,
+and 75 `=== RUN` lines. The "70 cases" this report previously carried in its closing summary does not
+reproduce under any of those three measures, so it is corrected rather than explained away. §8 now
+reads "45 fn / 75 cases".
+
+**Two claims corrected here**, both from §8's `example/` row:
+
+1. `c-vt-effects`' run step does **not** merely print an exit code. `test.yml:994-1001` captures
+   `$LASTEXITCODE` and ends `exit $code`, so a nonzero exit would fail the step. "Exit code printed,
+   never asserted" was wrong about the assertion.
+2. It nevertheless never executes: run `42782592087` (2026-11-10, `test.yml` on `21d06d0c`) shows
+   **20 of 20 jobs `skipped`** and the run `cancelled` by its `Required Checks: Test` aggregator. So
+   "no C main is actually asserted" is the right conclusion, for a different reason than the one
+   given.
+
+One over-correction to avoid in the other direction: the vendored `zig-pkg/` CMake projects of §7 do
+register 54 CTest cases, but **no tracked `CMakeLists.txt` registers any test** (`git grep -l
+'add_test(' -- '*CMakeLists.txt'` returns 0 of the 4 tracked files). The first-party CTest surface is
+genuinely empty, and wiring `ctest` would run third-party packages fetched at build time rather than
+this repository.
+
 ## Closing summary (6 lines)
 
-1. **Totals:** Python 124 functions / **162 cases**, Rust **199** (195 `#[test]` + 4 doc-tests), Go 45 functions / **70 cases**, conformance **84**, wasm **54** runtime cases + **68** type-level assertions, `example/` 16 assert-bearing mains (of 27; exactly one is executed in CI at `test.yml:998`, exit code printed not asserted), root `Makefile`/`CMakeLists.txt` **ZERO TESTS**; and no suite hides cases behind a skip marker (`#[ignore]`/`t.Skip`/`test.skip`/`pytest.mark.skip` all **0**), so these are counts of cases that can actually fail. **Cross-check:** a sibling measured run (`QUALITY-RUN.md`, commit `8c189ad7b`, byte-identical trees) reports all five gates PASS, and its Python `162 passed` matches this count to the case; its Rust `199 across 11 binaries` also matches once the 4 doc-tests in `src/lib.rs` are counted — both conflicts were errors in this report, see §10.6-10.7.
+1. **Totals:** Python 124 functions / **162 cases**, Rust **199** (195 `#[test]` + 4 doc-tests), Go 45 functions / **75 cases** (§11.8 measured 45 top-level `--- PASS` plus 30 indented subtests), conformance **84**, wasm **54** runtime cases + **68** type-level assertions, `example/` 16 assert-bearing mains (of 27; the one with a run step, `c-vt-effects`, ends `exit $code` at `test.yml:1001` but never executes because all `test.yml` jobs skip), root `Makefile`/`CMakeLists.txt` **ZERO TESTS**; and no suite hides cases behind a skip marker (`#[ignore]`/`t.Skip`/`test.skip`/`pytest.mark.skip` all **0**), so these are counts of cases that can actually fail. **Cross-check:** a sibling measured run (`QUALITY-RUN.md`, commit `8c189ad7b`, byte-identical trees) reports all five gates PASS, and its Python `162 passed` matches this count to the case; its Rust `199 across 11 binaries` also matches once the 4 doc-tests in `src/lib.rs` are counted — both conflicts were errors in this report, see §10.6-10.7.
 2. **Fixtures:** **ZERO** golden or expected-output files anywhere in `conformance/` — expected values are inline literals, 27 usable and 57 empty (`harness.c:27,201`). The repo does have exactly one such fixture, in Rust: `khostty-vt/tests/abi_layout.txt` (42 lines, `include_str!` at `tests/abi_layout.rs:23`), so the technique exists here; conformance just does not use it.
 3. **What `build.sh run` asserts:** all 84 cases parse without crashing, plus a `memcmp` of rendered plaintext for only 27 of them (`harness.c:201`, `:225-226`) — the other 57 cannot assert at all because `""` is overloaded (`:254-273`).
 4. **Largest suite could not block a merge; fixed on `fix/ci-rust-test-gate` (PR #99), see §11:** Rust 199 runs as `cargo test --workspace ... || echo "::warning::test failures (advisory)"` (`ci.yml:162-164`) under `continue-on-error: true` (`ci.yml:151`), and `ci.yml:167-188` records a shipped stale-binding defect that this arrangement let through. The same job has already been silently skipped for a whole release cycle by a broken detection test (`ci.yml:99-104`: `[ -f "**/Cargo.toml" ]` never glob-matched), so both the gate and the trigger have failed here before.
-5. **Hard gates only:** Python tests (`ci.yml:286` job, run step `:340`), Go on Windows (`go-windows.yml:59-63`), conformance (`ci-conformance.yml:68,90`), wasm (`ci-conformance.yml:92,115-125`, no `continue-on-error` in that file), and `gen_ffi.py --check` (`ci.yml:181,195-199`).
-6. **True e2e: none of the six audited surfaces, with one process-boundary exception.** Five drive an in-process `libghostty-vt` (cffi dlopen, linked FFI, cgo, direct C calls, wasm instantiate), but `khostty-python/tests/test_examples.py:21-31` runs the shipped Python examples in **subprocesses** and asserts exit code plus stdout — a real process boundary, inside the merge gate (`ci.yml:340`), though it is a child interpreter rather than a PTY or an external app. `example/` is build-only for 26 of its 27 C mains (the 27th, `c-vt-effects`, is executed on Windows at `test.yml:998` but prints an exit code instead of asserting it), and the three Zig example harnesses run `zig build test` in `zig-fork-tests.yml` (PR #99) but declared **zero** tests as audited, so their green was a compile result (§11.5); they now carry 2/1/1 asserting tests (§11.5.1); the `agent-ipc` child the CI comment promises is neither built by that step nor spawned (`ci-conformance.yml:87-88`, `build.sh`). The repo's only fork/exec/PTY harness is out of lane and report-only: `test/esctest` (`test/esctest/src/main.zig:67,74,81`, run at `test.yml:1590` ending `|| true`).
+5. **Hard gates only:** Python tests (`ci.yml:286` job, run step `:340`), Go on Linux (`ci.yml` Go job, §11.8, PR #117) and on Windows (`go-windows.yml:59-63`), conformance (`ci-conformance.yml:68,90`), wasm (`ci-conformance.yml:92,115-125`, no `continue-on-error` in that file), and `gen_ffi.py --check` (`ci.yml:181,195-199`).
+6. **True e2e: none of the six audited surfaces, with one process-boundary exception.** Five drive an in-process `libghostty-vt` (cffi dlopen, linked FFI, cgo, direct C calls, wasm instantiate), but `khostty-python/tests/test_examples.py:21-31` runs the shipped Python examples in **subprocesses** and asserts exit code plus stdout — a real process boundary, inside the merge gate (`ci.yml:340`), though it is a child interpreter rather than a PTY or an external app. `example/` is build-only for 26 of its 27 C mains (the 27th, `c-vt-effects`, ends `exit $code` at `test.yml:1001`, so it would assert, but all 20 jobs in that workflow are `skipped` in this fork: run `42782592087`), and the three Zig example harnesses run `zig build test` in `zig-fork-tests.yml` (PR #99) but declared **zero** tests as audited, so their green was a compile result (§11.5); they now carry 2/1/1 asserting tests (§11.5.1); the `agent-ipc` child the CI comment promises is neither built by that step nor spawned (`ci-conformance.yml:87-88`, `build.sh`). The repo's only fork/exec/PTY harness is out of lane and report-only: `test/esctest` (`test/esctest/src/main.zig:67,74,81`, run at `test.yml:1590` ending `|| true`).
