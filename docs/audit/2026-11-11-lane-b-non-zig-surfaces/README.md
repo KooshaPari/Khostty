@@ -1053,16 +1053,26 @@ unrunnable here, and `zig-fork-tests.yml` reached the tree only through `test-ag
 largest Zig suite had the same status as the Rust suite before this branch: present, invoked, and
 unable to report anything. That is Lane A's surface, and this branch left it alone on purpose.
 
-It is closed there now. PR #100 (`49c2d521b`) adds a blocking `zig-test` job to
-`zig-fork-tests.yml`, named `test (zig build test)`, running
+It is closed there now. PR #100 (`49c2d521b`) adds a `zig-test` job to `zig-fork-tests.yml`,
+named `test (zig build test)`, running
 `nix develop -c zig build -Dapp-runtime=none test --summary all` on `ubuntu-latest` with
-`timeout-minutes: 60` and the same Zig `0.16.0` pin as its neighbours, and widens the
-`pull_request` `paths:` gate to `src/**` and `build.zig.zon` so the job actually fires.
-`--summary all` is what makes the job mean something: `zig build test` prints nothing on success,
-which is the silent-green failure mode of §11.5. Verified first-hand rather than quoted: run
-`42975266230` job `130372774981` logs `Build Summary: 101/101 steps succeeded; 3935/3978 tests
-passed (43 skipped)`, and with PR #106's `push` trigger the job now runs on `main` too - run
-`42980815076` on `08141794c` shows `test (zig build test)` **success** among its seven green jobs.
+`timeout-minutes: 60` and the same Zig `0.16.0` pin as its neighbours. `--summary all` is what
+makes the job mean something: `zig build test` prints nothing on success, which is the
+silent-green failure mode of §11.5. Verified first-hand rather than quoted: run `42975266230` job
+`130372774981` logs `Build Summary: 101/101 steps succeeded; 3935/3978 tests passed (43 skipped)`.
+
+Two follow-ups finished the gate. PR #106 (`08141794c`) adds a `push`-to-`main` trigger, so the
+job runs on the default branch as well as on PRs - run `42980815076` on `08141794c` shows
+`test (zig build test)` **success** among its seven green jobs. PR #108 (`2ba3da153`) then deletes
+the `pull_request` `paths:` filter outright, superseding #100's widening to `src/**` +
+`build.zig.zon`: a path-filtered workflow emits **no check-run at all** on a non-matching PR, so
+the job could never be made a required status check without deadlocking every unrelated PR, and
+protected nothing in the meantime. `push` keeps its 18 paths, so main-side cost is unchanged.
+
+Precision on "blocking": the job carries no `continue-on-error` and no test-level retries, so a
+failure reddens the run on both PRs and `main`. It is **not** a required status check - branch
+protection requires only `ci / lint` and `ci / test` - so it does not currently prevent a merge.
+Making it required is an owner-only settings change and is tracked separately.
 
 ### 11.7 Landed
 
