@@ -1084,13 +1084,20 @@ an empty test binary fails the job instead of reporting green. Negative control 
 the `test` blocks stripped, Zig prints `run test success 228ms` - no count - and the guard rejects
 it, while the test-bearing build prints `run test 2 pass (2 total)` and is accepted.
 
-**Gotcha for the next author:** a test that writes to stderr makes `zig build test` flaky in these
-projects. With a `std.debug.print` inside a test present, four runs produced, twice, an exit code of
-1 with `failed command: .../test --cache-dir=... --seed=... --listen=-` and no test failure line;
-the other two runs exited 0 while still printing that same `failed command` line before reporting
-`3/3 tests passed`. Running the same test binary by hand without `--listen=-` passes and prints
-normally, and a print-free test in the same project passes under the build runner. Assert, do not
-print. Removing the print is what made the runs above reproducible.
+**Gotcha for the next author:** a test that writes to stderr makes the build log lie. With one
+`std.debug.print` inside a test, every run printed
+
+```
+failed command: ./.zig-cache/o/.../test --cache-dir=./.zig-cache --seed=0x... --listen=-
+```
+
+and then, in the same run, ended `Build Summary: 42/42 steps succeeded; 3/3 tests passed`. Seven runs
+with a printing test all emitted it; the exit code was captured in five of them and was 0 in all
+five (the two earliest were piped through `grep`, so their status was never measured and is not
+claimed). Removing the print removes the line. The harness is therefore not broken, only
+misleading: a reader who greps for `failed command` will conclude the job failed while every test
+passed. The same binary run by hand without `--listen=-` prints normally and exits 0. Assert, do not
+print.
 
 ### 11.6 One more surface this branch does not fix — closed since, by #100
 
