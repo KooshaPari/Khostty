@@ -15,6 +15,8 @@
 //! connection thread without touching the parser directly. The parser is owned
 //! by the IO thread, so the bytes are delivered through the existing mailbox
 //! hop (`queueIo`). Tracking issue: KooshaPari/Khostty#48.
+// FORK: the `//!` paragraph above is fork-only prose for `writeToParser`;
+// `//!` lines are not FORK markers, so the block is closed here. Tracked by #94.
 const Surface = @This();
 
 const apprt = @import("apprt.zig");
@@ -535,7 +537,7 @@ pub fn init(
         &derived_config.font,
         font_size,
     );
-    // FORK: release the ref if any remaining init step fails. Without this a
+    // FORK: release the ref if any remaining init step fails. Without this a Tracked by #94.
     // failed surface init leaks a grid ref, and the app then aborts at shutdown
     // on `assert(font_grid_set.count() == 0)` - which hides the original error
     // behind an assertion failure. The second ref site below already has this.
@@ -911,6 +913,8 @@ fn queueIo(
     self.io.queueMessage(msg, mutex);
 }
 
+// FORK: `writeToParser` and `splitPane` below are Khostty-only entry points that
+// let the agent-IPC connection thread act on this surface. Tracked by #94.
 /// Feed bytes into the terminal parser as if the child process had written
 /// them, without touching the parser from the calling thread.
 ///
@@ -1048,6 +1052,8 @@ pub fn handleMessage(self: *Surface, msg: Message) !void {
     switch (msg) {
         .change_config => |config| try self.updateConfig(config),
 
+        // FORK: `.new_split` is a Khostty-only mailbox message, queued by
+        // `splitPane` so GTK widget state is only touched on the app thread. #94
         .new_split => |direction| {
             // Runs on the app thread, which is the only thread allowed to
             // touch GTK widget state. KooshaPari/Khostty#71.
@@ -1075,7 +1081,7 @@ pub fn handleMessage(self: *Surface, msg: Message) !void {
                 .{ .title = slice },
             );
 
-            // FORK: publish after the action, not before, so the title an agent
+            // FORK: publish after the action, not before, so the title an agent Tracked by #94.
             // reads is the one the runtime actually applied rather than the
             // previous one. No-op without an IPC host.
             // KooshaPari/Khostty#48.
@@ -1213,7 +1219,7 @@ pub fn handleMessage(self: *Surface, msg: Message) !void {
                 if (last.durationTo(now).toMilliseconds() < 100) break :bell;
             }
             self.last_bell_time = now;
-            // FORK: tell an attached agent the bell rang. No-op on any build
+            // FORK: tell an attached agent the bell rang. No-op on any build Tracked by #94.
             // without an IPC host. KooshaPari/Khostty#48.
             if (self.app.ipc_hook) |h| h.bell(h.ctx, self.id);
             _ = self.rt_app.performAction(
@@ -1347,7 +1353,7 @@ fn childExited(self: *Surface, info: apprt.surface.Message.ChildExited) void {
     // Mark our flag that we exited immediately
     self.child_exited = true;
 
-    // FORK: tell an attached agent the child ended, with the exit code the
+    // FORK: tell an attached agent the child ended, with the exit code the Tracked by #94.
     // runtime actually observed. No-op without an IPC host.
     // KooshaPari/Khostty#48.
     if (self.app.ipc_hook) |h| {
@@ -2673,7 +2679,7 @@ pub fn sizeCallback(self: *Surface, size: apprt.SurfaceSize) !void {
 }
 
 fn resize(self: *Surface, size: rendererpkg.ScreenSize) !void {
-    // FORK: capture the grid before the resize so an agent is only told about
+    // FORK: capture the grid before the resize so an agent is only told about Tracked by #94.
     // real cell-size changes. Fluid resizing changes pixels on every frame
     // while the grid often stays put, and an agent does not care about the
     // former. KooshaPari/Khostty#48.
@@ -2688,6 +2694,8 @@ fn resize(self: *Surface, size: rendererpkg.ScreenSize) !void {
     // We have to update the IO thread no matter what because we send
     // pixel-level sizing to the subprocess.
     const grid_size = self.size.grid();
+    // FORK: tell an attached agent only when the cell grid actually changed, so
+    // fluid pixel-only resizes do not spam it. Pairs with `prev_grid` above. #94
     if (grid_size.columns != prev_grid.columns or grid_size.rows != prev_grid.rows) {
         if (self.app.ipc_hook) |h| h.resize(
             h.ctx,
