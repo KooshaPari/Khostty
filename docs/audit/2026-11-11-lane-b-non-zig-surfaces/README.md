@@ -24,28 +24,28 @@ quoted from other lanes and may be off by those 3 declarations.
 
 ## Summary
 
-| Surface | Files | Cases | Tier |
-|---|---|---|---|
-| Python `khostty-python/tests` | 8 tests + `conftest.py` | **124** functions = **162** collected cases | integration (in-process FFI) |
-| Rust `khostty-vt` | 9 in `tests/` + 23 in `src/` | **199** (195 `#[test]` + 4 doc-tests) | unit + integration (in-process FFI) |
-| Go `khostty-go` | 11 `*_test.go` | **45** functions = **70** cases | integration (linked DLL/dylib) |
-| `conformance/` | `harness.c` only | **84** (57 assert nothing, 34 of them structurally) | conformance |
-| `wasm/test` | 2 `.mjs` | **54** | integration (in-process wasm) |
-| `example/` | 35 dirs | 16 of 27 C mains use `assert(...)`; **1 of 27 executed in CI** (`test.yml:998`, exit code printed not asserted) | build verification |
-| Root `Makefile` / `CMakeLists.txt` | — | **ZERO TESTS** | — |
+| Surface                            | Files                        | Cases                                                                                                           | Tier                                |
+| ---------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| Python `khostty-python/tests`      | 8 tests + `conftest.py`      | **124** functions = **162** collected cases                                                                     | integration (in-process FFI)        |
+| Rust `khostty-vt`                  | 9 in `tests/` + 23 in `src/` | **199** (195 `#[test]` + 4 doc-tests)                                                                           | unit + integration (in-process FFI) |
+| Go `khostty-go`                    | 11 `*_test.go`               | **45** functions = **70** cases                                                                                 | integration (linked DLL/dylib)      |
+| `conformance/`                     | `harness.c` only             | **84** (57 assert nothing, 34 of them structurally)                                                             | conformance                         |
+| `wasm/test`                        | 2 `.mjs`                     | **54**                                                                                                          | integration (in-process wasm)       |
+| `example/`                         | 35 dirs                      | 16 of 27 C mains use `assert(...)`; **1 of 27 executed in CI** (`test.yml:998`, exit code printed not asserted) | build verification                  |
+| Root `Makefile` / `CMakeLists.txt` | —                            | **ZERO TESTS**                                                                                                  | —                                   |
 
 ### Counting units — read this before comparing surfaces
 
 The `Cases` column is not one unit. Counted two ways, as bare definitions and as cases the runner
 would actually collect, **two surfaces expand**:
 
-| Surface | Definitions | Collected cases | Why they differ |
-|---|---|---|---|
-| Python | 124 `def test_` | **162** | 10 `@pytest.mark.parametrize` decorators turn 10 functions into 38 extra cases; one list is a module constant (`ROUND_TRIP_CASES`, 5 entries) |
-| Rust | 195 `#[test]` + 4 doc-tests | **199** | no `#[test]` inside a loop or macro; the 4 doc-tests are the `//!` code blocks in `src/lib.rs` |
-| Go | 45 `func Test` | **70** | 5 table-driven functions wrap `t.Run` in `for _, tc := range cases`, adding 30 subtests |
-| conformance | 84 struct entries | **84** | static C array (`harness.c:80-160`) |
-| wasm | 54 `test(` blocks | **54** | no generator: `grep -cE 'test\.each|forEach' wasm/test/*.mjs` -> 0 |
+| Surface     | Definitions                 | Collected cases | Why they differ                                                                                                                               |
+| ----------- | --------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Python      | 124 `def test_`             | **162**         | 10 `@pytest.mark.parametrize` decorators turn 10 functions into 38 extra cases; one list is a module constant (`ROUND_TRIP_CASES`, 5 entries) |
+| Rust        | 195 `#[test]` + 4 doc-tests | **199**         | no `#[test]` inside a loop or macro; the 4 doc-tests are the `//!` code blocks in `src/lib.rs`                                                |
+| Go          | 45 `func Test`              | **70**          | 5 table-driven functions wrap `t.Run` in `for _, tc := range cases`, adding 30 subtests                                                       |
+| conformance | 84 struct entries           | **84**          | static C array (`harness.c:80-160`)                                                                                                           |
+| wasm        | 54 `test(` blocks           | **54**          | no generator: `grep -cE 'test\.each                                                                                                           | forEach' wasm/test/\*.mjs` -> 0 |
 
 So the honest cross-surface comparison in case units is **162 / 199 / 70 / 84 / 54**, not
 124/199/45/84/54. Python was measured by an `ast` walk that multiplies the length of each
@@ -58,7 +58,7 @@ over each `cases := []struct` block (`ghostty_key_test.go:81` 13 cases,
 block, `ghostty_vt_test.go:187-197` (4 inline rows), has no `t.Run`, so it stays a single Go case
 with 4 internal checks.
 
-*Method warning, learned the hard way:* the first Go attempt returned **0 cases for all five
+_Method warning, learned the hard way:_ the first Go attempt returned **0 cases for all five
 blocks**. BSD `awk` does not interpret `\t` inside a regex, so `/^\t\t\{/` was really matching
 `^tt{`, and the table entries are two tabs deep. Passing a literal tab through `-v` fixed it. A zero
 that arrives without a positive control — "does this pattern match something I can see by eye in
@@ -78,31 +78,32 @@ not of the repository. See sections 1 and 7.
 ## 1. `khostty-python/tests` — Python, 124 functions / 162 collected cases
 
 ### Files and per-file test counts
+
 Counted with `grep -c "def test_" <file>` and `wc -l <file>`:
 
-| File | Lines | `def test_` |
-|---|---|---|
-| `khostty-python/tests/test_terminal.py` | 340 | 30 |
-| `khostty-python/tests/test_mouse.py` | 322 | 19 |
-| `khostty-python/tests/test_key.py` | 367 | 18 |
-| `khostty-python/tests/test_search.py` | 195 | 16 |
-| `khostty-python/tests/test_ffi.py` | 163 | 16 |
-| `khostty-python/tests/test_formatter.py` | 155 | 14 |
-| `khostty-python/tests/test_snapshot.py` | 129 | 8 |
-| `khostty-python/tests/test_examples.py` | 59 | 3 |
-| `khostty-python/tests/conftest.py` | 76 | 0 (fixtures) |
-| **Total** | **1806** | **124** |
+| File                                     | Lines    | `def test_`  |
+| ---------------------------------------- | -------- | ------------ |
+| `khostty-python/tests/test_terminal.py`  | 340      | 30           |
+| `khostty-python/tests/test_mouse.py`     | 322      | 19           |
+| `khostty-python/tests/test_key.py`       | 367      | 18           |
+| `khostty-python/tests/test_search.py`    | 195      | 16           |
+| `khostty-python/tests/test_ffi.py`       | 163      | 16           |
+| `khostty-python/tests/test_formatter.py` | 155      | 14           |
+| `khostty-python/tests/test_snapshot.py`  | 129      | 8            |
+| `khostty-python/tests/test_examples.py`  | 59       | 3            |
+| `khostty-python/tests/conftest.py`       | 76       | 0 (fixtures) |
+| **Total**                                | **1806** | **124**      |
 
 `conftest.py` is fixtures only: its `library` fixture (`khostty-python/tests/conftest.py:23`, session
 scope) loads the real `libghostty-vt` shared object, and the module docstring states at `:4` that it
-"therefore *fails* the suite when no library can be found", so every one of the 124 tests is
+"therefore _fails_ the suite when no library can be found", so every one of the 124 tests is
 an **integration** test against the native library, not a mocked unit test.
 
 - **One file is not in-process at all, and it is the strongest check in this suite.**
   `test_examples.py` (59 lines, 3 functions / 4 cases) runs the shipped Python examples as **child
   processes**: `subprocess.run([sys.executable, str(EXAMPLES / name)], capture_output=True,
-  text=True, timeout=120, check=False)` (`test_examples.py:21-27`), then `assert result.returncode
-  == 0` (`:28-31`) and asserts on the child's stdout (`test_basic_example_runs` `:40-45`,
+text=True, timeout=120, check=False)` (`test_examples.py:21-27`), then `assert result.returncode
+== 0` (`:28-31`) and asserts on the child's stdout (`test_basic_example_runs` `:40-45`,
   `test_agent_example_runs` `:48-58`, 10 stdout assertions in total). Its own docstring states the
   intent (`:1-5`): "Smoke tests that run the shipped examples end to end … Each runs in a
   subprocess, which also proves the checkout bootstrap in them works without an install." The
@@ -120,6 +121,7 @@ an **integration** test against the native library, not a mocked unit test.
   140 from a naive grep and 124 from the real surface.
 
 ### How they are run
+
 - Pytest config: `khostty-python/pyproject.toml:70` `[tool.pytest.ini_options]`,
   `khostty-python/pyproject.toml:71` `testpaths = ["tests"]`.
 - Test dependency is an optional extra, not a default:
@@ -133,12 +135,14 @@ an **integration** test against the native library, not a mocked unit test.
   ruff; the tests live in the `pytest:` job, which carries no such escape hatch.
 
 ### Tier
+
 **Integration.** Tests import the cffi bindings and drive the native VT library in-process; they
 cross the Python/C boundary but launch no application and open no socket.
 
 ## 2. `khostty-vt` — Rust, 199 cases (195 `#[test]` + 4 doc-tests)
 
 ### Layout: one crate, unit + integration split
+
 - Exactly one `Cargo.toml` in the crate: `khostty-vt/Cargo.toml`, 50 lines.
   `name = "khostty-vt"` (:2), `[lib]` (:15) with `name = "khostty_vt"` (:16) and
   `path = "src/lib.rs"` (:17), `[dependencies]` (:33) and `[dev-dependencies]` (:35) are both
@@ -159,11 +163,12 @@ cross the Python/C boundary but launch no application and open no socket.
   (`grep -n '^#!\[' ... ` -> no matches), so those 9 tests always run.
 
 ### Counts with `grep -c "#\[test\]"`
-| Location | Files | `#[test]` |
-|---|---|---|
-| `khostty-vt/tests/*.rs` (integration) | 9 | 130 |
-| `khostty-vt/src/**/*.rs` (unit, in-file `mod tests`) | 23 | 65 |
-| **Total** | **32** | **195 `#[test]`** (+ 4 doc-tests = 199 cases) |
+
+| Location                                             | Files  | `#[test]`                                     |
+| ---------------------------------------------------- | ------ | --------------------------------------------- |
+| `khostty-vt/tests/*.rs` (integration)                | 9      | 130                                           |
+| `khostty-vt/src/**/*.rs` (unit, in-file `mod tests`) | 23     | 65                                            |
+| **Total**                                            | **32** | **195 `#[test]`** (+ 4 doc-tests = 199 cases) |
 
 Integration files with counts: `terminal.rs` 29, `snapshot.rs` 17, `mouse_encoding.rs` 16,
 `render.rs` 16, `search.rs` 16, `key_encoding.rs` 14, `end_to_end.rs` 13, `ffi_coverage.rs` 5,
@@ -199,11 +204,12 @@ row/cell iteration -> snapshot -> search -> write-pty replies) and compares extr
 a **compositional integration test in-process**; it starts no application and opens no socket.
 
 ### How it is run in CI
+
 - `.github/workflows/ci.yml:162-164` — the Rust job runs
   `cargo test --workspace --no-fail-fast 2>&1 || echo "::warning::test failures (advisory)"`, i.e.
   **advisory only**: a genuine test failure prints a warning and does not fail the workflow. The
   same job carries `continue-on-error: true` at `ci.yml:151`.
-- The one *required* Rust-adjacent gate is binding freshness:
+- The one _required_ Rust-adjacent gate is binding freshness:
   job `binding-freshness` (`ci.yml:181-182`), name "Rust binding freshness", with its step at
   `:195-199` running `python3 tools/gen_ffi.py --check`. A stale `src/ffi.rs` fails the build, but
   the 199 cases themselves are not a merge gate.
@@ -225,31 +231,33 @@ a **compositional integration test in-process**; it starts no application and op
 - Consequence: **199 Rust cases exist and none of them block a merge.**
 
 ### Tier
+
 **Unit (65) + integration (130).** Both link the native library in-process.
 
 ## 3. `khostty-go` — Go, 45 functions / 70 cases
 
 Counted with `grep -cE "^func (Test|Benchmark|Example)"` per file and `wc -l`:
 
-| File | Lines | Test funcs |
-|---|---|---|
-| `khostty-go/ghostty_vt_test.go` | 270 | 8 |
-| `khostty-go/ghostty_keyencoder_test.go` | 349 | 6 |
-| `khostty-go/ghostty_key_test.go` | 254 | 6 |
-| `khostty-go/ghostty_mouse_test.go` | 179 | 5 |
-| `khostty-go/ghostty_search_test.go` | 224 | 5 |
-| `khostty-go/ffi_test.go` | 171 | 4 |
-| `khostty-go/ghostty_render_test.go` | 139 | 4 |
-| `khostty-go/ghostty_mouseevent_test.go` | 225 | 4 |
-| `khostty-go/ghostty_snapshot_test.go` | 132 | 3 |
-| `khostty-go/ghostty_test.go` | 29 | 0 (package smoke) |
-| `khostty-go/ghostty_mouse_fixture_test.go` | 53 | 0 (fixture loader) |
-| **Total** | **2025** | **45** |
+| File                                       | Lines    | Test funcs         |
+| ------------------------------------------ | -------- | ------------------ |
+| `khostty-go/ghostty_vt_test.go`            | 270      | 8                  |
+| `khostty-go/ghostty_keyencoder_test.go`    | 349      | 6                  |
+| `khostty-go/ghostty_key_test.go`           | 254      | 6                  |
+| `khostty-go/ghostty_mouse_test.go`         | 179      | 5                  |
+| `khostty-go/ghostty_search_test.go`        | 224      | 5                  |
+| `khostty-go/ffi_test.go`                   | 171      | 4                  |
+| `khostty-go/ghostty_render_test.go`        | 139      | 4                  |
+| `khostty-go/ghostty_mouseevent_test.go`    | 225      | 4                  |
+| `khostty-go/ghostty_snapshot_test.go`      | 132      | 3                  |
+| `khostty-go/ghostty_test.go`               | 29       | 0 (package smoke)  |
+| `khostty-go/ghostty_mouse_fixture_test.go` | 53       | 0 (fixture loader) |
+| **Total**                                  | **2025** | **45**             |
 
 Single `go.mod` at `khostty-go/go.mod`. The package is cgo bindings, so tests need a built
 `libghostty-vt` DLL/dylib on the loader path.
 
 ### How it is run, and whether CI gates on it
+
 - **Advisory:** `.github/workflows/ci.yml:357-358` runs `go test ./...` in `khostty-go` with a
   trailing `|| echo "::warning::test failures (advisory)"` — failures do not fail the workflow, and
   the job itself is `continue-on-error: true` at `:347`.
@@ -261,11 +269,13 @@ Single `go.mod` at `khostty-go/go.mod`. The package is cgo bindings, so tests ne
 - Net: the Go suite is a hard gate **only on the Windows runner**; on Linux/macOS it is advisory.
 
 ### Tier
+
 **Integration.** cgo calls into the real native library in-process. No subprocess, no socket.
 
 ## 4. `conformance/` — C harness, 84 cases
 
 ### What `conformance/build.sh` actually does (94 lines, read in full)
+
 `build.sh` is a **build-and-exec wrapper, not a test definition**. It compiles
 `conformance/harness.c` against the **prebuilt** `zig-out/lib/libghostty-vt.dylib` and emits
 `zig-out/bin/conformance_test`, then optionally runs that binary. Its three modes are documented in
@@ -286,6 +296,7 @@ run is gated by `if [[ "${1:-run}" == "run" ]]` at `:91-94`.
 the binary is executed afterwards. This matters for anyone trying to time or cache the run step.
 
 ### Where the corpus lives and its size
+
 Cases are inline C initialisers, one `TestCase` struct per case, with an optional expected string
 field declared at `conformance/harness.c:27`
 (`const char *expected_plain; /* empty means no plaintext assertion */`).
@@ -296,22 +307,23 @@ Eight category arrays begin at `conformance/harness.c:47` (`SGR_CASES`), `:67` (
 
 Counted with an awk scan of each `*_CASES[]` initialiser:
 
-| Category | Cases |
-|---|---|
-| SGR | 17 |
-| CURSOR | 10 |
-| OSC | 9 |
-| CHARSET | 8 |
-| MODE | 12 |
-| SCROLL | 7 |
-| KITTY | 5 |
-| EDGE | 16 |
+| Category  | Cases  |
+| --------- | ------ |
+| SGR       | 17     |
+| CURSOR    | 10     |
+| OSC       | 9      |
+| CHARSET   | 8      |
+| MODE      | 12     |
+| SCROLL    | 7      |
+| KITTY     | 5      |
+| EDGE      | 16     |
 | **Total** | **84** |
 
 These per-category numbers match the documented counts in `conformance/README.md:19-26`
 exactly, which is a useful cross-check that no array has drifted.
 
 ### What `conformance/build.sh run` actually ASSERTS
+
 The work is done by `run_category()` at `conformance/harness.c:187`. Per case it:
 
 1. Resets the terminal and resizes it to 80x24 (`harness.c:192-194`) — a fixed default geometry, so
@@ -334,17 +346,17 @@ non-empty `expected_plain`; the other **57 cases assert nothing beyond "did not 
 Measured by counting the literal `, ""}` within each array body
 (`awk` over `conformance/harness.c`, cases counted at each `^\s*{"` opener):
 
-| Category | Cases | Crash-only | Content asserted |
-|---|---|---|---|
-| SGR | 17 | 1 | 16 |
-| CURSOR | 10 | 7 | 3 |
-| OSC | 9 | 9 | **0** |
-| CHARSET | 8 | 8 | **0** |
-| MODE | 12 | 12 | **0** |
-| SCROLL | 7 | 2 | 5 |
-| KITTY | 5 | 5 | **0** |
-| EDGE | 16 | 13 | 3 |
-| **Total** | **84** | **57** | **27** |
+| Category  | Cases  | Crash-only | Content asserted |
+| --------- | ------ | ---------- | ---------------- |
+| SGR       | 17     | 1          | 16               |
+| CURSOR    | 10     | 7          | 3                |
+| OSC       | 9      | 9          | **0**            |
+| CHARSET   | 8      | 8          | **0**            |
+| MODE      | 12     | 12         | **0**            |
+| SCROLL    | 7      | 2          | 5                |
+| KITTY     | 5      | 5          | **0**            |
+| EDGE      | 16     | 13         | 3                |
+| **Total** | **84** | **57**     | **27**           |
 
 ```
 $ awk '<per-array range scan of ^\s*{" openers and , ""} closers>' conformance/harness.c
@@ -358,46 +370,46 @@ crash. The one strongly-asserted category is SGR (16 of 17), because its cases a
 plain-text (`{"sgr_bold", ESC "[1mText", "Text"}` at `harness.c:49`).
 
 So a green `conformance/build.sh run` means **27 real output comparisons plus 57 no-crash probes**,
-not 84 verified behaviours. SGR attributes are additionally *not* verified: the case struct has
+not 84 verified behaviours. SGR attributes are additionally _not_ verified: the case struct has
 only `expected_plain`, so bold/italic/underline/reverse outcomes are never compared
 (`harness.c:27`) — `sgr_bold` and `sgr_dim` both expect the same `"Text"`.
 
-*A prior line-based estimate in this report said 55/29; it missed multi-line case initialisers
-(e.g. `harness.c:133-134`) and is superseded by the 57/27 table above.*
+_A prior line-based estimate in this report said 55/29; it missed multi-line case initialisers
+(e.g. `harness.c:133-134`) and is superseded by the 57/27 table above._
 
 **Independent per-array confirmation** (entry-buffering awk over `harness.c`, each `{...}` block
 tested for an empty string field):
 
-| array | cases | empty | asserted |
-|---|---|---|---|
-| `SGR_CASES` (`:47`) | 17 | 1 | 16 |
-| `CURSOR_CASES` (`:67`) | 10 | 7 | 3 |
-| `OSC_CASES` (`:80`) | 9 | **9** | **0** |
-| `CHARSET_CASES` (`:93`) | 8 | **8** | **0** |
-| `MODE_CASES` (`:104`) | 12 | **12** | **0** |
-| `SCROLL_CASES` (`:119`) | 7 | 2 | 5 |
-| `KITTY_CASES` (`:132`) | 5 | **5** | **0** |
-| `EDGE_CASES` (`:141`) | 16 | 13 | 3 |
-| **total** | **84** | **57** | **27** |
+| array                   | cases  | empty  | asserted |
+| ----------------------- | ------ | ------ | -------- |
+| `SGR_CASES` (`:47`)     | 17     | 1      | 16       |
+| `CURSOR_CASES` (`:67`)  | 10     | 7      | 3        |
+| `OSC_CASES` (`:80`)     | 9      | **9**  | **0**    |
+| `CHARSET_CASES` (`:93`) | 8      | **8**  | **0**    |
+| `MODE_CASES` (`:104`)   | 12     | **12** | **0**    |
+| `SCROLL_CASES` (`:119`) | 7      | 2      | 5        |
+| `KITTY_CASES` (`:132`)  | 5      | **5**  | **0**    |
+| `EDGE_CASES` (`:141`)   | 16     | 13     | 3        |
+| **total**               | **84** | **57** | **27**   |
 
 This reproduces all three headline numbers independently of the earlier scan: 84 cases, 57 empty,
 27 asserted, and the four silent categories at exactly 9 + 8 + 12 + 5 = **34**.
 
 **Confirmed by a second, structurally different implementation.** The table above came from a
 line-buffered awk. A brace-balanced Python parse (isolate each `static const TestCase ...[] = {`
-body, walk braces to split entries, take the *last* string literal in each entry as
+body, walk braces to split entries, take the _last_ string literal in each entry as
 `expected_plain`) reproduces it exactly: SGR 17/1, CURSOR 10/7, OSC 9/9, CHARSET 8/8, MODE 12/12,
 SCROLL 7/2, KITTY 5/5, EDGE 16/13 -> **84 / 57 / 27**. Two caveats, both of which nearly produced a
-false alarm and are recorded so the next reader trusts the *method*, not a bare result:
+false alarm and are recorded so the next reader trusts the _method_, not a bare result:
 
 - A first version of the Python parse reported **81 / 1 / 80** and looked like a serious
-disagreement. It was wrong: it required an entry to be on a single line, so the one multi-line
-entry (`osc_8_hyperlink_open`, `harness.c:87-88`) was silently dropped, and it read `strs[1]` as
-`expected_plain` when the input field is a *concatenation* of adjacent literals (`ESC "..." "\x07"`),
-so the expected value is the **last** literal, not the second.
+  disagreement. It was wrong: it required an entry to be on a single line, so the one multi-line
+  entry (`osc_8_hyperlink_open`, `harness.c:87-88`) was silently dropped, and it read `strs[1]` as
+  `expected_plain` when the input field is a _concatenation_ of adjacent literals (`ESC "..." "\x07"`),
+  so the expected value is the **last** literal, not the second.
 - A zero-row result must never be read as a clean result. The same trap fired twice more in this
-audit (an awk field split and a BSD `paste -sd+`). Both times the fix was to debug the parser, not
-to believe the number.
+  audit (an awk field split and a BSD `paste -sd+`). Both times the fix was to debug the parser, not
+  to believe the number.
 
 **The 27 assertions really can fail CI.** The full chain was traced end to end rather than inferred
 from the `strlen` gate alone:
@@ -440,7 +452,7 @@ So `""` means two incompatible things at once:
 - "the terminal should print nothing" (a real assertion), and
 - "we have no assertion" (the sentinel).
 
-`harness.c:201` cannot distinguish them, so a case whose correct output *is* empty can never be
+`harness.c:201` cannot distinguish them, so a case whose correct output _is_ empty can never be
 asserted with this struct. `conformance/README.md:93-96` documents that as intended: "Cases that are
 not textual ... pass unconditionally when the call returns without crashing; the expected plaintext
 field is empty."
@@ -453,18 +465,18 @@ The minimum fix is structural, not per-case: make "assert empty" distinct from "
 The C struct kept only `expected_plain`, but the Zig case files carry the typed expectations the
 categories actually need:
 
-| Zig file | typed expectation fields | lines |
-|---|---|---|
-| `conformance/cases/osc/cases.zig` | `expected_title`, `expected_clipboard`, `expected_pwd`, `expected_hyperlink` | `:3-9` |
-| `conformance/cases/charset/cases.zig` | `expected_charset` | `:3-6` |
-| `conformance/cases/mode/cases.zig` | `expected_active_mode`, `expected_mode_reversed` | `:3-7` |
-| `conformance/cases/kitty-gfx/cases.zig` | `expected_action`, `expected_uri`, `expected_width`, `expected_height` | `:3-9` |
+| Zig file                                | typed expectation fields                                                     | lines  |
+| --------------------------------------- | ---------------------------------------------------------------------------- | ------ |
+| `conformance/cases/osc/cases.zig`       | `expected_title`, `expected_clipboard`, `expected_pwd`, `expected_hyperlink` | `:3-9` |
+| `conformance/cases/charset/cases.zig`   | `expected_charset`                                                           | `:3-6` |
+| `conformance/cases/mode/cases.zig`      | `expected_active_mode`, `expected_mode_reversed`                             | `:3-7` |
+| `conformance/cases/kitty-gfx/cases.zig` | `expected_action`, `expected_uri`, `expected_width`, `expected_height`       | `:3-9` |
 
 `conformance/README.md:145-146` requires these to be mirrored byte-identically into
 `harness.c` — "Mirror the same input + expected in the `*_CASES[]` array ... Keep them byte-identical"
 — a rule the C harness cannot satisfy because it has no field to mirror into.
 
-Crucially, the C API needed to *observe* those states is already exported, so this is not a
+Crucially, the C API needed to _observe_ those states is already exported, so this is not a
 "blocked on upstream" problem:
 
 - `ghostty_terminal_get()` (`include/ghostty/vt/terminal.h:3317`) supports querying a mode value
@@ -489,12 +501,12 @@ Crucially, the C API needed to *observe* those states is already exported, so th
 
 ### Full `conformance/` inventory (11 files, 1262 lines, ZERO fixture files)
 
-| Path | Lines | Role |
-|---|---|---|
-| `conformance/harness.c` | 297 | the entire runner **and** all 84 cases, inline |
-| `conformance/README.md` | 185 | documents the corpus |
-| `conformance/build.sh` | 94 | compile, link, run |
-| `conformance/cases/<cat>/cases.zig` × 8 | 686 total | never compiled |
+| Path                                    | Lines     | Role                                           |
+| --------------------------------------- | --------- | ---------------------------------------------- |
+| `conformance/harness.c`                 | 297       | the entire runner **and** all 84 cases, inline |
+| `conformance/README.md`                 | 185       | documents the corpus                           |
+| `conformance/build.sh`                  | 94        | compile, link, run                             |
+| `conformance/cases/<cat>/cases.zig` × 8 | 686 total | never compiled                                 |
 
 Per-category Zig line counts: `sgr` 116, `cursor` 110, `mode` 101, `edge` 95, `osc` 93,
 `scroll` 68, `kitty-gfx` 53, `charset` 50 (`297+185+94+686 = 1262`).
@@ -505,6 +517,7 @@ outputs" are not two directories here. The corpus is the 84 inline structs, and 
 are string literals inside them: 27 usable, 57 empty. Fixture count: **ZERO**.
 
 ### Ownership: the `.zig` case files are dead weight, and already drifted
+
 `conformance/cases/<category>/cases.zig` exists for all eight categories. They are **never
 compiled**:
 
@@ -521,17 +534,17 @@ files are "kept as the human-readable" mirror of the C arrays. **Two copies of t
 only the C one executes, and they have already diverged.** Measured both sides
 (`name = "..."` occurrences in each `.zig` vs `{"name"` entries in the matching C array):
 
-| Category | Zig file lines | Zig cases | C cases | Drift |
-|---|---|---|---|---|
-| sgr | 116 | 15 | 17 | **-2** |
-| cursor | 110 | 13 | 10 | **+3** |
-| osc | 93 | 10 | 9 | +1 |
-| charset | 50 | 8 | 8 | 0 |
-| mode | 101 | 15 | 12 | **+3** |
-| scroll | 68 | 8 | 7 | +1 |
-| kitty-gfx | 53 | 5 | 5 | 0 |
-| edge | 95 | 17 | 16 | +1 |
-| **Total** | **686** | **91** | **84** | **+7** |
+| Category  | Zig file lines | Zig cases | C cases | Drift  |
+| --------- | -------------- | --------- | ------- | ------ |
+| sgr       | 116            | 15        | 17      | **-2** |
+| cursor    | 110            | 13        | 10      | **+3** |
+| osc       | 93             | 10        | 9       | +1     |
+| charset   | 50             | 8         | 8       | 0      |
+| mode      | 101            | 15        | 12      | **+3** |
+| scroll    | 68             | 8         | 7       | +1     |
+| kitty-gfx | 53             | 5         | 5       | 0      |
+| edge      | 95             | 17        | 16      | +1     |
+| **Total** | **686**        | **91**    | **84**  | **+7** |
 
 A name-level diff of the SGR category proves this is real drift, not a counting artefact:
 
@@ -547,6 +560,7 @@ Recommendation: generate `harness.c` from the Zig files (single source of truth)
 tree. Today nothing checks parity, so neither choice is forced by tooling.
 
 ### No terminal, no socket
+
 `conformance/harness.c` includes only `<ghostty/vt.h>`, `<ghostty/vt/formatter.h>`,
 `<ghostty/vt/build_info.h>`, `<stddef.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`
 (`harness.c:14-20`). A grep for `socket|ipc|fork|exec|spawn|pty` returns exactly 2 hits, both false
@@ -564,6 +578,7 @@ conformance run. The `conformance` job itself (`:68`) runs on `ubuntu-latest` wi
 invocation in the repo of `./conformance/build.sh run`.
 
 ### Tier
+
 **Conformance** — differential/behavioural comparison of VT byte streams to expected plain text
 through the real C library, in-process. Not e2e.
 
@@ -575,7 +590,7 @@ through the real C library, in-process. Not e2e.
   `test(`/`it(` blocks and `wasm/test/abi-exports.test.mjs` (313 lines) holds **19**, for **54** total.
   `wasm/test/types.test-d.ts` (168 lines) is a **type-level** suite: never executed, only compiled.
   It holds **68** `expectType`/`expectAssignable` assertions (`grep -cE 'expectType|expectAssignable'
-  wasm/test/types.test-d.ts` -> 68), so it contributes **0 runtime cases and 68 compile-time
+wasm/test/types.test-d.ts` -> 68), so it contributes **0 runtime cases and 68 compile-time
   assertions**. Its own header (`:1-8`) states the failure mode it owns: "This file is only
   typechecked, never executed … should be a compile error here rather than a runtime surprise."
 - **The 54 figure is corroborated by the repo's own CI comment**, which states that on Node 22 the
@@ -601,7 +616,7 @@ through the real C library, in-process. Not e2e.
   - `wasm` (`:92`) is `ubuntu-latest`, `timeout-minutes: 15`, and runs `./wasm/build.sh` (`:115-116`)
     then a per-file loop `for f in ./wasm/test/*.test.mjs; do node --test "$f"; done` (`:123-125`)
     rather than `npm test` (the comment at `:118-121` explains the loop keeps per-file failure order).
-  So **wasm is a genuine hard gate**, unlike Rust and Linux/macOS Go.
+    So **wasm is a genuine hard gate**, unlike Rust and Linux/macOS Go.
 - `.github/workflows/zig-fork-tests.yml:179-183` repeats it in the shared fork workflow: build the
   module (`:180`) then `npm run check` (`:183`) in `wasm/`, with node pinned to 24 (`:177-179`) so
   the `await using` parse in the test bundle does not abort the file. That workflow is **nightly,
@@ -619,7 +634,7 @@ through the real C library, in-process. Not e2e.
   `#![cfg]` silent-zero and the conformance silent-crash-only modes: **all three large suites have a
   documented way to report success while running fewer tests than it appears to.**
 - **Skip-marker audit (measured, not assumed).** Because a headline count is a count of
-  *definitions*, the four language suites were separately swept for tests that are declared but
+  _definitions_, the four language suites were separately swept for tests that are declared but
   skipped, since those would quietly shrink what can actually fail: Rust `#[ignore]` -> **0**,
   `#[should_panic]` -> **0** (over `khostty-vt/tests` + `khostty-vt/src`); Go `t.Skip` -> **0** (over
   all 11 `*_test.go`); wasm `test.skip` / `skip:` -> **0** (over `wasm/test/*.mjs`; re-checked with
@@ -627,7 +642,7 @@ through the real C library, in-process. Not e2e.
   that wrong glob silently returns 0); Python
   `pytest.mark.skip|skipif|xfail` -> **0**. So 199 / 70 / 54 / 162 are counts of cases that run and
   can fail. The one qualification is Python's opt-in escape hatch: `conftest.py:30` calls
-  `pytest.skip(...)` *only* when `KHOSTTY_VT_SKIP_IF_MISSING=1` (`conftest.py:20`), and by default
+  `pytest.skip(...)` _only_ when `KHOSTTY_VT_SKIP_IF_MISSING=1` (`conftest.py:20`), and by default
   the missing-library path raises `AssertionError` instead (`:31-36`) precisely so that "a green run
   against nothing would prove nothing" (`:5-6`). That env var is **not set in any workflow**
   (`grep -rn KHOSTTY_VT_SKIP_IF_MISSING .github/` -> no match), so the fail-closed default is what
@@ -646,7 +661,7 @@ through the real C library, in-process. Not e2e.
   actually executed in CI**: `example/c-vt-effects/src/main.c` runs as `./zig-out/bin/c_vt_effects.exe`
   on a Windows runner (`test.yml:998`, in job `build-libghostty-vt-windows` at `:957`). It still
   asserts nothing about the result: the step captures `$LASTEXITCODE` and formats it into a string
-  (`test.yml:999-1000`), so a non-zero exit is *printed* while the step passes anyway.
+  (`test.yml:999-1000`), so a non-zero exit is _printed_ while the step passes anyway.
 - 28 Zig examples declare a `build.zig`; exactly **3** declare a real test step, and each does it the
   same way: `const test_step = b.step("test", "Run unit tests")` at line 8 of
   `example/zig-formatter/build.zig`, `example/zig-vt-stream/build.zig` and `example/zig-vt/build.zig`,
@@ -654,19 +669,19 @@ through the real C library, in-process. Not e2e.
   the file). No job invokes that step: both `example/` CI sites run a plain `zig build` and never
   `zig build test` — `test.yml:260-263` (`cd example/${{ matrix.dir }}`) and `test.yml:293-295`
   (`working-directory: example/zig-vt`, "Build Example without SDK", `nix develop -c env
-  DEVELOPER_DIR=/nonexistent zig build`). Neither reaches the `test` step, so those 3 test
+DEVELOPER_DIR=/nonexistent zig build`). Neither reaches the `test` step, so those 3 test
   harnesses are dead code. **And empty:** `grep -c '^test "' example/zig-vt/src/main.zig
-  example/zig-vt-stream/src/main.zig example/zig-formatter/src/main.zig` returns `0`, `0`, `0`, and
+example/zig-vt-stream/src/main.zig example/zig-formatter/src/main.zig` returns `0`, `0`, `0`, and
   each `b.addTest(.{ .root_module = exe_mod })` points at that same `src/main.zig`, so the test
   binary has no cases. Wiring the step (done in PR #99, §11.5) produces a green that proves the
   example still compiles and nothing more.
-  *Method warning:* the obvious pattern `grep -rl 'b.step("test")' example --include=build.zig`
+  _Method warning:_ the obvious pattern `grep -rl 'b.step("test")' example --include=build.zig`
   returns **0**, because the real call has a second argument and the closing paren never follows
   `"test"`. The pattern that produces the 3 is `grep -rl 'b\.step("test"'`. A quoted command in a
   report has to be the command that actually produced the number.
 - `example/swift-vt-xcframework/Package.swift` has **no `testTarget`** (grep for `testTarget|test`
   returns nothing) — ZERO Swift tests.
-- CI almost only *builds* examples: `.github/workflows/test.yml` has a `list-examples` job (`:217-228`)
+- CI almost only _builds_ examples: `.github/workflows/test.yml` has a `list-examples` job (`:217-228`)
   that enumerates dirs by `build.zig.zon` / `CMakeLists.txt` / `Package.swift`, then
   `build-examples-zig` (`:230+`), `build-examples-cmake` (`:296+`) and Windows variants run
   `zig build` or `cmake --build build` (`:259-263`, `:294-296`, `:330-331`). Compilation is the only
@@ -685,7 +700,7 @@ through the real C library, in-process. Not e2e.
   **nothing**. **ZERO TESTS.** No first-party CMake target registers a test, which is consistent
   with `conformance/build.sh` hand-rolling its own harness instead of registering with CTest.
 - **Correction to an earlier draft of this report:** the vendored dependencies under `zig-pkg/`
-  *do* register CTest tests. **Seven vendored CMake projects register `add_test()` cases, 54 in
+  _do_ register CTest tests. **Seven vendored CMake projects register `add_test()` cases, 54 in
   total** (26 + 21 + 2 + 2 + 1 + 1 + 1), each project also calling `enable_testing()`. An earlier
   draft said "61 registrations (27 + 22 + 4 + 3 + 3 + 1 + 1)", which is wrong and worth recording:
   61 is the count of matches for a combined `add_test|enable_testing` pattern (54 + 7
@@ -706,13 +721,13 @@ Lane B was scoped to Python, Rust, Go, `conformance/`, `wasm/`, `example/`, and 
 this tree was not audited in detail. It is listed here because omitting it would misrepresent the
 verdict, and because it is the one place in the repository that really does use a PTY:
 
-| Dir | Files | Owning language | Note |
-|---|---|---|---|
-| `test/esctest/` | 4 | Zig (`build.zig`, `src/main.zig` 281 lines) | **real PTY harness** — see below |
-| `test/fuzz-libghostty/` | 4014 | Zig | fuzzing corpus (seed inputs), not a test suite |
-| `test/egl-platform-display/` | 3 | Zig | platform probe |
-| `test/windows/` | 3 | Zig | Windows helpers |
-| `test/ucs-detect.sh`, `test/wasm-alloc.mjs` | 2 | shell / JS | loose scripts |
+| Dir                                         | Files | Owning language                             | Note                                           |
+| ------------------------------------------- | ----- | ------------------------------------------- | ---------------------------------------------- |
+| `test/esctest/`                             | 4     | Zig (`build.zig`, `src/main.zig` 281 lines) | **real PTY harness** — see below               |
+| `test/fuzz-libghostty/`                     | 4014  | Zig                                         | fuzzing corpus (seed inputs), not a test suite |
+| `test/egl-platform-display/`                | 3     | Zig                                         | platform probe                                 |
+| `test/windows/`                             | 3     | Zig                                         | Windows helpers                                |
+| `test/ucs-detect.sh`, `test/wasm-alloc.mjs` | 2     | shell / JS                                  | loose scripts                                  |
 
 `test/README.md` states the intent: "anything related to testing Ghostty that doesn't fit within
 the standard Zig testing framework".
@@ -739,16 +754,16 @@ consequences for Lane B are unavoidable:
 
 `.github/workflows/` holds 27 workflow files. For the surfaces in this lane:
 
-| Suite | Workflow / line | Blocking? |
-|---|---|---|
-| Python 124 | `ci.yml:286` job, run step `:340` | **yes** (ruff job at `:268` is not the tests) |
-| Go 45 | `go-windows.yml:59-63` `go test -count=1 -v ./...` | yes, **Windows runner only** |
-| Go 45 | `ci.yml:357-358` `go test ./...`, job `continue-on-error` at `:347` | no (swallowed twice) |
-| Rust 199 | `ci.yml:162-164` `cargo test ... \|\| echo`, job `continue-on-error` at `:151` | **no** before PR #99; now **yes** (see §11) |
-| Rust bindings | `ci.yml:181` job, step `:195-199` `gen_ffi.py --check` | yes (not a test) |
-| conformance 84 | `ci-conformance.yml:68` job, `:90` run | **yes** (no escape hatch) |
-| wasm 54 | `ci-conformance.yml:92`, `zig-fork-tests.yml:183` | yes |
-| example/ | `test.yml:259-263` etc. build; `:998` **executes** one; `zig-fork-tests.yml` `example-tests` now runs `zig build test` for the 3 harnesses (PR #99) | **no** for the C mains (exit code printed, never asserted); the 3 Zig harnesses declare **0** tests, so their new green proves compilation only |
+| Suite          | Workflow / line                                                                                                                                     | Blocking?                                                                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Python 124     | `ci.yml:286` job, run step `:340`                                                                                                                   | **yes** (ruff job at `:268` is not the tests)                                                                                                   |
+| Go 45          | `go-windows.yml:59-63` `go test -count=1 -v ./...`                                                                                                  | yes, **Windows runner only**                                                                                                                    |
+| Go 45          | `ci.yml:357-358` `go test ./...`, job `continue-on-error` at `:347`                                                                                 | no (swallowed twice)                                                                                                                            |
+| Rust 199       | `ci.yml:162-164` `cargo test ... \|\| echo`, job `continue-on-error` at `:151`                                                                      | **no** before PR #99; now **yes** (see §11)                                                                                                     |
+| Rust bindings  | `ci.yml:181` job, step `:195-199` `gen_ffi.py --check`                                                                                              | yes (not a test)                                                                                                                                |
+| conformance 84 | `ci-conformance.yml:68` job, `:90` run                                                                                                              | **yes** (no escape hatch)                                                                                                                       |
+| wasm 54        | `ci-conformance.yml:92`, `zig-fork-tests.yml:183`                                                                                                   | yes                                                                                                                                             |
+| example/       | `test.yml:259-263` etc. build; `:998` **executes** one; `zig-fork-tests.yml` `example-tests` now runs `zig build test` for the 3 harnesses (PR #99) | **no** for the C mains (exit code printed, never asserted); the 3 Zig harnesses declare **0** tests, so their new green proves compilation only |
 
 **The largest suite in the repo was the least protected one.** 199 Rust cases, including the
 compositional `tests/end_to_end.rs`, could not fail a merge. PR #99 makes them blocking and proves
@@ -760,21 +775,21 @@ the real gate was red on a genuine platform assumption (§11.3).
 **No. Not one of the six audited surfaces launches a real application or talks to a real socket.**
 
 One qualification up front, because it is the largest thing this audit could have got wrong. The
-repository *does* contain a fork/exec/PTY harness: `test/esctest/src/main.zig` uses `forkpty`
+repository _does_ contain a fork/exec/PTY harness: `test/esctest/src/main.zig` uses `forkpty`
 (`:67`), `execvp` (`:74`) and a pty master fd (`:81`) to drive the external esctest2 suite against
 the library and verify round-tripped replies. It is Zig-owned and out of Lane B's scope (section 7),
 and it is report-only (`test.yml:1590` ends in `|| true`), so it blocks nothing. The verdict below
 is therefore a statement about the six audited surfaces only.
 
-| Surface | Real app spawned? | Socket / PTY? | What it really is |
-|---|---|---|---|
-| Python 124 | no | no | in-process dlopen of `libghostty-vt` via cffi |
-| Rust 199 | no | no | in-process linked FFI (gated on `ghostty_vt_linked`) |
-| Go 45 | no | no | in-process cgo into the DLL/dylib |
-| conformance 84 | no | no | in-process C calls on byte arrays compiled into `harness.c` |
-| wasm 54 | no | no | in-process wasm module instantiation |
-| example/ | no | no | 26 of 27 compiled only; `c-vt-effects` *is* executed (`test.yml:998`) but its exit code is printed, not asserted |
-| *(out of lane)* `test/esctest` | **yes**, esctest2 via `forkpty`+`execvp` | **yes, a real PTY** | report-only PTY conformance harness (Zig-owned) |
+| Surface                        | Real app spawned?                        | Socket / PTY?       | What it really is                                                                                                |
+| ------------------------------ | ---------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Python 124                     | no                                       | no                  | in-process dlopen of `libghostty-vt` via cffi                                                                    |
+| Rust 199                       | no                                       | no                  | in-process linked FFI (gated on `ghostty_vt_linked`)                                                             |
+| Go 45                          | no                                       | no                  | in-process cgo into the DLL/dylib                                                                                |
+| conformance 84                 | no                                       | no                  | in-process C calls on byte arrays compiled into `harness.c`                                                      |
+| wasm 54                        | no                                       | no                  | in-process wasm module instantiation                                                                             |
+| example/                       | no                                       | no                  | 26 of 27 compiled only; `c-vt-effects` _is_ executed (`test.yml:998`) but its exit code is printed, not asserted |
+| _(out of lane)_ `test/esctest` | **yes**, esctest2 via `forkpty`+`execvp` | **yes, a real PTY** | report-only PTY conformance harness (Zig-owned)                                                                  |
 
 The strongest surface, `khostty-vt/tests/end_to_end.rs`, is the only one that calls itself e2e, and
 its own doc comment (lines 1-15) defines the claim narrowly: compose the public wrappers
@@ -797,7 +812,7 @@ path to a real non-Zig e2e.
 1. **Do the 199 Rust cases pass right now?** **Answered, dynamically: yes, 199 passed / 0 failed** in
    run `42965360788` (job `130341253043`), 11 targets, after `working-directory: khostty-vt` and a
    `zig build -Demit-lib-vt` that reported `linking .../libghostty-vt.so` and `collected Rust tests:
-   199`. See §11.2. The first run of that gate was red on one case (§11.3); the failure was a macOS
+199`. See §11.2. The first run of that gate was red on one case (§11.3); the failure was a macOS
    assumption in `tests/key_encoding.rs`, not a broken library call.
    Still open from that run: **`set_alt_esc_prefix(true)` alone emits `ESC a` on Linux and `a` on
    macOS.** Whether that divergence is intended is a library question. Settle it by reading the
@@ -826,24 +841,23 @@ path to a real non-Zig e2e.
 6. **Do the suites pass? Measured one lane over, at a different commit.** `QUALITY-RUN.md` in this
    same directory (commit `8c189ad7b`, window 2026-11-10T07:28-09:52Z) records PASS with evidence
    for all five language gates: Python `162 passed in 3.00s` at 97% coverage, Rust `199 tests
-   passed, 0 failed, across 11 binaries` at 88.15% regions / 89.52% lines, Go `ok ... coverage:
-   71.7% of statements`, conformance `Passed: 84  Failed: 0  Success Rate: 100%`, wasm `54/54 node
-   tests`. That answers items 1 and 4 for the `main` line, so the program as a whole is not
+passed, 0 failed, across 11 binaries` at 88.15% regions / 89.52% lines, Go `ok ... coverage:
+71.7% of statements`, conformance `Passed: 84  Failed: 0  Success Rate: 100%`, wasm `54/54 node
+tests`. That answers items 1 and 4 for the `main` line, so the program as a whole is not
    unmeasured. `git diff --stat 8c189ad7b 9f3e31fa2` is **empty for both `khostty-python` and
    `khostty-vt`**, so those results describe exactly the sources counted here.
 7. **Both count conflicts are now resolved, and one was an error in this report.** They had appeared
    as a symmetric +4/+4 gap.
    - **Python: 162 is correct.** The earlier figure of 158 in this report was wrong. The `ast` walk
-     behind it read only *literal* `parametrize` lists, and
+     behind it read only _literal_ `parametrize` lists, and
      `khostty-python/tests/test_snapshot.py` parametrizes over a module constant:
-     `ROUND_TRIP_CASES = [...]` with **5** entries, so that file is 8 defs -> **13** cases, not 8 ->
-     9. Resolving every parameter source to a real length gives exactly **162**, which matches the
+     `ROUND_TRIP_CASES = [...]` with **5** entries, so that file is 8 defs -> **13** cases, not 8 -> 9. Resolving every parameter source to a real length gives exactly **162**, which matches the
      measured `162 passed in 3.00s` to the case. Two independent methods, one dynamic, agree.
    - **Rust: 199, and this report's 195 was the error.** QUALITY-RUN's figure was right. The
      static count `git grep -E '^[[:space:]]*#\[test\]'` is **195 in 23 files** (130 in `tests/`,
      65 in `src/`) — that part holds — but it is not the case count. `src/lib.rs` carries **8 fence
      lines in `//!` module docs, i.e. 4 code blocks**, and rustdoc compiles those as 4 doctests. My
-     earlier check looked for ```` ``` ```` under `///` and reported zero, which was wrong twice:
+     earlier check looked for ` ``` ` under `///` and reported zero, which was wrong twice:
      the fences are `//!`, not `///`, and there are four blocks. 195 + 4 = **199 across 11 binaries**
      (1 lib + 9 integration targets + `Doc-tests`), exactly what QUALITY-RUN measured. This lane
      then confirmed it dynamically, from CI rather than from reading: the job log for this branch's
@@ -852,27 +866,28 @@ path to a real non-Zig e2e.
      a literal-pattern scan as a case count.
 
 ---
-*Lane B, read-only on the audited tree. No file in the khostty checkout was modified by the audit
+
+\*Lane B, read-only on the audited tree. No file in the khostty checkout was modified by the audit
 itself, and no build or test run was performed **locally**. Every count above came from reading the
 tree, with two exceptions established from CI logs on a separate worktree/branch
 (`fix/ci-rust-test-gate`, PR #99, which is §11): the Rust figure of 199 (`collected Rust tests: 199`,
 then 199 passed / 0 failed across 11 targets), and the observation that the three example harnesses
 build and pass a test step containing **0** declared tests.
-*
-*Original method note: all counts
-come from static reading and the greps quoted above.*
 
-*Provenance and directory hygiene.* The output directory mandated for this audit
-(`~/CodeProjects/temp/khostty-e2e-20261110/`) held **143** files, of which only 3 were lane-B
-deliverables. All three are preserved next to this file: this report,
-`CONFORMANCE-ASSERT-FILL.md` (19,250 B, the per-case assert-fill table cited in section 4) and
-`INDEPENDENT-RECOUNT.md` (9,585 B, a blind recount that never opened either sibling file, whose
-five headline totals agree with mine). The other **140** files were pre-existing and unrelated to
-this lane. The deviation worth recording is that a shared directory was reused rather than a
-per-lane subdirectory, so any consumer of the original output had to filter on the `lane-b*` prefix
-rather than read the directory; that problem is what this directory removes.
-Cross-check performed at close: every `file:line` citation in this report was machine-validated for
-existence and range (**41** distinct files, **0** unresolved, **0** out-of-range).
+- _Original method note: all counts
+  come from static reading and the greps quoted above._
+
+  _Provenance and directory hygiene._ The output directory mandated for this audit
+  (`~/CodeProjects/temp/khostty-e2e-20261110/`) held **143** files, of which only 3 were lane-B
+  deliverables. All three are preserved next to this file: this report,
+  `CONFORMANCE-ASSERT-FILL.md` (19,250 B, the per-case assert-fill table cited in section 4) and
+  `INDEPENDENT-RECOUNT.md` (9,585 B, a blind recount that never opened either sibling file, whose
+  five headline totals agree with mine). The other **140** files were pre-existing and unrelated to
+  this lane. The deviation worth recording is that a shared directory was reused rather than a
+  per-lane subdirectory, so any consumer of the original output had to filter on the `lane-b*` prefix
+  rather than read the directory; that problem is what this directory removes.
+  Cross-check performed at close: every `file:line` citation in this report was machine-validated for
+  existence and range (**41** distinct files, **0** unresolved, **0** out-of-range).
 
 ## 11. What happened when the two gates were made real (PR #99)
 
@@ -1017,7 +1032,7 @@ const exe_unit_tests = b.addTest(.{ .root_module = exe_mod });
 where `exe_mod.root_source_file` is `src/main.zig` - so the test binary is compiled from a source
 file with no `test` block and contains zero cases. `zig build test` succeeds by compiling. The
 harness entries in §6 should be read as **ZERO TESTS**, and the audit's original finding stands
-with a sharper edge: these three were not merely uninvoked, they were uninvoked *and empty*. A
+with a sharper edge: these three were not merely uninvoked, they were uninvoked _and empty_. A
 wiring change cannot fix an absent test; only writing one can.
 
 The other 25 example projects declare no `test` step at all, and `zig build test` exits non-zero on
@@ -1056,12 +1071,15 @@ The two findings that no static read could have produced are §11.1 (a job that 
 §11.5 (three harnesses that pass without containing a test). Both are now stated where a reviewer
 will see them: the PR body calls the example green "compiles, not tested" in bold.
 
-One caveat on reachability: `zig-fork-tests.yml` has no `push` trigger (cron + dispatch + a
-path-scoped `pull_request`), so the example harnesses run nightly at 05:20 UTC rather than on every
-merge. The merged tree was dispatched on `main` to confirm default-branch execution
-(`42974499103`, `26635b6f9`, `workflow_dispatch`) and finished **success**, all six jobs: the three
-`example zig build test` entries plus `test-agent-ipc`, `test-windows-apprt` and `wasm ABI + data
-table`. So the workflow that could not run before PR #99 now runs on the default branch too.
+One caveat on reachability, partly closed since this was written: at the time, `zig-fork-tests.yml`
+had no `push` trigger (cron + dispatch + a path-scoped `pull_request`), so the example harnesses ran
+nightly at 05:20 UTC rather than on every merge. PR #106 (`08141794c`) added `push: branches:
+[main]` with the same `paths:` list as the `pull_request` trigger, so the pre-merge and post-merge
+gates now select the same changes and a merge no longer waits up to a day for coverage. Before that,
+the merged tree was dispatched by hand on `main` to confirm default-branch execution (`42974499103`,
+`26635b6f9`, `workflow_dispatch`) and finished **success**, all six jobs: the three `example zig
+build test` entries plus `test-agent-ipc`, `test-windows-apprt` and `wasm ABI + data table`. So the
+workflow that could not run before PR #99 runs on the default branch too.
 
 ## Closing summary (6 lines)
 
