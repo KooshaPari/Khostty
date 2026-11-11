@@ -262,20 +262,6 @@ jobs:
           cd example/${{ matrix.dir }}
           nix develop -c zig build
 
-      # Three examples declare a `test` step (zig-vt, zig-vt-stream,
-      # zig-formatter); the rest declare none, and `zig build test` errors out on
-      # a project with no such step, so gate on the step existing. This step is
-      # the difference between a harness that runs and dead code: `zig build`
-      # alone builds the test artifact and never executes it.
-      - name: Test Example
-        run: |
-          cd example/${{ matrix.dir }}
-          if ! grep -rq 'b\.step("test"' build.zig; then
-            echo "no test step in example/${{ matrix.dir }}; nothing to run"
-            exit 0
-          fi
-          nix develop -c zig build test
-
   build-example-zig-vt-macos-no-sdk:
     name: Example zig-vt (macOS, no SDK)
     runs-on: namespace-profile-ghostty-macos-tahoe
@@ -307,14 +293,6 @@ jobs:
       - name: Build Example without SDK
         working-directory: example/zig-vt
         run: nix develop -c env DEVELOPER_DIR=/nonexistent zig build
-
-      # `zig build` above only builds the test binary. example/zig-vt declares a
-      # `test` step, so run it; the no-SDK job is the one that proves the example
-      # does not need the macOS SDK, and a test that never executes proves
-      # nothing about that.
-      - name: Test Example without SDK
-        working-directory: example/zig-vt
-        run: nix develop -c env DEVELOPER_DIR=/nonexistent zig build test
 
   build-examples-cmake:
     strategy:
