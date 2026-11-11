@@ -1,12 +1,16 @@
 name: fork-discipline
 
-# Advisory fork-discipline check for khostty.
+# Fork-discipline check for khostty.
 #
-# Runs `zig build check-fork-discipline` against the PR branch. In advisory
-# mode the job always succeeds; the Markdown report is uploaded as an
-# artifact so the reviewer can read it. Switch to strict mode by setting the
-# repository variable `FORK_DISCIPLINE_STRICT=true` (default: off) — this
-# makes the job fail on violations.
+# Runs `zig build check-fork-discipline` against the PR branch in strict mode:
+# any violation fails this job. The baseline is the merge base of HEAD and
+# upstream/main, so the check measures divergence from the point where the
+# fork was taken, not from the moving upstream tip.
+#
+# The Markdown report is still uploaded as an artifact and posted as a PR
+# comment. Those are reporting steps, not the gate: they keep their
+# `continue-on-error: true` so that being unable to publish the report can
+# neither mask nor fabricate the gate's result.
 #
 # This workflow is the operator-facing view of the same data the local
 # `tools/check-fork-discipline.zig` produces. See docs/FORK-DISCIPLINE.md
@@ -64,13 +68,14 @@ jobs:
         with:
           version: 0.16.0
 
-      - name: Run fork-discipline check (advisory)
+      - name: Run fork-discipline check (strict)
         id: check
-        # Always succeed in advisory mode by passing `--no-strict` to zig build.
-        # The artifact upload + PR-comment step let the reviewer act on the
-        # report without forcing a CI failure on first run.
-        run: zig build check-fork-discipline -Dfork-discipline-strict=false
-        continue-on-error: true
+        # Strict mode: `zig build` exits non-zero on any violation, and this
+        # step carries no `continue-on-error`, so a violation fails the job.
+        # The discipline state is clean (0 violations against the merge base),
+        # so this gate is expected to be green and is meaningful precisely
+        # because it is able to go red.
+        run: zig build check-fork-discipline -Dfork-discipline-strict=true
 
       - name: Upload report artifact
         if: always()
@@ -125,10 +130,3 @@ jobs:
                 body: `${marker}\n## Fork Discipline Report\n\n${body}`,
               });
             }
-
-      - name: Fail when strict
-        if: env.FORK_DISCIPLINE_STRICT == 'true' && steps.check.outcome == 'failure'
-        run: |
-          echo "Strict fork-discipline is enabled; failing this job because the check failed."
-          echo "See the uploaded artifact fork-discipline-report for details."
-          exit 1
