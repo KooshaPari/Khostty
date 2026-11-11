@@ -18,3 +18,35 @@ pub fn main(init: std.process.Init) !void {
     defer init.gpa.free(str);
     std.debug.print("{s}\n", .{str});
 }
+
+test "printString wraps at the declared width" {
+    var t: ghostty_vt.Terminal = try .init(std.testing.io, std.testing.allocator, .{
+        .cols = 3,
+        .rows = 10,
+    });
+    defer t.deinit(std.testing.allocator);
+
+    try t.printString("abcd");
+
+    const wrapped = try t.plainString(std.testing.allocator);
+    defer std.testing.allocator.free(wrapped);
+    const unwrapped = try t.plainStringUnwrapped(std.testing.allocator);
+    defer std.testing.allocator.free(unwrapped);
+
+    try std.testing.expectEqualStrings("abc\nd", wrapped);
+    try std.testing.expectEqualStrings("abcd", unwrapped);
+}
+
+test "printString treats a newline as carriage return plus linefeed" {
+    var t: ghostty_vt.Terminal = try .init(std.testing.io, std.testing.allocator, .{
+        .cols = 20,
+        .rows = 5,
+    });
+    defer t.deinit(std.testing.allocator);
+
+    try t.printString("a\nb");
+
+    const unwrapped = try t.plainStringUnwrapped(std.testing.allocator);
+    defer std.testing.allocator.free(unwrapped);
+    try std.testing.expectEqualStrings("a\nb", unwrapped);
+}
