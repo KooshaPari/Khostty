@@ -11,12 +11,20 @@
 # `zig build test-agent-ipc` by hand — which is why Phase 0 verification
 # required ~27 minutes of local wall-clock and a hand-written evidence log.
 #
-# The inherited upstream `test.yml` nominally covers the example harnesses, but
-# it cannot: it is `workflow_dispatch`-only in this fork ("FORK: DISABLED for
-# automatic triggers") and 50 of its 52 jobs target `namespace-profile-ghostty-*`
-# runners this fork does not have. A step added there never runs on a push and
-# never appears on a PR. So the three example harnesses that DO declare a test
-# step are wired here, in the workflow that actually executes for this fork.
+# The inherited upstream `test.yml` CANNOT run on this fork. It is
+# `workflow_dispatch`-only here ("FORK: DISABLED for automatic triggers", see
+# 2d860e921, which moved it off automatic triggers because it was unschedulable
+# by construction), 50 of its 52 jobs target `namespace-profile-ghostty-*`
+# runners this fork does not have, and its Linux `test` job's `if:` requires
+# github.repository == 'ghostty-org/ghostty'. A step added there never runs on a
+# push and never appears on a PR.
+#
+# So this workflow is the one that actually executes for the fork, and it
+# carries everything test.yml can no longer reach:
+#   - `zig-test`: `zig build test`, the main suite. It ran in NO CI job until
+#     Issue #98 added this job; `test-lib-vt` is covered by the `khostty-vt/`
+#     path gate on the fork-only steps.
+#   - `example-tests`: the three example harnesses that declare a `test` step.
 #
 # Why nightly rather than per-push:
 #   `test-agent-ipc` runs the full test tree (~3900 tests, ~4GB peak, ~27min
@@ -41,9 +49,15 @@ on:
   # lives only on a non-default branch). Scope: the workflow file itself,
   # the two fork-only test entry points, the directories and shared imports they
   # transitively pull in (incl. src/App.zig + src/Surface.zig), and build.zig (build-config changes can break
-  # these tests). Anything outside this set does not need a fork-zig
-  # test run; the upstream test.yml continues to cover `zig build test`
-  # and `test-lib-vt` for all other changes. Intended to remain as a
+  # these tests). Since Issue #98 this workflow is the ONLY CI channel for the
+  # Zig suite: `test.yml` cannot run on this fork (its jobs are pinned to
+  # namespace-profile runners this fork cannot schedule, and the Linux `test`
+  # job carries the upstream `github.repository == 'ghostty-org/ghostty'
+  # guard), so it does NOT cover `zig build test` / `test-lib-vt` "for all
+  # other changes" - nothing else covers them at all. `src/**` and
+  # `build.zig.zon` are what keep this gate broad enough to matter, because the
+  # core suite exercises all of src/, not just the entries listed above.
+  # Intended to remain as a
   # validation channel pre- and post-merge; the long-term nightly
   # schedule stays for catch-up coverage on slow PRs.
   pull_request:
@@ -67,6 +81,11 @@ on:
       - "src/apprt/gtk/**"
       - "example/**"
       - "src/build/**"
+      # Issue #98: the core Zig suite (`zig build test`) exercises all of src/,
+      # not only the entries above. `src/**` and `build.zig.zon` close the gap
+      # (the narrower src/ entries above are now redundant but harmless).
+      - "src/**"
+      - "build.zig.zon"
       - "flake.nix"
       - "nix/**"
   # Keep `merge_group` out of the trigger list for now: this fork's
@@ -146,6 +165,53 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run test-agent-ipc
         run: nix develop -c zig build test-agent-ipc
+
+  # Issue #98: the inherited upstream `test.yml` cannot run on this fork. Its
+  # jobs are pinned to `namespace-profile-ghostty-*` Namespace Cloud runners
+  # this fork cannot schedule, and the Linux `test` job also carries
+  # `if: github.repository == 'ghostty-org/ghostty'`. Commit 2d860e921 moved it
+  # to `workflow_dispatch` only precisely because those jobs are unschedulable
+  # by construction. Net effect: `zig build test` - the main Zig suite - ran in
+  # NO CI job on this fork. This job is that suite, on the only runner class
+  # this fork can schedule.
+  #
+  # `-Dapp-runtime=none` matches what test.yml's Linux `test` job runs
+  # (test.yml:1495). Without it the build pulls the GTK app runtime, which the
+  # core suite does not need and which adds build time on ubuntu-latest.
+  #
+  # timeout-minutes: 60, not 30. This workflow has no cache step (no
+  # CACHIX_AUTH_TOKEN secret exists on the fork, so cachix-action would 401),
+  # so every run re-fetches the Nix closure and recompiles Zig cold. A warm
+  # M-series laptop reference is ~27 min for a comparable suite; a cold
+  # ubuntu-latest run is plausibly 25-40 min. 60 is the honest ceiling.
+  #
+  # Blocking on purpose: no `continue-on-error`, no test-level retries. A red
+  # Zig suite must surface as a failure, not a silent nightly red X.
+  zig-test:
+    name: test (zig build test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          shasum: "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+        with:
+          # Same as the jobs above: no cachix-action, this fork has no
+          # CACHIX_AUTH_TOKEN. flake.nix supplies every system dependency the
+          # suite needs, so `nix develop -c` IS the dependency install step.
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run zig build test
+        # `--summary all` is load-bearing, not decoration: `zig build test`
+        # prints NOTHING when it passes, so without this flag a green job is
+        # indistinguishable from a job that ran no tests. With it the log
+        # carries `Build Summary: N/N steps succeeded; M/M tests passed`,
+        # which is the only evidence a reviewer or a future reader can check.
+        run: nix develop -c zig build -Dapp-runtime=none test --summary all
 
   wasm-abi:
     name: wasm ABI + data table
