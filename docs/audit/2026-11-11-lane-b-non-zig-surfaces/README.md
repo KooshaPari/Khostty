@@ -1077,6 +1077,12 @@ zig-formatter  Build Summary: 42/42 steps succeeded; 1/1 tests passed
 Each line is a real test execution - `run test 2 pass (2 total)` and so on - which is the thing the
 job log in §11.5 never contained.
 
+`zig-fork-tests.yml` now enforces that distinction rather than trusting it: the example jobs run
+`zig build test --summary all` and require a `run test N pass` line, so a harness that regresses to
+an empty test binary fails the job instead of reporting green. Negative control for the guard: with
+the `test` blocks stripped, Zig prints `run test success 228ms` - no count - and the guard rejects
+it, while the test-bearing build prints `run test 2 pass (2 total)` and is accepted.
+
 **Gotcha for the next author:** a test that writes to stderr makes `zig build test` flaky in these
 projects. With a `std.debug.print` inside a test present, four runs produced, twice, an exit code of
 1 with `failed command: .../test --cache-dir=... --seed=... --listen=-` and no test failure line;
