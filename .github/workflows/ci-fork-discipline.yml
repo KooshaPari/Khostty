@@ -43,9 +43,20 @@ jobs:
           fetch-depth: 0
 
       - name: Add upstream remote
+        # The upstream fetch must NOT be shallow. `build.zig` computes the
+        # fork-discipline baseline with `git merge-base HEAD upstream/main`, and
+        # a `--depth=1` fetch has no common ancestor in the object graph, so
+        # merge-base exits 1 with empty stdout. The guard would then silently
+        # fall back to the moving `upstream/main` tip and report upstream's own
+        # newer commits as fork divergence (~1889 phantom violations instead of
+        # ~5). A plain fetch of the single branch leaves the upstream graph
+        # complete enough for merge-base while keeping the job cheap. Do not use
+        # `--filter=blob:none` (the checker diffs against the baseline and would
+        # lazily fetch hundreds of blobs one request at a time) or a guessed
+        # `--deepen=N` (brittle; silently regresses when the fork falls behind).
         run: |
           git remote add upstream https://github.com/ghostty-org/ghostty.git
-          git fetch --depth=1 upstream main
+          git fetch upstream main
         shell: bash
 
       - name: Set up Zig
