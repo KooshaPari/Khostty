@@ -719,3 +719,9 @@ test {
         } }, t.screens.active.pages.pointFromPin(.screen, sel.end).?);
     }
 }
+
+// FORK: deliberate-red probe for issue #98. Asserts something false so the
+// `test (zig build test)` CI check is forced to fail. Never merged.
+test "PROBE: deliberate red for issue 98" {
+    try @import("std").testing.expect(false);
+}
