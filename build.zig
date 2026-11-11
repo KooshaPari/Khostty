@@ -17,6 +17,52 @@ comptime {
     buildpkg.requireZig(minimum_zig_version);
 }
 
+/// Default baseline for the fork-discipline guard: the merge base of HEAD and
+/// `upstream/main`.
+///
+/// WHY: this fork tracks `upstream/main`, but upstream advances independently
+/// of the fork, so `git merge-base --is-ancestor upstream/main HEAD` is false
+/// and diffing against the moving tip reports upstream's OWN newer commits as
+/// fork divergence. Measured 2026-11-10 against `upstream/main` (bd1e6a434):
+/// 1889 violations across 112 files, of which all but 5 were phantom. Diffing
+/// against the true merge base (b3dc3d79) reported the real 5 violations across
+/// 1 file, i.e. 99.7% of the tip-based count was false positive. The merge base
+/// measures only what the fork actually changed.
+///
+/// FALLBACK: if `git merge-base` cannot be resolved (upstream not fetched,
+/// shallow/detached checkout, git unavailable), fall back to the moving
+/// `upstream/main` tip and warn. The guard is advisory by default, so a missing
+/// upstream ref must never fail the build; the fallback only means the report
+/// may over-report upstream's own commits.
+fn forkDisciplineBaseline(b: *std.Build) []const u8 {
+    var code: u8 = undefined;
+    const stdout = b.runAllowFail(
+        &.{ "git", "merge-base", "HEAD", "upstream/main" },
+        &code,
+        .ignore,
+    ) catch |err| {
+        std.debug.print(
+            "check-fork-discipline: could not resolve `git merge-base HEAD upstream/main` ({t}); " ++
+                "falling back to the moving `upstream/main` tip. The report may over-report " ++
+                "upstream's own commits as fork divergence.\n",
+            .{err},
+        );
+        return "upstream/main";
+    };
+    defer b.allocator.free(stdout);
+    const trimmed = std.mem.trim(u8, stdout, &std.ascii.whitespace);
+    if (trimmed.len == 0) {
+        std.debug.print(
+            "check-fork-discipline: `git merge-base HEAD upstream/main` produced no output; " ++
+                "falling back to the moving `upstream/main` tip. The report may over-report " ++
+                "upstream's own commits as fork divergence.\n",
+            .{},
+        );
+        return "upstream/main";
+    }
+    return b.dupe(trimmed);
+}
+
 pub fn build(b: *std.Build) !void {
     // This defines all the available build options (e.g. `-D`). If you
     // want to know what options are available, you can run `--help` or
@@ -130,13 +176,21 @@ pub fn build(b: *std.Build) !void {
     // that isn't documented in docs/FORK.md and bracketed by a // FORK: block.
     // Default mode is advisory (exit 0). Pass `-Dfork-discipline-strict=true`
     // to make the step fail on violations.
+    //
+    // Default baseline is the merge base of HEAD and upstream/main, NOT the
+    // moving upstream tip: upstream advances independently of the fork, so the
+    // tip reports upstream's own newer commits as fork divergence (measured
+    // 2026-11-10: 1889 vs 5 violations; see forkDisciplineBaseline for detail).
+    // Pass `-Dfork-discipline-upstream=<ref>` to override; an explicit value
+    // always wins over the merge-base default.
     const fork_discipline_step = b.step(
         "check-fork-discipline",
         "Run the fork-discipline guard over upstream-owned files (advisory by default)",
     );
     {
         const strict = b.option(bool, "fork-discipline-strict", "Exit non-zero on fork-discipline violations") orelse false;
-        const upstream = b.option([]const u8, "fork-discipline-upstream", "Upstream git ref to diff against") orelse "upstream/main";
+        const upstream_override = b.option([]const u8, "fork-discipline-upstream", "Upstream git ref to diff against (default: merge base of HEAD and upstream/main)");
+        const upstream = upstream_override orelse forkDisciplineBaseline(b);
 
         // Ensure artifacts/ exists so the tool can write its report.
         const mkdir_step = b.addSystemCommand(&.{ "sh", "-c", "mkdir -p artifacts" });
