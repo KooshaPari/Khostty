@@ -203,6 +203,8 @@ fn threadMain_(self: *Thread) !void {
             // flake-investigation-20261015.md for the original repro). The
             // `stopped()` check is our proxy for "loop is being torn down
             // soon"; libxev's tick() also short-circuits on `flags.stopped`.
+            // FORK: this guard is fork-only, not upstream; it closes the
+            // loop.deinit() / kevent() teardown race that panics inside libxev (#96).
             if (self.loop.stopped()) return;
             try self.loop.run(.once);
             continue;
@@ -221,6 +223,8 @@ fn threadMain_(self: *Thread) !void {
             // race guard as the path above: short-circuit on `stopped()`
             // so we don't hit libxev's `.BADF => unreachable` panic when
             // the test thread is closing the kqueue FD in parallel.
+            // FORK: same fork-only teardown guard as above; upstream runs
+            // loop.run(.once) here unconditionally and can panic on `.BADF` (#96).
             if (self.loop.stopped()) return;
             try self.loop.run(.once);
             continue;
@@ -660,6 +664,8 @@ test {
         .{&thread},
     );
 
+    // FORK: upstream stops and joins inline after the wait, so any `try`
+    // above unwinds into Thread.deinit with the worker still live (UAF, #96).
     // Guarantee stop-then-join regardless of how this test exits, and make
     // sure it happens BEFORE the `defer thread.deinit()` registered above.
     // Defers run in reverse registration order, so registering this after
@@ -690,6 +696,8 @@ test {
     );
     try thread.wakeup.notify();
 
+    // FORK: budget raised to 5s because a short budget turned a slow
+    // scheduler into a fatal teardown path; fork-only, see the defer above (#96).
     // Wait for completion. This is an assertion that the search actually
     // finishes, so the budget must be generous: it is a latency ceiling on a
     // loaded host, not a correctness property. A short budget turned a slow
