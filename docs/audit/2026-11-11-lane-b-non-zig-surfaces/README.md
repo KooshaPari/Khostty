@@ -862,14 +862,15 @@ build and pass a test step containing **0** declared tests.
 *Original method note: all counts
 come from static reading and the greps quoted above.*
 
-*Provenance and directory hygiene.* The mandated output directory
-(`~/CodeProjects/temp/khostty-e2e-20261110/`) holds **143** files, of which only 3 are lane-B
-deliverables: this report, `lane-b2-conformance-assert-fill.md` (19,250 B, the per-case
-assert-fill table cited in section 4) and `lane-b3-independent-recount.md` (9,585 B, an
-independent recount whose five headline totals agree with mine). The other **140** files are
-pre-existing and unrelated to this lane. Writing here was the instruction; the deviation worth
-recording is only that a shared directory was reused rather than a per-lane subdirectory, so any
-consumer of this lane's output must filter on the `lane-b*` prefix rather than read the directory.
+*Provenance and directory hygiene.* The output directory mandated for this audit
+(`~/CodeProjects/temp/khostty-e2e-20261110/`) held **143** files, of which only 3 were lane-B
+deliverables. All three are preserved next to this file: this report,
+`CONFORMANCE-ASSERT-FILL.md` (19,250 B, the per-case assert-fill table cited in section 4) and
+`INDEPENDENT-RECOUNT.md` (9,585 B, a blind recount that never opened either sibling file, whose
+five headline totals agree with mine). The other **140** files were pre-existing and unrelated to
+this lane. The deviation worth recording is that a shared directory was reused rather than a
+per-lane subdirectory, so any consumer of the original output had to filter on the `lane-b*` prefix
+rather than read the directory; that problem is what this directory removes.
 Cross-check performed at close: every `file:line` citation in this report was machine-validated for
 existence and range (**41** distinct files, **0** unresolved, **0** out-of-range).
 
