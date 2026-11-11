@@ -133,3 +133,45 @@ pub const Task = struct {
 fn threadIo() std.Io {
     return @import("../../global.zig").io();
 }
+
+/// No-op closure for the tests below. The state machine under test never reads
+/// `ctx`; it only decides whether the closure may run at all, so a payload of
+/// one byte is enough to give `ctx` a real address and `noopRun` never touches
+/// it.
+fn noopRun(_: *anyopaque) void {}
+
+test "task: claim refuses a cancelled task" {
+    var payload: u8 = 0;
+    const task = try Task.create(std.testing.allocator, &payload, noopRun);
+    defer task.destroy(std.testing.allocator);
+
+    // The caller gives up before the app thread looks at the task. `cancel`
+    // reports the win, which is what licenses the caller to drop `payload`.
+    try std.testing.expect(task.cancel());
+
+    // So the app thread must refuse the claim: the payload may already be gone.
+    try std.testing.expect(!task.claim());
+}
+
+test "task: cancel loses to a claim" {
+    var payload: u8 = 0;
+    const task = try Task.create(std.testing.allocator, &payload, noopRun);
+    defer task.destroy(std.testing.allocator);
+
+    // The app thread took ownership of the payload.
+    try std.testing.expect(task.claim());
+
+    // Cancelling now reports the loss, so the caller knows it must keep the
+    // payload alive until the task reports done.
+    try std.testing.expect(!task.cancel());
+}
+
+test "task: finish is observable through isDone" {
+    var payload: u8 = 0;
+    const task = try Task.create(std.testing.allocator, &payload, noopRun);
+    defer task.destroy(std.testing.allocator);
+
+    try std.testing.expect(!task.isDone());
+    task.finish();
+    try std.testing.expect(task.isDone());
+}
