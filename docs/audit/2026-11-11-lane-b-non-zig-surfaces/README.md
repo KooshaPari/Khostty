@@ -1192,6 +1192,13 @@ Local evidence for the new step body, run before pushing:
 | a module with no `_test.go` file | `::error::go test reported success but ran zero tests`, exit 1                         |
 | a module with one failing test   | exit 1, carried by `pipefail` rather than by an `\|\| echo`                            |
 
+In CI the same block reports it: run `43023280932` on `b7ee8ae`, job `Go` (`130532929412`) was
+**success** in 3m59s, with `ok github.com/KooshaPari/Khostty/khostty-go 0.063s`, `PASS`, and the
+guard's own line, `ran 45 top-level tests`. That log holds 45 top-level `=== RUN` lines and 75
+distinct cases once the step script's echoed grep pattern is discounted, matching the local run case
+for case. The same run has `Rust` (2m27s), `Python` (8s) and `Python Tests` (3m29s) green, so roughly
+four minutes is the whole visible cost of the Go job actually doing its job.
+
 **Count reconciliation.** The Go surface is **45 test functions** and **75 cases** once `t.Run`
 subtests expand: `go test -count=1 -v ./...` emits 45 top-level `--- PASS` lines, 30 indented ones,
 and 75 `=== RUN` lines. The "70 cases" this report previously carried in its closing summary does not
