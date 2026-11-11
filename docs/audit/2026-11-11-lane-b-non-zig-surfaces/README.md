@@ -1045,14 +1045,24 @@ opens its group at `05:30:00.506`, and the next log line is `Post Run actions/ch
 `All 0 tests passed`, nothing - and exit code 0. That is what a passing test step with no tests
 looks like, and it is why the guard checks `build.zig` for the step rather than trusting the green.
 
-### 11.6 One more surface this branch does not fix
+### 11.6 One more surface this branch does not fix — closed since, by #100
 
-`zig build test` - the repo's own Zig unit suite, the ~3900-test tree - is invoked only from
+`zig build test` - the repo's own Zig unit suite, the ~3900-test tree - was invoked only from
 `test.yml` (`:277`, `:317`, `:1747`, `:1822`, `:2207`), the workflow established in §11.4 as
-unrunnable here. `zig-fork-tests.yml` reaches the tree only through `test-agent-ipc`. So the
-largest Zig suite has the same status as the Rust suite had before this branch: present, invoked,
-and unable to report anything. That is Lane A's surface and is deliberately left alone; it is
-recorded here because the two defects are the same defect.
+unrunnable here, and `zig-fork-tests.yml` reached the tree only through `test-agent-ipc`. So the
+largest Zig suite had the same status as the Rust suite before this branch: present, invoked, and
+unable to report anything. That is Lane A's surface, and this branch left it alone on purpose.
+
+It is closed there now. PR #100 (`49c2d521b`) adds a blocking `zig-test` job to
+`zig-fork-tests.yml`, named `test (zig build test)`, running
+`nix develop -c zig build -Dapp-runtime=none test --summary all` on `ubuntu-latest` with
+`timeout-minutes: 60` and the same Zig `0.16.0` pin as its neighbours, and widens the
+`pull_request` `paths:` gate to `src/**` and `build.zig.zon` so the job actually fires.
+`--summary all` is what makes the job mean something: `zig build test` prints nothing on success,
+which is the silent-green failure mode of §11.5. Verified first-hand rather than quoted: run
+`42975266230` job `130372774981` logs `Build Summary: 101/101 steps succeeded; 3935/3978 tests
+passed (43 skipped)`, and with PR #106's `push` trigger the job now runs on `main` too - run
+`42980815076` on `08141794c` shows `test (zig build test)` **success** among its seven green jobs.
 
 ### 11.7 Landed
 
