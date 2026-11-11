@@ -118,8 +118,14 @@ fn alt_escape_prefix_needs_both_the_prefix_option_and_option_as_alt() {
     // Probing the linked library showed this is a two-part condition: with the
     // prefix option alone the text passes through unchanged, with option-as-alt
     // alone it also passes through unchanged, and only both together produce
-    // ESC followed by the key. Both halves are asserted so a future library
-    // change in either direction is visible.
+    // ESC followed by the key.
+    //
+    // The two options do not compose the same way everywhere. On macOS the
+    // prefix option alone is inert; on Linux it already emits ESC, and
+    // option-as-alt is an Apple-only concept that stays inert. So each platform
+    // asserts its own observed behaviour instead of macOS's being asserted
+    // everywhere - the previous version did the latter, and it was the one
+    // failing test the first time this suite was actually run in CI.
     let mut event = key_event(KeyAction::Press, Key::A, Mods::ALT);
     event.set_utf8("a");
 
@@ -130,12 +136,18 @@ fn alt_escape_prefix_needs_both_the_prefix_option_and_option_as_alt() {
         "by default Alt+a carries no ESC prefix"
     );
 
+    let prefix_only_expected: &[u8] = if cfg!(target_os = "macos") {
+        b"a"
+    } else {
+        b"\x1ba"
+    };
+
     let mut prefix_only = KeyEncoder::new().expect("encoder");
     prefix_only.set_alt_esc_prefix(true);
     assert_eq!(
         prefix_only.encode(&event).expect("prefix only"),
-        b"a",
-        "the prefix option alone is not enough on this platform"
+        prefix_only_expected,
+        "the prefix option alone is platform dependent; see the note above"
     );
 
     let mut option_only = KeyEncoder::new().expect("encoder");

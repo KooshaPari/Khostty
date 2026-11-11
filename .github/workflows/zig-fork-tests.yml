@@ -11,13 +11,20 @@
 # `zig build test-agent-ipc` by hand — which is why Phase 0 verification
 # required ~27 minutes of local wall-clock and a hand-written evidence log.
 #
-# The inherited upstream `test.yml` CANNOT run on this fork: every job is
-# pinned to a Namespace Cloud runner profile this fork does not have, and the
-# Linux `test` job's `if:` requires github.repository == 'ghostty-org/ghostty'
-# (see 2d860e921, which moved it to workflow_dispatch only because it was
-# unschedulable by construction). So `zig build test` ran in NO CI job until
-# Issue #98 added the `zig-test` job below. `test-lib-vt` is covered by the
-# `khostty-vt/` path gate on the fork-only steps.
+# The inherited upstream `test.yml` CANNOT run on this fork. It is
+# `workflow_dispatch`-only here ("FORK: DISABLED for automatic triggers", see
+# 2d860e921, which moved it off automatic triggers because it was unschedulable
+# by construction), 50 of its 52 jobs target `namespace-profile-ghostty-*`
+# runners this fork does not have, and its Linux `test` job's `if:` requires
+# github.repository == 'ghostty-org/ghostty'. A step added there never runs on a
+# push and never appears on a PR.
+#
+# So this workflow is the one that actually executes for the fork, and it
+# carries everything test.yml can no longer reach:
+#   - `zig-test`: `zig build test`, the main suite. It ran in NO CI job until
+#     Issue #98 added this job; `test-lib-vt` is covered by the `khostty-vt/`
+#     path gate on the fork-only steps.
+#   - `example-tests`: the three example harnesses that declare a `test` step.
 #
 # Why nightly rather than per-push:
 #   `test-agent-ipc` runs the full test tree (~3900 tests, ~4GB peak, ~27min
@@ -72,6 +79,7 @@ on:
       # GTK runtime: the only app_runtime for which `windowed` is true, so the
       # only place B1 (bind the IPC server from the runtime) can be verified.
       - "src/apprt/gtk/**"
+      - "example/**"
       - "src/build/**"
       # Issue #98: the core Zig suite (`zig build test`) exercises all of src/,
       # not only the entries above. `src/**` and `build.zig.zon` close the gap
@@ -244,3 +252,48 @@ jobs:
       - name: Header + data table + ABI + tests
         working-directory: wasm
         run: npm run check
+
+  # ---------------------------------------------------------------------------
+  # Example harnesses: the last Zig surface no workflow reached.
+  # ---------------------------------------------------------------------------
+  # Three of the 28 example projects declare a `test` step:
+  #   example/zig-vt, example/zig-vt-stream, example/zig-formatter
+  # A test step that no workflow invokes is dead code that looks like coverage.
+  #
+  # The remaining 25 have no `test` step at all, and `zig build test` on a
+  # project with no `test` step exits non-zero, so a blind matrix over all 28
+  # would produce 25 permanent reds. The matrix is therefore the explicit list,
+  # each entry re-checked at run time against `build.zig`, so that deleting a
+  # test step is a failure rather than a silent skip.
+  #
+  # `build.zig.zon` pins ghostty as `.ghostty = .{ .path = "../../" }`, so these
+  # build against this checkout, not a network tarball.
+  example-tests:
+    name: example zig build test (${{ matrix.example }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - zig-vt
+          - zig-vt-stream
+          - zig-formatter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: ./.github/actions/install-zig
+        with:
+          version: "0.16.0"
+          shasum: "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+      - name: example/${{ matrix.example }} must still declare a test step
+        working-directory: example/${{ matrix.example }}
+        run: |
+          if ! grep -q 'b.step("test"' build.zig; then
+            echo "::error::example/${{ matrix.example }}/build.zig declares no test step; it was removed or renamed, and this matrix entry is now meaningless"
+            exit 1
+          fi
+      - name: zig build test
+        working-directory: example/${{ matrix.example }}
+        run: zig build test
