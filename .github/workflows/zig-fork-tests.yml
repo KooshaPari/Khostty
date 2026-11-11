@@ -198,7 +198,12 @@ jobs:
           # suite needs, so `nix develop -c` IS the dependency install step.
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run zig build test
-        run: nix develop -c zig build -Dapp-runtime=none test
+        # `--summary all` is load-bearing, not decoration: `zig build test`
+        # prints NOTHING when it passes, so without this flag a green job is
+        # indistinguishable from a job that ran no tests. With it the log
+        # carries `Build Summary: N/N steps succeeded; M/M tests passed`,
+        # which is the only evidence a reviewer or a future reader can check.
+        run: nix develop -c zig build -Dapp-runtime=none test --summary all
 
   wasm-abi:
     name: wasm ABI + data table
