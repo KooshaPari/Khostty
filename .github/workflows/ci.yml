@@ -696,25 +696,38 @@ jobs:
     # as this rename or every PR blocks on a check that never reports.
     name: ci / aggregate
     if: always()
-    needs: [lint, pytest]
+    # Job id stays `test` and display name stays `ci / aggregate`: branch
+    # protection keys on the display name, renaming it blocks every PR.
+    needs: [lint, pytest, binding-freshness, actionlint, build]
     runs-on: ubuntu-latest
     steps:
       - name: Aggregate test gate
         run: |
-          # Real test gate: a pytest regression must propagate here. The prior
-          # body was an empty stub that echoed a fixed success string; it
-          # asserted nothing and silently masked every failure.
+          # Fail-closed aggregate: a job must report success to pass. A skipped
+          # job is NOT a pass unless it is explicitly allow-listed below.
+          # binding-freshness, actionlint and build previously fed no aggregate,
+          # so their failure never reached this gate.
+          # Allow-list for legitimate skips:
+          #   build: only runs when vars.ENABLE_MACOS_BUILD == 'true' (billed
+          #     macOS runners disabled by policy); skipped by default.
           failed=0
           for pair in \
             "lint:${{ needs.lint.result }}" \
             "pytest:${{ needs.pytest.result }}" \
+            "binding-freshness:${{ needs.binding-freshness.result }}" \
+            "actionlint:${{ needs.actionlint.result }}" \
+            "build:${{ needs.build.result }}" \
             ; do
             name="${pair%%:*}"
             result="${pair#*:}"
-            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+            if [ "$name" = "build" ] && [ "$result" = "skipped" ]; then
+              echo "  - $name: skipped (allowed: macOS build opt-in, see if:)"
+              continue
+            fi
+            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ] || [ "$result" = "skipped" ]; then
               echo "  ✗ $name: $result"
               failed=$((failed + 1))
-            elif [ "$result" = "success" ] || [ "$result" = "skipped" ]; then
+            elif [ "$result" = "success" ]; then
               echo "  ✓ $name: $result"
             else
               echo "  ? $name: $result"
@@ -723,8 +736,8 @@ jobs:
           done
           if [ "$failed" -gt 0 ]; then
             echo ""
-            echo "❌ $failed test gate(s) failed"
+            echo "❌ $failed aggregate gate(s) failed"
             exit 1
           fi
           echo ""
-          echo "✅ All aggregate gates passed (lint + pytest); Zig gates run in Fork Zig Tests"
+          echo "✅ All aggregate gates passed"

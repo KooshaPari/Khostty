@@ -126,6 +126,36 @@ else
   fail=1
 fi
 
+# The aggregate merge gate (job id `test`, display name `ci / aggregate`) must
+# fail closed: a skipped job is not a pass, and the three jobs that previously
+# fed no aggregate (binding-freshness, actionlint, build) must appear in its
+# needs: and in its result loop.
+echo "== aggregate gate is fail-closed =="
+if grep -n 'elif \[ "$result" = "success" \] || \[ "$result" = "skipped" \]; then' .github/workflows/ci.yml | grep -q 'aggregate'; then :; fi
+agg_loop=$(awk '/name: Aggregate test gate/{f=1} f{print} /^          echo "✅ All aggregate gates passed"/{exit}' .github/workflows/ci.yml)
+if echo "$agg_loop" | grep -q 'elif \[ "$result" = "success" \] || \[ "$result" = "skipped" \]; then'; then
+  echo "  MASKED: aggregate result loop treats skipped as a pass"
+  fail=1
+else
+  echo "  ok: aggregate result loop does not treat skipped as a pass"
+fi
+for j in binding-freshness actionlint build; do
+  if echo "$agg_loop" | grep -qF "\"$j:"; then
+    echo "  ok: $j in aggregate result loop"
+  else
+    echo "  MISSING: $j in aggregate result loop"
+    fail=1
+  fi
+done
+# needs line
+needs_line=$(grep -n 'needs: \[lint, pytest, binding-freshness, actionlint, build\]' .github/workflows/ci.yml || true)
+if [[ -n "$needs_line" ]]; then
+  echo "  ok: three jobs in aggregate needs:"
+else
+  echo "  MISSING: binding-freshness/actionlint/build in aggregate needs:"
+  fail=1
+fi
+
 if [[ "$fail" -ne 0 ]]; then
   echo
   echo "A CI gate is masked or missing. See"
