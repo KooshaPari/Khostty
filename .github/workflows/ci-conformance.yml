@@ -1,7 +1,15 @@
 # =============================================================================
 # Conformance + WASM tests for the fork-only build steps
 # =============================================================================
-# Khostty adds two build steps that are not exercised by zig-fork-tests.yml:
+# Khostty adds two build steps that are not exercised by zig-fork-tests.yml, plus
+# a text-only parity check that runs before them:
+#
+#   0. Case-list parity (`tools/check_conformance_parity.py`)
+#        `conformance/cases/*/cases.zig` and `conformance/harness.c` each carry a
+#        hand-maintained copy of the case list. They have drifted (91 vs 84) and
+#        nothing compared them, so a case added to one side silently never ran on
+#        the other. This step is text-only, runs before any build, and fails on
+#        drift that `conformance/case-parity-baseline.json` does not record.
 #
 #   1. Conformance (`./conformance/build.sh run`)
 #        Cross-language black-box tests that prove the IPC wire protocol
@@ -73,6 +81,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # Fail fast, in seconds, before the ~3 min build below: the Zig case
+      # lists and the C harness arrays are two hand-maintained copies of the
+      # same suite and nothing else compares them. Baseline-aware, so only new
+      # drift fails; see tools/check_conformance_parity.py.
+      - name: Check case-list parity
+        run: python3 tools/check_conformance_parity.py
       - uses: ./.github/actions/install-zig
         with:
           version: "0.16.0"

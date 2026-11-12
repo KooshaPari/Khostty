@@ -1,0 +1,50 @@
+{
+  "c_total": 84,
+  "known_divergence": {
+    "cursor": {
+      "c_only": [
+        "cursor_default_down",
+        "cursor_default_right",
+        "cursor_default_up",
+        "cursor_position_5_10"
+      ],
+      "zig_only": [
+        "cursor_default_param_zero",
+        "cursor_default_param_zero_down",
+        "cursor_default_param_zero_right",
+        "cursor_esc_7",
+        "cursor_esc_8",
+        "cursor_esc_home",
+        "cursor_position_ch10"
+      ]
+    },
+    "edge": {
+      "c_only": [],
+      "zig_only": ["zero_size_cursor"]
+    },
+    "mode": {
+      "c_only": ["mode_decipam_hidden", "mode_decipam_visible"],
+      "zig_only": [
+        "mode_decilm",
+        "mode_decim",
+        "mode_decipam",
+        "mode_decom_origin",
+        "mode_riscap"
+      ]
+    },
+    "osc": {
+      "c_only": [],
+      "zig_only": ["osc_9_set_pwd"]
+    },
+    "scroll": {
+      "c_only": [],
+      "zig_only": ["scroll_sd"]
+    },
+    "sgr": {
+      "c_only": ["sgr_reset_bold", "sgr_reset_default_bg", "sgr_resets_all"],
+      "zig_only": ["sgr_reset_specific_bold"]
+    }
+  },
+  "note": "Known divergence between the Zig case lists and the C harness arrays. Shrink this file as the lists are reconciled; the parity gate fails on any divergence that is not listed here.",
+  "zig_total": 91
+}
