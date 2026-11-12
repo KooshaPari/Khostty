@@ -1,0 +1,61 @@
+# cargo-deny configuration for the `khostty-vt` crate.
+#
+# Before this file existed, the `cargo-deny` job in `.github/workflows/ci.yml`
+# was gated on `has_deny`, which the detect job only sets when a `deny.toml`
+# exists, so the job was skipped on every run and supplied no supply-chain
+# signal. This file is what makes the job run.
+#
+# The allow list is not aspirational: it is exactly the licence set measured from
+# `cargo metadata --all-features` on 2026-11-12 (24 dependency packages: MIT OR
+# Apache-2.0 for 14 of them, then Unlicense OR MIT, BSD-3-Clause, ISC,
+# Unicode-3.0 and MIT alone). Every entry below is matched by a crate in the real
+# tree, which is deliberate: cargo-deny warns about unmatched allowances, and an
+# allowance that matches nothing is noise that hides the day it would matter.
+#
+# Adding a licence here is a policy decision, not a build fix: if a new
+# dependency needs one, that is the moment to decide whether to take the
+# dependency, not a reason to widen the list quietly.
+
+[graph]
+# `--all-features` in CI measures the widest tree, including `bindgen`, which is
+# optional and pulls the 24 packages above. Without this the gate would only see
+# the dependency-free default build, which would make it decorative again.
+all-features = true
+
+[advisories]
+# v2 is the schema cargo-deny 0.20 emits for `cargo deny init`.
+version = 2
+yanked = "warn"
+# No ignores. If an advisory ever needs one, it belongs here with the advisory
+# ID, the reason, and the date it stops applying - not in a blanket suppression.
+ignore = []
+
+[licenses]
+version = 2
+# Require a detected licence to be a confident match before deciding it is
+# allowed, so a mis-tagged file cannot slip through.
+confidence-threshold = 0.9
+allow = [
+  "MIT",
+  "Apache-2.0",
+  "BSD-3-Clause",
+  "ISC",
+  "Unicode-3.0",
+  "Unlicense",
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+highlight = "all"
+# Each entry must name the crate it is about; a bare allow-list of names would
+# hide which duplicate the exception is for.
+deny = []
+
+[sources]
+# Only crates.io is trusted. There is no `allow-git` list on purpose: the tree has
+# no git dependencies, and adding one should fail this gate so it gets argued for
+# rather than inherited. An unused `allow-git` entry is also an unmatched
+# allowance warning, i.e. noise.
+unknown-registry = "deny"
+unknown-git = "deny"
