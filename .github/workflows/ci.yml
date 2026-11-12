@@ -316,24 +316,45 @@ jobs:
             .github/workflows/milestone.yml
 
   cargo-deny:
-    # 2026-11-12: this job is skipped on every run and could not fail if it did
-    # run. `has_deny` is only set by the detect job when a `deny.toml` exists,
-    # and there is none anywhere in this tree (verified: `git ls-files | grep -i
-    # deny` is empty), so the `if:` is always false; the job additionally carries
-    # `continue-on-error`. Left in place as a hook for when a deny.toml lands,
-    # but it supplies no supply-chain signal today.
+    # 2026-11-12: until this commit the job supplied no supply-chain signal: it
+    # was skipped on every run AND carried `continue-on-error`. `has_deny` is only
+    # set by the detect job when a `deny.toml` exists, and this tree had none
+    # (verified: `git ls-files | grep -i deny` is empty), so the `if:` was always
+    # false and nothing downstream could ever observe it.
+    #
+    # `khostty-vt/deny.toml` now exists, so the job runs and gates: advisories,
+    # licences, bans and sources. The allow list there is the licence set measured
+    # from `cargo metadata --all-features` (24 dependency packages, all
+    # permissive), with no `ignore` entries and `wildcards`/`unknown-registry` /
+    # `unknown-git` denied.
+    #
+    # Measured before removing `continue-on-error`, with cargo-deny 0.20.2 (the
+    # version pinned below) and rustc 1.99.1:
+    # `cargo deny --manifest-path khostty-vt/Cargo.toml check` ->
+    # "advisories ok, bans ok, licenses ok, sources ok", exit 0, zero warnings.
     name: Cargo Deny (Advisories + Licenses)
     needs: detect
     if: needs.detect.outputs.has_deny == 'true'
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: cargo-deny check
-        uses: EmbarkStudios/cargo-deny-action@v1
         with:
-          arguments: --all-features
+          # Pinned for the same reason as the `rust` job: `cargo metadata` output
+          # and dependency resolution should not change under the gate without a
+          # commit behind it.
+          toolchain: "1.99.1"
+      # Pinned by version rather than by action tag: cargo-deny's rule set and its
+      # deny.toml schema both move between releases, so a floating install would
+      # let the gate change without a commit. 0.20.2 is the version measured
+      # above.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny@0.20.2
+      - name: cargo deny check
+        run: |
+          set -euo pipefail
+          cargo deny --manifest-path khostty-vt/Cargo.toml check
 
   python:
     # 2026-11-12: this job is now blocking. Until this commit it was
