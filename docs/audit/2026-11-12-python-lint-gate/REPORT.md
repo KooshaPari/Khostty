@@ -10,14 +10,14 @@ blocking. Before writing code, the first question is whether those 131 findings 
 
 All with `ruff 0.16.7`, at `8029918c8`.
 
-| Observation | Command | Result |
-| --- | --- | --- |
-| total check errors | `ruff check .` | 131, exit 1 |
-| unformatted files | `ruff format --check .` | 13, exit 1 |
-| where the errors live | per-file counts | `vendor/nerd-fonts/font-patcher.py` **85**, `src/font/nerd_font_codepoint_tables.py` **11**, first-party **35** |
-| is there a repo-level ruff config? | `ls ruff.toml pyproject.toml .ruff.toml setup.cfg` at root | **none** |
-| is there a user-level config leaking in? | `ls ~/.config/ruff/` | absent — not the cause |
-| what rules does ruff 0.16 enable with no config? | `ruff check t.py --isolated`, then `--show-settings` | a broad set including `S`, `BLE`, `B`, `ASYNC`, `YTT` — **not** the historical `E4/E7/E9/F` core |
+| Observation                                      | Command                                                    | Result                                                                                                          |
+| ------------------------------------------------ | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| total check errors                               | `ruff check .`                                             | 131, exit 1                                                                                                     |
+| unformatted files                                | `ruff format --check .`                                    | 13, exit 1                                                                                                      |
+| where the errors live                            | per-file counts                                            | `vendor/nerd-fonts/font-patcher.py` **85**, `src/font/nerd_font_codepoint_tables.py` **11**, first-party **35** |
+| is there a repo-level ruff config?               | `ls ruff.toml pyproject.toml .ruff.toml setup.cfg` at root | **none**                                                                                                        |
+| is there a user-level config leaking in?         | `ls ~/.config/ruff/`                                       | absent — not the cause                                                                                          |
+| what rules does ruff 0.16 enable with no config? | `ruff check t.py --isolated`, then `--show-settings`       | a broad set including `S`, `BLE`, `B`, `ASYNC`, `YTT` — **not** the historical `E4/E7/E9/F` core                |
 
 That last row is the root cause of the number moving. Root-level Python (`bench/`, `tools/`,
 `dist/`, `khostty-vt/tools/`, two `src/` generators) had no configuration, so it was linted against
@@ -27,10 +27,10 @@ without this change.
 
 So 96 of 131 findings were in code that is not first-party:
 
-* `vendor/nerd-fonts/font-patcher.py` is upstream Nerd Fonts' patcher, vendored verbatim. Editing it
+- `vendor/nerd-fonts/font-patcher.py` is upstream Nerd Fonts' patcher, vendored verbatim. Editing it
   is a fork divergence that the next vendor refresh silently reverts.
-* `src/font/nerd_font_codepoint_tables.py` opens with `#! This is a generated file, produced by
-  nerd_font_codegen.py` / `#! DO NOT EDIT BY HAND!`. Any fix here is undone by the next run.
+- `src/font/nerd_font_codepoint_tables.py` opens with `#! This is a generated file, produced by
+nerd_font_codegen.py` / `#! DO NOT EDIT BY HAND!`. Any fix here is undone by the next run.
 
 ## What was changed
 
@@ -44,7 +44,8 @@ So 96 of 131 findings were in code that is not first-party:
    `I001`/`FURB167`/`F541`/`C401`/`UP017` autofixed, and `subprocess` argv in
    `dump_abi_layout.py` now records an absolute `xcrun` resolved through `shutil.which` instead of a
    bare name.
-3. **The 10 first-party unformatted files formatted** (`ruff format .`, `line-length = 100`).
+3. **The unformatted first-party files formatted** (`ruff format .`, `line-length = 100`): 8 Python
+   files, once `src/terminal/` is out of scope per deviation 4 below.
 4. **`ci.yml` `python` job made blocking**: `continue-on-error` removed, both `|| echo` masks
    removed, job renamed `Python`, and `ruff` pinned to `0.16.7`.
 5. **`trunk.yaml` ruff `--config` override removed.** It was `["--config", "pyproject.toml"]`, and
@@ -55,15 +56,16 @@ So 96 of 131 findings were in code that is not first-party:
 
 ## Verification (commands run, results observed)
 
-| Check | Result |
-| --- | --- |
-| `ruff check .` | `All checks passed!` |
-| `ruff format --check .` | `44 files already formatted` |
-| `khostty-vt/tools/gen_ffi.py --check` | `src/ffi.rs is up to date` — the generator still reproduces the committed binding byte for byte |
-| `khostty-vt/tools/dump_abi_layout.py --check` | `tests/abi_layout.txt is up to date` — the refactored compiler discovery still finds a working compiler and measures the same sizes |
-| `python3 bench/audit_report.py` | `RESULT: PASS` |
-| `python3 bench/matrix.py` | prints the four-column matrix, exit 0 |
-| `python -m py_compile` on every changed file | passes on 3.9 except `nerd_font_codegen.py`; that file uses `type X = ...` aliases and needs 3.12 by construction, and compiles clean under `python3.12` |
+| Check                                                                     | Result                                                                                                                                                   |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ruff check .`                                                            | `All checks passed!`                                                                                                                                     |
+| `ruff format --check .`                                                   | `42 files already formatted`                                                                                                                             |
+| `zig run tools/check-fork-discipline.zig -- --strict --upstream b3dc3d79` | `0 violation(s)`                                                                                                                                         |
+| `khostty-vt/tools/gen_ffi.py --check`                                     | `src/ffi.rs is up to date` — the generator still reproduces the committed binding byte for byte                                                          |
+| `khostty-vt/tools/dump_abi_layout.py --check`                             | `tests/abi_layout.txt is up to date` — the refactored compiler discovery still finds a working compiler and measures the same sizes                      |
+| `python3 bench/audit_report.py`                                           | `RESULT: PASS`                                                                                                                                           |
+| `python3 bench/matrix.py`                                                 | prints the four-column matrix, exit 0                                                                                                                    |
+| `python -m py_compile` on every changed file                              | passes on 3.9 except `nerd_font_codegen.py`; that file uses `type X = ...` aliases and needs 3.12 by construction, and compiles clean under `python3.12` |
 
 ## Deviations from #126's "Do not", stated plainly
 
@@ -78,7 +80,18 @@ narrowing the paths the gate covers." Three deviations, each with its cost:
    produced findings only in generators derived from upstream nerd-fonts and Ghostty sources.
    Including it would have meant a large cosmetic rewrite of files whose shape we do not control,
    or an ignore list as long as the rule list.
-3. **Three `per-file-ignores` and one `noqa` were added**, each with the reason written next to it:
+3. **`src/terminal/` holds two Python files that are excluded from ruff entirely**:
+   `c/types-schema-verify.py` and `snapshot/verify-kaitai.py`. Both were reformatted in the first
+   attempt, and the fork's own guard rejected that. `docs/FORK-DISCIPLINE.md` treats `src/terminal/`
+   as upstream-owned and requires every added line there to sit inside a `// FORK:` block citing a
+   tracking issue; a whole-file reformat cannot be bracketed that way, and reformatting upstream
+   files is the rebase surface that guard exists to keep small. Concretely: with those two files
+   reformatted, `fork-discipline` at `4701ffec1` (run 43191481891) reported **26 violations**
+   ("upstream-owned divergences: 5") and failed. The two files are now byte-identical to upstream and
+   listed individually in `ruff.toml`, so a new Python file under `src/terminal/` is still in scope
+   by default. Net effect on the gate: 2 files of formatting coverage given up in exchange for not
+   growing the fork's conflict surface.
+4. **Three `per-file-ignores` and one `noqa` were added**, each with the reason written next to it:
    `S603` for `khostty-vt/tools/*` (compiler argv discovered locally, never a shell string), `S101`
    for `nerd_font_codegen.py` (asserts are that tool's failure mechanism), `UP017` for
    `dump_abi_layout.py` (`datetime.UTC` needs 3.11+, and the tool is documented to be run as
@@ -91,8 +104,22 @@ Every first-party finding that was fixable was fixed. None were ignored to reach
 
 ## Not verified here
 
-* The `pytest` job (`Python Tests`, 162 tests) was not touched and not re-run; this change is lint
+- The `pytest` job (`Python Tests`, 162 tests) was not touched and not re-run; this change is lint
   and formatting only, and the khostty-python profile produced no findings with or without it.
-* Trunk Check's behaviour with the removed `--config` override has not been observed in CI yet. The
-  previous entry could not have worked from the repository root, so the risk is that Trunk now lints
-  files it previously skipped, not that it breaks.
+- Trunk Check's behaviour with the removed `--config` override has not been observed in CI yet. Its
+  first run at `4701ffec1` (43191482074) failed, but on Prettier rather than ruff: the CI step checks
+  only files changed against the merge base, and this report was one of them. That is the Prettier
+  gate doing its job on a new file, not evidence about ruff.
+
+## What the first CI pass rejected, and what changed because of it
+
+Both failures on `4701ffec1` were the gates working, not masking:
+
+| Gate              | Run         | Failure                                                                                                   | Response                                                                             |
+| ----------------- | ----------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `fork-discipline` | 43191481891 | `26 violation(s); exiting 1` — 4 unbracketed ranges in `types-schema-verify.py`, 21 in `verify-kaitai.py` | Both reverted to upstream; excluded from ruff with the measured reason (deviation 3) |
+| Trunk Check       | 43191482074 | `prettier --check` on this report file                                                                    | Report formatted with Prettier                                                       |
+
+The `fork-discipline` result is the interesting one: it means the lint gate and the fork-hygiene gate
+disagree about upstream-owned Python, and the fork-hygiene gate wins because it protects a cost that
+is paid on every future upstream merge.

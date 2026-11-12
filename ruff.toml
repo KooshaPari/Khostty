@@ -35,6 +35,18 @@ extend-exclude = [
   # (the first run rewrote the client example in src/apprt/ipc/protocol.md), so
   # it is out of scope for a lint gate.
   "**/*.md",
+  # `src/terminal/` is upstream-owned per docs/FORK-DISCIPLINE.md, and that guard
+  # is stricter than this one: every added line in the surface must sit inside a
+  # `// FORK:` block that cites a tracking issue. A whole-file reformat cannot be
+  # bracketed that way, and reformatting upstream files is precisely the rebase
+  # surface the guard exists to keep small.
+  #
+  # Measured: reformatting just these two files took `fork-discipline` from
+  # success to 26 violations ("upstream-owned divergences: 5") on run
+  # 43191481891. So the two files are listed individually rather than excluding
+  # the directory, which keeps a future new file there in scope by default.
+  "src/terminal/c/types-schema-verify.py",
+  "src/terminal/snapshot/verify-kaitai.py",
 ]
 
 [lint]
