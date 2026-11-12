@@ -329,6 +329,14 @@ jobs:
             .github/workflows/go-windows.yml \
             .github/workflows/clean-artifacts.yml \
             .github/workflows/milestone.yml
+      # actionlint proves the workflow YAML is valid; it cannot tell you whether a
+      # step is capable of failing. Every gate repaired in the 2026-11-12 arc was
+      # syntactically perfect while masked, which is why this second check exists.
+      # It asserts the two mask idioms are absent (except at two documented,
+      # allowlisted sites) and that each repaired gate's exact command is still
+      # present, so dropping `--all-targets` or `-- -D warnings` fails here.
+      - name: no inert CI gates
+        run: bash tools/check-gate-masks.sh
 
   cargo-deny:
     # 2026-11-12: until this commit the job supplied no supply-chain signal: it
@@ -631,6 +639,7 @@ jobs:
       [
         zig-fmt,
         detect,
+        actionlint,
         rust,
         cargo-deny,
         python,
@@ -647,6 +656,7 @@ jobs:
           failed=0
           for pair in \
             "zig-fmt:${{ needs.zig-fmt.result }}" \
+            "actionlint:${{ needs.actionlint.result }}" \
             "rust:${{ needs.rust.result }}" \
             "cargo-deny:${{ needs.cargo-deny.result }}" \
             "python:${{ needs.python.result }}" \
@@ -680,8 +690,8 @@ jobs:
     # The job id stays `test` so existing `needs:` references keep working. The
     # DISPLAY name is what branch protection keys on, and `ci / test` wrongly
     # implied the Zig suite ran here: this job aggregates `lint` (which fans out
-    # to rust, go, python, typescript, security, dep-review, cargo-deny, zig-fmt)
-    # and `pytest`. Nothing here runs Zig. Renaming it is issue #111 part 2, and
+    # to rust, go, python, typescript, security, dep-review, cargo-deny, zig-fmt
+    # and, since 2026-11-12, actionlint) and `pytest`. Nothing here runs Zig. Renaming it is issue #111 part 2, and
     # it must be swapped in `required_status_checks.contexts` in the SAME window
     # as this rename or every PR blocks on a check that never reports.
     name: ci / aggregate
