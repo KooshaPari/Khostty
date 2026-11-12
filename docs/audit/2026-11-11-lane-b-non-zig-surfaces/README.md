@@ -835,7 +835,9 @@ path to a real non-Zig e2e.
    (`sgr_reset_specific_bold` in `cases/sgr/cases.zig` vs `sgr_reset_bold` in `harness.c`), both keep
    `sgr_reset_default_fg`, and the C array carries **two cases the Zig array lacks**
    (`sgr_reset_default_bg`, `sgr_resets_all`) — 15 Zig vs 17 C, which is where the 91/84 gap partly
-   lives. Nothing enforces parity today.
+   lives. The drift is not confined to SGR: six of the eight categories diverge, 16 names are Zig-only
+   and 9 C-only, and **nothing enforced parity** — `tools/check_conformance_parity.py` now does, wired
+   into `ci-conformance.yml` against a recorded baseline (§11.9).
 4. **Does `go test ./...` pass on macOS/Linux today?** Only the Windows path is enforced.
 5. ~~Is `example/*` ever executed?~~ **Answered: yes, exactly once.** `example/c-vt-effects` is run
    on a Windows runner at `test.yml:998` (`./zig-out/bin/c_vt_effects.exe`, job
@@ -1232,11 +1234,95 @@ register 54 CTest cases, but **no tracked `CMakeLists.txt` registers any test** 
 genuinely empty, and wiring `ctest` would run third-party packages fetched at build time rather than
 this repository.
 
+### 11.9 The two conformance case lists have drifted in 6 of 8 categories, and nothing compared them
+
+§10.3 answered "are `conformance/cases/*.zig` and `harness.c` in sync?" with **no**, and scoped the
+evidence to SGR. Re-measuring every category shows the drift is wider: **91 Zig cases against 84 C
+cases**, with 16 names only in Zig and 9 only in C, spread over six of the eight categories.
+
+| Category    | Zig | C   | Zig-only | C-only | Examples                                                            |
+| ----------- | --- | --- | -------- | ------ | ------------------------------------------------------------------- |
+| `charset`   | 8   | 8   | 0        | 0      | in sync                                                             |
+| `cursor`    | 13  | 10  | 7        | 4      | Zig `cursor_esc_7`, C `cursor_default_up`                           |
+| `edge`      | 17  | 16  | 1        | 0      | Zig `zero_size_cursor`                                              |
+| `kitty-gfx` | 5   | 5   | 0        | 0      | in sync (`KITTY_CASES` in C, `kitty-gfx/` in Zig)                   |
+| `mode`      | 15  | 12  | 5        | 2      | Zig `mode_decilm`, C `mode_decipam_hidden`/`_visible`               |
+| `osc`       | 10  | 9   | 1        | 0      | Zig `osc_9_set_pwd`                                                 |
+| `scroll`    | 8   | 7   | 1        | 0      | Zig `scroll_sd`                                                     |
+| `sgr`       | 15  | 17  | 1        | 3      | Zig `sgr_reset_specific_bold`, C `sgr_reset_bold`, `sgr_resets_all` |
+| **total**   | 91  | 84  | **16**   | **9**  |                                                                     |
+
+Reproduce it directly: `python3 tools/check_conformance_parity.py --json` prints the same table from
+the two files, without building anything.
+
+This matters beyond bookkeeping, because `build.sh run` executes the **C** arrays: a case that exists
+only in `cases.zig` is typed, documented, and never run, and a case that exists only in `harness.c`
+has no Zig-side counterpart to keep it honest. Neither side is generated from the other
+(`grep -rn harness.c conformance/build.sh` finds only the `cc` invocation at `:85`), so nothing was
+ever enforcing this.
+
+**Gate added.** `tools/check_conformance_parity.py` compares the two sides and
+`ci-conformance.yml` runs it in the `conformance` job immediately after checkout, before the Zig and
+nix installs, so drift fails in seconds rather than after a three-minute build. It is
+**baseline-aware**: the 25 divergences above are recorded in `conformance/case-parity-baseline.json`
+and only _new_ drift fails, so the gate can land today and the baseline can shrink as the lists are
+reconciled. Four failure modes are guarded explicitly, because each one produces a green run that
+means nothing:
+
+- **Zero names parsed** exits **2** rather than reporting parity. The guard counts extracted _names_,
+  not populated categories: a parser that reads all eight files but matches nothing still returns a
+  non-empty map, which is the shape of the "0 cases for all five blocks" error in §0's method warning.
+- **Duplicate names on one side** exit **1** and are not baseline-able. The comparison is set-based, so
+  a copy-pasted case name is invisible to it — the name exists once on the other side and parity looks
+  fine, while the runner executes the case twice under one name. This check runs before
+  `--write-baseline`, so the tool cannot record a baseline for a case list the normal gate rejects.
+- **Commented-out cases** are excluded before extraction. `strip_comments()` blanks `//` and `/* … */`
+  while preserving string and char literals, because wrapping a C initializer in a block comment stops
+  the harness running the case while leaving the name in the text. Extraction from raw source would
+  keep calling that parity.
+- **Stale baseline entries** exit **1**. A recorded divergence that no longer diverges means the lists
+  were reconciled, and leaving the entry would let that case silently regress to its one-sided state
+  later without failing the gate. Reconciling a case therefore requires re-recording the baseline in
+  the same change, which is what makes the file a ratchet rather than a permanent exemption list.
+
+`--json` prints a single JSON document and nothing else, so `--json | jq` is safe; the human-readable
+`parity: no new drift` line is suppressed in that mode.
+
+The C pattern tolerates whitespace (`{ "name",` and a name on its own line after `{`), because the
+existing arrays are all written `{"name",` and a stricter pattern would miss a new case written the
+other way while the zero-name guard stayed satisfied by the cases already present.
+
+The workflow's `push` and `pull_request` path filters include the checker itself, so a change to the
+gate re-runs the gate; without that, a weakened check could merge unproven.
+
+Verified with the happy path plus ten controls:
+
+| Control                                             | Result                                                                        |
+| --------------------------------------------------- | ----------------------------------------------------------------------------- |
+| current tree                                        | `cases: zig=91 c=84`, `parity: no new drift`, exit 0                          |
+| `--json` on the current tree                        | parses with `json.load`, totals `{zig: 91, c: 84, categories: 8}`, exit 0     |
+| rename one Zig case                                 | exit 1, `sgr: zig_only: parity_probe_new_case`                                |
+| move `conformance/cases/` away                      | exit 2, `parsed zero cases on one side (zig=0 c=84)`                          |
+| blank every `.name`, keep the files                 | exit 2, `zig=0 c=84` — the totals guard, not the category-map check           |
+| duplicate a name in the C array                     | exit 1, `duplicate case names (not baseline-able): charset: c: charset_g0_uk` |
+| duplicate a name, then `--write-baseline`           | exit 1, same message; no baseline is written                                  |
+| new C case written `{ "name", …`                    | exit 1, detected as `c_only`; `{ "name"` is not skipped                       |
+| comment out a C case that is in parity              | exit 1, `charset: zig_only: charset_g0_uk` — the stripper sees the comment    |
+| add a baseline entry for a case that does not exist | exit 1, `charset: zig_only: ghost_case_xyz` stale                             |
+| delete one baseline entry                           | exit 1, that divergence is now unbaselined                                    |
+
+**What this does not settle: which side is right.** `cursor_default_up`/`_down`/`_right` (C) versus
+`cursor_default_param_zero*` (Zig) look like the same three behaviours under two naming schemes,
+while `mode_decipam_hidden`/`_visible` (C) versus `mode_decipam` (Zig) look like a split-versus-merge
+difference. Deciding requires reading each pair and choosing a canonical name, which is a behaviour
+question, not a text one; the baseline exists precisely so that work can proceed case by case instead
+of as one big-bang reconciliation.
+
 ## Closing summary (6 lines)
 
 1. **Totals:** Python 124 functions / **162 cases**, Rust **199** (195 `#[test]` + 4 doc-tests), Go 45 functions / **75 cases** (§11.8 measured 45 top-level `--- PASS` plus 30 indented subtests), conformance **84**, wasm **54** runtime cases + **68** type-level assertions, `example/` 16 assert-bearing mains (of 27; the one with a run step, `c-vt-effects`, ends `exit $code` at `test.yml:1001` but never executes because all `test.yml` jobs skip), root `Makefile`/`CMakeLists.txt` **ZERO TESTS**; and no suite hides cases behind a skip marker (`#[ignore]`/`t.Skip`/`test.skip`/`pytest.mark.skip` all **0**), so these are counts of cases that can actually fail. **Cross-check:** a sibling measured run (`QUALITY-RUN.md`, commit `8c189ad7b`, byte-identical trees) reports all five gates PASS, and its Python `162 passed` matches this count to the case; its Rust `199 across 11 binaries` also matches once the 4 doc-tests in `src/lib.rs` are counted — both conflicts were errors in this report, see §10.6-10.7.
 2. **Fixtures:** **ZERO** golden or expected-output files anywhere in `conformance/` — expected values are inline literals, 27 usable and 57 empty (`harness.c:27,201`). The repo does have exactly one such fixture, in Rust: `khostty-vt/tests/abi_layout.txt` (42 lines, `include_str!` at `tests/abi_layout.rs:23`), so the technique exists here; conformance just does not use it.
 3. **What `build.sh run` asserts:** all 84 cases parse without crashing, plus a `memcmp` of rendered plaintext for only 27 of them (`harness.c:201`, `:225-226`) — the other 57 cannot assert at all because `""` is overloaded (`:254-273`).
 4. **Largest suite could not block a merge; fixed on `fix/ci-rust-test-gate` (PR #99), see §11:** Rust 199 runs as `cargo test --workspace ... || echo "::warning::test failures (advisory)"` (`ci.yml:162-164`) under `continue-on-error: true` (`ci.yml:151`), and `ci.yml:167-188` records a shipped stale-binding defect that this arrangement let through. The same job has already been silently skipped for a whole release cycle by a broken detection test (`ci.yml:99-104`: `[ -f "**/Cargo.toml" ]` never glob-matched), so both the gate and the trigger have failed here before.
-5. **Hard gates only:** Python tests (`ci.yml:286` job, run step `:340`), Go on Linux (`ci.yml` Go job, §11.8, PR #117) and on Windows (`go-windows.yml:59-63`), conformance (`ci-conformance.yml:68,90`), wasm (`ci-conformance.yml:92,115-125`, no `continue-on-error` in that file), and `gen_ffi.py --check` (`ci.yml:181,195-199`).
+5. **Hard gates only:** Python tests (`ci.yml:286` job, run step `:340`), Go on Linux (`ci.yml` Go job, §11.8, PR #117) and on Windows (`go-windows.yml:59-63`), conformance (`ci-conformance.yml:68,90`), wasm (`ci-conformance.yml:92,115-125`, no `continue-on-error` in that file), case-list parity (`tools/check_conformance_parity.py`, §11.9), and `gen_ffi.py --check` (`ci.yml:181,195-199`).
 6. **True e2e: none of the six audited surfaces, with one process-boundary exception.** Five drive an in-process `libghostty-vt` (cffi dlopen, linked FFI, cgo, direct C calls, wasm instantiate), but `khostty-python/tests/test_examples.py:21-31` runs the shipped Python examples in **subprocesses** and asserts exit code plus stdout — a real process boundary, inside the merge gate (`ci.yml:340`), though it is a child interpreter rather than a PTY or an external app. `example/` is build-only for 26 of its 27 C mains (the 27th, `c-vt-effects`, ends `exit $code` at `test.yml:1001`, so it would assert, but 51 of its 52 jobs are `skipped` and the run is `cancelled` in this fork: run `42782592087`), and the three Zig example harnesses run `zig build test` in `zig-fork-tests.yml` (PR #99) but declared **zero** tests as audited, so their green was a compile result (§11.5); they now carry 2/1/1 asserting tests (§11.5.1); the `agent-ipc` child the CI comment promises is neither built by that step nor spawned (`ci-conformance.yml:87-88`, `build.sh`). The repo's only fork/exec/PTY harness is out of lane and report-only: `test/esctest` (`test/esctest/src/main.zig:67,74,81`, run at `test.yml:1590` ending `|| true`).
