@@ -333,8 +333,13 @@ jobs:
     # inherited whatever ruff's defaults happened to be. Ruff 0.16 widened those
     # defaults well past the old `E4/E7/E9/F` core, which is why the count jumped
     # without a line of Python changing. `ruff.toml` now selects rules explicitly
-    # and excludes those two paths, at which point 42 first-party findings
-    # remained and every one of them was fixed rather than ignored.
+    # and excludes those two paths, at which point 33 first-party findings
+    # remained: 32 fixed in code, one allowlisted on its own line (`S307`, the
+    # single `eval` in the codegen, whose globals are an allowlist and whose
+    # input is an unparsed AST) with the reason written next to it. The ignore
+    # list was also audited for inert entries: BLE001, EXE001 and T201 were
+    # removed because none of BLE/EXE/T is selected here, so they suppressed
+    # nothing and only made the profile look stricter than it was.
     #
     # The version is pinned for the same reason: an unpinned `pip install ruff`
     # means the gate's ruleset changes without a commit.

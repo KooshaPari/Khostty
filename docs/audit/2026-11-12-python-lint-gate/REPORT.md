@@ -37,15 +37,16 @@ nerd_font_codegen.py` / `#! DO NOT EDIT BY HAND!`. Any fix here is undone by the
 1. **`ruff.toml` at the root**, selecting rules explicitly (`E,F,W,I,B,UP,S,SIM,RUF,C4,PIE,FURB`)
    and excluding the vendored file, the generated file, and Markdown. Ruff resolves configuration
    per file, so `khostty-python/pyproject.toml` still governs the package.
-2. **The 34 first-party findings fixed**, not ignored (34 rather than the 35 above because the
-   explicit profile adds some rules and drops others, so the two sets are not identical):
-   `SIM115` bare opens became `Path(...).read_text(...)`, `F841` dead assignment deleted, `B905`
-   `zip()` calls got `strict=True`, `RUF005` list concatenation became unpacking,
-   `I001`/`FURB167`/`F541`/`C401`/`UP017` autofixed, and `subprocess` argv in
-   `dump_abi_layout.py` now records an absolute `xcrun` resolved through `shutil.which` instead of a
-   bare name.
+2. **The 33 first-party findings under the new profile**: 32 fixed in code, 1 allowlisted on its own
+   line (`S307`, the single `eval` in the codegen). 33 rather than the 35 first-party findings in
+   the default-profile total, because the explicit profile adds some rules and drops others, so the
+   two sets are not identical. The fixes: `SIM115` bare opens became `Path(...).read_text(...)`,
+   `F841` dead assignment deleted, `B905` `zip()` calls got `strict=True`, `RUF005` list
+   concatenation became unpacking, `I001`/`FURB167`/`F541`/`C401` autofixed, and the two `S607`
+   sites in `dump_abi_layout.py` now record an absolute `xcrun` resolved through `shutil.which`
+   instead of a bare name.
 3. **The unformatted first-party files formatted** (`ruff format .`, `line-length = 100`): 8 Python
-   files, once `src/terminal/` is out of scope per deviation 4 below.
+   files, once `src/terminal/` is out of scope per deviation 3 below.
 4. **`ci.yml` `python` job made blocking**: `continue-on-error` removed, both `|| echo` masks
    removed, job renamed `Python`, and `ruff` pinned to `0.16.7`.
 5. **`trunk.yaml` ruff `--config` override removed.** It was `["--config", "pyproject.toml"]`, and
@@ -53,14 +54,18 @@ nerd_font_codegen.py` / `#! DO NOT EDIT BY HAND!`. Any fix here is undone by the
    exits 2 with "The path `pyproject.toml` does not point to a configuration file". With no override,
    ruff auto-discovers per file, which is exactly what `ci.yml` does, so Trunk Check and CI cannot
    disagree.
+6. **The `ignore` list was audited for inert entries.** `BLE001`, `EXE001` and `T201` were listed
+   while none of `BLE`/`EXE`/`T` is selected, so they suppressed nothing and only made the profile
+   look stricter than it is. They were removed; `S110` and `E501` are selected and stay.
 
 ## Verification (commands run, results observed)
 
 | Check                                                                     | Result                                                                                                                                                   |
 | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ruff check .`                                                            | `All checks passed!`                                                                                                                                     |
+| `ruff check .` on the tree extracted from `ba506c86e` (negative control)  | exit 1, `Found 33 errors` — the config still fails real code, so green here means clean, not inert                                                       |
 | `ruff format --check .`                                                   | `42 files already formatted`                                                                                                                             |
-| `zig run tools/check-fork-discipline.zig -- --strict --upstream b3dc3d79` | `0 violation(s)`                                                                                                                                         |
+| `zig run tools/check-fork-discipline.zig -- --strict --upstream b3dc3d79` | `0 violation(s)`, 3 upstream-owned divergences all `PASS`                                                                                                |
 | `khostty-vt/tools/gen_ffi.py --check`                                     | `src/ffi.rs is up to date` — the generator still reproduces the committed binding byte for byte                                                          |
 | `khostty-vt/tools/dump_abi_layout.py --check`                             | `tests/abi_layout.txt is up to date` — the refactored compiler discovery still finds a working compiler and measures the same sizes                      |
 | `python3 bench/audit_report.py`                                           | `RESULT: PASS`                                                                                                                                           |
@@ -70,7 +75,7 @@ nerd_font_codegen.py` / `#! DO NOT EDIT BY HAND!`. Any fix here is undone by the
 ## Deviations from #126's "Do not", stated plainly
 
 The issue says: "Do not silence this by widening the ruff config, adding `per-file-ignores`, or
-narrowing the paths the gate covers." Three deviations, each with its cost:
+narrowing the paths the gate covers." Four deviations, each with its cost:
 
 1. **Excluding `vendor/` and the generated table narrows coverage.** The alternative was to rewrite
    the 96 findings inside code that upstream or a generator owns, which would either be reverted on the
@@ -100,16 +105,17 @@ narrowing the paths the gate covers." Three deviations, each with its cost:
    the single `eval` in the codegen, whose globals are an allowlist and whose input is an unparsed
    AST rather than raw file text.
 
-Every first-party finding that was fixable was fixed. None were ignored to reach green.
+Every first-party finding that was fixable in code was fixed. The one that was not (`S307`) is
+allowlisted on its own line with its reason, not ignored wholesale.
 
 ## Not verified here
 
 - The `pytest` job (`Python Tests`, 162 tests) was not touched and not re-run; this change is lint
   and formatting only, and the khostty-python profile produced no findings with or without it.
-- Trunk Check's behaviour with the removed `--config` override has not been observed in CI yet. Its
-  first run at `4701ffec1` (43191482074) failed, but on Prettier rather than ruff: the CI step checks
-  only files changed against the merge base, and this report was one of them. That is the Prettier
-  gate doing its job on a new file, not evidence about ruff.
+- Trunk Check's behaviour with the removed `--config` override has not been observed as a ruff result
+  in CI. Its first run at `4701ffec1` (43191482074) failed, but on Prettier rather than ruff: the CI
+  step checks only files changed against the merge base, and this report was one of them. That is the
+  Prettier gate doing its job on a new file, not evidence about ruff.
 
 ## What the first CI pass rejected, and what changed because of it
 
