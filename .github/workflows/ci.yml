@@ -150,7 +150,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Pinned, not `@stable`. The clippy gate below is only meaningful against a
+      # known ruleset: clippy 0.1.99 is what was measured clean, and a future
+      # stable that adds a lint would otherwise turn main red with no commit
+      # behind it. Same reasoning as the date-pinned nightly rustfmt further
+      # down. 1.99.1 is the version `@stable` resolved to on 2026-11-12.
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.99.1"
       - uses: Swatinem/rust-cache@v2
       - uses: ./.github/actions/install-zig
         with:
@@ -173,22 +180,32 @@ jobs:
       - name: cargo fmt --check
         working-directory: khostty-vt
         run: cargo +nightly-2026-11-11 fmt --all -- --check
-      # Still advisory, and labelled honestly: `cargo clippy` needs a full
-      # compile, which has not been measured on this tree, so making it blocking
-      # would risk a red main on its first real run. Known-advisory gate.
-      - name: cargo clippy (advisory, unmeasured)
-        working-directory: khostty-vt
-        run: |
-          cargo clippy --all-targets -- -D warnings 2>&1 || echo "::warning::clippy issues (advisory, unmeasured)"
-      # `khostty-vt/tests/` is gated on `#![cfg(ghostty_vt_linked)]`, and
-      # `khostty-vt/build.rs` sets that cfg only when it finds a prebuilt
-      # libghostty-vt under `../zig-out/lib`. Without the build below, the 130
-      # integration tests neither fail nor skip: they are not compiled at all,
-      # so the run is 65 tests and looks green. That silent underrun is why this
-      # job used to be advisory. Build the library first, then prove the linked
-      # tests were really collected before trusting the result.
       - name: zig build -Demit-lib-vt (materialise the linked library)
         run: zig build -Demit-lib-vt
+      # 2026-11-12: this step was `cargo clippy ... || echo "::warning::clippy
+      # issues (advisory, unmeasured)"`, so it could not fail. It is measured now,
+      # on the CI toolchain (clippy 0.1.99 / rustc 1.99.1) and cross-checked on
+      # clippy 0.1.101 nightly: **0 diagnostics, exit 0**, in about 2 s, because
+      # the crate has no dependencies. So it is a real gate instead of a warning
+      # printer.
+      #
+      # It runs AFTER the library build on purpose. `khostty-vt/tests/` and both
+      # examples are gated on `#![cfg(ghostty_vt_linked)]`, and `build.rs` sets
+      # that cfg only when it finds a prebuilt libghostty-vt. In the old order
+      # `--all-targets` was therefore linting a subset: the 130 linked
+      # integration tests and the example bodies were never compiled, the same
+      # silent-underrun class this job's test-collection assertion exists to
+      # catch.
+      - name: cargo clippy
+        working-directory: khostty-vt
+        run: cargo clippy --all-targets -- -D warnings
+      # `khostty-vt/tests/` is gated on `#![cfg(ghostty_vt_linked)]`, and
+      # `build.rs` sets that cfg only when it finds a prebuilt libghostty-vt under
+      # `../zig-out/lib`. Without the build above, the 130 integration tests
+      # neither fail nor skip: they are not compiled at all, so the run is 65
+      # tests and looks green. That silent underrun is why this job used to be
+      # advisory. Prove the linked tests were really collected before trusting
+      # the result.
       - name: assert the linked integration tests were collected
         working-directory: khostty-vt
         run: |
