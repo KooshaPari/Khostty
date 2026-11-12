@@ -50,6 +50,12 @@ on:
       - ".github/workflows/ci-conformance.yml"
       - "conformance/**"
       - "wasm/**"
+      # `conformance/harness.c` and the wasm build both compile against
+      # `include/ghostty/`, and the generated clients (`khostty-vt/src/ffi.rs`,
+      # `wasm/js/terminal-data.js`) are derived from it. A header-only change
+      # therefore had no gate at all here until 2026-11-12: the C harness could
+      # stop compiling while every check on the PR stayed green.
+      - "include/**"
       - "src/**"
       # The parity checker reads conformance/, but a change to the checker itself
       # must also re-run the gate, or a weakened check could merge unproven.
@@ -65,6 +71,9 @@ on:
       - ".github/workflows/ci-conformance.yml"
       - "conformance/**"
       - "wasm/**"
+      # See the push trigger above: `include/**` is the header surface both the C
+      # harness and the wasm build depend on.
+      - "include/**"
       - "src/**"
       # The parity checker reads conformance/, but a change to the checker itself
       # must also re-run the gate, or a weakened check could merge unproven.

@@ -9,7 +9,7 @@
 # Observed consequence on KooshaPari/Khostty: 20 consecutive runs of this
 # workflow, 0 completed (6 pending, 14 queued). Every push and every PR adds
 # another unschedulable run, which occupies the workflow queue and starves the
-# checks that actually matter (ci.yml's `ci / lint` and `ci / test`, and
+# checks that actually matter (ci.yml's `ci / lint` and `ci / aggregate`, and
 # zig-fork-tests.yml).
 #
 # Fork CI lives in:

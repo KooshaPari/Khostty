@@ -29,8 +29,11 @@ jobs:
     #    `gh variable list` are both empty, and the hardcoded fallback project
     #    id (`8efe392e-...`) belongs to the upstream project, not to this fork.
     #
-    # This check is NOT a required status check: branch protection on `main`
-    # requires exactly `ci / lint` and `ci / test`. So gating this job on an
+    # This check is NOT a required status check. Branch protection on `main`
+    # requires exactly four contexts (measured 2026-11-12): `ci / lint`,
+    # `ci / aggregate`, `test (zig build test)` and `wasm ABI + data table`.
+    # Note that `ci / aggregate` replaced `ci / test` when issue #111 part 2
+    # renamed it. So gating this job on an
     # explicit opt-in variable removes no gate. It stays skipped until someone
     # with a fork-scoped Infisical machine identity sets the `INFISICAL_SYNC`
     # repository variable to `true` and adds `INFISICAL_TOKEN`.

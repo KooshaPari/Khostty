@@ -1,17 +1,18 @@
 # Mergify Configuration - multi-language monorepo
 # Docs: https://docs.mergify.com/
 # Merges route through the merge queue; ci.yml already triggers on merge_group.
-# Required gates: "ci / lint" + "ci / test"
+# Required gates: "ci / lint" + "ci / aggregate" ("ci / test" was renamed in issue #111 part 2:
+# it aggregates lint + pytest and never ran the Zig suite, which is a separate required check)
 # (aggregate jobs in .github/workflows/ci.yml; this PR also adds merge_group to its triggers).
 
 queue_rules:
   - name: default
     queue_conditions:
       - check-success=ci / lint
-      - check-success=ci / test
+      - check-success=ci / aggregate
     merge_conditions:
       - check-success=ci / lint
-      - check-success=ci / test
+      - check-success=ci / aggregate
     merge_method: squash
 
 pull_request_rules:
@@ -20,7 +21,7 @@ pull_request_rules:
     conditions:
       - label=automerge
       - check-success=ci / lint
-      - check-success=ci / test
+      - check-success=ci / aggregate
       - -conflict
       - -closed
       - -draft
@@ -35,7 +36,7 @@ pull_request_rules:
           - author=dependabot[bot]
           - author=renovate[bot]
       - check-success=ci / lint
-      - check-success=ci / test
+      - check-success=ci / aggregate
       - -conflict
       - -closed
       - -draft
@@ -51,7 +52,7 @@ pull_request_rules:
           - author=mergify[bot]
           - author=github-actions[bot]
       - check-success=ci / lint
-      - check-success=ci / test
+      - check-success=ci / aggregate
       - -conflict
       - -closed
       - -draft
@@ -135,9 +136,9 @@ pull_request_rules:
       - -closed
       - -draft
       - check-success=ci / lint
-      - check-success=ci / test
+      - check-success=ci / aggregate
       - check-success=ci / lint
-      - check-success=ci / test
+      - check-success=ci / aggregate
     actions:
       label:
         add:

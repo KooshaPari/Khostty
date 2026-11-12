@@ -1135,6 +1135,14 @@ failure reddens the run on both PRs and `main`. It is **not** a required status 
 protection requires only `ci / lint` and `ci / test` - so it does not currently prevent a merge.
 Making it required is an owner-only settings change and is tracked separately.
 
+> **Correction, 2026-11-12.** Both halves of that sentence are now stale. Branch protection on
+> `main` requires four contexts, measured directly: `ci / lint`, `ci / aggregate`,
+> `test (zig build test)` and `wasm ABI + data table`. The Zig suite (`test (zig build test)`) IS a
+> required check, which closes the point this paragraph left open, and `ci / test` no longer exists
+> because issue #111 part 2 renamed it `ci / aggregate` (it only ever aggregated lint + pytest).
+> The rename had to be paired with a `required_status_checks` update in the same window, or every
+> PR would have hung waiting for a check name that no longer reports.
+
 ### 11.7 Landed
 
 PR #99 was squash-merged to `main` as `26635b6f9` on 2026-11-11T06:25:37Z, after the branch was
