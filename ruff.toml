@@ -35,6 +35,18 @@ extend-exclude = [
   # (the first run rewrote the client example in src/apprt/ipc/protocol.md), so
   # it is out of scope for a lint gate.
   "**/*.md",
+  # `src/terminal/` is upstream-owned per docs/FORK-DISCIPLINE.md, and that guard
+  # is stricter than this one: every added line in the surface must sit inside a
+  # `// FORK:` block that cites a tracking issue. A whole-file reformat cannot be
+  # bracketed that way, and reformatting upstream files is precisely the rebase
+  # surface the guard exists to keep small.
+  #
+  # Measured: reformatting just these two files took `fork-discipline` from
+  # success to 26 violations ("upstream-owned divergences: 5") on run
+  # 43191481891. So the two files are listed individually rather than excluding
+  # the directory, which keeps a future new file there in scope by default.
+  "src/terminal/c/types-schema-verify.py",
+  "src/terminal/snapshot/verify-kaitai.py",
 ]
 
 [lint]
@@ -46,16 +58,15 @@ extend-exclude = [
 # including it would have meant either a large cosmetic rewrite of files we do
 # not own the shape of, or an ignore list as long as the rule list.
 select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "C4", "PIE", "FURB"]
+# Only rules that are actually in `select` belong here. An entry for an
+# unselected rule is inert, and inert config is what makes a lint profile look
+# stricter than it is: BLE001, EXE001 and T201 were checked and removed for
+# that reason (none of BLE/EXE/T are selected here, and adding T would flag
+# every tool that prints its result by design).
 ignore = [
   # `__del__`-style blind except-and-pass is deliberate in the two places it
-  # appears; the package profile ignores these for the same reason.
+  # appears; the package profile ignores this for the same reason.
   "S110",
-  "BLE001",
-  # These scripts are invoked as `python3 <path>` (see the `binding-freshness`
-  # job and build.zig), so a shebang with no executable bit is a real
-  # inconsistency in the repo but not a defect in any invocation path. Fixing it
-  # would mean a mode change on files upstream owns the layout of.
-  "EXE001",
   # Long lines here are header declarations and URL strings, not prose.
   "E501",
 ]
@@ -73,40 +84,8 @@ ignore = [
 # list built from a compiler this machine was probed for plus literal flags, and
 # nothing is ever handed to a shell, so the rule is a false positive in exactly
 # the place a C toolchain wrapper has to live.
-"khostty-vt/tools/*" = ["T201", "S603"]
-"bench/*" = ["T201"]
+"khostty-vt/tools/*" = ["S603"]
 # The generator asserts its way through nerd-fonts' symbol tables. Those asserts
 # are the tool's failure mechanism, not a test-lint smell, and a failed assert
 # stops generation before it can write a wrong table.
 "src/font/nerd_font_codegen.py" = ["S101"]
-# The Kaitai schema verifier shells out to `kaitai-struct-compiler` exactly the way
-# the `khostty-vt/tools/*` generators shell out to the Zig toolchain: one argv list,
-# a binary resolved with `shutil.which`, `check=True`, and no shell anywhere. S603 is
-# the same false positive here as it is there, so it gets the same treatment instead
-# of a `# noqa` inside a file upstream owns.
-"src/terminal/snapshot/verify-kaitai.py" = ["S603"]
-
-[format]
-# `[format]` does not inherit `extend-exclude` above, and its `exclude` REPLACES
-# ruff's defaults rather than adding to them, so every path that must stay out of
-# `ruff format` is repeated here.
-#
-# The two `src/terminal/` scripts are upstream's, and they are the only files in
-# the tree that `ruff format` would rewrite without `ruff check` having anything
-# to say about them: with the rule selection above they are clean as written
-# (`EXE001` is ignored, `TRY` is not selected, and their `# noqa: S603` comments
-# are live because `S` is), so reformatting them would be pure churn.
-#
-# That churn is not free. `tools/check-fork-discipline.zig` requires every
-# divergence from upstream to sit inside a documented `FORK:` block, and a
-# formatter rewrites ~15 lines of one file and ~86 of the other. Reformatting them
-# would either fail the discipline gate (it did, on main, run 43191481891) or cost
-# a dozen marker ranges whose only content is whitespace. Keeping upstream's
-# layout keeps that file rebase-cheap and leaves the gate about reviewable
-# divergence instead of formatting noise.
-exclude = [
-  "vendor/",
-  "src/font/nerd_font_codepoint_tables.py",
-  "src/terminal/c/types-schema-verify.py",
-  "src/terminal/snapshot/verify-kaitai.py",
-]
