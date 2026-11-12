@@ -453,8 +453,11 @@ printf '%s\n' "{\"id\":1,\"auth\":\"$tok\",\"cmd\":\"pane.create\",\"opts\":{\"s
 ```python
 import json, socket, os
 
-sock_path = os.environ.get("KHOSTTY_IPC_SOCKET", os.path.expanduser("~/Library/Caches/khostty/ipc.sock"))
+sock_path = os.environ.get(
+    "KHOSTTY_IPC_SOCKET", os.path.expanduser("~/Library/Caches/khostty/ipc.sock")
+)
 token = open(os.path.join(os.path.dirname(sock_path), "ipc.token")).read().strip()
+
 
 def call(s, msg):
     s.sendall(json.dumps(msg).encode() + b"\n")
@@ -463,13 +466,22 @@ def call(s, msg):
         buf += s.recv(65536)
     return json.loads(buf)
 
+
 with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
     s.connect(sock_path)
     panes = call(s, {"id": 1, "auth": token, "cmd": "pane.list"})
     pid = panes["data"][0]["pane_id"]
 
-    call(s, {"id": 2, "auth": token, "cmd": "pane.write",
-             "pane_id": pid, "data": "\u001b[1;32mready\u001b[0m\r\n"})
+    call(
+        s,
+        {
+            "id": 2,
+            "auth": token,
+            "cmd": "pane.write",
+            "pane_id": pid,
+            "data": "\u001b[1;32mready\u001b[0m\r\n",
+        },
+    )
 
     state = call(s, {"id": 3, "auth": token, "cmd": "pane.state", "pane_id": pid})
     print(state["data"]["cursor"], state["data"]["title"])

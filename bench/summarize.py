@@ -28,17 +28,57 @@ ROWS: list[tuple[str, str, str, str]] = [
     ("optimize", "notes", "library_optimize", "text"),
     ("memory 80x24 allocator", "memory", "memory_80x24_library_bytes_10k_records", "B"),
     ("memory 80x24 anonymous", "memory", "memory_80x24_internal_delta_bytes", "KiB"),
-    ("memory 200x50 allocator", "memory", "memory_200x50_library_bytes_10k_records", "B"),
+    (
+        "memory 200x50 allocator",
+        "memory",
+        "memory_200x50_library_bytes_10k_records",
+        "B",
+    ),
     ("memory 200x50 anonymous", "memory", "memory_200x50_internal_delta_bytes", "KiB"),
     ("vt plain bounded", "vt_throughput", "vt_plain_text_bounded_mib_per_sec", "MiB/s"),
-    ("vt plain unbounded", "vt_throughput", "vt_plain_text_unbounded_mib_per_sec", "MiB/s"),
-    ("vt escape bounded", "vt_throughput", "vt_escape_heavy_bounded_mib_per_sec", "MiB/s"),
-    ("vt escape unbounded", "vt_throughput", "vt_escape_heavy_unbounded_mib_per_sec", "MiB/s"),
+    (
+        "vt plain unbounded",
+        "vt_throughput",
+        "vt_plain_text_unbounded_mib_per_sec",
+        "MiB/s",
+    ),
+    (
+        "vt escape bounded",
+        "vt_throughput",
+        "vt_escape_heavy_bounded_mib_per_sec",
+        "MiB/s",
+    ),
+    (
+        "vt escape unbounded",
+        "vt_throughput",
+        "vt_escape_heavy_unbounded_mib_per_sec",
+        "MiB/s",
+    ),
     ("vt osc bounded", "vt_throughput", "vt_osc_title_bounded_mib_per_sec", "MiB/s"),
-    ("snapshot 80x24 encode", "snapshot", "snapshot_80x24_2k_lines_encode_median_ms", "ms"),
-    ("snapshot 80x24 decode", "snapshot", "snapshot_80x24_2k_lines_decode_median_ms", "ms"),
-    ("snapshot 200x50 encode", "snapshot", "snapshot_200x50_2k_lines_encode_median_ms", "ms"),
-    ("snapshot 200x50 decode", "snapshot", "snapshot_200x50_2k_lines_decode_median_ms", "ms"),
+    (
+        "snapshot 80x24 encode",
+        "snapshot",
+        "snapshot_80x24_2k_lines_encode_median_ms",
+        "ms",
+    ),
+    (
+        "snapshot 80x24 decode",
+        "snapshot",
+        "snapshot_80x24_2k_lines_decode_median_ms",
+        "ms",
+    ),
+    (
+        "snapshot 200x50 encode",
+        "snapshot",
+        "snapshot_200x50_2k_lines_encode_median_ms",
+        "ms",
+    ),
+    (
+        "snapshot 200x50 decode",
+        "snapshot",
+        "snapshot_200x50_2k_lines_decode_median_ms",
+        "ms",
+    ),
     ("search frequent cold", "search", "search_frequent_error_cold_median_ms", "ms"),
     ("search frequent warm", "search", "search_frequent_error_warm_median_ms", "ms"),
     ("search absent cold", "search", "search_absent_needle_cold_median_ms", "ms"),
@@ -107,7 +147,9 @@ def main(argv: list[str]) -> int:
     for n in notes:
         print(f"{n['run']}: {n['chip']} | {n['library']}")
         print(f"{'':>{len(n['run'])}}  version={n['version']} optimize={n['optimize']}")
-        print(f"{'':>{len(n['run'])}}  git={n['git_head'][:12]} date={n['date']} load1m={n['load']}")
+        print(
+            f"{'':>{len(n['run'])}}  git={n['git_head'][:12]} date={n['date']} load1m={n['load']}"
+        )
     print()
 
     indexed = [(name, index(data), data.get("notes", {})) for name, data in runs]

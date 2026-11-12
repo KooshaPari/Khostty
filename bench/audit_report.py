@@ -6,6 +6,7 @@ run columns. Any mismatch, or any row that cannot be mapped, is reported. This
 exists because a hand-written report is exactly where a unit conversion goes
 wrong.
 """
+
 import json
 import re
 import sys
@@ -18,7 +19,11 @@ MAP = {
     "plain_text bounded": ("vt_throughput", "vt_plain_text_bounded_mib_per_sec", 1),
     "plain_text unbounded": ("vt_throughput", "vt_plain_text_unbounded_mib_per_sec", 1),
     "escape_heavy bounded": ("vt_throughput", "vt_escape_heavy_bounded_mib_per_sec", 1),
-    "escape_heavy unbounded": ("vt_throughput", "vt_escape_heavy_unbounded_mib_per_sec", 1),
+    "escape_heavy unbounded": (
+        "vt_throughput",
+        "vt_escape_heavy_unbounded_mib_per_sec",
+        1,
+    ),
     "osc_title bounded": ("vt_throughput", "vt_osc_title_bounded_mib_per_sec", 1),
     # 8.3
     "80x24 snapshot size": ("snapshot", "snapshot_80x24_2k_lines_bytes", 1),
@@ -26,32 +31,92 @@ MAP = {
     "80x24 decode median": ("snapshot", "snapshot_80x24_2k_lines_decode_median_ms", 1),
     "80x24 round trip": ("snapshot", "snapshot_80x24_2k_lines_roundtrip_median_ms", 1),
     "200x50 snapshot size": ("snapshot", "snapshot_200x50_2k_lines_bytes", 1),
-    "200x50 encode median": ("snapshot", "snapshot_200x50_2k_lines_encode_median_ms", 1),
-    "200x50 decode median": ("snapshot", "snapshot_200x50_2k_lines_decode_median_ms", 1),
-    "200x50 round trip": ("snapshot", "snapshot_200x50_2k_lines_roundtrip_median_ms", 1),
+    "200x50 encode median": (
+        "snapshot",
+        "snapshot_200x50_2k_lines_encode_median_ms",
+        1,
+    ),
+    "200x50 decode median": (
+        "snapshot",
+        "snapshot_200x50_2k_lines_decode_median_ms",
+        1,
+    ),
+    "200x50 round trip": (
+        "snapshot",
+        "snapshot_200x50_2k_lines_roundtrip_median_ms",
+        1,
+    ),
     # 8.4
-    "cold (fresh search, fresh needle), frequent needle": ("search", "search_frequent_error_cold_median_ms", 1),
+    "cold (fresh search, fresh needle), frequent needle": (
+        "search",
+        "search_frequent_error_cold_median_ms",
+        1,
+    ),
     "cold p95": ("search", "search_frequent_error_cold_p95_ms", 1),
-    "rescan (same search, changed needle)": ("search", "search_frequent_error_rescan_median_ms", 1),
-    "warm (same needle, results retained)": ("search", "search_frequent_error_warm_median_ms", 1),
-    "cold, absent needle (worst case)": ("search", "search_absent_needle_cold_median_ms", 1),
+    "rescan (same search, changed needle)": (
+        "search",
+        "search_frequent_error_rescan_median_ms",
+        1,
+    ),
+    "warm (same needle, results retained)": (
+        "search",
+        "search_frequent_error_warm_median_ms",
+        1,
+    ),
+    "cold, absent needle (worst case)": (
+        "search",
+        "search_absent_needle_cold_median_ms",
+        1,
+    ),
     "cold, 2,000 records": ("search", "search_scaling_2000_records_cold_ms", 1),
     "cold, 10,000 records": ("search", "search_scaling_10000_records_cold_ms", 1),
     "cost per retained row": ("search", "search_frequent_error_us_per_row", 1),
     # 8.5
     "80x24 allocator after create": ("memory", "memory_80x24_library_create_bytes", 1),
-    "80x24 allocator at 10k records": ("memory", "memory_80x24_library_bytes_10k_records", 1),
-    "80x24 allocator bytes per row": ("memory", "memory_80x24_library_bytes_per_row", 1),
-    "80x24 allocator residual after free": ("memory", "memory_80x24_library_residual_bytes", 1),
-    "80x24 anonymous delta": ("memory", "memory_80x24_internal_delta_bytes", 1 / 1024),  # KiB
+    "80x24 allocator at 10k records": (
+        "memory",
+        "memory_80x24_library_bytes_10k_records",
+        1,
+    ),
+    "80x24 allocator bytes per row": (
+        "memory",
+        "memory_80x24_library_bytes_per_row",
+        1,
+    ),
+    "80x24 allocator residual after free": (
+        "memory",
+        "memory_80x24_library_residual_bytes",
+        1,
+    ),
+    "80x24 anonymous delta": (
+        "memory",
+        "memory_80x24_internal_delta_bytes",
+        1 / 1024,
+    ),  # KiB
     "80x24 rss delta": ("memory", "memory_80x24_rss_delta_bytes", 1 / 1024),
-    "200x50 allocator at 10k records": ("memory", "memory_200x50_library_bytes_10k_records", 1),
-    "200x50 allocator bytes per row": ("memory", "memory_200x50_library_bytes_per_row", 1),
-    "200x50 anonymous delta": ("memory", "memory_200x50_internal_delta_bytes", 1 / 1024),
+    "200x50 allocator at 10k records": (
+        "memory",
+        "memory_200x50_library_bytes_10k_records",
+        1,
+    ),
+    "200x50 allocator bytes per row": (
+        "memory",
+        "memory_200x50_library_bytes_per_row",
+        1,
+    ),
+    "200x50 anonymous delta": (
+        "memory",
+        "memory_200x50_internal_delta_bytes",
+        1 / 1024,
+    ),
     # 8.6
     "200x50 empty, width only": ("resize", "resize_200x50_empty_width_median_ms", 1),
     "200x50 empty, size": ("resize", "resize_200x50_empty_size_median_ms", 1),
-    "200x50 + 2k lines, width only": ("resize", "resize_200x50_2k_lines_width_median_ms", 1),
+    "200x50 + 2k lines, width only": (
+        "resize",
+        "resize_200x50_2k_lines_width_median_ms",
+        1,
+    ),
     "200x50 + 2k lines, size": ("resize", "resize_200x50_2k_lines_size_median_ms", 1),
     "200x50 + 10k lines, size": ("resize", "resize_200x50_10k_lines_size_median_ms", 1),
     "200x50 + 10k lines, p95": ("resize", "resize_200x50_10k_lines_size_p95_ms", 1),
@@ -60,10 +125,12 @@ MAP = {
 
 
 def main() -> int:
-    text = open("bench/results/README.md").read()
+    with open("bench/results/README.md", encoding="utf-8") as f:
+        text = f.read()
     runs = {}
     for label in RUNS:
-        data = json.load(open(f"bench/results/{label}-20260917.json"))
+        with open(f"bench/results/{label}-20260917.json", encoding="utf-8") as f:
+            data = json.load(f)
         runs[label] = {(m["section"], m["name"]): m["value"] for m in data["metrics"]}
 
     rows = 0

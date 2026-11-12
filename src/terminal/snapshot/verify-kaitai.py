@@ -40,8 +40,7 @@ try:
     from kaitaistruct import KaitaiStream
 except ImportError as error:
     raise SystemExit(
-        "missing Kaitai verifier dependencies; run this inside "
-        "`nix develop`"
+        "missing Kaitai verifier dependencies; run this inside `nix develop`"
     ) from error
 
 
@@ -136,8 +135,7 @@ def parse_type(
     result = parser_type(*params, stream)
     if not stream.is_eof():
         raise ValueError(
-            f"{parser_type.__name__} left "
-            f"{stream.size() - stream.pos()} trailing bytes"
+            f"{parser_type.__name__} left {stream.size() - stream.pos()} trailing bytes"
         )
     return result
 
@@ -148,11 +146,7 @@ def crc32c(data: bytes) -> int:
     for byte in data:
         result ^= byte
         for _ in range(8):
-            result = (
-                (result >> 1) ^ 0x82F63B78
-                if result & 1
-                else result >> 1
-            )
+            result = (result >> 1) ^ 0x82F63B78 if result & 1 else result >> 1
     return result ^ 0xFFFFFFFF
 
 
@@ -204,12 +198,8 @@ def all_snapshot_records(snapshot: Any) -> list[Any]:
 
 def validate_complete_snapshot(snapshot: Any, data: bytes) -> None:
     """Validate ordering relationships, record CRCs, and markers."""
-    screen_keys = [
-        sequence.screen.payload.header.key for sequence in snapshot.screens
-    ]
-    history_keys = [
-        sequence.history.payload.key for sequence in snapshot.histories
-    ]
+    screen_keys = [sequence.screen.payload.header.key for sequence in snapshot.screens]
+    history_keys = [sequence.history.payload.key for sequence in snapshot.histories]
     if len(set(screen_keys)) != len(screen_keys):
         raise ValueError("complete snapshot contains a duplicate SCREEN key")
     if len(set(history_keys)) != len(history_keys):
@@ -218,9 +208,7 @@ def validate_complete_snapshot(snapshot: Any, data: bytes) -> None:
         raise ValueError("SCREEN and HISTORY keys do not match")
 
     terminal_header = snapshot.terminal.payload.header
-    expected_key_values = (
-        {0} if terminal_header.screen_count == 1 else {0, 1}
-    )
+    expected_key_values = {0} if terminal_header.screen_count == 1 else {0, 1}
     screen_key_values = {key.value for key in screen_keys}
     if screen_key_values != expected_key_values:
         raise ValueError(
@@ -229,8 +217,7 @@ def validate_complete_snapshot(snapshot: Any, data: bytes) -> None:
         )
 
     screens_by_key = {
-        sequence.screen.payload.header.key: sequence
-        for sequence in snapshot.screens
+        sequence.screen.payload.header.key: sequence for sequence in snapshot.screens
     }
     for sequence in snapshot.screens:
         header = sequence.screen.payload.header
@@ -247,13 +234,10 @@ def validate_complete_snapshot(snapshot: Any, data: bytes) -> None:
     for sequence in snapshot.histories:
         payload = sequence.history.payload
         screen = screens_by_key[payload.key]
-        screen_rows = sum(
-            page.payload.header.rows for page in screen.pages
-        )
+        screen_rows = sum(page.payload.header.rows for page in screen.pages)
         if screen_rows < terminal_header.rows:
             raise ValueError(
-                f"SCREEN key {payload.key}: PAGE rows do not cover "
-                "the active area"
+                f"SCREEN key {payload.key}: PAGE rows do not cover the active area"
             )
         overlap_rows = screen_rows - terminal_header.rows
         history_rows = overlap_rows + sum(
@@ -294,8 +278,7 @@ def compile_schema(output_dir: Path) -> type[Any]:
     compiler = shutil.which("kaitai-struct-compiler") or shutil.which("ksc")
     if compiler is None:
         raise SystemExit(
-            "kaitai-struct-compiler is not available; run this inside "
-            "`nix develop`"
+            "kaitai-struct-compiler is not available; run this inside `nix develop`"
         )
 
     subprocess.run(
@@ -325,9 +308,7 @@ def resolve_type(parser: type[Any], type_name: str) -> type[Any]:
     if type_name == root_type_name:
         return parser
 
-    class_name = "".join(
-        part[:1].upper() + part[1:] for part in type_name.split("_")
-    )
+    class_name = "".join(part[:1].upper() + part[1:] for part in type_name.split("_"))
     try:
         return getattr(parser, class_name)
     except AttributeError as error:
@@ -366,13 +347,11 @@ def main() -> int:
             try:
                 parsed = parse_type(
                     parser_type,
-                    fixture.data[fixture.offset:],
+                    fixture.data[fixture.offset :],
                     *fixture.params,
                 )
             except Exception as error:
-                raise ValueError(
-                    f"{fixture_label}: Kaitai parse failed"
-                ) from error
+                raise ValueError(f"{fixture_label}: Kaitai parse failed") from error
 
             if parser_type is parser:
                 if fixture.offset != 0:
@@ -387,9 +366,7 @@ def main() -> int:
                     fixture.offset,
                 )
                 if record_end != len(fixture.data):
-                    raise ValueError(
-                        f"{fixture_label}: record has trailing data"
-                    )
+                    raise ValueError(f"{fixture_label}: record has trailing data")
             print(f"ok {fixture_label}")
 
     print(f"validated {len(fixture_paths)} snapshot fixtures")

@@ -1,0 +1,21 @@
+# Ruff configuration.
+#
+# Deliberately minimal: the CI gate runs plain `ruff check .` and
+# `ruff format --check .`, so this file only records what the linter should NOT
+# look at. It does not narrow the rule set or loosen any rule - the point of
+# issue #126 was to fix the code, not to quiet the linter.
+
+# `vendor/` holds third-party code copied in verbatim (currently Nerd Fonts
+# 3.4.0, with its own LICENSE and README). It is not ours to reformat: an edit
+# here is lost the moment the vendored version is bumped, and its bare-excepts
+# and blind-excepts are upstream's to fix. Excluding it is scoping the linter to
+# code this repository owns, not suppressing a first-party finding. Every
+# first-party error ruff reported (95 of the original 131) was fixed in code.
+extend-exclude = [
+  "vendor",
+  # Generated output: `src/font/nerd_font_codegen.py` writes this file, and its
+  # first lines say DO NOT EDIT BY HAND. Reformatting it is not a fix - the next
+  # generator run would produce the unformatted version again and the diff would
+  # be 10449 lines of churn in both directions. The generator itself is linted.
+  "src/font/nerd_font_codepoint_tables.py",
+]

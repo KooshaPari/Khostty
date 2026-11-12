@@ -53,12 +53,57 @@ GHOSTTY_TYPE_RE = re.compile(r"Ghostty[A-Za-z0-9_]*")
 # Rust keywords that appear as C parameter/field names in these headers; they
 # are emitted as raw identifiers so the C name is preserved verbatim.
 RUST_KEYWORDS = {
-    "as", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern",
-    "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod",
-    "move", "mut", "pub", "ref", "return", "self", "static", "struct", "super",
-    "trait", "true", "type", "unsafe", "use", "where", "while", "abstract",
-    "become", "box", "do", "final", "macro", "override", "priv", "typeof",
-    "unsized", "virtual", "yield", "try", "union", "async", "await",
+    "as",
+    "break",
+    "const",
+    "continue",
+    "crate",
+    "dyn",
+    "else",
+    "enum",
+    "extern",
+    "false",
+    "fn",
+    "for",
+    "if",
+    "impl",
+    "in",
+    "let",
+    "loop",
+    "match",
+    "mod",
+    "move",
+    "mut",
+    "pub",
+    "ref",
+    "return",
+    "self",
+    "static",
+    "struct",
+    "super",
+    "trait",
+    "true",
+    "type",
+    "unsafe",
+    "use",
+    "where",
+    "while",
+    "abstract",
+    "become",
+    "box",
+    "do",
+    "final",
+    "macro",
+    "override",
+    "priv",
+    "typeof",
+    "unsized",
+    "virtual",
+    "yield",
+    "try",
+    "union",
+    "async",
+    "await",
 }
 
 # Raw identifiers cannot be used for these.
@@ -72,6 +117,7 @@ def safe_ident(name: str) -> str:
     if name in RUST_KEYWORDS:
         return f"r#{name}"
     return name
+
 
 # Headers to parse, in the order the umbrella header includes them. Parsing
 # order only affects comments; Rust items are order independent.
@@ -139,13 +185,17 @@ def parse_field(decl: str) -> tuple[str, str] | None:
     if not decl:
         return None
     # Function pointer member: ret (*name)(params)
-    m = re.search(r"\(\s*\*\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)\s*\((.*)\)\s*$", decl, re.S)
+    m = re.search(
+        r"\(\s*\*\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)\s*\((.*)\)\s*$", decl, re.DOTALL
+    )
     if m:
         name, params = m.group(1), m.group(2)
         rust = fn_ptr_type(decl[: m.start()], params)
         return rust, name
 
-    m = re.match(r"^(.*?)([A-Za-z_][A-Za-z0-9_]*)\s*((?:\[\s*[^\]]*\s*\])*)\s*$", decl, re.S)
+    m = re.match(
+        r"^(.*?)([A-Za-z_][A-Za-z0-9_]*)\s*((?:\[\s*[^\]]*\s*\])*)\s*$", decl, re.DOTALL
+    )
     if not m:
         raise ValueError(f"unparsed member: {decl!r}")
     type_part, name, dims = m.group(1), m.group(2), m.group(3)
@@ -172,7 +222,5 @@ def fn_ptr_type(ret: str, params: str) -> str:
         args.append(parsed[0])
     joined = ", ".join(args)
     if rust_ret == "c_void":
-        return f"Option<unsafe extern \"C\" fn({joined})>"
-    return f"Option<unsafe extern \"C\" fn({joined}) -> {rust_ret}>"
-
-
+        return f'Option<unsafe extern "C" fn({joined})>'
+    return f'Option<unsafe extern "C" fn({joined}) -> {rust_ret}>'

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import re
 
+
 def strip_comments(src: str) -> str:
     """Remove /* */ and // comments without eating comment-like text in strings."""
     out = []
@@ -61,7 +62,7 @@ def strip_comments(src: str) -> str:
 # cannot be linked. bindgen reaches the same conclusion via libclang.
 # `#include <ghostty/vt/...>` lines, used to order headers the way the
 # umbrella header does.
-INCLUDE_RE = re.compile(r'#include\s+<(ghostty/vt/[^>]+)>')
+INCLUDE_RE = re.compile(r"#include\s+<(ghostty/vt/[^>]+)>")
 
 TARGET_GUARDS = ("__wasm__",)
 
@@ -78,7 +79,12 @@ def strip_target_guards(src: str) -> tuple[str, list[str]]:
     for line in src.splitlines():
         stripped = line.strip()
         if depth == 0:
-            guard = re.match(r"#\s*if(?:n?def|\s+defined\s*\(?\s*)?\s*(" + "|".join(re.escape(g) for g in TARGET_GUARDS) + r")\s*\)?\s*$", stripped)
+            guard = re.match(
+                r"#\s*if(?:n?def|\s+defined\s*\(?\s*)?\s*("
+                + "|".join(re.escape(g) for g in TARGET_GUARDS)
+                + r")\s*\)?\s*$",
+                stripped,
+            )
             if guard:
                 depth = 1
                 continue
@@ -91,7 +97,9 @@ def strip_target_guards(src: str) -> tuple[str, list[str]]:
             depth -= 1
             if depth == 0:
                 continue
-        for fm in re.finditer(r"GHOSTTY_API\s+[^;{]*?\b(ghostty_[A-Za-z0-9_]+)\s*\(", line):
+        for fm in re.finditer(
+            r"GHOSTTY_API\s+[^;{]*?\b(ghostty_[A-Za-z0-9_]+)\s*\(", line
+        ):
             excluded.append(fm.group(1))
         out_lines.append("")
     return "\n".join(out_lines), excluded
@@ -170,5 +178,3 @@ def find_decl_end(src: str, start: int) -> int:
             return i
         i += 1
     raise ValueError("unterminated declaration")
-
-

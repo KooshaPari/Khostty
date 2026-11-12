@@ -14,8 +14,7 @@ try:
     import jsonschema
 except ImportError as error:
     raise SystemExit(
-        "missing ABI schema verifier dependencies; run this inside "
-        "`nix develop`"
+        "missing ABI schema verifier dependencies; run this inside `nix develop`"
     ) from error
 
 
@@ -38,8 +37,7 @@ def load_wasm_manifest(path: Path) -> bytes:
         import wasmtime
     except ImportError as error:
         raise SystemExit(
-            "missing WebAssembly verifier dependencies; run this inside "
-            "`nix develop`"
+            "missing WebAssembly verifier dependencies; run this inside `nix develop`"
         ) from error
 
     engine = wasmtime.Engine()
@@ -67,7 +65,7 @@ def load_manifest(path: Path) -> dict[str, Any]:
     )
     value = json.loads(encoded)
     if not isinstance(value, dict):
-        raise ValueError("ghostty_type_json did not return a JSON object")
+        raise TypeError("ghostty_type_json did not return a JSON object")
     return value
 
 

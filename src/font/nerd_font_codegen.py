@@ -12,14 +12,15 @@ SymbolsNerdFont (not Mono!) font is passed as the first argument to it.
 """
 
 import ast
-import sys
 import math
-from fontTools.ttLib import TTFont, TTLibError
-from fontTools.pens.boundsPen import BoundsPen
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Literal, TypedDict, cast
 from urllib.request import urlretrieve
+
+from fontTools.pens.boundsPen import BoundsPen
+from fontTools.ttLib import TTFont, TTLibError
 
 type PatchSetAttributes = dict[Literal["default"] | int, PatchSetAttributeEntry]
 type ResolvedSymbol = PatchSetAttributes | PatchSetScaleRules | int | None
@@ -423,12 +424,12 @@ def generate_codepoint_tables(
     # Store the table and corresponding Nerd Fonts version together in a module.
     with open("nerd_font_codepoint_tables.py", "w") as f:
         print(
-            """#! This is a generated file, produced by nerd_font_codegen.py
-#! DO NOT EDIT BY HAND!
-#!
-#! This file specifies the mapping of codepoints in the original symbol
-#! fonts to codepoints in a patched Nerd Font. This is extracted from
-#! the nerd fonts patcher script and the symbol font files.""",
+            """# This is a generated file, produced by nerd_font_codegen.py
+# DO NOT EDIT BY HAND!
+#
+# This file specifies the mapping of codepoints in the original symbol
+# fonts to codepoints in a patched Nerd Font. This is extracted from
+# the nerd fonts patcher script and the symbol font files.""",
             file=f,
         )
         print(f'version = "{nf_version}"', file=f)

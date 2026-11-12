@@ -108,7 +108,9 @@ def zig_cases() -> dict[str, list[str]]:
     return cases
 
 
-def diff(zig: dict[str, list[str]], c: dict[str, list[str]]) -> dict[str, dict[str, list[str]]]:
+def diff(
+    zig: dict[str, list[str]], c: dict[str, list[str]]
+) -> dict[str, dict[str, list[str]]]:
     """Per-category name divergence between the two sides."""
     out: dict[str, dict[str, list[str]]] = {}
     for category in sorted(set(zig) | set(c)):
@@ -140,7 +142,9 @@ def duplicates(cases: dict[str, list[str]]) -> dict[str, list[str]]:
     return out
 
 
-def report_duplicates(zig_dupes: dict[str, list[str]], c_dupes: dict[str, list[str]]) -> None:
+def report_duplicates(
+    zig_dupes: dict[str, list[str]], c_dupes: dict[str, list[str]]
+) -> None:
     print("\nduplicate case names (not baseline-able):", file=sys.stderr)
     for side, found in (("zig", zig_dupes), ("c", c_dupes)):
         for category, names in found.items():
@@ -250,7 +254,9 @@ def main() -> int:
             )
         )
     else:
-        print(f"cases: zig={totals['zig']} c={totals['c']} categories={totals['categories']}")
+        print(
+            f"cases: zig={totals['zig']} c={totals['c']} categories={totals['categories']}"
+        )
         for category, sides in found.items():
             print(
                 f"  {category:10} zig_only={len(sides['zig_only']):2} "
