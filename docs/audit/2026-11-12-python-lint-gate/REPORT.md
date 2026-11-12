@@ -96,3 +96,24 @@ Every first-party finding that was fixable was fixed. None were ignored to reach
 * Trunk Check's behaviour with the removed `--config` override has not been observed in CI yet. The
   previous entry could not have worked from the repository root, so the risk is that Trunk now lints
   files it previously skipped, not that it breaks.
+
+## Follow-up: the format pass turned fork-discipline red (found after this report)
+
+This report was written against the branch that became `4701ffec1`, and one consequence of it was
+not measured before merge: `ruff format` rewrote two files that were byte-identical to the upstream
+baseline, `src/terminal/c/types-schema-verify.py` (~15 lines) and
+`src/terminal/snapshot/verify-kaitai.py` (~86 lines). Both sit under `src/terminal/`, which
+`tools/check-fork-discipline.zig` treats as upstream-owned, so the reformat became undocumented
+divergence and `main` went red on the `fork-discipline` workflow (run 43191481891, 26 violations).
+
+Neither file had a `ruff check` finding that a format pass could fix; with the rule selection above
+they are clean as written. Reformatting them was churn, and it could not have been marked either:
+the guard only recognised `// FORK:` markers, which is not a comment in Python, so the rule was
+unsatisfiable in those files regardless of what a contributor wrote.
+
+Fixed in #128: the guard is now language-aware, both scripts are back at their upstream content,
+and `[format] exclude` keeps the formatter off them. The discipline gate goes from 26 violations on
+`main` to 0 at the same baseline. One first-party finding survived the revert and is handled
+honestly rather than hidden: `verify-kaitai.py`'s single `subprocess.run(argv_list, check=True)` gets
+a `[per-file-ignores]` S603 entry, on the same reasoning this report already accepted for
+`khostty-vt/tools/*`.
