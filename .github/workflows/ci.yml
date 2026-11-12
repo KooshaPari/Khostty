@@ -608,7 +608,14 @@ jobs:
           echo "✅ All lint checks passed (or were skipped)"
 
   test:
-    name: ci / test
+    # The job id stays `test` so existing `needs:` references keep working. The
+    # DISPLAY name is what branch protection keys on, and `ci / test` wrongly
+    # implied the Zig suite ran here: this job aggregates `lint` (which fans out
+    # to rust, go, python, typescript, security, dep-review, cargo-deny, zig-fmt)
+    # and `pytest`. Nothing here runs Zig. Renaming it is issue #111 part 2, and
+    # it must be swapped in `required_status_checks.contexts` in the SAME window
+    # as this rename or every PR blocks on a check that never reports.
+    name: ci / aggregate
     if: always()
     needs: [lint, pytest]
     runs-on: ubuntu-latest
@@ -641,4 +648,4 @@ jobs:
             exit 1
           fi
           echo ""
-          echo "✅ All test gates passed"
+          echo "✅ All aggregate gates passed (lint + pytest); Zig gates run in Fork Zig Tests"
