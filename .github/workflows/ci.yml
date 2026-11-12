@@ -158,11 +158,21 @@ jobs:
           # Same pinned release and checksum as the `zig-fmt` job above.
           shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
       # 2026-11-12: this step was advisory (`|| echo "::warning::"`), so a
-      # formatting regression reported success. Measured `cargo fmt --all --
-      # --check` in khostty-vt on 2026-11-12: exit 0. It now gates.
+      # formatting regression reported success. It now gates - and it gates with
+      # the toolchain the config actually requires.
+      #
+      # `khostty-vt/rustfmt.toml` sets `ignore = ["src/ffi.rs"]`, which is an
+      # unstable key: on stable rustfmt the ignore is dropped with a warning, so
+      # the generated `ffi.rs` is reformatted and the check fails with 22 diffs.
+      # That is the failure seen on run 43165882964 job Rust. It was a
+      # stable-versus-nightly mismatch, not a formatting regression: the first
+      # version of this gate measured with the local nightly and wrongly reported
+      # exit 0. Pin the nightly by date so the gate cannot drift.
+      - name: Install pinned nightly rustfmt (rustfmt.toml needs the unstable `ignore` key)
+        run: rustup toolchain install nightly-2026-11-11 --profile minimal --component rustfmt
       - name: cargo fmt --check
         working-directory: khostty-vt
-        run: cargo fmt --all -- --check
+        run: cargo +nightly-2026-11-11 fmt --all -- --check
       # Still advisory, and labelled honestly: `cargo clippy` needs a full
       # compile, which has not been measured on this tree, so making it blocking
       # would risk a red main on its first real run. Known-advisory gate.
@@ -484,14 +494,28 @@ jobs:
       # success having run nothing. Gate on the check that does exist.
       - name: typecheck
         run: npm run typecheck
-      - name: test
-        run: |
-          if [ -f package.json ] && grep -q '"test"' package.json; then
-            npm test
-          else
-            echo "::error::wasm/package.json has no test script; this job would otherwise pass vacuously"
-            exit 1
-          fi
+      # NO `npm test` HERE, deliberately. This job cannot run it, and saying so
+      # is the point of this file.
+      #
+      # `npm test` is `node --test test/*.test.mjs`, and those tests load
+      # `wasm/khostty-vt.wasm`, which is gitignored and therefore absent on a
+      # fresh checkout. Measured on run 43165882964 job TS/JS: every test failed
+      # with "missing .../wasm/khostty-vt.wasm; build it with: wasm/build.sh"
+      # (`hookFailed`), which cancelled the rest. A second, independent blocker:
+      # `test/smoke.test.mjs` uses `await using` (Explicit Resource Management),
+      # which Node 24 is the first release to parse, while this job pins Node 20
+      # for the typecheck. The step could not pass for two separate reasons, and
+      # `continue-on-error` is why nobody noticed.
+      #
+      # Two jobs already build the artifact and run this exact suite with a Node
+      # that can parse it, so a third copy here would be a third build of the
+      # same 854 KB module and a third place to rot:
+      #   * `zig-fork-tests.yml` / `wasm ABI + data table` - builds it and runs
+      #     the full `npm run check` (node 24), on `wasm/**` and `include/**`.
+      #   * `ci-conformance.yml` / `wasm` - builds it and runs the 54 tests
+      #     (node 24), on `wasm/**`, `include/**` and `src/**`.
+      # A green TS/JS tick therefore means "the TypeScript declarations compile",
+      # which is a real gate that can fail, and not "the wasm tests ran".
 
   security:
     name: Security Scan
