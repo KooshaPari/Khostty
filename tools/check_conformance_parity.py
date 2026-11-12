@@ -15,8 +15,9 @@ fails the build, existing drift is listed in
 
 Exit codes:
     0  every divergence found is in the baseline
-    1  a divergence was found that the baseline does not list, or one side
-       lists the same case name twice
+    1  a divergence was found that the baseline does not list, one side lists
+       the same case name twice, or a baseline entry no longer diverges (the
+       lists were reconciled and the baseline must shrink with them)
     2  the parser found no case *names* on one side (a broken parser, not a
        clean run)
 """
@@ -43,9 +44,49 @@ C_NAME_RE = re.compile(r'^\s*\{"([^"]+)",', re.MULTILINE)
 ZIG_NAME_RE = re.compile(r'\.name\s*=\s*"([^"]+)"')
 
 
+def strip_comments(source: str) -> str:
+    """Blank out C and Zig comments, preserving string and char literals.
+
+    A commented-out case is not a case. Wrapping `sgr_bold`'s initializer in
+    `/* ... */` stops the C harness running it, but the text is still there, and
+    extracting names from raw source would keep reporting parity. Newlines inside
+    a block comment are preserved so the line-anchored C pattern still matches.
+    """
+    out: list[str] = []
+    i, n = 0, len(source)
+    while i < n:
+        ch = source[i]
+        if ch in "\"'":
+            out.append(ch)
+            i += 1
+            while i < n:
+                if source[i] == "\\" and i + 1 < n:
+                    out.append(source[i : i + 2])
+                    i += 2
+                    continue
+                out.append(source[i])
+                i += 1
+                if source[i - 1] in (ch, "\n"):
+                    break
+            continue
+        if source.startswith("//", i):
+            while i < n and source[i] != "\n":
+                i += 1
+            continue
+        if source.startswith("/*", i):
+            end = source.find("*/", i + 2)
+            end = n if end < 0 else end + 2
+            out.extend("\n" * source.count("\n", i, end))
+            i = end
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def c_cases() -> dict[str, list[str]]:
     """Case names per category, read from the C harness arrays."""
-    source = HARNESS.read_text()
+    source = strip_comments(HARNESS.read_text())
     blocks = C_BLOCK_RE.split(source)
     cases: dict[str, list[str]] = {}
     # split() with one capture group yields [preamble, cat, body, cat, body, ...]
@@ -60,7 +101,7 @@ def zig_cases() -> dict[str, list[str]]:
     """Case names per category, read from the Zig case files."""
     cases: dict[str, list[str]] = {}
     for path in sorted(CASES_DIR.glob("*/cases.zig")):
-        cases[path.parent.name] = ZIG_NAME_RE.findall(path.read_text())
+        cases[path.parent.name] = ZIG_NAME_RE.findall(strip_comments(path.read_text()))
     return cases
 
 
@@ -199,8 +240,8 @@ def main() -> int:
             )
         if reconciled:
             print(
-                f"note: {len(reconciled)} baseline entries no longer diverge "
-                "(the lists were reconciled; shrink the baseline)"
+                f"stale: {len(reconciled)} baseline entries no longer diverge "
+                "(the lists were reconciled; the baseline must shrink)"
             )
 
     if zig_dupes or c_dupes:
@@ -220,9 +261,25 @@ def main() -> int:
             "`--write-baseline` if the divergence is intended.",
             file=sys.stderr,
         )
+
+    if reconciled:
+        print(
+            "\nbaseline entries that no longer diverge:",
+            file=sys.stderr,
+        )
+        for line in reconciled:
+            print(f"  {line}", file=sys.stderr)
+        print(
+            "\nThe lists were reconciled. Re-record the baseline with "
+            "`--write-baseline` so it cannot later absorb that divergence again.",
+            file=sys.stderr,
+        )
+
+    if new_drift or reconciled:
         return 1
 
-    print("parity: no new drift")
+    if not args.json:
+        print("parity: no new drift")
     return 0
 
 

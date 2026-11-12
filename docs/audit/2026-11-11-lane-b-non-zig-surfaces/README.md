@@ -1266,8 +1266,8 @@ ever enforcing this.
 nix installs, so drift fails in seconds rather than after a three-minute build. It is
 **baseline-aware**: the 25 divergences above are recorded in `conformance/case-parity-baseline.json`
 and only _new_ drift fails, so the gate can land today and the baseline can shrink as the lists are
-reconciled. Two failure modes are guarded explicitly, because both produce a green run that means
-nothing:
+reconciled. Four failure modes are guarded explicitly, because each one produces a green run that
+means nothing:
 
 - **Zero names parsed** exits **2** rather than reporting parity. The guard counts extracted _names_,
   not populated categories: a parser that reads all eight files but matches nothing still returns a
@@ -1275,20 +1275,34 @@ nothing:
 - **Duplicate names on one side** exit **1** and are not baseline-able. The comparison is set-based, so
   a copy-pasted case name is invisible to it — the name exists once on the other side and parity looks
   fine, while the runner executes the case twice under one name.
+- **Commented-out cases** are excluded before extraction. `strip_comments()` blanks `//` and `/* … */`
+  while preserving string and char literals, because wrapping a C initializer in a block comment stops
+  the harness running the case while leaving the name in the text. Extraction from raw source would
+  keep calling that parity.
+- **Stale baseline entries** exit **1**. A recorded divergence that no longer diverges means the lists
+  were reconciled, and leaving the entry would let that case silently regress to its one-sided state
+  later without failing the gate. Reconciling a case therefore requires re-recording the baseline in
+  the same change, which is what makes the file a ratchet rather than a permanent exemption list.
+
+`--json` prints a single JSON document and nothing else, so `--json | jq` is safe; the human-readable
+`parity: no new drift` line is suppressed in that mode.
 
 The workflow's `push` and `pull_request` path filters include the checker itself, so a change to the
 gate re-runs the gate; without that, a weakened check could merge unproven.
 
-Verified with the happy path plus five negative controls:
+Verified with the happy path plus eight controls:
 
-| Control                             | Result                                                                      |
-| ----------------------------------- | --------------------------------------------------------------------------- |
-| current tree                        | `cases: zig=91 c=84`, `parity: no new drift`, exit 0                        |
-| rename one Zig case                 | exit 1, `sgr: zig_only: parity_probe_new_case`, plus a stale-baseline note  |
-| move `conformance/cases/` away      | exit 2, `parsed zero cases on one side (zig=0 c=84)`                        |
-| blank every `.name`, keep the files | exit 2, `zig=0 c=84` — the totals guard, not the category-map check         |
-| duplicate a name in the C array     | exit 1, `duplicate case names (not baseline-able): osc: c: osc_2_set_title` |
-| delete one baseline entry           | exit 1, that divergence is now unbaselined                                  |
+| Control                                             | Result                                                                        |
+| --------------------------------------------------- | ----------------------------------------------------------------------------- |
+| current tree                                        | `cases: zig=91 c=84`, `parity: no new drift`, exit 0                          |
+| `--json` on the current tree                        | parses with `json.load`, totals `{zig: 91, c: 84, categories: 8}`, exit 0     |
+| rename one Zig case                                 | exit 1, `sgr: zig_only: parity_probe_new_case`                                |
+| move `conformance/cases/` away                      | exit 2, `parsed zero cases on one side (zig=0 c=84)`                          |
+| blank every `.name`, keep the files                 | exit 2, `zig=0 c=84` — the totals guard, not the category-map check           |
+| duplicate a name in the C array                     | exit 1, `duplicate case names (not baseline-able): charset: c: charset_g0_uk` |
+| comment out a C case that is in parity              | exit 1, `charset: zig_only: charset_g0_uk` — the stripper sees the comment    |
+| add a baseline entry for a case that does not exist | exit 1, `charset: zig_only: ghost_case_xyz` stale                             |
+| delete one baseline entry                           | exit 1, that divergence is now unbaselined                                    |
 
 **What this does not settle: which side is right.** `cursor_default_up`/`_down`/`_right` (C) versus
 `cursor_default_param_zero*` (Zig) look like the same three behaviours under two naming schemes,
