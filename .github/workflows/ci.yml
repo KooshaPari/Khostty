@@ -722,30 +722,85 @@ jobs:
     # it must be swapped in `required_status_checks.contexts` in the SAME window
     # as this rename or every PR blocks on a check that never reports.
     name: ci / aggregate
+    # `always()` is what makes this gate fail CLOSED rather than vanish. Without
+    # it a cancelled or failed need skips this job, and a skipped required check
+    # is not a red one: GitHub reports it as neutral/pending, so the failure it
+    # was supposed to surface stays invisible. With `always()` the loop below runs
+    # and turns every non-success need into an explicit red. `always()` is NOT a
+    # mask here: it is what lets the gate speak.
     if: always()
     # Job id stays `test` and display name stays `ci / aggregate`: branch
     # protection keys on the display name, renaming it blocks every PR.
-    needs: [lint, pytest, binding-freshness, actionlint, build]
+    #
+    # This lists EVERY job id in this workflow, not the subset that used to
+    # reach this gate. The old list was [lint, pytest, binding-freshness,
+    # actionlint, build]: complete by luck, and it stayed complete only while
+    # nobody added a job. Listing all of them makes a job that is added without
+    # being aggregated impossible, and it stops one job's failure from being
+    # reachable only through another aggregate's needs list.
+    needs:
+      [
+        zig-fmt,
+        detect,
+        build,
+        rust,
+        binding-freshness,
+        actionlint,
+        cargo-deny,
+        python,
+        pytest,
+        go,
+        typescript,
+        security,
+        dep-review,
+        lint,
+      ]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Needed by the second step: it reads the check-runs for this SHA to prove
+      # the two required contexts that another workflow produces.
+      checks: read
+      actions: read
     steps:
       - name: Aggregate test gate
         run: |
           # Fail-closed aggregate: a job must report success to pass. A skipped
-          # job is NOT a pass unless it is explicitly allow-listed below.
-          # binding-freshness, actionlint and build previously fed no aggregate,
-          # so their failure never reached this gate.
-          # Allow-list of jobs that may legitimately be skipped, with the
-          # reason each one may skip:
-          #   build: only runs when vars.ENABLE_MACOS_BUILD == 'true' (billed
-          #     macOS runners disabled by policy); skipped by default.
-          allow_skip="build"
+          # job is NOT a pass unless it is explicitly allow-listed below, and any
+          # result the loop does not recognise is a failure, not a shrug.
+          #
+          # Allow-list of jobs that may legitimately be skipped, with the reason
+          # each one may skip:
+          #   build:        only runs when vars.ENABLE_MACOS_BUILD == 'true'
+          #                 (billed macOS runners disabled by policy).
+          #   rust:         detect's has_rust is false when the tree has no Cargo.toml.
+          #   cargo-deny:   detect's has_deny is false when the tree has no deny.toml.
+          #   python:       detect's has_python is false when the tree has no Python.
+          #   pytest:       detect's has_python is false when the tree has no Python.
+          #   go:           detect's has_go is false when the tree has no go.mod.
+          #   typescript:   detect's has_typescript is false when there is no package.json.
+          #   dep-review:   runs only on github.event_name == 'pull_request'.
+          # Everything else must report success. `security` and `detect` are
+          # deliberately NOT allow-listed: detect always exports has_security=true
+          # and detect is unconditional, so a skip there is an anomaly, not an
+          # opt-out, and it must be red.
+          allow_skip="build rust cargo-deny python pytest go typescript dep-review"
           failed=0
           for pair in \
-            "lint:${{ needs.lint.result }}" \
-            "pytest:${{ needs.pytest.result }}" \
+            "zig-fmt:${{ needs.zig-fmt.result }}" \
+            "detect:${{ needs.detect.result }}" \
+            "build:${{ needs.build.result }}" \
+            "rust:${{ needs.rust.result }}" \
             "binding-freshness:${{ needs.binding-freshness.result }}" \
             "actionlint:${{ needs.actionlint.result }}" \
-            "build:${{ needs.build.result }}" \
+            "cargo-deny:${{ needs.cargo-deny.result }}" \
+            "python:${{ needs.python.result }}" \
+            "pytest:${{ needs.pytest.result }}" \
+            "go:${{ needs.go.result }}" \
+            "typescript:${{ needs.typescript.result }}" \
+            "security:${{ needs.security.result }}" \
+            "dep-review:${{ needs.dep-review.result }}" \
+            "lint:${{ needs.lint.result }}" \
             ; do
             name="${pair%%:*}"
             result="${pair#*:}"
@@ -774,3 +829,82 @@ jobs:
           fi
           echo ""
           echo "✅ All aggregate gates passed"
+
+      - name: Required contexts produced by other workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          # On a pull_request, checks are reporting against the PR head, not the
+          # synthetic merge commit, and that head is what branch protection
+          # evaluates. github.sha is the merge commit there, so prefer head.sha.
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          # `ci / lint` and `ci / aggregate` are proven by `needs:` above.
+          # The OTHER two contexts in main's required_status_checks are produced
+          # by zig-fork-tests.yml, and a `needs:` edge cannot cross workflows.
+          # They are therefore verified here, against the live check-runs for
+          # this SHA. Without this step the gate can be green while a required
+          # check never ran, which is branch protection satisfied by absence
+          # rather than by success - the defect this gate exists to prevent.
+          #
+          # Keep this list equal to required_status_checks.contexts minus the two
+          # this workflow produces:
+          #   gh api repos/$REPO/branches/main/protection \
+          #     --jq '.required_status_checks.contexts'
+          required_external=("test (zig build test)" "wasm ABI + data table")
+
+          if ! runs=$(gh api --paginate \
+                "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
+                --jq '.check_runs[] | [.name, (.conclusion // .status)] | @tsv' 2>&1); then
+            echo "::error::cannot list check-runs for $SHA; the required contexts are UNVERIFIED, not passed"
+            printf '%s\n' "$runs"
+            exit 1
+          fi
+
+          failed=0
+          unverified=0
+          for name in "${required_external[@]}"; do
+            state=$(printf '%s\n' "$runs" | awk -F'\t' -v n="$name" '$1 == n { print $2; exit }')
+            case "$state" in
+              success)
+                echo "  ✓ $name: success"
+                ;;
+              failure|cancelled|timed_out|action_required|stale|neutral|skipped)
+                echo "  ✗ $name: $state"
+                failed=$((failed + 1))
+                ;;
+              "")
+                # No check-run for this SHA at all. On `pull_request` that is
+                # impossible (zig-fork-tests.yml's pull_request trigger has no
+                # paths filter), so absence is a hard fault. On `push` its
+                # `paths:` filter makes absence structural: reported, and NOT
+                # counted as a pass.
+                if [ "$EVENT" = "pull_request" ]; then
+                  echo "  ✗ $name: NOT_REPORTED (pull_request must always produce this context)"
+                  failed=$((failed + 1))
+                else
+                  echo "  ! $name: NOT_REPORTED (no run for this SHA; trigger paths filter)"
+                  unverified=$((unverified + 1))
+                fi
+                ;;
+              *)
+                # queued / in_progress: this gate finishes long before a 60-minute
+                # Zig suite, so pending is the normal concurrent state. Pending is
+                # not a pass, so it is reported and never counted as one.
+                echo "  ! $name: $state (not a pass)"
+                unverified=$((unverified + 1))
+                ;;
+            esac
+          done
+
+          if [ "$failed" -gt 0 ]; then
+            echo ""
+            echo "❌ $failed required context(s) from other workflows did not pass"
+            exit 1
+          fi
+          if [ "$unverified" -gt 0 ]; then
+            echo "::warning::$unverified required context(s) are not yet reported on $SHA; branch protection is NOT satisfied by this run alone"
+          fi
+          echo ""
+          echo "✅ 0 failed, $unverified not yet reported"

@@ -147,13 +147,27 @@ for j in binding-freshness actionlint build; do
     fail=1
   fi
 done
-# needs line
-needs_line=$(grep -n 'needs: \[lint, pytest, binding-freshness, actionlint, build\]' .github/workflows/ci.yml || true)
-if [[ -n "$needs_line" ]]; then
-  echo "  ok: three jobs in aggregate needs:"
-else
-  echo "  MISSING: binding-freshness/actionlint/build in aggregate needs:"
+# needs line: the aggregate must need EVERY job id in ci.yml. Asserting the full
+# set, not the old five, is what stops a new job from being added to the workflow
+# without being aggregated: a job outside the aggregate's needs list cannot turn
+# that gate red, so it would be unaggregated by construction.
+needs_block=$(awk '/^  test:$/{f=1} f && /^    needs:/{g=1} g{print} g && /\]/{exit}' .github/workflows/ci.yml)
+if [[ -z "$needs_block" ]]; then
+  echo "  MISSING: could not read the aggregate needs: block"
   fail=1
+else
+  missing_needs=""
+  for j in zig-fmt detect build rust binding-freshness actionlint cargo-deny python pytest go typescript security dep-review lint; do
+    if printf '%s\n' "$needs_block" | grep -qE "^[[:space:]]*$j,?[[:space:]]*$"; then :; else
+      missing_needs="$missing_needs $j"
+    fi
+  done
+  if [[ -n "$missing_needs" ]]; then
+    echo "  MISSING:$missing_needs in aggregate needs: (every ci.yml job must be aggregated)"
+    fail=1
+  else
+    echo "  ok: aggregate needs: covers every ci.yml job"
+  fi
 fi
 
 # Both aggregators must fail closed. `ci / lint` (job id lint) and
