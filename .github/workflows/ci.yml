@@ -511,9 +511,12 @@ jobs:
       # that can parse it, so a third copy here would be a third build of the
       # same 854 KB module and a third place to rot:
       #   * `zig-fork-tests.yml` / `wasm ABI + data table` - builds it and runs
-      #     the full `npm run check` (node 24), on `wasm/**` and `include/**`.
+      #     the full `npm run check` (node 24) on EVERY pull request: that
+      #     workflow's `pull_request` trigger has no `paths` filter at all.
       #   * `ci-conformance.yml` / `wasm` - builds it and runs the 54 tests
-      #     (node 24), on `wasm/**`, `include/**` and `src/**`.
+      #     (node 24) on `wasm/**`, `include/**` and `src/**`.
+      # So removing this step loses no coverage on a PR; it removes a
+      # permanently-red duplicate.
       # A green TS/JS tick therefore means "the TypeScript declarations compile",
       # which is a real gate that can fail, and not "the wasm tests ran".
 
