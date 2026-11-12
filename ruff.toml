@@ -79,3 +79,34 @@ ignore = [
 # are the tool's failure mechanism, not a test-lint smell, and a failed assert
 # stops generation before it can write a wrong table.
 "src/font/nerd_font_codegen.py" = ["S101"]
+# The Kaitai schema verifier shells out to `kaitai-struct-compiler` exactly the way
+# the `khostty-vt/tools/*` generators shell out to the Zig toolchain: one argv list,
+# a binary resolved with `shutil.which`, `check=True`, and no shell anywhere. S603 is
+# the same false positive here as it is there, so it gets the same treatment instead
+# of a `# noqa` inside a file upstream owns.
+"src/terminal/snapshot/verify-kaitai.py" = ["S603"]
+
+[format]
+# `[format]` does not inherit `extend-exclude` above, and its `exclude` REPLACES
+# ruff's defaults rather than adding to them, so every path that must stay out of
+# `ruff format` is repeated here.
+#
+# The two `src/terminal/` scripts are upstream's, and they are the only files in
+# the tree that `ruff format` would rewrite without `ruff check` having anything
+# to say about them: with the rule selection above they are clean as written
+# (`EXE001` is ignored, `TRY` is not selected, and their `# noqa: S603` comments
+# are live because `S` is), so reformatting them would be pure churn.
+#
+# That churn is not free. `tools/check-fork-discipline.zig` requires every
+# divergence from upstream to sit inside a documented `FORK:` block, and a
+# formatter rewrites ~15 lines of one file and ~86 of the other. Reformatting them
+# would either fail the discipline gate (it did, on main, run 43191481891) or cost
+# a dozen marker ranges whose only content is whitespace. Keeping upstream's
+# layout keeps that file rebase-cheap and leaves the gate about reviewable
+# divergence instead of formatting noise.
+exclude = [
+  "vendor/",
+  "src/font/nerd_font_codepoint_tables.py",
+  "src/terminal/c/types-schema-verify.py",
+  "src/terminal/snapshot/verify-kaitai.py",
+]
