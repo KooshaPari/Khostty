@@ -155,9 +155,17 @@ jobs:
       # stable that adds a lint would otherwise turn main red with no commit
       # behind it. Same reasoning as the date-pinned nightly rustfmt further
       # down. 1.99.1 is the version `@stable` resolved to on 2026-11-12.
+      #
+      # `components: clippy` is load-bearing, not decoration. The first attempt at
+      # unmasking the clippy step (run 43201274175) failed with "'cargo-clippy' is
+      # not installed for the toolchain '1.99.1-x86_64-unknown-linux-gnu'": the
+      # floating `@stable` form brought clippy implicitly, and overriding
+      # `toolchain:` installs only the minimal profile. Naming the component makes
+      # the dependency explicit instead of inherited from an action default.
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: "1.99.1"
+          components: clippy
       - uses: Swatinem/rust-cache@v2
       - uses: ./.github/actions/install-zig
         with:
@@ -188,6 +196,13 @@ jobs:
       # clippy 0.1.101 nightly: **0 diagnostics, exit 0**, in about 2 s, because
       # the crate has no dependencies. So it is a real gate instead of a warning
       # printer.
+      #
+      # That measurement was taken on a desk host and, the first time this step was
+      # unmasked, CI failed on something the measurement could not contain:
+      # `cargo-clippy` was not installed for the pinned toolchain (run
+      # 43201274175). The lint result itself was right; the toolchain pin was
+      # incomplete. Fixed in the `dtolnay/rust-toolchain` step above by naming
+      # `components: clippy`.
       #
       # It runs AFTER the library build on purpose. `khostty-vt/tests/` and both
       # examples are gated on `#![cfg(ghostty_vt_linked)]`, and `build.rs` sets
