@@ -26,12 +26,20 @@
 #     path gate on the fork-only steps.
 #   - `example-tests`: the three example harnesses that declare a `test` step.
 #
-# Why nightly rather than per-push:
+# Why per-push for the gate jobs, nightly for the rest:
 #   `test-agent-ipc` runs the full test tree (~3900 tests, ~4GB peak, ~27min
-#   warm). Running that on every push would dominate CI cost for a repo on the
-#   free Actions tier. The fork's own conventions already schedule heavier
-#   work off the push path (sonar.yml, trunk-check.yml, scorecard.yml all use
-#   weekly crons). This matches that pattern.
+#   warm). Until 2026-11-12 this reasoning ("running that on every push would
+#   dominate CI cost") justified a path-filtered push trigger. That was wrong
+#   on both counts: this repo is PUBLIC, so `ubuntu-latest` minutes are free,
+#   and the path filter meant a commit touching none of the listed paths
+#   produced NO check-run at all - so `test (zig build test)` and
+#   `wasm ABI + data table`, which are REQUIRED on main, never reported and
+#   branch protection could be satisfied by absence.
+#   The real cost of an unconditional push run is latency, not billing: ~27
+#   minutes of required-check wall-clock on every main push. The nightly cron
+#   is kept as a backstop for runner outages, not as the primary signal.
+#   Other fork workflows (sonar.yml, trunk-check.yml, scorecard.yml) stay on
+#   weekly crons because none of their jobs is a required status check.
 # =============================================================================
 
 name: Fork Zig Tests
