@@ -155,9 +155,17 @@ jobs:
       # stable that adds a lint would otherwise turn main red with no commit
       # behind it. Same reasoning as the date-pinned nightly rustfmt further
       # down. 1.99.1 is the version `@stable` resolved to on 2026-11-12.
+      # `components: clippy` is not optional. `dtolnay/rust-toolchain` installs a
+      # minimal profile, so pinning `toolchain: 1.99.1` without naming the
+      # component leaves `cargo clippy` failing with "'cargo-clippy' is not
+      # installed for the toolchain '1.99.1-x86_64-unknown-linux-gnu'" - the gate
+      # then fails for a missing tool, not for a lint. That is how it failed on
+      # runs 43201274175 and 43202114016, turning `ci / lint` and
+      # `ci / aggregate` red on main from 213ce07c2 onward.
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: "1.99.1"
+          components: clippy
       - uses: Swatinem/rust-cache@v2
       - uses: ./.github/actions/install-zig
         with:
