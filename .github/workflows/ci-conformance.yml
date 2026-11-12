@@ -51,6 +51,9 @@ on:
       - "conformance/**"
       - "wasm/**"
       - "src/**"
+      # The parity checker reads conformance/, but a change to the checker itself
+      # must also re-run the gate, or a weakened check could merge unproven.
+      - "tools/check_conformance_parity.py"
   # A gate that only runs after merge cannot prevent a broken merge, and this
   # one proved it: it was red on main for weeks (the `conformance` job aborted
   # in 0.01 s, and the `wasm` job could not parse the test source on the
@@ -63,6 +66,9 @@ on:
       - "conformance/**"
       - "wasm/**"
       - "src/**"
+      # The parity checker reads conformance/, but a change to the checker itself
+      # must also re-run the gate, or a weakened check could merge unproven.
+      - "tools/check_conformance_parity.py"
   workflow_dispatch:
 
 concurrency:

@@ -15,8 +15,10 @@ fails the build, existing drift is listed in
 
 Exit codes:
     0  every divergence found is in the baseline
-    1  a divergence was found that the baseline does not list
-    2  the parser found no cases on one side (a broken parser, not a clean run)
+    1  a divergence was found that the baseline does not list, or one side
+       lists the same case name twice
+    2  the parser found no case *names* on one side (a broken parser, not a
+       clean run)
 """
 
 from __future__ import annotations
@@ -74,6 +76,26 @@ def diff(zig: dict[str, list[str]], c: dict[str, list[str]]) -> dict[str, dict[s
     return out
 
 
+def duplicates(cases: dict[str, list[str]]) -> dict[str, list[str]]:
+    """Case names that appear more than once in one category.
+
+    A duplicate is always a defect: the runner executes the case twice under one
+    name, and the set-based parity comparison cannot see it, because the name is
+    present on the other side exactly once.
+    """
+    out: dict[str, list[str]] = {}
+    for category, names in sorted(cases.items()):
+        seen: set[str] = set()
+        repeated: set[str] = set()
+        for name in names:
+            if name in seen:
+                repeated.add(name)
+            seen.add(name)
+        if repeated:
+            out[category] = sorted(repeated)
+    return out
+
+
 def load_baseline() -> dict[str, dict[str, list[str]]]:
     if not BASELINE.exists():
         return {}
@@ -113,16 +135,22 @@ def main() -> int:
     args = parser.parse_args()
 
     zig, c = zig_cases(), c_cases()
-    if not zig or not c:
+    # Guard on names parsed, not on the category maps: a parser that reads every
+    # file but extracts nothing still produces a non-empty map, and treating that
+    # as a clean run is exactly the "zero without a positive control" error this
+    # audit already made once.
+    zig_total = sum(map(len, zig.values()))
+    c_total = sum(map(len, c.values()))
+    if zig_total == 0 or c_total == 0:
         print(
-            "error: parsed zero cases on one side "
-            f"(zig={sum(map(len, zig.values()))} c={sum(map(len, c.values()))}); "
+            f"error: parsed zero cases on one side (zig={zig_total} c={c_total}); "
             "this is a parser fault, not a clean run",
             file=sys.stderr,
         )
         return 2
 
     found = diff(zig, c)
+    zig_dupes, c_dupes = duplicates(zig), duplicates(c)
 
     if args.write_baseline:
         payload = {
@@ -131,8 +159,8 @@ def main() -> int:
                 "Shrink this file as the lists are reconciled; the parity gate fails on "
                 "any divergence that is not listed here."
             ),
-            "zig_total": sum(map(len, zig.values())),
-            "c_total": sum(map(len, c.values())),
+            "zig_total": zig_total,
+            "c_total": c_total,
             "known_divergence": found,
         }
         BASELINE.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
@@ -143,8 +171,8 @@ def main() -> int:
     new_drift = unbaselined(found, baseline)
     reconciled = stale_baseline(found, baseline)
     totals = {
-        "zig": sum(map(len, zig.values())),
-        "c": sum(map(len, c.values())),
+        "zig": zig_total,
+        "c": c_total,
         "categories": len(set(zig) | set(c)),
     }
 
@@ -154,6 +182,7 @@ def main() -> int:
                 {
                     "totals": totals,
                     "divergence": found,
+                    "duplicate_names": {"zig": zig_dupes, "c": c_dupes},
                     "new_drift": new_drift,
                     "reconciled_baseline_entries": reconciled,
                 },
@@ -173,6 +202,14 @@ def main() -> int:
                 f"note: {len(reconciled)} baseline entries no longer diverge "
                 "(the lists were reconciled; shrink the baseline)"
             )
+
+    if zig_dupes or c_dupes:
+        print("\nduplicate case names (not baseline-able):", file=sys.stderr)
+        for side, found_dupes in (("zig", zig_dupes), ("c", c_dupes)):
+            for category, names in found_dupes.items():
+                for name in names:
+                    print(f"  {category}: {side}: {name}", file=sys.stderr)
+        return 1
 
     if new_drift:
         print("\nnew drift not in the baseline:", file=sys.stderr)

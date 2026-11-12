@@ -1266,18 +1266,29 @@ ever enforcing this.
 nix installs, so drift fails in seconds rather than after a three-minute build. It is
 **baseline-aware**: the 25 divergences above are recorded in `conformance/case-parity-baseline.json`
 and only _new_ drift fails, so the gate can land today and the baseline can shrink as the lists are
-reconciled. A parser that finds zero cases on either side exits **2** rather than reporting parity,
-which is the failure mode that produced the "0 cases for all five blocks" error in §0's method
-warning.
+reconciled. Two failure modes are guarded explicitly, because both produce a green run that means
+nothing:
 
-Verified with the happy path plus three negative controls:
+- **Zero names parsed** exits **2** rather than reporting parity. The guard counts extracted _names_,
+  not populated categories: a parser that reads all eight files but matches nothing still returns a
+  non-empty map, which is the shape of the "0 cases for all five blocks" error in §0's method warning.
+- **Duplicate names on one side** exit **1** and are not baseline-able. The comparison is set-based, so
+  a copy-pasted case name is invisible to it — the name exists once on the other side and parity looks
+  fine, while the runner executes the case twice under one name.
 
-| Control                        | Result                                                                     |
-| ------------------------------ | -------------------------------------------------------------------------- |
-| current tree                   | `cases: zig=91 c=84`, `parity: no new drift`, exit 0                       |
-| rename one Zig case            | exit 1, `sgr: zig_only: parity_probe_new_case`, plus a stale-baseline note |
-| move `conformance/cases/` away | exit 2, `parsed zero cases on one side (zig=0 c=84)`                       |
-| delete one baseline entry      | exit 1, that divergence is now unbaselined                                 |
+The workflow's `push` and `pull_request` path filters include the checker itself, so a change to the
+gate re-runs the gate; without that, a weakened check could merge unproven.
+
+Verified with the happy path plus five negative controls:
+
+| Control                             | Result                                                                      |
+| ----------------------------------- | --------------------------------------------------------------------------- |
+| current tree                        | `cases: zig=91 c=84`, `parity: no new drift`, exit 0                        |
+| rename one Zig case                 | exit 1, `sgr: zig_only: parity_probe_new_case`, plus a stale-baseline note  |
+| move `conformance/cases/` away      | exit 2, `parsed zero cases on one side (zig=0 c=84)`                        |
+| blank every `.name`, keep the files | exit 2, `zig=0 c=84` — the totals guard, not the category-map check         |
+| duplicate a name in the C array     | exit 1, `duplicate case names (not baseline-able): osc: c: osc_2_set_title` |
+| delete one baseline entry           | exit 1, that divergence is now unbaselined                                  |
 
 **What this does not settle: which side is right.** `cursor_default_up`/`_down`/`_right` (C) versus
 `cursor_default_param_zero*` (Zig) look like the same three behaviours under two naming schemes,
