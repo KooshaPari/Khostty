@@ -1274,7 +1274,8 @@ means nothing:
   non-empty map, which is the shape of the "0 cases for all five blocks" error in §0's method warning.
 - **Duplicate names on one side** exit **1** and are not baseline-able. The comparison is set-based, so
   a copy-pasted case name is invisible to it — the name exists once on the other side and parity looks
-  fine, while the runner executes the case twice under one name.
+  fine, while the runner executes the case twice under one name. This check runs before
+  `--write-baseline`, so the tool cannot record a baseline for a case list the normal gate rejects.
 - **Commented-out cases** are excluded before extraction. `strip_comments()` blanks `//` and `/* … */`
   while preserving string and char literals, because wrapping a C initializer in a block comment stops
   the harness running the case while leaving the name in the text. Extraction from raw source would
@@ -1287,10 +1288,14 @@ means nothing:
 `--json` prints a single JSON document and nothing else, so `--json | jq` is safe; the human-readable
 `parity: no new drift` line is suppressed in that mode.
 
+The C pattern tolerates whitespace (`{ "name",` and a name on its own line after `{`), because the
+existing arrays are all written `{"name",` and a stricter pattern would miss a new case written the
+other way while the zero-name guard stayed satisfied by the cases already present.
+
 The workflow's `push` and `pull_request` path filters include the checker itself, so a change to the
 gate re-runs the gate; without that, a weakened check could merge unproven.
 
-Verified with the happy path plus eight controls:
+Verified with the happy path plus ten controls:
 
 | Control                                             | Result                                                                        |
 | --------------------------------------------------- | ----------------------------------------------------------------------------- |
@@ -1300,6 +1305,8 @@ Verified with the happy path plus eight controls:
 | move `conformance/cases/` away                      | exit 2, `parsed zero cases on one side (zig=0 c=84)`                          |
 | blank every `.name`, keep the files                 | exit 2, `zig=0 c=84` — the totals guard, not the category-map check           |
 | duplicate a name in the C array                     | exit 1, `duplicate case names (not baseline-able): charset: c: charset_g0_uk` |
+| duplicate a name, then `--write-baseline`           | exit 1, same message; no baseline is written                                  |
+| new C case written `{ "name", …`                    | exit 1, detected as `c_only`; `{ "name"` is not skipped                       |
 | comment out a C case that is in parity              | exit 1, `charset: zig_only: charset_g0_uk` — the stripper sees the comment    |
 | add a baseline entry for a case that does not exist | exit 1, `charset: zig_only: ghost_case_xyz` stale                             |
 | delete one baseline entry                           | exit 1, that divergence is now unbaselined                                    |

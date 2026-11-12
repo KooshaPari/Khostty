@@ -40,7 +40,10 @@ BASELINE = REPO_ROOT / "conformance" / "case-parity-baseline.json"
 CATEGORY_ALIASES = {"kitty": "kitty-gfx"}
 
 C_BLOCK_RE = re.compile(r"static const TestCase ([A-Z0-9_]+)_CASES\[\]\s*=\s*\{")
-C_NAME_RE = re.compile(r'^\s*\{"([^"]+)",', re.MULTILINE)
+# `{ "name",` and a name on its own line after `{` are both valid C initialisers;
+# requiring `{"` exactly would silently miss a new case written the other way
+# while the zero-name guard stayed satisfied by the cases already there.
+C_NAME_RE = re.compile(r'^\s*\{\s*"([^"]+)"\s*,', re.MULTILINE)
 ZIG_NAME_RE = re.compile(r'\.name\s*=\s*"([^"]+)"')
 
 
@@ -137,6 +140,14 @@ def duplicates(cases: dict[str, list[str]]) -> dict[str, list[str]]:
     return out
 
 
+def report_duplicates(zig_dupes: dict[str, list[str]], c_dupes: dict[str, list[str]]) -> None:
+    print("\nduplicate case names (not baseline-able):", file=sys.stderr)
+    for side, found in (("zig", zig_dupes), ("c", c_dupes)):
+        for category, names in found.items():
+            for name in names:
+                print(f"  {category}: {side}: {name}", file=sys.stderr)
+
+
 def load_baseline() -> dict[str, dict[str, list[str]]]:
     if not BASELINE.exists():
         return {}
@@ -193,6 +204,13 @@ def main() -> int:
     found = diff(zig, c)
     zig_dupes, c_dupes = duplicates(zig), duplicates(c)
 
+    # Before the baseline branch: a duplicate is never baseline-able, and writing
+    # a baseline for a case list the normal gate rejects would report success for
+    # something that cannot pass.
+    if zig_dupes or c_dupes:
+        report_duplicates(zig_dupes, c_dupes)
+        return 1
+
     if args.write_baseline:
         payload = {
             "note": (
@@ -243,14 +261,6 @@ def main() -> int:
                 f"stale: {len(reconciled)} baseline entries no longer diverge "
                 "(the lists were reconciled; the baseline must shrink)"
             )
-
-    if zig_dupes or c_dupes:
-        print("\nduplicate case names (not baseline-able):", file=sys.stderr)
-        for side, found_dupes in (("zig", zig_dupes), ("c", c_dupes)):
-            for category, names in found_dupes.items():
-                for name in names:
-                    print(f"  {category}: {side}: {name}", file=sys.stderr)
-        return 1
 
     if new_drift:
         print("\nnew drift not in the baseline:", file=sys.stderr)
