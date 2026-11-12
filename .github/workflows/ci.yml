@@ -157,14 +157,19 @@ jobs:
           version: "0.16.0"
           # Same pinned release and checksum as the `zig-fmt` job above.
           shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
+      # 2026-11-12: this step was advisory (`|| echo "::warning::"`), so a
+      # formatting regression reported success. Measured `cargo fmt --all --
+      # --check` in khostty-vt on 2026-11-12: exit 0. It now gates.
       - name: cargo fmt --check
         working-directory: khostty-vt
-        run: |
-          cargo fmt --all -- --check 2>&1 || echo "::warning::cargo fmt issues (advisory)"
-      - name: cargo clippy
+        run: cargo fmt --all -- --check
+      # Still advisory, and labelled honestly: `cargo clippy` needs a full
+      # compile, which has not been measured on this tree, so making it blocking
+      # would risk a red main on its first real run. Known-advisory gate.
+      - name: cargo clippy (advisory, unmeasured)
         working-directory: khostty-vt
         run: |
-          cargo clippy --all-targets -- -D warnings 2>&1 || echo "::warning::clippy issues (advisory)"
+          cargo clippy --all-targets -- -D warnings 2>&1 || echo "::warning::clippy issues (advisory, unmeasured)"
       # `khostty-vt/tests/` is gated on `#![cfg(ghostty_vt_linked)]`, and
       # `khostty-vt/build.rs` sets that cfg only when it finds a prebuilt
       # libghostty-vt under `../zig-out/lib`. Without the build below, the 130
@@ -284,6 +289,12 @@ jobs:
             .github/workflows/milestone.yml
 
   cargo-deny:
+    # 2026-11-12: this job is skipped on every run and could not fail if it did
+    # run. `has_deny` is only set by the detect job when a `deny.toml` exists,
+    # and there is none anywhere in this tree (verified: `git ls-files | grep -i
+    # deny` is empty), so the `if:` is always false; the job additionally carries
+    # `continue-on-error`. Left in place as a hook for when a deny.toml lands,
+    # but it supplies no supply-chain signal today.
     name: Cargo Deny (Advisories + Licenses)
     needs: detect
     if: needs.detect.outputs.has_deny == 'true'
@@ -298,7 +309,14 @@ jobs:
           arguments: --all-features
 
   python:
-    name: Python
+    # 2026-11-12: genuinely RED, not merely advisory. Measured locally with ruff
+    # 0.16.7: `ruff check .` -> exit 1, 131 errors (63 auto-fixable);
+    # `ruff format --check .` -> exit 1, 13 files would be reformatted. The job
+    # keeps `continue-on-error` because making it blocking would red every push,
+    # but it is labelled known-red so its green tick is not read as "python lint
+    # passes". Cleanup is tracked separately; when it goes green, drop both the
+    # label and `continue-on-error`.
+    name: "Python (advisory: known red)"
     needs: detect
     if: needs.detect.outputs.has_python == 'true'
     runs-on: ubuntu-latest
@@ -310,10 +328,10 @@ jobs:
           python-version: "3.11"
       - name: Install ruff
         run: pip install ruff
-      - name: ruff check
-        run: ruff check . 2>&1 || echo "::warning::ruff issues (advisory)"
-      - name: ruff format --check
-        run: ruff format --check . 2>&1 || echo "::warning::format issues (advisory)"
+      - name: "ruff check (known red: 131 errors measured 2026-11-12)"
+        run: ruff check . 2>&1 || echo "::warning::ruff check FAILED (known red, advisory)"
+      - name: "ruff format --check (known red: 13 files measured 2026-11-12)"
+        run: ruff format --check . 2>&1 || echo "::warning::ruff format --check FAILED (known red, advisory)"
 
   pytest:
     name: Python Tests
@@ -445,7 +463,6 @@ jobs:
     needs: detect
     if: needs.detect.outputs.has_typescript == 'true'
     runs-on: ubuntu-latest
-    continue-on-error: true
     # The TS project is wasm/, not the repo root: the root has no package.json
     # and no lockfile exists anywhere in the tree (verified 2026-10-01), so
     # setup-node's `cache: 'npm'` hard-failed with "Dependencies lock file is
@@ -461,15 +478,19 @@ jobs:
           # No `cache:` input: npm caching requires a lockfile and wasm/ has none.
           # Committing one is a separate decision; until then this job installs fresh.
       - run: npm install --no-audit --no-fund
-      - name: lint
-        run: |
-          if [ -f package.json ] && grep -q '"lint"' package.json; then
-            npm run lint 2>&1 || echo "::warning::lint issues (advisory)"
-          fi
+      # `wasm/package.json` declares no `lint` script (verified 2026-11-12: the
+      # scripts are build, test, test:header, typecheck, check, exports), so the
+      # old `grep -q '"lint"'` guard was always false and this step reported
+      # success having run nothing. Gate on the check that does exist.
+      - name: typecheck
+        run: npm run typecheck
       - name: test
         run: |
           if [ -f package.json ] && grep -q '"test"' package.json; then
-            npm test 2>&1 || echo "::warning::test failures (advisory)"
+            npm test
+          else
+            echo "::error::wasm/package.json has no test script; this job would otherwise pass vacuously"
+            exit 1
           fi
 
   security:
@@ -477,7 +498,9 @@ jobs:
     needs: detect
     if: needs.detect.outputs.has_security == 'true'
     runs-on: ubuntu-latest
-    continue-on-error: true
+    # 2026-11-12: `continue-on-error: true` was here, so a leak reported success.
+    # The gitleaks step has concluded success on every completed run observed
+    # (step-level, which continue-on-error does not mask), so it now gates.
     steps:
       - uses: actions/checkout@v4
         with:
@@ -497,7 +520,8 @@ jobs:
     name: Dependency Review
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    continue-on-error: true
+    # 2026-11-12: `continue-on-error: true` removed. The dependency-review step
+    # concluded success on the last completed run, so this now gates PRs.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/dependency-review-action@v4
