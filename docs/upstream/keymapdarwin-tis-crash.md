@@ -16,7 +16,7 @@ what is labelled as a hypothesis.
 ## Suggested title
 
 ```
-input: KeymapDarwin test segfaults inside HIToolbox/CF intermittently (1 crash in 5 full runs)
+input: KeymapDarwin test segfaults inside HIToolbox/CF intermittently (1 crash in 6 full runs)
 ```
 
 ## Environment
@@ -32,8 +32,9 @@ input: KeymapDarwin test segfaults inside HIToolbox/CF intermittently (1 crash i
 ## What happens
 
 `zig build test` aborts on an unnamed test in `src/input/KeymapDarwin.zig`. Observed rate: **1 crash in
-5 full unfiltered runs** on this machine. That is a small sample, so treat the true rate as uncertain;
-all that is established is that it is intermittent, not that it is exactly 1-in-5.
+6 full unfiltered runs** on this machine. One of the six crashed; a later one completed
+`3957 pass, 25 skip (3982 total)` in 25 minutes with no crash. n=6 is a small sample, so treat the true
+rate as uncertain; all that is established is that it is intermittent, not that it is exactly 1-in-6.
 
 I have not measured the rate under `-Dtest-filter`. I tried, and then stopped: on this tree
 `-Dtest-filter` reduces the build to a 75-test artifact, and a filter that matches nothing produces the
