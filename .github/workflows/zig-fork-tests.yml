@@ -45,39 +45,21 @@ on:
   workflow_dispatch:
   # 2026-11-11: `push` on main added for main-time coverage. Without it a
   # merge landing on main was untested until the next nightly cron, so a
-  # regression could sit on the default branch for up to ~24h. Same `paths:`
-  # list as `pull_request`, verbatim: the pre-merge and post-merge gates must
-  # select the same set of changes.
+  # regression could sit on the default branch for up to ~24h.
+  # 2026-11-12: the `paths:` filter is GONE on purpose, for the same reason it
+  # was removed from `pull_request` below. A path-filtered workflow produces no
+  # check-run at all on a push that touches none of the listed paths, so
+  # `test (zig build test)` and `wasm ABI + data table` never report on that
+  # commit and the required contexts sit at "Expected - waiting for status to be
+  # reported" forever. Observed on main head 6bbc83edc (a CI-only merge): no
+  # `test (zig build test)` and no `wasm ABI + data table` check run, while
+  # 6e979333c and 47xxx heads do. A gate that silently cannot report is worse
+  # than no gate. The original cost argument ("would dominate CI cost for a
+  # repo on the free Actions tier") does not apply: this repo is PUBLIC, so
+  # `ubuntu-latest` minutes are free and unlimited.
   push:
     branches:
       - main
-    paths:
-      - ".github/workflows/zig-fork-tests.yml"
-      - "src/main_windows_apprt.zig"
-      - "src/main_agent_ipc.zig"
-      - "src/apprt/windows/**"
-      - "src/apprt/ipc/**"
-      - "src/App.zig"
-      - "src/Surface.zig"
-      - "build.zig"
-      # The generated artifacts (khostty-vt/src/ffi.rs,
-      # wasm/include/ghostty-vt.h, wasm/js/terminal-data.js) are derived from
-      # include/ghostty/, so a header change is what makes them stale.
-      - "include/**"
-      - "wasm/**"
-      - "khostty-vt/**"
-      # GTK runtime: the only app_runtime for which `windowed` is true, so the
-      # only place B1 (bind the IPC server from the runtime) can be verified.
-      - "src/apprt/gtk/**"
-      - "example/**"
-      - "src/build/**"
-      # Issue #98: the core Zig suite (`zig build test`) exercises all of src/,
-      # not only the entries above. `src/**` and `build.zig.zon` close the gap
-      # (the narrower src/ entries above are now redundant but harmless).
-      - "src/**"
-      - "build.zig.zon"
-      - "flake.nix"
-      - "nix/**"
   # 2026-10-15: narrowly-scoped `pull_request` trigger added so the workflow
   # is observable on the PR head SHA before merge (the default-branch
   # scheduler and workflow_dispatch API cannot see a workflow file that
