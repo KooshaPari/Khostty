@@ -473,17 +473,55 @@ fn parseHunkHeader(line: []const u8) ?HunkHeader {
 //                         FORK-block detection
 // ============================================================================
 
-/// True if any line within `range.start..=range.end` is inside a `// FORK:`
-/// block in the source file. A `// FORK:` block is a contiguous run of comment
-/// lines at the start of which one line matches `// FORK:` (case-insensitive
-/// prefix), terminating at the first blank line or non-comment line.
+/// The line-comment syntax a source file's language uses. Threaded into the
+/// FORK-block checks because telling a Python file to carry a `// FORK:` marker
+/// is not a rule anyone can follow: it is an impossible instruction, and an
+/// impossible instruction teaches contributors to ignore the guard.
+const CommentSyntax = struct {
+    /// Line-comment opener, e.g. `//`, `#`, `--`.
+    opener: []const u8,
+    /// Document-comment opener when the language distinguishes one (Zig's `///`).
+    doc_opener: ?[]const u8 = null,
+};
+
+/// Comment syntax for `path`, chosen from its extension. Unknown extensions keep
+/// the C-family `//` default, which is what the guard has always assumed.
+fn commentSyntaxFor(path: []const u8) CommentSyntax {
+    const Entry = struct { ext: []const u8, syntax: CommentSyntax };
+    const table = [_]Entry{
+        .{ .ext = ".py", .syntax = .{ .opener = "#" } },
+        .{ .ext = ".pyi", .syntax = .{ .opener = "#" } },
+        .{ .ext = ".sh", .syntax = .{ .opener = "#" } },
+        .{ .ext = ".bash", .syntax = .{ .opener = "#" } },
+        .{ .ext = ".zsh", .syntax = .{ .opener = "#" } },
+        .{ .ext = ".toml", .syntax = .{ .opener = "#" } },
+        .{ .ext = ".yaml", .syntax = .{ .opener = "#" } },
+        .{ .ext = ".yml", .syntax = .{ .opener = "#" } },
+        .{ .ext = ".rb", .syntax = .{ .opener = "#" } },
+        .{ .ext = ".pl", .syntax = .{ .opener = "#" } },
+        .{ .ext = ".sql", .syntax = .{ .opener = "--" } },
+        .{ .ext = ".lua", .syntax = .{ .opener = "--" } },
+        .{ .ext = ".hs", .syntax = .{ .opener = "--" } },
+        .{ .ext = ".vim", .syntax = .{ .opener = "\"" } },
+    };
+    for (table) |entry| {
+        if (std.mem.endsWith(u8, path, entry.ext)) return entry.syntax;
+    }
+    return .{ .opener = "//", .doc_opener = "///" };
+}
+
+/// True if any line within `range.start..=range.end` is inside a FORK block in
+/// the source file. A FORK block is a contiguous run of comment lines at the
+/// start of which one line matches the language's `FORK:` marker
+/// (case-insensitive prefix), terminating at the first blank line or non-comment
+/// line.
 ///
 /// We deliberately do NOT require the FORK: marker to be on the same line as
 /// the modification — only that some FORK: marker precedes the changed line
 /// without an intervening blank/non-comment line. This matches how Ghostty's
 /// upstream comments are written and avoids false positives from inline `+`
 /// additions that re-use a marker already present in context.
-fn isRangeInForkBlock(lines: []const []const u8, range: LineRange) bool {
+fn isRangeInForkBlock(lines: []const []const u8, range: LineRange, syntax: CommentSyntax) bool {
     if (range.start == 0) return false;
 
     var in_fork_block = false;
@@ -492,15 +530,23 @@ fn isRangeInForkBlock(lines: []const []const u8, range: LineRange) bool {
         const ln = lines[i];
         const trimmed = std.mem.trim(u8, ln, " \t");
 
-        if (isForkMarker(trimmed)) {
+        if (isForkMarker(trimmed, syntax)) {
+            // The marker line is itself inside its own block, so a range that
+            // consists only of the marker still counts. Without this, adding a
+            // lone `FORK:` explanation comment to an upstream file reported as
+            // uncovered, which is incoherent: the marker line is the block.
             in_fork_block = true;
+            const marker_line_1based: usize = i + 1;
+            if (marker_line_1based >= range.start and marker_line_1based <= range.end) {
+                return true;
+            }
             continue;
         }
 
         if (!in_fork_block) continue;
 
         // The block ends at a blank line or a non-comment line.
-        if (trimmed.len == 0 or !std.mem.startsWith(u8, trimmed, "//")) {
+        if (trimmed.len == 0 or !std.mem.startsWith(u8, trimmed, syntax.opener)) {
             in_fork_block = false;
             continue;
         }
@@ -513,16 +559,22 @@ fn isRangeInForkBlock(lines: []const []const u8, range: LineRange) bool {
     return false;
 }
 
-/// True if `line` (already trimmed) is a `// FORK:` marker. Recognised forms:
+/// True if `line` (already trimmed) is a `FORK:` marker in `syntax`. Recognised
+/// forms, for the default C-family syntax:
 ///   // FORK: ...
 ///   //FORK: ...
 ///   /// FORK: ...   (doc comment variant)
-fn isForkMarker(line: []const u8) bool {
+/// and for `#`-comment languages, `# FORK: ...` / `#FORK: ...`.
+fn isForkMarker(line: []const u8, syntax: CommentSyntax) bool {
     var rest: []const u8 = line;
-    if (std.mem.startsWith(u8, rest, "///")) {
-        rest = rest[3..];
-    } else if (std.mem.startsWith(u8, rest, "//")) {
-        rest = rest[2..];
+    if (syntax.doc_opener) |doc| {
+        if (std.mem.startsWith(u8, rest, doc)) {
+            rest = rest[doc.len..];
+        } else if (std.mem.startsWith(u8, rest, syntax.opener)) {
+            rest = rest[syntax.opener.len..];
+        } else return false;
+    } else if (std.mem.startsWith(u8, rest, syntax.opener)) {
+        rest = rest[syntax.opener.len..];
     } else return false;
 
     // Skip a single optional space, then require `FORK:`.
@@ -663,10 +715,11 @@ fn analyzeFile(
     }
 
     // FORK-block coverage check.
+    const comment_syntax = commentSyntaxFor(file_path);
     var uncovered_ranges: usize = 0;
     var undocumented_blocks: usize = 0;
     for (added_ranges.items) |r| {
-        if (!isRangeInForkBlock(file_lines, r)) {
+        if (!isRangeInForkBlock(file_lines, r, comment_syntax)) {
             uncovered_ranges += 1;
         } else if (!forkBlockHasIssueRef(file_lines, r)) {
             undocumented_blocks += 1;
@@ -674,19 +727,23 @@ fn analyzeFile(
     }
 
     if (uncovered_ranges == 0 and undocumented_blocks == 0) {
-        try report.appendSlice(gpa, "- All modifications are inside `// FORK:` blocks with issue references\n\n");
+        try report.print(
+            gpa,
+            "- All modifications are inside `{s} FORK:` blocks with issue references\n\n",
+            .{comment_syntax.opener},
+        );
     } else {
         try report.print(
             gpa,
-            "- ⚠ {d} added range(s) are NOT inside any `// FORK:` block\n",
-            .{uncovered_ranges},
+            "- ⚠ {d} added range(s) are NOT inside any `{s} FORK:` block\n",
+            .{ uncovered_ranges, comment_syntax.opener },
         );
         violations += uncovered_ranges;
 
         try report.print(
             gpa,
-            "- ⚠ {d} `// FORK:` block(s) have no issue reference (`#NNN` / `GH-NNN`)\n",
-            .{undocumented_blocks},
+            "- ⚠ {d} `{s} FORK:` block(s) have no issue reference (`#NNN` / `GH-NNN`)\n",
+            .{ undocumented_blocks, comment_syntax.opener },
         );
         violations += undocumented_blocks;
         try report.appendSlice(gpa, "\n");
@@ -812,11 +869,62 @@ test "parseHunkHeader handles omitted count" {
 }
 
 test "isForkMarker accepts FORK: prefix variants" {
-    try std.testing.expect(isForkMarker("// FORK: khostty-only mouse shape"));
-    try std.testing.expect(isForkMarker("///FORK: doc-comment variant"));
-    try std.testing.expect(isForkMarker("//FORK: no space"));
-    try std.testing.expect(!isForkMarker("// fork-block-start"));
-    try std.testing.expect(!isForkMarker("fn fork()"));
+    const c = commentSyntaxFor("src/Surface.zig");
+    try std.testing.expect(isForkMarker("// FORK: khostty-only mouse shape", c));
+    try std.testing.expect(isForkMarker("///FORK: doc-comment variant", c));
+    try std.testing.expect(isForkMarker("//FORK: no space", c));
+    try std.testing.expect(!isForkMarker("// fork-block-start", c));
+    try std.testing.expect(!isForkMarker("fn fork()", c));
+}
+
+test "commentSyntaxFor picks the language's line comment" {
+    try std.testing.expectEqualStrings("//", commentSyntaxFor("src/terminal/mouse.zig").opener);
+    try std.testing.expectEqualStrings("//", commentSyntaxFor("src/Surface.zig").opener);
+    try std.testing.expectEqualStrings("#", commentSyntaxFor("src/terminal/c/types-schema-verify.py").opener);
+    try std.testing.expectEqualStrings("#", commentSyntaxFor("tools/thing.sh").opener);
+    try std.testing.expectEqualStrings("--", commentSyntaxFor("schema.sql").opener);
+    // Zig keeps its doc-comment variant; `#`-comment languages have none.
+    try std.testing.expect(commentSyntaxFor("src/Surface.zig").doc_opener != null);
+    try std.testing.expect(commentSyntaxFor("a.py").doc_opener == null);
+}
+
+test "isForkMarker honours the language's marker token" {
+    const py = commentSyntaxFor("src/terminal/snapshot/verify-kaitai.py");
+    try std.testing.expect(isForkMarker("# FORK: #126", py));
+    try std.testing.expect(isForkMarker("#FORK: #126", py));
+    // A `//` marker in Python is not a Python comment, so it must not count.
+    try std.testing.expect(!isForkMarker("// FORK: #126", py));
+    // And a `#` marker in Zig is not a Zig comment either.
+    try std.testing.expect(!isForkMarker("# FORK: #126", commentSyntaxFor("src/Surface.zig")));
+}
+
+test "isRangeInForkBlock reads blocks in either comment syntax" {
+    const zig_lines = [_][]const u8{
+        "const x = 1;",
+        "// FORK: #126 set the value",
+        "// keeps the same shape",
+        "const y = 2;",
+    };
+    const zig = commentSyntaxFor("src/Surface.zig");
+    // A range spanning the marker block and the code line it explains.
+    try std.testing.expect(isRangeInForkBlock(&zig_lines, .{ .start = 2, .end = 4 }, zig));
+    // A range that contains only the marker line is covered: the marker is the block.
+    try std.testing.expect(isRangeInForkBlock(&zig_lines, .{ .start = 2, .end = 2 }, zig));
+    // A bare code line with no preceding marker is not covered.
+    try std.testing.expect(!isRangeInForkBlock(&zig_lines, .{ .start = 1, .end = 1 }, zig));
+    try std.testing.expect(!isRangeInForkBlock(&zig_lines, .{ .start = 4, .end = 4 }, zig));
+
+    const py_lines = [_][]const u8{
+        "value = 1",
+        "# FORK: #126 prefer TypeError for a wrong type",
+        "# Upstream raises ValueError here, which is the wrong exception class.",
+        "raise TypeError('msg')",
+    };
+    const py = commentSyntaxFor("src/terminal/c/types-schema-verify.py");
+    try std.testing.expect(isRangeInForkBlock(&py_lines, .{ .start = 2, .end = 4 }, py));
+    // Without a `#`-aware parser the same text has no comments at all, so the
+    // Python file could never satisfy the guard. That was the defect.
+    try std.testing.expect(!isRangeInForkBlock(&py_lines, .{ .start = 2, .end = 4 }, zig));
 }
 
 test "hasIssueRef recognises #N and GH-N" {

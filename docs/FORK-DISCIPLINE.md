@@ -26,8 +26,8 @@ The list lives at the top of `tools/check-fork-discipline.zig` as `UPSTREAM_OWNE
 For every file in the upstream-owned surface list that diverges from upstream, the guard checks four things:
 
 1. **Documented.** The path is mentioned in `docs/FORK.md`. A modification without a corresponding entry in FORK.md is a violation.
-2. **Bracketed.** Every added line is inside a `// FORK:` block in the source file. The block starts with a comment line of the form `// FORK: ...` and runs until the first blank or non-comment line.
-3. **Tracked.** Each `// FORK:` block references a tracking issue, either `#123` or `GH-123`. The reference may live on the marker line or on any subsequent comment line in the same block.
+2. **Bracketed.** Every added line is inside a `FORK:` block in the source file, using the marker comment syntax of the file's language: `// FORK: ...` for Zig and C-family files, `# FORK: ...` for Python, shell, TOML and YAML, `-- FORK: ...` for SQL and Lua. The block starts with a marker line and runs until the first blank or non-comment line. Before 2026-11-12 the guard only recognised `//`, which made the rule impossible to satisfy in a Python file under `src/terminal/` and reported those files as permanently in violation.
+3. **Tracked.** Each `FORK:` block references a tracking issue, either `#123` or `GH-123`. The reference may live on the marker line or on any subsequent comment line in the same block.
 4. **Single-segment additions.** The diff parser tracks ranges of contiguous `+` lines per hunk. Modifications that span a context line (e.g., "add line, then keep a context line, then add another") are split into multiple ranges so that an upstream-owned hunk that _happens_ to contain context still flags its added lines.
 
 ## Running it
