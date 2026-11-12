@@ -653,9 +653,28 @@ jobs:
     steps:
       - name: Aggregate lint gate
         run: |
+          # Fail-closed aggregate: a job must report success to pass. A skipped
+          # job is NOT a pass unless it is named in the allow-list below.
+          # detect fed no aggregate before this change, so a failed detect
+          # could not turn this gate red.
+          #
+          # Allow-list of jobs that may legitimately be skipped, with the
+          # reason each one may skip:
+          #   rust:         detect's has_rust is false when the tree has no Cargo.toml.
+          #   cargo-deny:   detect's has_deny is false when the tree has no deny.toml.
+          #   python:       detect's has_python is false when the tree has no Python.
+          #   pytest:       detect's has_python is false when the tree has no Python.
+          #   go:           detect's has_go is false when the tree has no go.mod.
+          #   typescript:   detect's has_typescript is false when the tree has no package.json.
+          #   dep-review:   runs only on github.event_name == 'pull_request'.
+          # Every other job in this loop must report success. `security` is
+          # deliberately NOT allow-listed: detect always exports has_security=true,
+          # so a skip there is an anomaly rather than an opt-out, and it must be red.
+          allow_skip="rust cargo-deny python pytest go typescript dep-review"
           failed=0
           for pair in \
             "zig-fmt:${{ needs.zig-fmt.result }}" \
+            "detect:${{ needs.detect.result }}" \
             "actionlint:${{ needs.actionlint.result }}" \
             "rust:${{ needs.rust.result }}" \
             "cargo-deny:${{ needs.cargo-deny.result }}" \
@@ -668,10 +687,18 @@ jobs:
             ; do
             name="${pair%%:*}"
             result="${pair#*:}"
-            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+            if [ "$result" = "skipped" ]; then
+              case " $allow_skip " in
+                *" $name "*)
+                  echo "  - $name: skipped (allowed: see the allow-list above)"
+                  continue
+                  ;;
+              esac
+            fi
+            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ] || [ "$result" = "skipped" ]; then
               echo "  ✗ $name: $result"
               failed=$((failed + 1))
-            elif [ "$result" = "success" ] || [ "$result" = "skipped" ]; then
+            elif [ "$result" = "success" ]; then
               echo "  ✓ $name: $result"
             else
               echo "  ? $name: $result"
@@ -684,7 +711,7 @@ jobs:
             exit 1
           fi
           echo ""
-          echo "✅ All lint checks passed (or were skipped)"
+          echo "✅ All lint checks passed"
 
   test:
     # The job id stays `test` so existing `needs:` references keep working. The
@@ -707,9 +734,11 @@ jobs:
           # job is NOT a pass unless it is explicitly allow-listed below.
           # binding-freshness, actionlint and build previously fed no aggregate,
           # so their failure never reached this gate.
-          # Allow-list for legitimate skips:
+          # Allow-list of jobs that may legitimately be skipped, with the
+          # reason each one may skip:
           #   build: only runs when vars.ENABLE_MACOS_BUILD == 'true' (billed
           #     macOS runners disabled by policy); skipped by default.
+          allow_skip="build"
           failed=0
           for pair in \
             "lint:${{ needs.lint.result }}" \
@@ -720,9 +749,13 @@ jobs:
             ; do
             name="${pair%%:*}"
             result="${pair#*:}"
-            if [ "$name" = "build" ] && [ "$result" = "skipped" ]; then
-              echo "  - $name: skipped (allowed: macOS build opt-in, see if:)"
-              continue
+            if [ "$result" = "skipped" ]; then
+              case " $allow_skip " in
+                *" $name "*)
+                  echo "  - $name: skipped (allowed: see the allow-list above)"
+                  continue
+                  ;;
+              esac
             fi
             if [ "$result" = "failure" ] || [ "$result" = "cancelled" ] || [ "$result" = "skipped" ]; then
               echo "  ✗ $name: $result"
