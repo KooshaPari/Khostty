@@ -21,12 +21,12 @@ input: KeymapDarwin test segfaults inside HIToolbox/CF under load (1 in 8 full-s
 
 ## Environment
 
-| | |
-|---|---|
-| OS | macOS 27.0 (build 26A5353q), arm64 |
-| Zig | 0.16.0 |
-| Build | `zig build test` (Debug), `-Dapp-runtime=none` |
-| Runner | the standard `zig` test runner, `ghostty-test`, 3 982 tests |
+|                 |                                                                    |
+| --------------- | ------------------------------------------------------------------ |
+| OS              | macOS 27.0 (build 26A5353q), arm64                                 |
+| Zig             | 0.16.0                                                             |
+| Build           | `zig build test` (Debug), `-Dapp-runtime=none`                     |
+| Runner          | the standard `zig` test runner, `ghostty-test`, 3 982 tests        |
 | Metal toolchain | not installed; OpenGL renderer fallback, macOS Xcode suite skipped |
 
 ## What happens
@@ -93,11 +93,11 @@ CFRelease(src);
 200 000 iterations per process, run as 6 concurrent processes at three CPU-load tiers (0, 4 and 8
 `yes` burners):
 
-| Load tier | Processes | Iterations each | Result |
-|---|---|---|---|
-| 0 burners | 6 | 200 000 | 6/6 `exit=0` |
-| 4 burners | 6 | 200 000 | 6/6 `exit=0` |
-| 8 burners | 6 | 200 000 | 6/6 `exit=0` |
+| Load tier | Processes | Iterations each | Result       |
+| --------- | --------- | --------------- | ------------ |
+| 0 burners | 6         | 200 000         | 6/6 `exit=0` |
+| 4 burners | 6         | 200 000         | 6/6 `exit=0` |
+| 8 burners | 6         | 200 000         | 6/6 `exit=0` |
 
 **18 runs, 18 clean, 3.6 million copy+release cycles, zero faults.** So the crash is not reachable
 from the API sequence alone, and is not simply "TIS under load". It depends on what the process has
