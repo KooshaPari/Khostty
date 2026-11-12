@@ -319,29 +319,33 @@ jobs:
           arguments: --all-features
 
   python:
-    # 2026-11-12: genuinely RED, not merely advisory. Measured locally with ruff
-    # 0.16.7: `ruff check .` -> exit 1, 131 errors (63 auto-fixable);
-    # `ruff format --check .` -> exit 1, 13 files would be reformatted. The job
-    # keeps `continue-on-error` because making it blocking would red every push,
-    # but it is labelled known-red so its green tick is not read as "python lint
-    # passes". Cleanup is tracked separately; when it goes green, drop both the
-    # label and `continue-on-error`.
-    name: "Python (advisory: known red)"
+    # 2026-11-12: this was genuinely RED and was labelled advisory so its green
+    # tick could not be misread: ruff 0.16.7 reported 131 errors and 13
+    # unformatted files. #126 fixed the code (95 first-party errors fixed in
+    # code, 0 noqa added, 12 files reformatted) and scoped ruff away from the
+    # two trees this repo does not own: `vendor/` (vendored Nerd Fonts) and one
+    # generated file. Both commands now exit 0, so the label and
+    # `continue-on-error` are gone and this gates.
+    #
+    # ruff is pinned for the same reason rustfmt is pinned on the Rust job: an
+    # unpinned `pip install ruff` means the gate silently changes ruleset under
+    # you, and the version that measured 0 is the version that should keep
+    # measuring.
+    name: Python
     needs: detect
     if: needs.detect.outputs.has_python == 'true'
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Install ruff
-        run: pip install ruff
-      - name: "ruff check (known red: 131 errors measured 2026-11-12)"
-        run: ruff check . 2>&1 || echo "::warning::ruff check FAILED (known red, advisory)"
-      - name: "ruff format --check (known red: 13 files measured 2026-11-12)"
-        run: ruff format --check . 2>&1 || echo "::warning::ruff format --check FAILED (known red, advisory)"
+        run: pip install ruff==0.16.7
+      - name: ruff check
+        run: ruff check .
+      - name: ruff format --check
+        run: ruff format --check .
 
   pytest:
     name: Python Tests
