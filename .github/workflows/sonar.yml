@@ -17,12 +17,15 @@
 #   - The scanner reads `sonar-project.properties` (already in the tree).
 #   - `sonar.qualitygate.breakBuildOnQualityGateFailure=false` makes the
 #     build a no-op on gate failure.
-#   - `continue-on-error: true` means the workflow job NEVER fails the
-#     PR. SonarCloud signal is preserved (issues surface in the project
-#     dashboard) but the check is non-blocking.
-#   - `if: env.SONAR_TOKEN != ''` makes the entire job a no-op when
-#     the operator has not yet set the `SONAR_TOKEN` secret, so
-#     merges are not blocked while the operator is finishing setup.
+#   - The job is **blocking on scan errors**: there is no `continue-on-error`
+#     any more. A scanner that crashes, cannot authenticate, or loses the
+#     SonarCloud service fails this workflow. What stays non-blocking is the
+#     *quality gate result*, which `breakBuildOnQualityGateFailure=false` above
+#     already covers - that is a product decision, not a mask.
+#   - Until a `SONAR_TOKEN` exists the scan step is skipped and a notice step
+#     says so in the run log, so a green job cannot be mistaken for a scan.
+#     Previously the job carried `continue-on-error: true` as well, which meant
+#     it reported success even when the scanner ran and failed.
 #
 # Operator setup (one-time, on the SonarCloud + GitHub side):
 #   1. Set `SONAR_TOKEN` in repo secrets:
@@ -62,10 +65,13 @@ permissions:
 
 jobs:
   sonarcloud:
-    name: Scan (advisory, never blocks)
+    # 2026-11-12: renamed from "Scan (advisory, never blocks)" because that name
+    # was the accurate description of a job whose `continue-on-error: true` made
+    # every failure green. The quality gate is still advisory; scan errors are
+    # not.
+    name: Scan (blocking on scan errors; quality gate advisory)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    continue-on-error: true
     # 2026-10-19: TWO previous attempts at this guard were both always-false.
     #
     #   1. `if: ${{ env.SONAR_TOKEN != '' }}` -- `env.SONAR_TOKEN` is set only
@@ -93,6 +99,15 @@ jobs:
           # (or fails) its analysis.
           fetch-depth: 0
 
+      - name: SonarCloud token absent
+        # Without the secret nothing is analysed, so say it in the run rather than
+        # letting a green job imply a scan happened. This is the only remaining
+        # "nothing ran" path in the workflow, and it is announced.
+        if: ${{ env.SONAR_TOKEN_PRESENT != 'true' }}
+        run: |
+          echo "::notice title=SonarCloud skipped::SONAR_TOKEN is not set, so no analysis ran."
+          echo "Set it with: gh secret set SONAR_TOKEN --repo ${{ github.repository }}"
+
       - name: SonarCloud Scan
         # `secrets` is not a permitted context in any `if:` -- not at job level
         # (github, inputs, needs, vars) and not at step level either (env,
@@ -115,7 +130,7 @@ jobs:
           # Both layers are set: belt and suspenders.
 
       - name: Upload scanner dump
-        if: always()
+        if: ${{ always() && env.SONAR_TOKEN_PRESENT == 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: sonar-scanner-dump
