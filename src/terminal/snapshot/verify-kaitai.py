@@ -40,8 +40,7 @@ try:
     from kaitaistruct import KaitaiStream
 except ImportError as error:
     raise SystemExit(
-        "missing Kaitai verifier dependencies; run this inside "
-        "`nix develop`"
+        "missing Kaitai verifier dependencies; run this inside `nix develop`"
     ) from error
 
 
@@ -90,9 +89,7 @@ def load_fixture(path: Path) -> Fixture:
     if metadata.keys() != required:
         missing = sorted(required - metadata.keys())
         extra = sorted(metadata.keys() - required)
-        raise ValueError(
-            f"{path}: Kaitai metadata drift: missing={missing}, extra={extra}"
-        )
+        raise ValueError(f"{path}: Kaitai metadata drift: missing={missing}, extra={extra}")
     if not metadata["type"]:
         raise ValueError(f"{path}: empty Kaitai type")
 
@@ -106,9 +103,7 @@ def load_fixture(path: Path) -> Fixture:
             try:
                 params.append(int(value, 0))
             except ValueError as error:
-                raise ValueError(
-                    f"{path}: invalid Kaitai parameter {value!r}"
-                ) from error
+                raise ValueError(f"{path}: invalid Kaitai parameter {value!r}") from error
 
     try:
         offset = int(metadata["offset"], 0)
@@ -136,8 +131,7 @@ def parse_type(
     result = parser_type(*params, stream)
     if not stream.is_eof():
         raise ValueError(
-            f"{parser_type.__name__} left "
-            f"{stream.size() - stream.pos()} trailing bytes"
+            f"{parser_type.__name__} left {stream.size() - stream.pos()} trailing bytes"
         )
     return result
 
@@ -148,11 +142,7 @@ def crc32c(data: bytes) -> int:
     for byte in data:
         result ^= byte
         for _ in range(8):
-            result = (
-                (result >> 1) ^ 0x82F63B78
-                if result & 1
-                else result >> 1
-            )
+            result = (result >> 1) ^ 0x82F63B78 if result & 1 else result >> 1
     return result ^ 0xFFFFFFFF
 
 
@@ -204,12 +194,8 @@ def all_snapshot_records(snapshot: Any) -> list[Any]:
 
 def validate_complete_snapshot(snapshot: Any, data: bytes) -> None:
     """Validate ordering relationships, record CRCs, and markers."""
-    screen_keys = [
-        sequence.screen.payload.header.key for sequence in snapshot.screens
-    ]
-    history_keys = [
-        sequence.history.payload.key for sequence in snapshot.histories
-    ]
+    screen_keys = [sequence.screen.payload.header.key for sequence in snapshot.screens]
+    history_keys = [sequence.history.payload.key for sequence in snapshot.histories]
     if len(set(screen_keys)) != len(screen_keys):
         raise ValueError("complete snapshot contains a duplicate SCREEN key")
     if len(set(history_keys)) != len(history_keys):
@@ -218,9 +204,7 @@ def validate_complete_snapshot(snapshot: Any, data: bytes) -> None:
         raise ValueError("SCREEN and HISTORY keys do not match")
 
     terminal_header = snapshot.terminal.payload.header
-    expected_key_values = (
-        {0} if terminal_header.screen_count == 1 else {0, 1}
-    )
+    expected_key_values = {0} if terminal_header.screen_count == 1 else {0, 1}
     screen_key_values = {key.value for key in screen_keys}
     if screen_key_values != expected_key_values:
         raise ValueError(
@@ -228,37 +212,24 @@ def validate_complete_snapshot(snapshot: Any, data: bytes) -> None:
             f"but SCREEN records contain {screen_key_values}"
         )
 
-    screens_by_key = {
-        sequence.screen.payload.header.key: sequence
-        for sequence in snapshot.screens
-    }
+    screens_by_key = {sequence.screen.payload.header.key: sequence for sequence in snapshot.screens}
     for sequence in snapshot.screens:
         header = sequence.screen.payload.header
         if (
             header.cursor_x >= terminal_header.columns
             or header.cursor_y >= terminal_header.rows
-            or (
-                header.cursor_flags.pending_wrap
-                and header.cursor_x != terminal_header.columns - 1
-            )
+            or (header.cursor_flags.pending_wrap and header.cursor_x != terminal_header.columns - 1)
         ):
             raise ValueError(f"SCREEN key {header.key}: invalid cursor position")
 
     for sequence in snapshot.histories:
         payload = sequence.history.payload
         screen = screens_by_key[payload.key]
-        screen_rows = sum(
-            page.payload.header.rows for page in screen.pages
-        )
+        screen_rows = sum(page.payload.header.rows for page in screen.pages)
         if screen_rows < terminal_header.rows:
-            raise ValueError(
-                f"SCREEN key {payload.key}: PAGE rows do not cover "
-                "the active area"
-            )
+            raise ValueError(f"SCREEN key {payload.key}: PAGE rows do not cover the active area")
         overlap_rows = screen_rows - terminal_header.rows
-        history_rows = overlap_rows + sum(
-            page.payload.header.rows for page in sequence.pages
-        )
+        history_rows = overlap_rows + sum(page.payload.header.rows for page in sequence.pages)
         if history_rows != screen.screen.payload.header.history_rows:
             raise ValueError(
                 f"SCREEN key {payload.key}: history_rows "
@@ -284,21 +255,18 @@ def validate_complete_snapshot(snapshot: Any, data: bytes) -> None:
         offset = validate_record(record, data, offset)
 
     if offset != len(data):
-        raise ValueError(
-            f"complete snapshot accounted for {offset} of {len(data)} bytes"
-        )
+        raise ValueError(f"complete snapshot accounted for {offset} of {len(data)} bytes")
 
 
 def compile_schema(output_dir: Path) -> type[Any]:
     """Compile snapshot.ksy and import its temporary Python parser."""
     compiler = shutil.which("kaitai-struct-compiler") or shutil.which("ksc")
     if compiler is None:
-        raise SystemExit(
-            "kaitai-struct-compiler is not available; run this inside "
-            "`nix develop`"
-        )
+        raise SystemExit("kaitai-struct-compiler is not available; run this inside `nix develop`")
 
-    subprocess.run(
+    # `compiler` is resolved with shutil.which above, and every argument is a
+    # literal path this script owns, so there is no untrusted input here.
+    subprocess.run(  # noqa: S603
         [
             compiler,
             "--target=python",
@@ -325,9 +293,7 @@ def resolve_type(parser: type[Any], type_name: str) -> type[Any]:
     if type_name == root_type_name:
         return parser
 
-    class_name = "".join(
-        part[:1].upper() + part[1:] for part in type_name.split("_")
-    )
+    class_name = "".join(part[:1].upper() + part[1:] for part in type_name.split("_"))
     try:
         return getattr(parser, class_name)
     except AttributeError as error:
@@ -366,19 +332,15 @@ def main() -> int:
             try:
                 parsed = parse_type(
                     parser_type,
-                    fixture.data[fixture.offset:],
+                    fixture.data[fixture.offset :],
                     *fixture.params,
                 )
             except Exception as error:
-                raise ValueError(
-                    f"{fixture_label}: Kaitai parse failed"
-                ) from error
+                raise ValueError(f"{fixture_label}: Kaitai parse failed") from error
 
             if parser_type is parser:
                 if fixture.offset != 0:
-                    raise ValueError(
-                        f"{fixture_label}: root parser must begin at offset zero"
-                    )
+                    raise ValueError(f"{fixture_label}: root parser must begin at offset zero")
                 validate_complete_snapshot(parsed, fixture.data)
             elif hasattr(parsed, "_raw_payload"):
                 record_end = validate_record(
@@ -387,9 +349,7 @@ def main() -> int:
                     fixture.offset,
                 )
                 if record_end != len(fixture.data):
-                    raise ValueError(
-                        f"{fixture_label}: record has trailing data"
-                    )
+                    raise ValueError(f"{fixture_label}: record has trailing data")
             print(f"ok {fixture_label}")
 
     print(f"validated {len(fixture_paths)} snapshot fixtures")

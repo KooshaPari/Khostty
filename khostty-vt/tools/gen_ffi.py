@@ -28,12 +28,14 @@ Usage:
     python3 tools/gen_ffi.py            # rewrite src/ffi.rs
     python3 tools/gen_ffi.py --check    # exit 1 if src/ffi.rs is stale
 """
+
 from __future__ import annotations
 
 import argparse
 import os
 import re
 import sys
+from pathlib import Path
 
 from cabitypes import Emitted, Skipped, fn_ptr_type, map_type, parse_field, safe_ident
 from cscan import (
@@ -53,29 +55,24 @@ UMBRELLA = os.path.join(INCLUDE_DIR, "ghostty", "vt.h")
 OUT_PATH = os.path.join(CRATE_ROOT, "src", "ffi.rs")
 
 
-
 # ---------------------------------------------------------------------------
 # Header parsing
 # ---------------------------------------------------------------------------
 
 
 def parse_header(path: str, out: Emitted) -> None:
-    raw = open(path, encoding="utf-8").read()
+    raw = Path(path).read_text(encoding="utf-8")
     src = strip_comments(raw)
     rel = os.path.relpath(path, REPO_ROOT)
     src, guarded = strip_target_guards(src)
     for gname in guarded:
-        out.skipped.append(
-            Skipped("declared only under `#ifdef __wasm__`", f"{rel}: {gname}")
-        )
+        out.skipped.append(Skipped("declared only under `#ifdef __wasm__`", f"{rel}: {gname}"))
 
     # --- object-like macros -------------------------------------------------
     # Requiring whitespace after the macro name excludes function-like macros
     # (`#define FOO(x) ...`), while still accepting parenthesised bodies such as
     # `#define GHOSTTY_MODS_SHIFT (1 << 0)`.
-    for m in re.finditer(
-        r"^#define\s+(GHOSTTY_[A-Z0-9_]+)\s+([^\n].*?)\s*$", src, re.M
-    ):
+    for m in re.finditer(r"^#define\s+(GHOSTTY_[A-Z0-9_]+)\s+([^\n].*?)\s*$", src, re.MULTILINE):
         name, value = m.group(1), m.group(2).strip()
         value = value.replace("GHOSTTY_ENUM_MAX_VALUE", "c_int::MAX")
         value = strip_redundant_outer_parens(value)
@@ -101,7 +98,7 @@ def parse_header(path: str, out: Emitted) -> None:
         em = re.match(
             r"typedef\s+enum\s*(?:GHOSTTY_ENUM_TYPED\s*)?\{(?P<body>.*)\}\s*(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*$",
             decl,
-            re.S,
+            re.DOTALL,
         )
         if em:
             emit_enum(em.group("name"), em.group("body"), rel, out)
@@ -111,19 +108,17 @@ def parse_header(path: str, out: Emitted) -> None:
         sm = re.match(
             r"typedef\s+(?P<kind>struct|union)\s*(?P<tag>[A-Za-z_][A-Za-z0-9_]*)?\s*\{(?P<body>.*)\}\s*(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*$",
             decl,
-            re.S,
+            re.DOTALL,
         )
         if sm:
-            emit_record(
-                sm.group("kind"), sm.group("name"), sm.group("body"), rel, out
-            )
+            emit_record(sm.group("kind"), sm.group("name"), sm.group("body"), rel, out)
             continue
 
         # opaque handle: typedef struct XImpl* X;  /  typedef const struct XImpl* X;
         om = re.match(
             r"typedef\s+(?P<const>const\s+)?struct\s+(?P<tag>[A-Za-z_][A-Za-z0-9_]*)\s*\*\s*(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*$",
             decl,
-            re.S,
+            re.DOTALL,
         )
         if om:
             tag = om.group("tag")
@@ -146,7 +141,7 @@ def parse_header(path: str, out: Emitted) -> None:
             fm = re.match(
                 r"typedef\s+(?P<ret>.*?)\(\s*\*\s*(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*\)\s*\((?P<params>.*)\)\s*$",
                 decl,
-                re.S,
+                re.DOTALL,
             )
         if fm:
             name = fm.group("name")
@@ -163,13 +158,11 @@ def parse_header(path: str, out: Emitted) -> None:
         fwd = re.match(
             r"typedef\s+(?P<kind>struct|union)\s+(?P<tag>[A-Za-z_][A-Za-z0-9_]*)\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*$",
             decl,
-            re.S,
+            re.DOTALL,
         )
         if fwd:
             if fwd.group("tag") != fwd.group("name"):
-                out.types[fwd.group("name")] = (
-                    f"pub type {fwd.group('name')} = {fwd.group('tag')};"
-                )
+                out.types[fwd.group("name")] = f"pub type {fwd.group('name')} = {fwd.group('tag')};"
             out.forward_tags.add(fwd.group("tag"))
             continue
 
@@ -177,7 +170,7 @@ def parse_header(path: str, out: Emitted) -> None:
         am = re.match(
             r"typedef\s+(?P<type>.+?)\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*$",
             decl,
-            re.S,
+            re.DOTALL,
         )
         if am:
             try:
@@ -193,13 +186,14 @@ def parse_header(path: str, out: Emitted) -> None:
     # --- bare tagged record definitions (no typedef) ------------------------
     for m in re.finditer(r"(?<![A-Za-z0-9_])struct\s+[A-Za-z_][A-Za-z0-9_]*\s*\{", src):
         start = m.start()
-        brace = src.index("{", start)
         try:
             end = find_decl_end(src, start)
         except ValueError:
             continue
         decl = src[start:end]
-        tm = re.match(r"struct\s+(?P<tag>[A-Za-z_][A-Za-z0-9_]*)\s*\{(?P<body>.*)\}\s*$", decl, re.S)
+        tm = re.match(
+            r"struct\s+(?P<tag>[A-Za-z_][A-Za-z0-9_]*)\s*\{(?P<body>.*)\}\s*$", decl, re.DOTALL
+        )
         if not tm:
             continue
         emit_record("struct", tm.group("tag"), tm.group("body"), rel, out)
@@ -220,7 +214,7 @@ def parse_header(path: str, out: Emitted) -> None:
         fdecl = re.match(
             r"^(?P<ret>.+?)\s*(?P<name>ghostty_[A-Za-z0-9_]+)\s*\((?P<params>.*)\)\s*$",
             " ".join(decl.split()),
-            re.S,
+            re.DOTALL,
         )
         if not fdecl:
             out.skipped.append(Skipped("unparsed function", f"{rel}: {decl.strip()}"))
@@ -324,7 +318,7 @@ def emit_record(kind: str, name: str, body: str, rel: str, out: Emitted) -> None
 def header_paths() -> list[str]:
     if not os.path.exists(UMBRELLA):
         raise SystemExit(f"umbrella header not found: {UMBRELLA}")
-    umbrella = open(UMBRELLA, encoding="utf-8").read()
+    umbrella = Path(UMBRELLA).read_text(encoding="utf-8")
     ordered = INCLUDE_RE.findall(umbrella)
     paths = []
     for rel in ordered:
@@ -348,7 +342,7 @@ def generate() -> tuple[str, Emitted]:
 
     total_declared = 0
     for path in header_paths():
-        body = strip_comments(open(path, encoding="utf-8").read())
+        body = strip_comments(Path(path).read_text(encoding="utf-8"))
         body, _ = strip_target_guards(body)
         total_declared += len(re.findall("GHOSTTY_API ", body))
 
@@ -403,22 +397,30 @@ def generate() -> tuple[str, Emitted]:
         f"// ---------------------------------------------------------------------\n"
     )
 
-    parts.append(f"/// Number of `GHOSTTY_API` functions declared by this binding.\npub const BINDING_FUNCTION_COUNT: usize = {len(out.functions)};\n")
+    parts.append(
+        f"/// Number of `GHOSTTY_API` functions declared by this binding.\npub const BINDING_FUNCTION_COUNT: usize = {len(out.functions)};\n"
+    )
 
     if out.consts:
-        parts.append("// ---- Constants ---------------------------------------------------------\n")
+        parts.append(
+            "// ---- Constants ---------------------------------------------------------\n"
+        )
         for name in sorted(out.consts):
             parts.append(out.consts[name])
         parts.append("")
 
     if out.types:
-        parts.append("// ---- Types -------------------------------------------------------------\n")
+        parts.append(
+            "// ---- Types -------------------------------------------------------------\n"
+        )
         for name in sorted(out.types):
             parts.append(out.types[name])
         parts.append("")
 
     if out.fn_ptrs:
-        parts.append("// ---- Callback types ----------------------------------------------------\n")
+        parts.append(
+            "// ---- Callback types ----------------------------------------------------\n"
+        )
         for name in sorted(out.fn_ptrs):
             parts.append(out.fn_ptrs[name])
         parts.append("")
@@ -431,9 +433,11 @@ def generate() -> tuple[str, Emitted]:
     parts.append("")
 
     if out.skipped:
-        parts.append("// ---- SKIPPED -----------------------------------------------------------\n")
+        parts.append(
+            "// ---- SKIPPED -----------------------------------------------------------\n"
+        )
         parts.append("// Items the generator could not represent as Rust declarations:\n")
-        for skip in sorted(set((s.reason, s.source) for s in out.skipped)):
+        for skip in sorted({(s.reason, s.source) for s in out.skipped}):
             parts.append(f"//   - {skip[0]}: {skip[1]}")
         parts.append("")
 
@@ -456,7 +460,7 @@ def main() -> int:
     text, out = generate()
 
     if args.check:
-        existing = open(OUT_PATH, encoding="utf-8").read() if os.path.exists(OUT_PATH) else ""
+        existing = Path(OUT_PATH).read_text(encoding="utf-8") if os.path.exists(OUT_PATH) else ""
         if existing != text:
             print("src/ffi.rs is stale; run tools/gen_ffi.py", file=sys.stderr)
             return 1
@@ -472,7 +476,7 @@ def main() -> int:
         f"{len(out.functions)} functions, {len(out.types)} types, "
         f"{len(out.consts)} constants, {len(out.skipped)} skipped"
     )
-    for reason, source in sorted(set((s.reason, s.source) for s in out.skipped)):
+    for reason, source in sorted({(s.reason, s.source) for s in out.skipped}):
         print(f"  skipped {reason}: {source}", file=sys.stderr)
     return 0
 

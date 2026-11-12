@@ -12,14 +12,15 @@ SymbolsNerdFont (not Mono!) font is passed as the first argument to it.
 """
 
 import ast
-import sys
 import math
-from fontTools.ttLib import TTFont, TTLibError
-from fontTools.pens.boundsPen import BoundsPen
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Literal, TypedDict, cast
 from urllib.request import urlretrieve
+
+from fontTools.pens.boundsPen import BoundsPen
+from fontTools.ttLib import TTFont, TTLibError
 
 type PatchSetAttributes = dict[Literal["default"] | int, PatchSetAttributeEntry]
 type ResolvedSymbol = PatchSetAttributes | PatchSetScaleRules | int | None
@@ -112,7 +113,10 @@ class PatchSetExtractor(ast.NodeVisitor):
         except ValueError:
             # Spooky eval! But we trust nerd fonts to be safe...
             if hasattr(ast, "unparse"):
-                return eval(
+                # Accepted risk, deliberately: the input is nerd-fonts' own symbol
+                # table, the globals are an allowlist, and the terms are unparsed
+                # from a parsed AST rather than being raw text from the file.
+                return eval(  # noqa: S307
                     ast.unparse(node),
                     {"box_enabled": False, "box_keep": False},
                     {
@@ -140,7 +144,7 @@ class PatchSetExtractor(ast.NodeVisitor):
 
     def process_patch_entry(self, dict_node: ast.Dict) -> None:
         entry = {}
-        for key_node, value_node in zip(dict_node.keys, dict_node.values):
+        for key_node, value_node in zip(dict_node.keys, dict_node.values, strict=True):
             if isinstance(key_node, ast.Constant):
                 if key_node.value == "Enabled":
                     if self.safe_literal_eval(value_node):
@@ -307,10 +311,7 @@ def build_lut(literals_by_cp: dict[int, str]) -> tuple[list[int], list[int], lis
 
 def emit_tables_file(literals_by_cp: dict[int, str]) -> str:
     stage1, stage2, stage3 = build_lut(literals_by_cp)
-    print(
-        "Info: nerd font LUT "
-        f"stage1={len(stage1)} stage2={len(stage2)} stage3={len(stage3)}"
-    )
+    print(f"Info: nerd font LUT stage1={len(stage1)} stage2={len(stage2)} stage3={len(stage3)}")
     stage3_body = ",\n".join(stage3)
     return f"""//! This is a generated file, produced by nerd_font_codegen.py
 //! DO NOT EDIT BY HAND!
@@ -495,10 +496,7 @@ def collect_entries(
                         # bounds, such as 0xE0B0 (powerline left hard divider).
                         # We don't worry about the horizontal bounds, as they by
                         # design should not affect the group's bounding box.
-                        if (
-                            patch_set_name == "Progress Indicators"
-                            and cp_original == 0xEDFF
-                        ):
+                        if patch_set_name == "Progress Indicators" and cp_original == 0xEDFF:
                             glyph = glyphs[cmap[0xE0B0]]
                             bounds = BoundsPen(glyphSet=glyphs)
                             glyph.draw(bounds)
@@ -545,9 +543,7 @@ def collect_entries(
                         continue
                     this_bounds = individual_bounds[cp_nerdfont]
                     this_height = this_bounds[3] - this_bounds[1]
-                    patch_set_entries[cp_nerdfont]["relative_height"] = (
-                        this_height / group_height
-                    )
+                    patch_set_entries[cp_nerdfont]["relative_height"] = this_height / group_height
                     patch_set_entries[cp_nerdfont]["relative_y"] = (
                         this_bounds[1] - yMin
                     ) / group_height
@@ -555,9 +551,7 @@ def collect_entries(
                     # that is, if all glyphs in the group have the same advance width.
                     if group_is_monospace:
                         this_width = this_bounds[2] - this_bounds[0]
-                        patch_set_entries[cp_nerdfont]["relative_width"] = (
-                            this_width / group_width
-                        )
+                        patch_set_entries[cp_nerdfont]["relative_width"] = this_width / group_width
                         patch_set_entries[cp_nerdfont]["relative_x"] = (
                             this_bounds[0] - xMin
                         ) / group_width

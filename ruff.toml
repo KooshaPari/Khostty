@@ -1,0 +1,81 @@
+# Ruff configuration for the repository-level Python tooling.
+#
+# The `khostty-python/` package has its own, stricter profile in
+# `khostty-python/pyproject.toml`, and Ruff resolves configuration per file, so
+# package files keep using that. This file covers everything else: `bench/`,
+# `tools/`, `dist/`, `khostty-vt/tools/` and the two `src/` generators.
+#
+# Before this file existed, none of those paths had a configuration, so they
+# were linted with whatever Ruff's defaults happened to be. That is not a stable
+# target: Ruff 0.16 expanded its default rule selection well beyond the old
+# `E4/E7/E9/F` core, and the same tree went from a handful of findings to 131
+# without a single line changing. Selecting explicitly and pinning the Ruff
+# version in CI is what stops that from being invisible.
+
+# The generators are the strictest consumers of this config, and one of them
+# (src/font/nerd_font_codegen.py) already uses `type X = ...` aliases and `match`,
+# which need 3.12 and 3.10 respectively. Declaring a lower target made Ruff
+# report those files as invalid syntax rather than merely unfashionable.
+target-version = "py312"
+line-length = 100
+
+# Vendored code is not ours to reformat, and generated code is not ours to edit.
+# Both stay visible to the build; neither is a linting target.
+extend-exclude = [
+  # Upstream nerd-fonts' font patcher, vendored verbatim. It accounted for 85 of
+  # the 131 findings measured on 2026-11-12 and none of them are ours to fix.
+  "vendor/",
+  # Emitted by src/font/nerd_font_codegen.py with a "DO NOT EDIT BY HAND"
+  # header. Reformatting it would be undone by the next regeneration, so the
+  # generator is the only place a fix could live, and it is not worth a
+  # divergence from the output upstream produces.
+  "src/font/nerd_font_codepoint_tables.py",
+  # Ruff formats Python code blocks inside Markdown. That is a useful feature,
+  # but enabling it here would reformat worked examples in docs other lanes own
+  # (the first run rewrote the client example in src/apprt/ipc/protocol.md), so
+  # it is out of scope for a lint gate.
+  "**/*.md",
+]
+
+[lint]
+# Mirrors the package profile minus `PYI`, which only applies to stub files.
+# `PL` is deliberately absent. Its numeric half (PLR0912/PLR0915 branch and
+# statement ceilings, PLR2004 magic values) is a style opinion, and enforcing it
+# would mean restructuring generators that are derived from upstream nerd-fonts
+# and Ghostty sources. Every finding it produced here was of that kind, so
+# including it would have meant either a large cosmetic rewrite of files we do
+# not own the shape of, or an ignore list as long as the rule list.
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "C4", "PIE", "FURB"]
+ignore = [
+  # `__del__`-style blind except-and-pass is deliberate in the two places it
+  # appears; the package profile ignores these for the same reason.
+  "S110",
+  "BLE001",
+  # These scripts are invoked as `python3 <path>` (see the `binding-freshness`
+  # job and build.zig), so a shebang with no executable bit is a real
+  # inconsistency in the repo but not a defect in any invocation path. Fixing it
+  # would mean a mode change on files upstream owns the layout of.
+  "EXE001",
+  # Long lines here are header declarations and URL strings, not prose.
+  "E501",
+]
+
+[lint.per-file-ignores]
+# UP017 rewrites `datetime.timezone.utc` to `datetime.UTC`, which only exists on
+# 3.11+. This generator is run by hand as `python3 tools/dump_abi_layout.py`, and
+# `python3` on a supported dev host here is 3.9, so the rewrite trades a
+# portable expression for a tool that raises AttributeError on the machine it is
+# documented to be run from.
+"khostty-vt/tools/dump_abi_layout.py" = ["UP017"]
+# Generators shell out to the Zig toolchain and print their results by design.
+#
+# S603 is `subprocess` with a non-literal argv. Every call site passes an argv
+# list built from a compiler this machine was probed for plus literal flags, and
+# nothing is ever handed to a shell, so the rule is a false positive in exactly
+# the place a C toolchain wrapper has to live.
+"khostty-vt/tools/*" = ["T201", "S603"]
+"bench/*" = ["T201"]
+# The generator asserts its way through nerd-fonts' symbol tables. Those asserts
+# are the tool's failure mechanism, not a test-lint smell, and a failed assert
+# stops generation before it can write a wrong table.
+"src/font/nerd_font_codegen.py" = ["S101"]

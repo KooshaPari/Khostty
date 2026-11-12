@@ -319,29 +319,40 @@ jobs:
           arguments: --all-features
 
   python:
-    # 2026-11-12: genuinely RED, not merely advisory. Measured locally with ruff
-    # 0.16.7: `ruff check .` -> exit 1, 131 errors (63 auto-fixable);
-    # `ruff format --check .` -> exit 1, 13 files would be reformatted. The job
-    # keeps `continue-on-error` because making it blocking would red every push,
-    # but it is labelled known-red so its green tick is not read as "python lint
-    # passes". Cleanup is tracked separately; when it goes green, drop both the
-    # label and `continue-on-error`.
-    name: "Python (advisory: known red)"
+    # 2026-11-12: this job is now blocking. Until this commit it was
+    # `continue-on-error: true` with a `|| echo "::warning::"` on each step, so it
+    # reported success on every run whether or not ruff passed; the measured truth
+    # was exit 1 on both steps.
+    #
+    # What the cleanup actually had to fix, measured before any code changed:
+    # `ruff check .` reported 131 errors with ruff 0.16.7, but 85 of them were in
+    # `vendor/nerd-fonts/font-patcher.py` and 11 in the generated
+    # `src/font/nerd_font_codepoint_tables.py`. Neither is ours to edit, and
+    # neither had ever been a deliberate linting target - they were only in scope
+    # because the repository-level Python had no ruff configuration at all, so it
+    # inherited whatever ruff's defaults happened to be. Ruff 0.16 widened those
+    # defaults well past the old `E4/E7/E9/F` core, which is why the count jumped
+    # without a line of Python changing. `ruff.toml` now selects rules explicitly
+    # and excludes those two paths, at which point 42 first-party findings
+    # remained and every one of them was fixed rather than ignored.
+    #
+    # The version is pinned for the same reason: an unpinned `pip install ruff`
+    # means the gate's ruleset changes without a commit.
+    name: Python
     needs: detect
     if: needs.detect.outputs.has_python == 'true'
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Install ruff
-        run: pip install ruff
-      - name: "ruff check (known red: 131 errors measured 2026-11-12)"
-        run: ruff check . 2>&1 || echo "::warning::ruff check FAILED (known red, advisory)"
-      - name: "ruff format --check (known red: 13 files measured 2026-11-12)"
-        run: ruff format --check . 2>&1 || echo "::warning::ruff format --check FAILED (known red, advisory)"
+        run: pip install ruff==0.16.7
+      - name: ruff check
+        run: ruff check .
+      - name: ruff format --check
+        run: ruff format --check .
 
   pytest:
     name: Python Tests

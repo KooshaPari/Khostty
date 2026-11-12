@@ -30,9 +30,15 @@ linters:
       - .clippy.toml
 
   # --- PYTHON ---
+  # No `args` override, deliberately. It was `["--config", "pyproject.toml"]`,
+  # and there is no pyproject.toml at the repository root, so ruff exits 2 with
+  # "The path `pyproject.toml` does not point to a configuration file" (measured
+  # with ruff 0.16.7). Letting ruff resolve its own configuration per file is
+  # also what `.github/workflows/ci.yml` does, so the two gates cannot disagree:
+  # `khostty-python/pyproject.toml` governs the package, and `ruff.toml` governs
+  # the repository-level tooling.
   - name: ruff
     enabled: true
-    args: ["--config", "pyproject.toml"]
     direct_configs:
       - ruff.toml
       - pyproject.toml
@@ -132,6 +138,7 @@ formatters:
     args: ["format"]
     direct_configs:
       - pyproject.toml
+      - ruff.toml
 
   - name: black
     enabled: true

@@ -107,7 +107,9 @@ def main(argv: list[str]) -> int:
     for n in notes:
         print(f"{n['run']}: {n['chip']} | {n['library']}")
         print(f"{'':>{len(n['run'])}}  version={n['version']} optimize={n['optimize']}")
-        print(f"{'':>{len(n['run'])}}  git={n['git_head'][:12]} date={n['date']} load1m={n['load']}")
+        print(
+            f"{'':>{len(n['run'])}}  git={n['git_head'][:12]} date={n['date']} load1m={n['load']}"
+        )
     print()
 
     indexed = [(name, index(data), data.get("notes", {})) for name, data in runs]
@@ -135,7 +137,7 @@ def main(argv: list[str]) -> int:
                     values.append(raw)
             else:
                 values.append(table.get((section, metric)))
-        for value, (name, _, _) in zip(values, indexed):
+        for value, (name, _, _) in zip(values, indexed, strict=True):
             row += fmt(value, unit).rjust(max(len(name) + 2, 14))
         numeric = all(isinstance(value, (int, float)) for value in values)
         if len(indexed) == 2 and numeric and values[0]:

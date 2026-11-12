@@ -14,8 +14,7 @@ try:
     import jsonschema
 except ImportError as error:
     raise SystemExit(
-        "missing ABI schema verifier dependencies; run this inside "
-        "`nix develop`"
+        "missing ABI schema verifier dependencies; run this inside `nix develop`"
     ) from error
 
 
@@ -38,8 +37,7 @@ def load_wasm_manifest(path: Path) -> bytes:
         import wasmtime
     except ImportError as error:
         raise SystemExit(
-            "missing WebAssembly verifier dependencies; run this inside "
-            "`nix develop`"
+            "missing WebAssembly verifier dependencies; run this inside `nix develop`"
         ) from error
 
     engine = wasmtime.Engine()
@@ -61,9 +59,7 @@ def load_wasm_manifest(path: Path) -> bytes:
 def load_manifest(path: Path) -> dict[str, Any]:
     """Execute the public export and decode its JSON result."""
     encoded = (
-        load_wasm_manifest(path)
-        if path.suffix.lower() == ".wasm"
-        else load_native_manifest(path)
+        load_wasm_manifest(path) if path.suffix.lower() == ".wasm" else load_native_manifest(path)
     )
     value = json.loads(encoded)
     if not isinstance(value, dict):
@@ -96,10 +92,7 @@ def validate(schema_path: Path, library_path: Path) -> None:
         raise SystemExit(f"ABI manifest failed {schema_path}")
 
     abi = manifest["abi"]
-    print(
-        f"validated {abi['target']}-{abi['os']} ABI manifest "
-        f"({len(manifest['types'])} types)"
-    )
+    print(f"validated {abi['target']}-{abi['os']} ABI manifest ({len(manifest['types'])} types)")
 
 
 def main() -> None:

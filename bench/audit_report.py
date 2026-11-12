@@ -6,9 +6,11 @@ run columns. Any mismatch, or any row that cannot be mapped, is reported. This
 exists because a hand-written report is exactly where a unit conversion goes
 wrong.
 """
+
 import json
 import re
 import sys
+from pathlib import Path
 
 RUNS = ["khostty", "khostty-run2", "upstream", "upstream-run2"]
 
@@ -30,7 +32,11 @@ MAP = {
     "200x50 decode median": ("snapshot", "snapshot_200x50_2k_lines_decode_median_ms", 1),
     "200x50 round trip": ("snapshot", "snapshot_200x50_2k_lines_roundtrip_median_ms", 1),
     # 8.4
-    "cold (fresh search, fresh needle), frequent needle": ("search", "search_frequent_error_cold_median_ms", 1),
+    "cold (fresh search, fresh needle), frequent needle": (
+        "search",
+        "search_frequent_error_cold_median_ms",
+        1,
+    ),
     "cold p95": ("search", "search_frequent_error_cold_p95_ms", 1),
     "rescan (same search, changed needle)": ("search", "search_frequent_error_rescan_median_ms", 1),
     "warm (same needle, results retained)": ("search", "search_frequent_error_warm_median_ms", 1),
@@ -60,10 +66,10 @@ MAP = {
 
 
 def main() -> int:
-    text = open("bench/results/README.md").read()
+    text = Path("bench/results/README.md").read_text(encoding="utf-8")
     runs = {}
     for label in RUNS:
-        data = json.load(open(f"bench/results/{label}-20260917.json"))
+        data = json.loads(Path(f"bench/results/{label}-20260917.json").read_text(encoding="utf-8"))
         runs[label] = {(m["section"], m["name"]): m["value"] for m in data["metrics"]}
 
     rows = 0
