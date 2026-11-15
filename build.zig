@@ -140,6 +140,13 @@ pub fn build(b: *std.Build) !void {
         "Run the app under valgrind",
     );
     const test_step = b.step("test", "Run tests");
+    const coverage_step = b.step("coverage", "Measure emitted executable Zig source lines with kcov (not total-source coverage)");
+    const coverage_run = b.addSystemCommand(&.{"python3"});
+    coverage_run.addFileArg(b.path("tools/coverage.py"));
+    coverage_run.addArg(b.pathFromRoot("src"));
+    coverage_run.addArg(b.pathFromRoot("zig-out/coverage"));
+    coverage_run.has_side_effects = true;
+    coverage_step.dependOn(&coverage_run.step);
     const test_windows_apprt_step = b.step(
         "test-windows-apprt",
         "Run Windows app runtime tests (host-runnable; see src/main_windows_apprt.zig)",
@@ -505,6 +512,7 @@ pub fn build(b: *std.Build) !void {
             .root_module = mod.vt,
             .filters = test_filters,
         });
+        coverage_run.addArtifactArg(mod_vt_test);
         const mod_vt_test_run = b.addRunArtifact(mod_vt_test);
         test_lib_vt_step.dependOn(&mod_vt_test_run.step);
         test_lib_vt_build_step.dependOn(&mod_vt_test.step);
@@ -513,6 +521,7 @@ pub fn build(b: *std.Build) !void {
             .root_module = mod.vt_c,
             .filters = test_filters,
         });
+        coverage_run.addArtifactArg(mod_vt_c_test);
         const mod_vt_c_test_run = b.addRunArtifact(mod_vt_c_test);
         test_lib_vt_step.dependOn(&mod_vt_c_test_run.step);
         test_lib_vt_build_step.dependOn(&mod_vt_c_test.step);
@@ -545,6 +554,7 @@ pub fn build(b: *std.Build) !void {
         addGhosttyH(b, test_exe.root_module, config.baselineTarget(b.graph.io), .Debug);
 
         // Normal test running
+        coverage_run.addArtifactArg(test_exe);
         const test_run = b.addRunArtifact(test_exe);
         config.addPatchElf(test_exe, &test_run.step);
         test_step.dependOn(&test_run.step);
@@ -593,6 +603,7 @@ pub fn build(b: *std.Build) !void {
         // missing and every containing test fails to compile.
         addGhosttyH(b, win_apprt_test.root_module, config.baselineTarget(b.graph.io), .Debug);
 
+        coverage_run.addArtifactArg(win_apprt_test);
         const win_apprt_run = b.addRunArtifact(win_apprt_test);
         config.addPatchElf(win_apprt_test, &win_apprt_run.step);
         test_windows_apprt_step.dependOn(&win_apprt_run.step);
@@ -642,6 +653,7 @@ pub fn build(b: *std.Build) !void {
         quarantine_options.addOption([]const u8, "name", quarantine);
         agent_ipc_test.root_module.addOptions("test_quarantine", quarantine_options);
 
+        coverage_run.addArtifactArg(agent_ipc_test);
         const agent_ipc_run = b.addRunArtifact(agent_ipc_test);
         config.addPatchElf(agent_ipc_test, &agent_ipc_run.step);
         test_agent_ipc_step.dependOn(&agent_ipc_run.step);
