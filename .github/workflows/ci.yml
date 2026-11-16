@@ -56,6 +56,12 @@ jobs:
         with:
           version: "0.16.0"
           shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
+          # install-zig resolves the tarball from the runner platform, so the
+          # macOS hashes are passed separately: a sha256 only verifies the one
+          # tarball it was published for. Values from
+          # https://ziglang.org/download/index.json for 0.16.0, read 2026-11-16.
+          shasum_macos_arm64: b23d70deaa879b5c2d486ed3316f7eaa53e84acf6fc9cc747de152450d401489
+          shasum_macos_x64: 0387557ed1877bc6a2e1802c8391953baddba76081876301c522f52977b52ba7
       - name: Select Xcode
         run: |
           # Use latest available Xcode (macos-latest ships with the newest).
