@@ -6,19 +6,33 @@ description: >-
   `Zig Fmt` job in CI run 36584839303 even though the tree was already
   `zig fmt`-clean. This path talks to ziglang.org only and refuses to proceed on
   a hash mismatch, so a compromised or truncated download cannot be executed.
+  The target triple is resolved from the runner (Linux/macOS, x64/arm64) so the
+  same action serves the macOS job; each platform's expected hash must be passed
+  explicitly, because a hash is only meaningful for one tarball.
 
 inputs:
   version:
     description: "Zig version to install, e.g. 0.16.0"
     required: true
   shasum:
-    description: "Expected SHA-256 of the linux-x86_64 tarball, lowercase hex"
+    description: "Expected SHA-256 of the linux-x86_64 tarball, lowercase hex (default platform)"
     required: true
+  shasum_macos_arm64:
+    description: "Expected SHA-256 of the macOS aarch64 tarball; required on macOS arm64 runners"
+    required: false
+    default: ""
+  shasum_macos_x64:
+    description: "Expected SHA-256 of the macOS x86_64 tarball; required on macOS x64 runners"
+    required: false
+    default: ""
 
 outputs:
   version:
     description: "The version that was installed"
     value: ${{ steps.pin.outputs.version }}
+  platform:
+    description: "Resolved Zig target triple, e.g. x86_64-linux"
+    value: ${{ steps.pin.outputs.platform }}
 
 runs:
   using: composite
@@ -28,6 +42,8 @@ runs:
       env:
         ZIG_VERSION: ${{ inputs.version }}
         ZIG_SHASUM: ${{ inputs.shasum }}
+        ZIG_SHASUM_MACOS_ARM64: ${{ inputs.shasum_macos_arm64 }}
+        ZIG_SHASUM_MACOS_X64: ${{ inputs.shasum_macos_x64 }}
       run: |
         set -euo pipefail
         # Accept only a strict semver-ish token, so the version can never be
@@ -40,15 +56,52 @@ runs:
           echo "::error::shasum must be 64 lowercase hex characters" >&2
           exit 1
         fi
-        echo "version=$ZIG_VERSION" >> "$GITHUB_OUTPUT"
+        # Resolve the platform from the runner. Before this, the action always
+        # fetched zig-x86_64-linux, so on a macOS runner the extracted binary
+        # could not execute at all ("cannot execute binary file", exit 126) and
+        # the macOS build job could never pass.
+        case "${RUNNER_OS}-${RUNNER_ARCH}" in
+          Linux-X64)
+            platform="x86_64-linux"
+            toolcache_arch="x64"
+            shasum="$ZIG_SHASUM"
+            shasum_source="shasum"
+            ;;
+          macOS-ARM64)
+            platform="aarch64-macos"
+            toolcache_arch="arm64"
+            shasum="$ZIG_SHASUM_MACOS_ARM64"
+            shasum_source="shasum_macos_arm64"
+            ;;
+          macOS-X64)
+            platform="x86_64-macos"
+            toolcache_arch="x64"
+            shasum="$ZIG_SHASUM_MACOS_X64"
+            shasum_source="shasum_macos_x64"
+            ;;
+          *)
+            echo "::error::unsupported runner platform ${RUNNER_OS}-${RUNNER_ARCH}; supported: Linux-X64, macOS-ARM64, macOS-X64" >&2
+            exit 1
+            ;;
+        esac
+        # A hash belongs to exactly one tarball, so a platform picked above
+        # without its own hash must fail loudly instead of verifying against
+        # some other platform's value.
+        if [[ ! "$shasum" =~ ^[0-9a-f]{64}$ ]]; then
+          echo "::error::no valid sha256 for ${platform}; set input '${shasum_source}' to the 64-char lowercase hex value from https://ziglang.org/download/index.json" >&2
+          exit 1
+        fi
+        printf 'version=%s\nplatform=%s\ntoolcache_arch=%s\nshasum=%s\n' \
+          "$ZIG_VERSION" "$platform" "$toolcache_arch" "$shasum" >> "$GITHUB_OUTPUT"
 
     - name: Download Zig from ziglang.org
       shell: bash
       env:
-        ZIG_VERSION: ${{ inputs.version }}
+        ZIG_VERSION: ${{ steps.pin.outputs.version }}
+        ZIG_PLATFORM: ${{ steps.pin.outputs.platform }}
       run: |
         set -euo pipefail
-        url="https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz"
+        url="https://ziglang.org/download/${ZIG_VERSION}/zig-${ZIG_PLATFORM}-${ZIG_VERSION}.tar.xz"
         echo "Downloading $url"
         curl --fail --location --silent --show-error --retry 3 --retry-delay 5 \
           --connect-timeout 30 --max-time 600 \
@@ -57,10 +110,16 @@ runs:
     - name: Verify checksum
       shell: bash
       env:
-        ZIG_SHASUM: ${{ inputs.shasum }}
+        ZIG_SHASUM: ${{ steps.pin.outputs.shasum }}
       run: |
         set -euo pipefail
-        actual="$(sha256sum /tmp/zig.tar.xz | cut -d' ' -f1)"
+        # GNU coreutils ships sha256sum; macOS runner images may not, so fall
+        # back to the BSD `shasum -a 256` form there.
+        if command -v sha256sum >/dev/null 2>&1; then
+          actual="$(sha256sum /tmp/zig.tar.xz | cut -d' ' -f1)"
+        else
+          actual="$(shasum -a 256 /tmp/zig.tar.xz | cut -d' ' -f1)"
+        fi
         if [ "$actual" != "$ZIG_SHASUM" ]; then
           echo "::error::zig tarball checksum mismatch"
           echo "  expected $ZIG_SHASUM"
@@ -72,12 +131,15 @@ runs:
     - name: Install to runner tool cache and PATH
       shell: bash
       env:
-        ZIG_VERSION: ${{ inputs.version }}
+        ZIG_VERSION: ${{ steps.pin.outputs.version }}
+        ZIG_TOOLCACHE_ARCH: ${{ steps.pin.outputs.toolcache_arch }}
       run: |
         set -euo pipefail
-        dest="${RUNNER_TOOL_CACHE}/zig/${ZIG_VERSION}/x64"
+        dest="${RUNNER_TOOL_CACHE}/zig/${ZIG_VERSION}/${ZIG_TOOLCACHE_ARCH}"
         mkdir -p "$dest"
-        tar -xJf /tmp/zig.tar.xz -C "$dest" --strip-components=1
+        # `-xf` lets the tar implementation auto-detect xz: bsdtar on macOS and
+        # GNU tar on Linux both handle it, while `-J` is not portable.
+        tar -xf /tmp/zig.tar.xz -C "$dest" --strip-components=1
         # GITHUB_PATH only takes effect for SUBSEQUENT steps, so prepend PATH
         # inline for this step's own `zig version` self-check. Observed in CI run
         # 36628566922: without the inline export the check died with
