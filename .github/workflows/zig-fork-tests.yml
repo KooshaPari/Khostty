@@ -162,6 +162,11 @@ jobs:
           # libxml2 / glib / pkg-config that the imported apprt/windows
           # modules transitively link against).
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      # 2026-11-17: resolve every zig package dependency from
+      # build.zig.zon.txt into a shared global cache before building. Without
+      # this the build resolved packages over the live network and a third-party
+      # 504 (codeberg.org, translate-c) failed this job. See the action's header.
+      - uses: ./.github/actions/fetch-zig-deps
       - name: Run test-windows-apprt
         run: nix develop -c zig build test-windows-apprt
 
@@ -183,6 +188,8 @@ jobs:
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      # See the windows-apprt job: same pre-fetch, same reason (2026-11-17).
+      - uses: ./.github/actions/fetch-zig-deps
       - name: Run test-agent-ipc
         run: nix develop -c zig build test-agent-ipc
 
@@ -225,6 +232,13 @@ jobs:
           # CACHIX_AUTH_TOKEN. flake.nix supplies every system dependency the
           # suite needs, so `nix develop -c` IS the dependency install step.
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      # 2026-11-17: this is the reason a REQUIRED context went red with no code
+      # change. `nix develop -c zig build` had no ZIG_GLOBAL_CACHE_DIR and no
+      # pre-fetch, so `pkg/translate-c/build.zig.zon:15:20: error: bad HTTP
+      # response code: '504 Gateway Timeout'` failed the job and the 07:26 push
+      # run on this same commit had already passed. Fetch (with bounded
+      # retries) first, build second.
+      - uses: ./.github/actions/fetch-zig-deps
       - name: Run zig build test
         # `--summary all` is load-bearing, not decoration: `zig build test`
         # prints NOTHING when it passes, so without this flag a green job is

@@ -1,0 +1,94 @@
+name: Pre-fetch zig dependencies
+description: >
+  Populate the zig global cache from build.zig.zon.txt before a build, with
+  bounded retries per URL.
+
+  Why this exists (2026-11-17): the fork's `zig build` jobs run
+  `nix develop -c zig build ...` with no ZIG_GLOBAL_CACHE_DIR and no pre-fetch,
+  so zig resolved every package dependency over the live network on each run.
+  `pkg/translate-c` (and, on 2026-11-12, `pkg/wuffs`) then failed the REQUIRED
+  `test (zig build test)` context on a third-party HTTP fault rather than on
+  anything to do with the code:
+
+    pkg/translate-c/build.zig.zon:15:20: error: bad HTTP response code: '504 Gateway Timeout'
+    pkg/wuffs/build.zig.zon:17:20: error: HTTP response read failure: ConnectionResetByPeer
+
+  `zig build --fetch` cannot substitute here: it does not fetch transitive
+  dependencies (ziglang/zig#20976), which is exactly why upstream ships
+  `build.zig.zon.txt` plus `nix/build-support/fetch-zig-cache.sh`. This action
+  consumes that same list, so it adds no new source of truth. Retries are
+  bounded and a persistent failure still fails the job: no test is weakened and
+  no missing dependency is silently tolerated.
+
+inputs:
+  attempts:
+    description: Total attempts per URL before failing.
+    required: false
+    default: "4"
+  cache-dir:
+    description: >
+      Directory to use as ZIG_GLOBAL_CACHE_DIR. Empty means
+      $RUNNER_TEMP/zig-global-cache.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Fetch build.zig.zon.txt into the zig global cache
+      shell: bash
+      env:
+        ATTEMPTS: ${{ inputs.attempts }}
+        CACHE_DIR: ${{ inputs.cache-dir }}
+      run: |
+        set -uo pipefail
+
+        cache_dir="${CACHE_DIR:-${RUNNER_TEMP:-/tmp}/zig-global-cache}"
+        mkdir -p "$cache_dir"
+        export ZIG_GLOBAL_CACHE_DIR="$cache_dir"
+        # Export for the build steps that follow: without this the fetched
+        # packages exist but `zig build` still resolves against ~/.cache/zig
+        # and goes back to the network.
+        echo "ZIG_GLOBAL_CACHE_DIR=$ZIG_GLOBAL_CACHE_DIR" >> "$GITHUB_ENV"
+
+        case "${ATTEMPTS}" in
+          ''|*[!0-9]*|0) echo "::error::attempts must be a positive integer, got '${ATTEMPTS}'"; exit 1 ;;
+        esac
+
+        list="${GITHUB_WORKSPACE:-$PWD}/build.zig.zon.txt"
+        if [ ! -f "$list" ]; then
+          echo "::error::build.zig.zon.txt not found at $list"
+          exit 1
+        fi
+
+        failed=0
+        total=0
+        while IFS= read -r url; do
+          case "$url" in ''|'#'*) continue ;; esac
+          total=$((total + 1))
+          ok=0
+          attempt=1
+          while [ "$attempt" -le "$ATTEMPTS" ]; do
+            if zig fetch "$url" >/dev/null 2>&1; then
+              ok=1
+              break
+            fi
+            echo "::warning::zig fetch failed (attempt ${attempt}/${ATTEMPTS}): $url"
+            if [ "$attempt" -lt "$ATTEMPTS" ]; then
+              # 15s, 30s, 45s ... bounded by ATTEMPTS; a transient CDN 5xx
+              # clears well inside this window.
+              sleep $((attempt * 15))
+            fi
+            attempt=$((attempt + 1))
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::could not fetch $url after ${ATTEMPTS} attempts"
+            failed=$((failed + 1))
+          fi
+        done < "$list"
+
+        if [ "$failed" -ne 0 ]; then
+          echo "::error::${failed}/${total} dependencies could not be fetched; refusing to start a build that would fail on the same network fault"
+          exit 1
+        fi
+        echo "Pre-fetched ${total} zig dependencies into $ZIG_GLOBAL_CACHE_DIR"
