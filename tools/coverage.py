@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Measure emitted executable source lines, never total-source coverage."""
+
 import json
 import pathlib
 import shutil
@@ -15,8 +16,7 @@ def classify_filename(root, raw, source):
     if path.is_absolute():
         candidates = {path.resolve()}
     else:
-        roots = [pathlib.Path(node.text) for node in root.findall("./sources/source")
-                 if node.text]
+        roots = [pathlib.Path(node.text) for node in root.findall("./sources/source") if node.text]
         if not roots or any(not base.is_absolute() for base in roots):
             raise RuntimeError(f"Missing or nonabsolute Cobertura source roots: {raw}")
         candidates = {(base / path).resolve() for base in roots}
@@ -65,16 +65,29 @@ def main():
                 try:
                     filename, scope = classify_filename(root, raw, source)
                 except RuntimeError as error:
-                    audit.append({"binary": binary, "reported_filename": raw,
-                                  "classification": "unknown", "error": str(error)})
+                    audit.append(
+                        {
+                            "binary": binary,
+                            "reported_filename": raw,
+                            "classification": "unknown",
+                            "error": str(error),
+                        }
+                    )
                     audit_path.write_text(json.dumps(audit, indent=2) + "\n")
                     raise
                 if scope == "dependency":
-                    audit.append({"binary": binary, "reported_filename": raw,
-                                  "filename": str(filename), "classification": scope,
-                                  "executable_lines": len(cls.findall("./lines/line")),
-                                  "hit_lines": sum(int(line.attrib["hits"]) > 0
-                                                   for line in cls.findall("./lines/line"))})
+                    audit.append(
+                        {
+                            "binary": binary,
+                            "reported_filename": raw,
+                            "filename": str(filename),
+                            "classification": scope,
+                            "executable_lines": len(cls.findall("./lines/line")),
+                            "hit_lines": sum(
+                                int(line.attrib["hits"]) > 0 for line in cls.findall("./lines/line")
+                            ),
+                        }
+                    )
                     audit_path.write_text(json.dumps(audit, indent=2) + "\n")
                     continue
                 for line in cls.findall("./lines/line"):
