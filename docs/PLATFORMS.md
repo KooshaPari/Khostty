@@ -184,6 +184,10 @@ Linux-support claims.
 
 **Status: PARTIAL (G3) — exe + DLL built 2026-09-18, executed on real Windows and install/uninstall-verified 2026-09-19; windowing still `error.Unimplemented`, so no GUI window.**
 
+> Strategy decided 2026-11-19: native Win32 apprt only; Noctty read as a capability
+> checklist, winterm-ghostty discarded, stock `wt.exe` kept as OS fallback. See
+> [WINDOWS-STRATEGY.md](WINDOWS-STRATEGY.md).
+
 This is the fork's headline delta: upstream has no Windows application runtime.
 `Runtime.default` returns `.none` for Windows, so upstream produces no executable.
 
