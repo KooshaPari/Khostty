@@ -48,18 +48,30 @@ edit was the build's input, not a bystander.
   `src/App.zig:435` is the only place `focused_surface` is set, so it is always
   null on Windows. `GWLP_USERDATA` now holds `*App` (`App.zig:166`) and reaches
   `paint`/`viewportText`; it cannot reach a terminal, because none is created.
-- **`zig build test-windows-apprt` fails on Apple Silicon, and this predates the
-  text path.** Measured now: 22 `callconv(.winapi)` declarations already exist at
-  `73a54d283` (pre-text-path) against 31 at HEAD, and the step fails identically at
-  both - `compile test windows-apprt-test Debug aarch64-macos.13.0 2 errors`,
-  error `aarch64_aapcs_win` "not supported by compiler backend stage2_llvm" at
-  `win32.zig:119` and `:144`. The cause is the aarch64 half of
-  `.winapi`, not the OS: `zig build test-windows-apprt -Dtarget=x86_64-linux-gnu`
-  gets past that stage entirely and stops only on Linux system libraries this Mac
-  lacks (`EGL`, `gtk-4`, `adwaita-1`). So the step is expected-green on an x86_64
-  host, which is what `ci/zig-fork-tests.yml` runs, and cannot build here. It is
-  left failing loudly rather than skipped, because a skipped step would report a
-  green it never measured.
+- **`zig build test-windows-apprt` could never pass off Windows, and this
+  predates the text path.** Measured 2026-11-20, four ways:
+  - On the Linux CI runner it died at link, `ld.lld: undefined symbol:
+PostMessageW`, `DeleteObject`, `DestroyWindow`, `UnregisterClassW`, on run
+    `44666555483` (tree `c3c863f18`, 03:22Z), three hours before my text-path
+    commit. It was the only failing job in that run.
+  - On this Apple Silicon host it fails earlier, at compile: 22
+    `callconv(.winapi)` declarations already exist at `73a54d283`, 31 at HEAD,
+    and both revisions stop with `aarch64_aapcs_win` "not supported by compiler
+    backend stage2_llvm" at `win32.zig:119` and `:144`.
+  - `zig build test-windows-apprt -Dtarget=x86_64-windows-gnu` **compiles and
+    links**, then fails only with "the host system is unable to execute binaries
+    from the target". So the module graph is target-agnostic; the artifact is
+    just Windows-bound.
+  - `zig build test-windows-apprt-build -Dtarget=x86_64-windows-gnu` returns
+    `rc=0` with the new compile-only step, and the same step without `-Dtarget`
+    returns `rc=1` with the callconv error, so the gate is honest on both hosts.
+
+  The step's own description claimed "host-runnable" and the block comment
+  claimed the Windows modules "never call Win32"; both were false, because
+  `win32.zig` declares the entry points as `extern`. Fixed in `build.zig` by
+  splitting `test-windows-apprt-build` (compile + link, runs anywhere, is what CI
+  gates now) from `test-windows-apprt` (the real run, Windows-only). The run
+  itself is **UNKNOWN** here: no Windows host has executed it.
 
 ## Next test to write, in order
 

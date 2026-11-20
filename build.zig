@@ -149,7 +149,11 @@ pub fn build(b: *std.Build) !void {
     coverage_step.dependOn(&coverage_run.step);
     const test_windows_apprt_step = b.step(
         "test-windows-apprt",
-        "Run Windows app runtime tests (host-runnable; see src/main_windows_apprt.zig)",
+        "Run Windows app runtime tests (needs a Windows host: the artifacts reference Win32 externs)",
+    );
+    const test_windows_apprt_build_step = b.step(
+        "test-windows-apprt-build",
+        "Build Windows app runtime tests without running them (compile check; pass -Dtarget=x86_64-windows-gnu off Windows)",
     );
     const test_agent_ipc_step = b.step(
         "test-agent-ipc",
@@ -576,11 +580,24 @@ pub fn build(b: *std.Build) !void {
         test_valgrind_step.dependOn(&valgrind_run.step);
     }
 
-    // Windows app runtime tests. The modules under src/apprt/windows/ decode
-    // Win32 message parameters and never call Win32, so their tests run on the
-    // host even though the runtime they serve is Windows-only. Their root file
-    // has to sit in src/ for their `../../input/*` imports to stay inside the
-    // module; see src/main_windows_apprt.zig.
+    // Windows app runtime tests. These decode Win32 message parameters, but the
+    // modules still *reference* Win32 entry points: `win32.zig` declares them as
+    // `extern` with `callconv(.winapi)`, so the test artifact must resolve them
+    // at link time. That makes the artifact target-bound, not host-bound:
+    //
+    //   - a host-target build fails, because a macOS/Linux link has no `user32`
+    //     import library (`ld.lld: undefined symbol: PostMessageW` on the Linux
+    //     CI runner, measured 2026-11-20);
+    //   - an aarch64 host fails earlier still, because `stage2_llvm` cannot
+    //     compile `callconv(.winapi)` for `aarch64` (`aarch64_aapcs_win`);
+    //   - `-Dtarget=x86_64-windows-gnu` compiles and links on any host, and the
+    //     resulting binary only runs on Windows.
+    //
+    // So `test-windows-apprt-build` is the host-independent gate (compile + link
+    // against the mingw import libraries) and `test-windows-apprt` is the real
+    // test run, which CI can only do on a Windows runner. Their root file has to
+    // sit in src/ for their `../../input/*` imports to stay inside the module;
+    // see src/main_windows_apprt.zig.
     {
         const win_apprt_test = b.addTest(.{
             .name = "windows-apprt-test",
@@ -607,6 +624,7 @@ pub fn build(b: *std.Build) !void {
         const win_apprt_run = b.addRunArtifact(win_apprt_test);
         config.addPatchElf(win_apprt_test, &win_apprt_run.step);
         test_windows_apprt_step.dependOn(&win_apprt_run.step);
+        test_windows_apprt_build_step.dependOn(&win_apprt_test.step);
     }
 
     // Agent IPC tests. The modules under src/apprt/ipc/ are three levels deep

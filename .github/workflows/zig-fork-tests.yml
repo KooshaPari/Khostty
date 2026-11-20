@@ -127,7 +127,7 @@ permissions:
 
 jobs:
   windows-apprt:
-    name: test-windows-apprt
+    name: build-windows-apprt
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # 2026-10-15: removed `continue-on-error: true`. The cheap windows-apprt
@@ -137,6 +137,17 @@ jobs:
     # (operator directive: "remove masks for real test failures"). The
     # agent-ipc job is no longer masked either; the 60-min cost is offset
     # by the nightly schedule and the workflow_dispatch manual path.
+    #
+    # 2026-11-20: this job now runs the compile-only step for a Windows target
+    # instead of running the tests. The old command could never pass here: the
+    # artifact references Win32 entry points, so a host-target link has no
+    # `user32` import library and dies with `ld.lld: undefined symbol:
+    # PostMessageW` (measured on this runner at 03:22Z the same day, three
+    # hours before the text-path change that was first blamed for it).
+    # `-Dtarget=x86_64-windows-gnu` compiles and links the whole test artifact
+    # against the mingw import libraries, which is the part that can be gated
+    # without a Windows machine. Actually running the tests still needs a
+    # Windows host and is not gated here: that is a measured hole, not a pass.
     steps:
       - uses: actions/checkout@v4
         with:
@@ -167,8 +178,8 @@ jobs:
       # this the build resolved packages over the live network and a third-party
       # 504 (codeberg.org, translate-c) failed this job. See the action's header.
       - uses: ./.github/actions/fetch-zig-deps
-      - name: Run test-windows-apprt
-        run: nix develop -c zig build test-windows-apprt
+      - name: Build test-windows-apprt for Windows (compile + link, no run)
+        run: nix develop -c zig build test-windows-apprt-build -Dtarget=x86_64-windows-gnu
 
   agent-ipc:
     name: test-agent-ipc
