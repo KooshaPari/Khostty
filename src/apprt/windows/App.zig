@@ -2,9 +2,8 @@
 //! top-level window owned by this scaffold, and the message pump.
 //!
 //! Scope: a visible, correctly-sized window whose WM_SIZE is recorded by the
-//! Surface. Painting, input translation and terminal-grid resize are NOT
-//! implemented: WM_PAINT/WM_ERASEBKGND fall through to DefWindowProcW, which
-//! is exactly the contract surface.zig documents.
+//! Surface, and whose background is painted with a solid-colour brush. No
+//! text/grid rendering, input translation or terminal-grid resize exists yet.
 const App = @This();
 const CoreApp = @import("../../App.zig");
 const ipc = @import("../../apprt.zig").ipc;
@@ -21,6 +20,23 @@ const window_title = [_:0]u16{ 'k', 'h', 'o', 's', 't', 't', 'y' };
 /// procedure can reach the owning App while WM_CREATE arrives. A scaffold
 /// process owns at most one window.
 var creating: ?*App = null;
+
+/// Background colour for the client area, Win32 `COLORREF` (`0x00BBGGRR`).
+/// The apprt has no reachable theme/background config yet, so this is an
+/// explicit fallback rather than a configured colour.
+const BACKGROUND_FALLBACK: u32 = 0x00101010;
+
+/// The scaffold process owns at most one window (see `creating`), and the
+/// window procedure is static, so the brush is module-level rather than a
+/// struct field. Created lazily on first paint, deleted in `terminate`.
+var background_brush: ?*anyopaque = null;
+
+fn backgroundBrush() ?*anyopaque {
+    if (background_brush == null) {
+        background_brush = win32.CreateSolidBrush(BACKGROUND_FALLBACK);
+    }
+    return background_brush;
+}
 
 hwnd: ?*anyopaque = null,
 instance: ?*anyopaque = null,
@@ -105,7 +121,33 @@ fn wndProc(
             win32.PostQuitMessage(0);
             return 0;
         },
-        win32.WM_SIZE, win32.WM_PAINT, win32.WM_ERASEBKGND => {
+        // Erase: fill the client rect with the cached brush and claim the
+        // erase so DefWindowProcW does not paint the class background.
+        win32.WM_ERASEBKGND => {
+            if (wparam == 0) return 0;
+            const hdc: *anyopaque = @ptrFromInt(wparam);
+            const brush = backgroundBrush() orelse return 0;
+            var rect: win32.RECT = undefined;
+            if (win32.GetClientRect(hwnd, &rect) == 0) return 0;
+            _ = win32.FillRect(hdc, &rect, brush);
+            return 1;
+        },
+        // Paint: all drawing happens between BeginPaint and EndPaint so the
+        // update region is validated and cleared by the system.
+        win32.WM_PAINT => {
+            var ps: win32.PAINTSTRUCT = undefined;
+            const hdc = win32.BeginPaint(hwnd, &ps);
+            if (hdc == null) return 0;
+            if (backgroundBrush()) |brush| {
+                var rect: win32.RECT = undefined;
+                if (win32.GetClientRect(hwnd, &rect) != 0) {
+                    _ = win32.FillRect(hdc, &rect, brush);
+                }
+            }
+            _ = win32.EndPaint(hwnd, &ps);
+            return 0;
+        },
+        win32.WM_SIZE => {
             const raw = win32.GetWindowLongPtrW(hwnd, win32.GWLP_USERDATA);
             if (raw != 0) {
                 const surface: *Surface = @ptrFromInt(@as(usize, @intCast(raw)));
@@ -119,6 +161,10 @@ fn wndProc(
 
 /// Release the native window and class. Safe when nothing was created.
 pub fn terminate(self: *App) void {
+    if (background_brush) |brush| {
+        _ = win32.DeleteObject(brush);
+        background_brush = null;
+    }
     if (self.hwnd) |hwnd| {
         _ = win32.DestroyWindow(hwnd);
         self.hwnd = null;

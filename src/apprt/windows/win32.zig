@@ -46,6 +46,15 @@ pub const MSG = extern struct {
     pt: POINT = .{},
 };
 
+pub const PAINTSTRUCT = extern struct {
+    hdc: ?*anyopaque = null,
+    fErase: i32 = 0,
+    rcPaint: RECT = .{},
+    fRestore: i32 = 0,
+    fIncUpdate: i32 = 0,
+    rgbReserved: [32]u8 = [_]u8{0} ** 32,
+};
+
 pub const WNDPROC = *const fn (
     hwnd: ?*anyopaque,
     msg: u32,
@@ -118,3 +127,16 @@ pub extern "user32" fn SetWindowLongPtrW(
     value: isize,
 ) callconv(.winapi) isize;
 pub extern "user32" fn GetWindowLongPtrW(hwnd: ?*anyopaque, index: i32) callconv(.winapi) isize;
+
+// Painting. GDI object creation lives in gdi32; the rest is user32. Zig's
+// Windows target links both import libraries, so no build.zig change is needed.
+pub extern "user32" fn GetClientRect(hwnd: ?*anyopaque, rect: *RECT) callconv(.winapi) i32;
+pub extern "user32" fn FillRect(
+    hdc: ?*anyopaque,
+    rect: *const RECT,
+    brush: ?*anyopaque,
+) callconv(.winapi) i32;
+pub extern "user32" fn BeginPaint(hwnd: ?*anyopaque, ps: *PAINTSTRUCT) callconv(.winapi) ?*anyopaque;
+pub extern "user32" fn EndPaint(hwnd: ?*anyopaque, ps: *const PAINTSTRUCT) callconv(.winapi) i32;
+pub extern "gdi32" fn CreateSolidBrush(color: u32) callconv(.winapi) ?*anyopaque;
+pub extern "gdi32" fn DeleteObject(object: ?*anyopaque) callconv(.winapi) i32;
