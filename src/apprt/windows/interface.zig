@@ -7,9 +7,11 @@
 //! Embedded uses host callbacks and different init options, not a native loop.
 //!
 //! Stub status for G3.4-G3.15:
-//! - init, registerWindowClass, run, performAction and performIpc fail with
-//!   error.Unimplemented. No operation reports successful native work.
-//! - terminate, wakeup and redrawInspector are no-ops, with no native resources.
+//! - init, registerWindowClass and run create a real Win32 window (class
+//!   registration, top-level window, message pump). Nothing is painted.
+//! - performAction and performIpc still fail with error.Unimplemented.
+//! - terminate destroys the native window and class when one exists; wakeup
+//!   posts a message to unblock the pump; redrawInspector is a no-op.
 //! - Window.init and Surface.init fail with error.Unimplemented.
 //! - Window.handle and Surface.nativeWindow are null until explicitly attached.
 //! - resourcesDir returns an empty ResourcesDir (both paths absent).
@@ -35,10 +37,13 @@ comptime {
     }
 }
 
-test "Windows App lifecycle remains unavailable" {
+test "Windows App declares a native lifecycle" {
     var app: App = .{};
-    try std.testing.expectError(error.Unimplemented, app.registerWindowClass());
-    try std.testing.expectError(error.Unimplemented, app.run());
+    // The lifecycle is native now, so it is asserted structurally: creating a
+    // window needs a Win32 message queue that a test process does not own.
+    try std.testing.expect(@hasDecl(App, "registerWindowClass"));
+    try std.testing.expect(@hasDecl(App, "run"));
+    try std.testing.expectEqual(null, app.hwnd);
     app.wakeup();
     app.terminate();
 }
