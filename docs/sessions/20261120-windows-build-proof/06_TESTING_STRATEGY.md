@@ -9,7 +9,8 @@ Session: 2026-11-20. Owner lane: khostty. Measured, not planned.
 | The Windows runtime compiles and links | `zig build -Dtarget=x86_64-windows-gnu -Dapp-runtime=windows` on the desk node in `/root/builds/khostty` | `rc=0` (build 1: HEAD) |
 | A Windows binary is produced | `ls -l zig-out/bin; sha256sum zig-out/bin/ghostty.exe` | build 1: `ghostty.exe` 43431936 bytes, `sha256 e5481f70a7ca41563708186df6c1deaf3c4a84e7022d7ccc44c0feec838b334c` |
 | The GDI text path compiles and links | the same command, after mirroring the working-tree `App.zig` (`5f206c3f…`) and `win32.zig` (`d1ea7dd4…`), hashes compared first | build 2: `ghostty.exe` 43726336 bytes (+294400), `sha256 34d91a1e384ab50660aeac00c26f0ad590b2ade507b2a3fa43bbbd7a4c64c11f`, mtime inside the 06:27:03Z-06:29:35Z build window. `zig-out/bin` is written by the install step after compile+link, so a newer and larger exe means the text path resolved |
-| The gdi32 symbols are linkable | the two builds above | build 1 resolved the symbols the paint path CALLS (`CreateSolidBrush`, `DeleteObject`, `GetClientRect`/`FillRect`, `BeginPaint`/`EndPaint`). Build 2 additionally had call sites for `CreateFontW`, `SelectObject`, `GetTextMetricsW`, `SetTextColor`, `SetBkMode`, `TextOutW`, `CreateCompatibleDC`, `DeleteDC`, `MultiByteToWideChar`; the import table itself is still unverified, which is why next test 2 exists |
+| The gdi32 symbols are linkable | the two builds above, then `llvm-objdump -p` on the exe from build 3 | build 1 resolved the symbols the paint path calls; builds 2 and 3 additionally had call sites for the text set. Measured, not inferred: the import table names `GDI32.dll` with `CreateSolidBrush`, `CreateCompatibleDC`, `CreateFontW`, `DeleteDC`, `DeleteObject`, `GetTextMetricsW`, `SelectObject`, `SetBkMode`, `SetTextColor`, `TextOutW` (10 symbols), and `USER32.dll` with `BeginPaint`, `EndPaint`, `FillRect`, `GetClientRect` |
+| The committed tree builds with a recorded exit code | `zig build -Dtarget=x86_64-windows-gnu -Dapp-runtime=windows -p <prefix>` at HEAD `559f33d3b`, on the Mac | build 3: `rc=0`, `ghostty.exe` 43792384 bytes. This target cross-compiles from macOS, so the desk was never required for the compile - only for the earlier runs |
 | The source the build used was the source on disk | `sha256sum src/apprt/windows/{App,win32}.zig` local versus the build tree | build 1: equal, `dd29684f…` and `6e0e8f9d…` (HEAD's `win32.zig`). Build 2: equal, `5f206c3f…` and `d1ea7dd4…` |
 
 The build was run on the desk (Windows 11 host, WSL2 Fedora, `zig 0.16.0` at
@@ -37,9 +38,10 @@ edit was the build's input, not a bystander.
   `renderer_state.mutex`; with no focused surface it returns null and the window
   draws `status_text` ("khostty: no terminal attached (Windows AppRT)") instead.
   So the GDI text path is exercised and observable, but terminal content is not.
-- **DPI awareness is unset.** There is no `SetProcessDpiAwarenessContext` call, so
-  the client area is virtualised on a scaled display and a 16px requested cell
-  height is not 16 physical pixels. Unmeasured at any scale other than 100%.
+- **DPI awareness is unset.** There is no `SetProcessDpiAwarenessContext` call and
+  none in the import table, so the client area is virtualised on a scaled display
+  and a 16px requested cell height is not 16 physical pixels. Unmeasured at any
+  scale other than 100%.
 - **The terminal is not reachable from the window procedure yet.** That is a
   structural limit, verified independently rather than inferred: `interface.zig:52`
   asserts `Surface.init()` returns `error.Unimplemented`, and
@@ -63,8 +65,9 @@ edit was the build's input, not a bystander.
    when `CreateCompatibleDC` returns null (non-Windows hosts). `textFont()` now
    exists and does that measurement at runtime; the assertion is still missing and
    cannot run on this host for the calling-convention reason above.
-2. A headless check that the built exe's import table names `gdi32.dll`, which
-   turns "the declarations link" from an inference into a measurement.
+2. A headless check that the built exe's import table names `gdi32.dll`. **DONE** -
+   `llvm-objdump -p ghostty.exe` names `GDI32.dll` and, inside it, `TextOutW`
+   alongside the other nine text symbols, plus the four `USER32.dll` paint symbols.
 3. Only then, a real desktop launch, verified by process and window
    enumeration - never by a screenshot.
 
@@ -75,4 +78,12 @@ git archive --format=tar HEAD | gzip -1 | ssh desk \
   'wsl -e bash -lc "tar xzf - -C /root/builds/khostty"'
 ssh desk 'wsl -e bash -c "cd /root/builds/khostty; \
   zig build -Dtarget=x86_64-windows-gnu -Dapp-runtime=windows; echo rc=$?"'
+```
+
+No desk needed for the build or the import proof, and this path records its own
+exit code:
+
+```
+zig build -Dtarget=x86_64-windows-gnu -Dapp-runtime=windows -p "$PREFIX"; echo rc=$?
+llvm-objdump -p "$PREFIX/bin/ghostty.exe" | sed -n '/GDI32.dll/,/KERNEL32.dll/p'
 ```
