@@ -73,6 +73,17 @@ PostMessageW`, `DeleteObject`, `DestroyWindow`, `UnregisterClassW`, on run
   gates now) from `test-windows-apprt` (the real run, Windows-only). The run
   itself is **UNKNOWN** here: no Windows host has executed it.
 
+- **The new compile gate is currently blocked by codeberg, not by the code.**
+  Run `44708917840` failed at 09:56:42Z after 44 minutes in which the build
+  never started: `fetch-zig-deps` could not retrieve
+  `codeberg.org/vancluever/translate-c/archive/4e879eb8…tar.gz` in four attempts
+  spaced ten minutes apart, then refused to start a build that would fail the
+  same way. Reproduced off-runner, so it is not a runner fault: from this Mac the
+  URL first timed out with 0 bytes in 10 s while `codeberg.org` itself answered
+  `200` in 0.69 s, then reset the connection outright (`curl: (56) Recv failure:
+Connection reset by peer`, 1.1 s). The dependency pin is upstream's, so the fix
+  is a codeberg recovery, not a local patch.
+
 ## Next test to write, in order
 
 1. A `textFont()` probe that creates the face, selects it into a compatible DC,
