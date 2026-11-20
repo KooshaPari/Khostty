@@ -129,7 +129,14 @@ jobs:
   windows-apprt:
     name: build-windows-apprt
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 2026-11-20: 30 -> 60. The compile-only step cross-builds the whole test
+    # artifact for x86_64-windows-gnu, and a cold run emits no output for the
+    # entire build, so the first attempt was killed at 09:12:11Z with an empty
+    # log ("The operation was canceled", 1,788,867 ms, zig terminated as an
+    # orphan process). Nothing had failed; it had not finished. The old
+    # run-target command only looked fast because it died at the link step
+    # after ~6 minutes.
+    timeout-minutes: 60
     # 2026-10-15: removed `continue-on-error: true`. The cheap windows-apprt
     # job (1-3 min warm) is a real gate; a regression here MUST surface as
     # a push-blocking failure, not a silent nightly red X. The earlier
