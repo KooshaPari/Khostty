@@ -1,0 +1,15 @@
+# Pinned dependency archives that must not depend on a live third-party host.
+#
+# Format, one entry per line:
+#   <content-addressed cache filename> <url it satisfies>
+#
+# These files are the exact bytes zig would have downloaded, named the way
+# zig's global cache names them. `fetch-zig-deps` copies them into
+# $ZIG_GLOBAL_CACHE_DIR/p/ and skips the network call for that URL.
+#
+# translate-c 4e879eb8 (codeberg). Measured 2026-11-20: the host answered the
+# site in 0.69 s but the archive timed out at 10 s, then reset the connection
+# after 1.1 s, across two CI runs 44 minutes apart. Zig verifies the hash of
+# whatever it loads, so a wrong archive here fails loudly instead of building
+# against something unexpected.
+translate_c-0.0.0-Q_BUWhVNBwDOEcIqub4VFPJPB6D9dgwzUMHTX5KWr8Xr.tar.gz https://codeberg.org/vancluever/translate-c/archive/4e879eb8aba615de112eabd1231ea6e01920cead.tar.gz

@@ -1,24 +1,12 @@
 name: Pre-fetch zig dependencies
 description: >
   Populate the zig global cache from build.zig.zon.txt before a build, with
-  bounded retries per URL.
-
-  Why this exists (2026-11-17): the fork's `zig build` jobs run
-  `nix develop -c zig build ...` with no ZIG_GLOBAL_CACHE_DIR and no pre-fetch,
-  so zig resolved every package dependency over the live network on each run.
-  `pkg/translate-c` (and, on 2026-11-12, `pkg/wuffs`) then failed the REQUIRED
-  `test (zig build test)` context on a third-party HTTP fault rather than on
-  anything to do with the code:
-
-    pkg/translate-c/build.zig.zon:15:20: error: bad HTTP response code: '504 Gateway Timeout'
-    pkg/wuffs/build.zig.zon:17:20: error: HTTP response read failure: ConnectionResetByPeer
-
-  `zig build --fetch` cannot substitute here: it does not fetch transitive
-  dependencies (ziglang/zig#20976), which is exactly why upstream ships
-  `build.zig.zon.txt` plus `nix/build-support/fetch-zig-cache.sh`. This action
-  consumes that same list, so it adds no new source of truth. Retries are
-  bounded and a persistent failure still fails the job: no test is weakened and
-  no missing dependency is silently tolerated.
+  bounded retries per URL. Dependencies that are pre-seeded as content-addressed
+  archives under seeds/ are copied into the cache without any network call, so a
+  dead third-party host cannot starve the job. Zig still verifies the hash of
+  whatever it loads, so a wrong or corrupt seed fails the build loudly instead
+  of passing silently; a dependency without a seed still requires the network
+  and still fails the job if it cannot be fetched. No failure path is weakened.
 
 inputs:
   attempts:
@@ -44,7 +32,7 @@ runs:
         set -uo pipefail
 
         cache_dir="${CACHE_DIR:-${RUNNER_TEMP:-/tmp}/zig-global-cache}"
-        mkdir -p "$cache_dir"
+        mkdir -p "$cache_dir" "$cache_dir/p"
         export ZIG_GLOBAL_CACHE_DIR="$cache_dir"
         # Export for the build steps that follow: without this the fetched
         # packages exist but `zig build` still resolves against ~/.cache/zig
@@ -61,29 +49,66 @@ runs:
           exit 1
         fi
 
+        # Locate the seeds directory shipped next to this action.
+        action_dir="${GITHUB_ACTION_PATH:-$(cd "$(dirname "$0")" && pwd)}"
+        seeds_dir="$action_dir/seeds"
+        seeded_count=0
+        if [ -d "$seeds_dir" ]; then
+          for seed in "$seeds_dir"/*.tar.gz; do
+            [ -e "$seed" ] || continue
+            seed_name="$(basename "$seed")"
+            target="$cache_dir/p/$seed_name"
+            if [ ! -f "$target" ]; then
+              cp "$seed" "$target"
+              seeded_count=$((seeded_count + 1))
+            fi
+          done
+        fi
+        if [ "$seeded_count" -gt 0 ]; then
+          echo "Seeded $seeded_count archive(s) from $seeds_dir into $cache_dir/p"
+        fi
+
+        seeded_urls=0
+        fetched_urls=0
         failed=0
         total=0
         while IFS= read -r url; do
           case "$url" in ''|'#'*) continue ;; esac
           total=$((total + 1))
           ok=0
-          attempt=1
-          while [ "$attempt" -le "$ATTEMPTS" ]; do
-            if zig fetch "$url" >/dev/null 2>&1; then
-              ok=1
-              break
-            fi
-            echo "::warning::zig fetch failed (attempt ${attempt}/${ATTEMPTS}): $url"
-            if [ "$attempt" -lt "$ATTEMPTS" ]; then
-              # 15s, 30s, 45s ... bounded by ATTEMPTS; a transient CDN 5xx
-              # clears well inside this window.
-              sleep $((attempt * 15))
-            fi
-            attempt=$((attempt + 1))
-          done
+
+          # If this URL is satisfied by a pre-seeded archive, copy it into the
+          # cache and skip the network entirely. Zig still verifies the hash.
+          seed_for_url=""
+          if [ -f "$seeds_dir/MANIFEST" ]; then
+            seed_for_url="$(awk -v u="$url" '$2 == u { print $1; exit }' "$seeds_dir/MANIFEST")"
+          fi
+          if [ -n "$seed_for_url" ] && [ -f "$cache_dir/p/$seed_for_url" ]; then
+            echo "satisfied from seed: $url"
+            seeded_urls=$((seeded_urls + 1))
+            ok=1
+          else
+            attempt=1
+            while [ "$attempt" -le "$ATTEMPTS" ]; do
+              if zig fetch "$url" >/dev/null 2>&1; then
+                ok=1
+                break
+              fi
+              echo "::warning::zig fetch failed (attempt ${attempt}/${ATTEMPTS}): $url"
+              if [ "$attempt" -lt "$ATTEMPTS" ]; then
+                # 15s, 30s, 45s ... bounded by ATTEMPTS; a transient CDN 5xx
+                # clears well inside this window.
+                sleep $((attempt * 15))
+              fi
+              attempt=$((attempt + 1))
+            done
+          fi
+
           if [ "$ok" -ne 1 ]; then
             echo "::error::could not fetch $url after ${ATTEMPTS} attempts"
             failed=$((failed + 1))
+          else
+            fetched_urls=$((fetched_urls + 1))
           fi
         done < "$list"
 
@@ -91,4 +116,4 @@ runs:
           echo "::error::${failed}/${total} dependencies could not be fetched; refusing to start a build that would fail on the same network fault"
           exit 1
         fi
-        echo "Pre-fetched ${total} zig dependencies into $ZIG_GLOBAL_CACHE_DIR"
+        echo "Pre-fetched ${total} zig dependencies into $ZIG_GLOBAL_CACHE_DIR (seeded=$seeded_urls fetched=$fetched_urls)"
