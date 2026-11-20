@@ -48,15 +48,18 @@ edit was the build's input, not a bystander.
   `src/App.zig:435` is the only place `focused_surface` is set, so it is always
   null on Windows. `GWLP_USERDATA` now holds `*App` (`App.zig:166`) and reaches
   `paint`/`viewportText`; it cannot reach a terminal, because none is created.
-- **`zig build test-windows-apprt` cannot run off Windows, and this predates the
-  text path.** With 22 `callconv(.winapi)` sites in HEAD's `win32.zig`, the step
-  fails on `aarch64-macos` with `calling convention 'aarch64_aapcs_win' not
-  supported by compiler backend 'stage2_llvm'` (first at the `WakeupProc`
-  declaration, then `DeleteObject`). Retargeting the test artifact to
-  `x86_64-windows-gnu` clears that but loses the `macos` module that
-  `src/font/discovery.zig` and the two `coretext.zig` files import, so a fix means
-  a target-aware module graph, not a one-line target swap. The change was
-  attempted and reverted rather than landed half-migrated.
+- **`zig build test-windows-apprt` fails on Apple Silicon, and this predates the
+  text path.** Measured now: 22 `callconv(.winapi)` declarations already exist at
+  `73a54d283` (pre-text-path) against 31 at HEAD, and the step fails identically at
+  both - `compile test windows-apprt-test Debug aarch64-macos.13.0 2 errors`,
+  `calling convention 'aarch64_aapcs_win' not supported by compiler backend
+  'stage2_llvm'` at `win32.zig:119` and `:144`. The cause is the aarch64 half of
+  `.winapi`, not the OS: `zig build test-windows-apprt -Dtarget=x86_64-linux-gnu`
+  gets past that stage entirely and stops only on Linux system libraries this Mac
+  lacks (`EGL`, `gtk-4`, `adwaita-1`). So the step is expected-green on an x86_64
+  host, which is what `ci/zig-fork-tests.yml` runs, and cannot build here. It is
+  left failing loudly rather than skipped, because a skipped step would report a
+  green it never measured.
 
 ## Next test to write, in order
 
