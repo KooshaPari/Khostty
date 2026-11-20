@@ -131,10 +131,12 @@ pub fn terminate(self: *App) void {
 }
 
 /// Post a wakeup message so a blocked GetMessageW returns. The scaffold does
-/// not act on it yet; it only unblocks the pump.
+/// not act on it yet; it only unblocks the pump. It must NOT reuse WM_SIZE:
+/// that carries a client-area size in lparam, so a wakeup sent as WM_SIZE
+/// would teach the Surface a bogus 0x0 size on every tick.
 pub fn wakeup(self: *App) void {
     if (self.hwnd) |hwnd| {
-        _ = win32.PostMessageW(hwnd, win32.WM_SIZE, 0, 0);
+        _ = win32.PostMessageW(hwnd, win32.WM_APP + 1, 0, 0);
     }
 }
 

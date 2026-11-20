@@ -15,6 +15,11 @@ pub const WM_SIZE: u32 = 0x0005;
 pub const WM_PAINT: u32 = 0x000f;
 pub const WM_ERASEBKGND: u32 = 0x0014;
 
+/// First message in the application-private range (WM_APP). Anything at or
+/// above this is ours; the window procedure must not read a system meaning
+/// into it. `wakeup` uses WM_APP + 1 purely to unblock `GetMessageW`.
+pub const WM_APP: u32 = 0x8000;
+
 pub const WS_OVERLAPPEDWINDOW: u32 = 0x00CF0000;
 pub const SW_SHOW: i32 = 5;
 /// Index for the per-window user data slot; negative by Win32 convention.
