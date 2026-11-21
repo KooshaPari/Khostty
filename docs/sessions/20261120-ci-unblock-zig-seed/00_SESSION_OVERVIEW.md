@@ -52,10 +52,16 @@ next step is zig/simdutf toolchain flags or a zig bump, not another image label.
 so this session did not introduce it, and no aggregate gate lists it in `needs`. It is a red that
 nobody has closed, not a red this work caused.
 
-## UNKNOWN, stated as unknown
+## Resolved 2026-11-21 (were UNKNOWN, now measured)
 
-- Whether `ZIG_GLOBAL_CACHE_DIR` survives `nix develop -c` in the nix-wrapped jobs (`gtk-build`,
-  `ipc-runtime`, `ci-conformance`). Green proves the step ran and the build passed; it does not prove
-  the seed was consumed. Bare-`zig` call sites inherit the variable by construction.
-- `git fetch --all` in this checkout exits non-zero on `! [rejected] tip -> tip (would clobber
-  existing tag)`, so any script that trusts `fetch --all`'s exit code is reading a false failure.
+- **`ZIG_GLOBAL_CACHE_DIR` does survive `nix develop -c` — PASS, measured on `nixos` (nix 2.35.6).**
+  Probe: `ZIG_GLOBAL_CACHE_DIR=/probe/zigc PROBE2=kept nix develop -c printenv ZIG_GLOBAL_CACHE_DIR`
+  → `/probe/zigc`; `PROBE2` → `kept`; with `--ignore-environment` → empty. The action exports the
+  var via `$GITHUB_ENV` (`.github/actions/fetch-zig-deps/action.yml`), `gtk-build` / `ipc-runtime` /
+  `ci-conformance` use no `--pure`/`--ignore-environment` (grep count 0), and the seed step precedes
+  `nix develop -c` in the same job. So the devShell sees the seeded cache. Zig still hash-verifies
+  every archive, and the green run printed `seeded=1 fetched=38`.
+- **`git fetch --all` false-red — resolved, one stale tag.** Local `tip` disagreed with the moved
+  remote tag; `git fetch --all --prune` re-fetched (pruning `v1.4.0`, `vt-1.0.0`, `vt-1.0.1`) and
+  both now resolve to `faf98f117b23`. No history rewrite was needed; re-run `--prune` before
+  trusting a fetch exit code.
