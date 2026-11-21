@@ -53,3 +53,50 @@ git push origin --delete feat/zig-coverage fix/aggregate-fail-closed fix/fork-di
   ci/deinert-fork-gates ci/zig-test-gate-98 ci/zig-push-unfiltered fix/ci-rust-test-gate \
   fix/126-ruff-clean recover/ci-98-red-proof recover/pr-101
 ```
+
+---
+
+## Triage outcome — 2026-11-21 (per-file diff pass)
+
+This section is the per-file verification the "verify-then-delete" rows above deferred.
+Main measured at `8360da710e9b1d164b376abfa32145ad87e71746` (unchanged by this pass).
+
+Method, applied once per branch: `git rev-list --count origin/main..origin/<b>`,
+`git log --oneline origin/main..origin/<b>`, `git diff --stat origin/main...origin/<b>`,
+`git diff --name-status origin/main origin/<b>` (direction main-to-branch, so `A` means
+**main lacks that path**), `git cherry origin/main origin/<b>` (`-` = a patch-equivalent
+commit is already upstream), and line-subset containment for documentation files.
+`DIFFERS` is still not `missing`: a path listed as `M` exists on main and was compared by content.
+
+| branch | ahead | classification | unique paths / measured evidence | action |
+|---|---|---|---|---|
+| recover/pr-101 | 1 | PROBE (trivial) | `650395a0a` "probe: 94 annotation rule" adds 2 comment lines to `src/Command.zig`; no path absent from main; recorded as a probe above | **deleted** |
+| recover/pr-104 | 1 | FULLY-MERGED | `git cherry` = `-` for `5c7455650`; main's later revision keeps the FORK annotation this branch removes; residue is a `docs/FORK.md` table reflow | **deleted** |
+| recover/pr-105 | 2 | ALREADY-SUPERSEDED | `bad114c0c` landed on main as `148f74095` "(#105)"; all three lane-B paths exist on main and were edited further by #109/#122/#123; no path absent from main | **deleted** |
+| recover/pr-107 | 1 | FULLY-MERGED | `git cherry` = `-` for `f49af906d`; main's `a8553b32d` carries the same subject "(#107)"; only `README.md` differs, by prose reflow | **deleted** |
+| recover/pr-30 | 1 | UNIQUE-WORK | adds `.github/workflows/windows-desk.yml`, `src/apprt/windows/renderer.zig`, `src/apprt/windows/win32api.zig`, all **ABSENT** from main; 343 insertions / 8 files | **kept** |
+| recover/pr-77 | 6 | UNIQUE-WORK | `src/App.zig` (+269) and `src/apprt/ipc/app_host.zig` split/poll work; `zz_race_probe.zig` absent from main; 353 insertions | **kept** |
+| recover/pr-84 | 10 | UNIQUE-WORK | superset of `recover/pr-77` (all six of its commits) plus `nix/ipc-storm-diagnose.sh` (ABSENT from main) and `src/ipc_probe.zig`; 571 insertions | **kept** |
+| ci-unsched | 1 | SUPERSEDED, NOT PROVABLY CONTAINED | main's `infisical.yml` already carries `runs-on: ubuntu-latest`, `timeout-minutes: 5` and the `INFISICAL_SYNC` gate, and `milestone.yml` already has the open-milestone pre-check; the branch instead removes the triggers and also carries `zz_race_probe.zig` (ABSENT from main) | **kept — human decision** |
+| sess-triage | 1 | SUPERSEDED, NOT PROVABLY CONTAINED | both documents exist on main via `12c581faa` "(#90)"; the 28/12 non-identical lines are markdown separator rows plus one reflowed sentence; the branch tree also carries `src/apprt/windows/renderer.zig` and `win32api.zig`, ABSENT from main | **kept — human decision** |
+
+### Deleted this pass
+
+```text
+git push origin --delete recover/pr-101 recover/pr-104 recover/pr-105 recover/pr-107
+```
+
+All four are recoverable from the SHAs in this document (`650395a0a`, `5c7455650`,
+`bad114c0c`/`16028406c`, `f49af906d`) and from GitHub's ref log.
+
+### Branch still holding unique work that a human must decide on
+
+- `recover/pr-30` — Windows desk installer gate and the two Win32 source files main lacks.
+- `recover/pr-84` — superset of `recover/pr-77`; storm diagnostic, `ipc_probe.zig`, `zz_race_probe.zig`. If the IPC split work is wanted, `recover/pr-84` is the branch to take; `recover/pr-77` is then redundant but was not deleted here because its content is in another branch, not in main.
+- `ci-unsched` — the CI outcome is already on main in a different form; only `zz_race_probe.zig` is absent from main.
+- `sess-triage` — reports are on main in a later revision; the two Win32 source files are absent from main but belong to the windows-desk lane, not to this docs commit.
+
+### Out of scope, untouched
+
+- `recover/ci-98-red-proof` — still on the remote but **not** in the authorised list for this pass; left alone.
+- Local `pr137` and upstream `pluie/jj-vspwwsuolrrr` — local/upstream only, never pushed to origin by this pass.
