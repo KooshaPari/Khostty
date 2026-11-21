@@ -85,6 +85,9 @@ jobs:
         # source file, so it needs no toolchain beyond zig itself.
         run: zig run tools/check-ipc-app-thread.zig -- src/apprt/ipc/app_host.zig
 
+      # 2026-11-21: same pre-fetch as the other zig jobs, so a dead third-party
+      # dep host cannot fail this job on an unrelated commit.
+      - uses: ./.github/actions/fetch-zig-deps
       - name: Build the GTK runtime and the IPC probe
         run: |
           set -euo pipefail

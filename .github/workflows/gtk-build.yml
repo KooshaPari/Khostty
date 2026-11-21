@@ -94,5 +94,9 @@ jobs:
         # source file, so it needs no toolchain beyond zig itself.
         run: zig run tools/check-ipc-app-thread.zig -- src/apprt/ipc/app_host.zig
 
+      # 2026-11-21: same pre-fetch as the other zig jobs. Without it this build
+      # resolves pkg/translate-c over the live network, and a codeberg 504
+      # fails the job on a commit that changed nothing.
+      - uses: ./.github/actions/fetch-zig-deps
       - name: Build with the GTK runtime
         run: nix develop -c zig build -Dapp-runtime=gtk
