@@ -73,7 +73,40 @@ PostMessageW`, `DeleteObject`, `DestroyWindow`, `UnregisterClassW`, on run
   gates now) from `test-windows-apprt` (the real run, Windows-only). The run
   itself is **UNKNOWN** here: no Windows host has executed it.
 
-- **The new compile gate is currently blocked by codeberg, not by the code.**
+- **RESOLVED 2026-11-20: the codeberg dependency is seeded, and the gate is
+  green on a measured build.** Two things changed. The action now ships the exact
+  content-addressed archive under `.github/actions/fetch-zig-deps/seeds/`
+  (`translate_c-0.0.0-Q_BUWh…tar.gz`, 93591 bytes) and copies it into
+  `$ZIG_GLOBAL_CACHE_DIR/p/` before any network call, skipping `zig fetch` for
+  any URL listed in `seeds/MANIFEST`; zig still verifies the archive hash, so a
+  wrong seed fails the build rather than passing silently, and an unseeded
+  dependency still needs the network and still fails the job. The archive is
+  committed because the host is the flaky part, not the pin: the same bytes were
+  fetched successfully hours earlier, so this routes around an outage rather
+  than papering over a dead dependency.
+
+  Run `44750716350` on `aa6e92dc0` (job `build-windows-apprt`, 15:09:49Z to
+  15:18:32Z) is the first honest verdict this gate has produced:
+
+  ```text
+  Seeded 1 archive(s) from .../fetch-zig-deps/seeds into .../zig-global-cache/p
+  satisfied from seed: https://codeberg.org/vancluever/translate-c/archive/4e879eb8…tar.gz
+  Pre-fetched 39 zig dependencies into ... (seeded=1 fetched=39)
+  ##[group]Run nix develop -c zig build test-windows-apprt-build -Dtarget=x86_64-windows-gnu
+  ```
+
+  That summary reads `seeded=1 fetched=39` for a 39-URL list because the first
+  version counted a seeded URL in both tallies; the counts were wrong, the
+  behaviour was not. Fixed in the same change (`fetched_urls` now increments only
+  on a real fetch), so a later run reports `seeded=1 fetched=38`.
+
+  Step 6 (`Build test-windows-apprt for Windows (compile + link, no run)`) is
+  `conclusion: success`, and all seven jobs in the workflow pass. What that
+  proves is narrow and worth stating exactly: the whole test artifact compiles
+  and links for `x86_64-windows-gnu`. It still does not prove the tests run on
+  Windows, which remains the measurable hole recorded above.
+
+- **Before that, the compile gate was blocked by codeberg, not by the code.**
   Run `44708917840` failed at 09:56:42Z after 44 minutes in which the build
   never started: `fetch-zig-deps` could not retrieve
   `codeberg.org/vancluever/translate-c/archive/4e879eb8…tar.gz` in four attempts
@@ -81,8 +114,8 @@ PostMessageW`, `DeleteObject`, `DestroyWindow`, `UnregisterClassW`, on run
   same way. Reproduced off-runner, so it is not a runner fault: from this Mac the
   URL first timed out with 0 bytes in 10 s while `codeberg.org` itself answered
   `200` in 0.69 s, then reset the connection outright (`curl: (56) Recv failure:
-Connection reset by peer`, 1.1 s). The dependency pin is upstream's, so the fix
-  is a codeberg recovery, not a local patch.
+Connection reset by peer`, 1.1 s). The dependency pin is upstream's, so the
+  durable fix was to route around the host rather than patch the pin.
 
 ## Next test to write, in order
 

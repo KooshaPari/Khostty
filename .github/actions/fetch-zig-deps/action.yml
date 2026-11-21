@@ -92,6 +92,7 @@ runs:
             while [ "$attempt" -le "$ATTEMPTS" ]; do
               if zig fetch "$url" >/dev/null 2>&1; then
                 ok=1
+                fetched_urls=$((fetched_urls + 1))
                 break
               fi
               echo "::warning::zig fetch failed (attempt ${attempt}/${ATTEMPTS}): $url"
@@ -107,8 +108,6 @@ runs:
           if [ "$ok" -ne 1 ]; then
             echo "::error::could not fetch $url after ${ATTEMPTS} attempts"
             failed=$((failed + 1))
-          else
-            fetched_urls=$((fetched_urls + 1))
           fi
         done < "$list"
 
