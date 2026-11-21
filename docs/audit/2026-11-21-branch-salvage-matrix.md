@@ -21,11 +21,11 @@ Every row below was measured, not inferred. `ahead` = `git rev-list --count orig
 | recover/pr-104 | 1 | none | — | #104 landed earlier; `chore(94)` annotation | verify-then-delete |
 | recover/pr-105 | 2 | none | — | #105 landed earlier; audit table additions | verify-then-delete |
 | recover/pr-107 | 1 | none | — | #107 landed earlier; prettier fix | verify-then-delete |
-| recover/pr-30 | 1 | none | — | "build/windows: add desk installer gate" — **not** on main | KEEP (unique) |
-| recover/pr-77 | 6 | none | — | "fix(ipc): bound the split poll by wall clock" — not on main | KEEP (unique, 2 files) |
-| recover/pr-84 | 10 | none | — | storm-diagnostic CI work — not on main | KEEP (unique, 5 files) |
-| sess-triage | 1 | none | — | docs-only triage STOP report | KEEP or absorb to docs |
-| ci-unsched | 1 | none | — | unschedulable-Infisical fix — not on main | KEEP (unique, 2 files) |
+| recover/pr-30 | 1 | none | — | adds **NEW** `.github/workflows/windows-desk.yml` (absent from main) | KEEP (unique) |
+| recover/pr-77 | 6 | none | — | `src/App.zig`, `src/apprt/ipc/app_host.zig` DIFFER; 6 commits | UNVERIFIED-UNIQUE (main may be newer) |
+| recover/pr-84 | 10 | none | — | adds **NEW** `nix/ipc-storm-diagnose.sh`; 4 other files DIFFER | KEEP (unique) |
+| sess-triage | 1 | none | — | 2 docs DIFFER from main | UNVERIFIED-UNIQUE (docs only) |
+| ci-unsched | 1 | none | — | `infisical.yml`, `milestone.yml` DIFFER from main | UNVERIFIED-UNIQUE (main may carry the fix) |
 
 ## Correction to an earlier method
 
@@ -35,6 +35,14 @@ exact lines unmatchable, so it produced a **false negative** — PR #136 was MER
 and `tools/coverage.py` + the `coverage` step are on main. The authoritative tests used here are
 PR state by head branch (`gh api .../pulls/N`), remote presence of the named file/step, and
 workflow-file inspection. A keyline grep is not evidence of absence.
+
+## Why `DIFFERS` is not `missing`
+
+A file that exists on main but differs from the branch can mean main moved ahead and already
+absorbed the branch's change. Only a file **absent from main** proves the branch adds content.
+Exactly three branches add an absent file: `recover/pr-30`, `recover/pr-84` (both KEEP), and
+none of the eleven deletion candidates. The four `UNVERIFIED-UNIQUE` rows need a per-file diff
+before any verdict.
 
 ## Deletion commands (NOT executed — awaiting authorisation)
 
