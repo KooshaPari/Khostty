@@ -28,7 +28,19 @@ permissions:
 jobs:
   go-windows:
     if: github.repository == 'KooshaPari/Khostty'
-    runs-on: windows-latest
+    # Pinned, not `windows-latest`. `windows-latest` moved to the preview image
+    # `windows-2025-vs2026` and that image carries VS 18 / MSVC 14.52, whose
+    # headers break zig 0.16.0's compile of the vendored simdutf:
+    #   pkg/simdutf/vendor/simdutf.cpp:22295: error: array index 3 is past the
+    #   end of the array (that has type 'const simd8<unsigned char, 16>')
+    # Measured 2026-11-21: failing run 44848423316 used image
+    # win25-vs2026/20261116.315; the last green run 44704605807 used
+    # win25-vs2026/20261103.298 and printed no MSVC include paths at all. The
+    # same 5 simdutf errors also appear on 2026-11-20 in runs 44652233281 and
+    # 44666555398, so this is the image rolling forward, not a code change.
+    # `windows-2025` is the same OS generation with VS 2022, i.e. the toolchain
+    # that was green. Roll this back once simdutf survives the VS 18 headers.
+    runs-on: windows-2025
     timeout-minutes: 30
     defaults:
       run:
