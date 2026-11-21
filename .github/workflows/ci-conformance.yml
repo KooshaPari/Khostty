@@ -113,6 +113,8 @@ jobs:
       # Build the IPC server binary first so the conformance run can spawn
       # it as a black-box child. The same build target is what an external
       # integration test would link against.
+      - name: Fetch zig dependencies
+        uses: ./.github/actions/fetch-zig-deps
       - name: Build agent-ipc
         run: nix develop -c zig build -Demit-lib-vt
       - name: Run conformance
@@ -141,6 +143,8 @@ jobs:
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Fetch zig dependencies
+        uses: ./.github/actions/fetch-zig-deps
       - name: Build wasm
         run: ./wasm/build.sh
       - name: Run wasm tests

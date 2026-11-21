@@ -68,6 +68,14 @@ jobs:
         with:
           version: 0.16.0
 
+      # Same pre-fetch as zig-fork-tests.yml. Without it a cold check resolves
+      # `pkg/translate-c` over the live network and dies on a codeberg 5xx:
+      # measured on this job 2026-11-20 at 11:34Z, "504 Gateway Timeout" at
+      # pkg/translate-c/build.zig.zon:15:20, which turned the gate red for a
+      # reason that had nothing to do with fork discipline. The action also
+      # seeds that archive, so the host cannot starve the gate.
+      - uses: ./.github/actions/fetch-zig-deps
+
       - name: Run fork-discipline check (strict)
         id: check
         # Strict mode: `zig build` exits non-zero on any violation, and this

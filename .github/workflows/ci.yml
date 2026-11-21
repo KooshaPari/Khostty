@@ -69,6 +69,8 @@ jobs:
           # (SC2046) so a path with spaces cannot split the argument.
           newest="$(printf '%s\n' /Applications/Xcode_*.app | sort -V | tail -1)"
           sudo xcode-select -s "${newest}" || true
+      - name: Fetch zig dependencies
+        uses: ./.github/actions/fetch-zig-deps
       - run: zig build -Doptimize=ReleaseSafe -Demit-macos-app=false
 
   detect:
@@ -194,6 +196,8 @@ jobs:
       - name: cargo fmt --check
         working-directory: khostty-vt
         run: cargo +nightly-2026-11-11 fmt --all -- --check
+      - name: Fetch zig dependencies
+        uses: ./.github/actions/fetch-zig-deps
       - name: zig build -Demit-lib-vt (materialise the linked library)
         run: zig build -Demit-lib-vt
       # 2026-11-12: this step was `cargo clippy ... || echo "::warning::clippy
@@ -459,6 +463,8 @@ jobs:
           # (from https://ziglang.org/download/index.json key
           # 0.16.0.x86_64-linux.shasum, captured 2026-10-15).
           shasum: "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+      - name: Fetch zig dependencies
+        uses: ./.github/actions/fetch-zig-deps
       - name: Build libghostty-vt
         run: zig build -Dapp-runtime=none
 
